@@ -1,0 +1,8 @@
+#!/bin/sh
+basedir=`dirname $0`
+jar=${basedir}/dshell.jar
+if test ! -f ${jar}
+then
+    jar=dshell.jar
+fi
+java -jar ${jar} $@
