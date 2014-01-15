@@ -10,10 +10,6 @@ public class Utils {
 	public final static int throwable       = (1 << 2);
 	public final static int background      = (1 << 3);
 	public final static int inference       = (1 << 4);
-	// private option
-	public final static int mergeErrorToOut = (1 << 5);
-	public final static int mergeOutToError = (1 << 6);
-	public final static int redirSymbol     = (1 << 7);
 
 	// return type
 	public final static int VoidType    = 0;

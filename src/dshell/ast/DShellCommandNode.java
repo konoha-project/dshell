@@ -9,7 +9,6 @@ import zen.ast.ZenIntNode;
 import zen.ast.ZenNode;
 import zen.ast.ZenStringNode;
 import zen.deps.Field;
-import zen.lang.ZenType;
 import zen.parser.ZenToken;
 import zen.parser.ZenVisitor;
 
@@ -18,9 +17,8 @@ public class DShellCommandNode extends ZenNode {
 	@Field public ZenNode OptionNode;
 	@Field public ZenNode PipedNextNode;
 
-	public DShellCommandNode(ZenType Type, ZenStringNode Node) {
+	public DShellCommandNode(ZenStringNode Node) {
 		super();
-		this.Type = Type;
 		this.ArgumentList = new ArrayList<ZenNode>();
 		this.ArgumentList.add(this.SetChild(Node));
 		this.OptionNode = new ZenIntNode(new ZenToken(0, "0", 0), 0);

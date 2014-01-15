@@ -15,10 +15,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 
-import org.python.antlr.PythonParser.else_clause_return;
-
-import jnr.ffi.Struct.int16_t;
-
 import dshell.util.Utils;
 
 public class TaskBuilder {
@@ -31,11 +27,11 @@ public class TaskBuilder {
 	public MessageStreamHandler stdoutHandler;
 	public MessageStreamHandler stderrHandler;
 
-	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, ArrayList<Integer> optionList, int retType) {
-		this.OptionFlag = optionList.get(optionList.size() - 1);
+	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, int option, int retType) {
+		this.OptionFlag = option;
 		this.retType = retType;
 		ArrayList<ArrayList<String>> newCmdsList = this.PrepareInternalOption(cmdsList);
-		this.Processes = this.CreateProcs(newCmdsList, optionList);
+		this.Processes = this.CreateProcs(newCmdsList);
 		// generate object representation
 		this.sBuilder = new StringBuilder();
 		for(int i = 0; i< this.Processes.length; i++) {
@@ -160,7 +156,7 @@ public class TaskBuilder {
 		return newCmdsBuffer;
 	}
 
-	private PseudoProcess[] CreateProcs(ArrayList<ArrayList<String>> cmdsList, ArrayList<Integer> optionList) {
+	private PseudoProcess[] CreateProcs(ArrayList<ArrayList<String>> cmdsList) {
 		boolean enableSyscallTrace = Utils.is(this.OptionFlag, Utils.inference);
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		int listSize = cmdsList.size();
@@ -187,21 +183,26 @@ public class TaskBuilder {
 			else if(cmdSymbol.equals("2>>")) {
 				prevProc.setOutputRedirect(SubProc.STDERR_FILENO, currentCmds.get(1), true);
 			}
-			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {	// mergeErrorToOut
+			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {
 				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), false);
+				prevProc.setMergeType(SubProc.mergeErrorToOut);
 			}
-			else if(cmdSymbol.equals("&>>")) {	// mergeErrorToOut
+			else if(cmdSymbol.equals("&>>")) {
 				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), true);
+				prevProc.setMergeType(SubProc.mergeErrorToOut);
+			}
+			else if(cmdSymbol.equals(">&1") || cmdSymbol.equals("1>&1") || cmdSymbol.equals("2>&2")) {
+				// do nothing
+			}
+			else if(cmdSymbol.equals("1>&2")) {
+				prevProc.setMergeType(SubProc.mergeOutToError);
+			}
+			else if(cmdSymbol.equals("2>&1")) {
+				prevProc.setMergeType(SubProc.mergeErrorToOut);
 			}
 			else {
 				SubProc proc = new SubProc(enableSyscallTrace);
 				proc.setArgumentList(currentCmds);
-				if(Utils.is(optionList.get(i), Utils.mergeErrorToOut)) {
-					proc.setMergeType(Utils.mergeErrorToOut);
-				}
-				if(Utils.is(optionList.get(i), Utils.mergeOutToError)) {
-					proc.setMergeType(Utils.mergeOutToError);
-				}
 				procBuffer.add(proc);
 			}
 		}
@@ -209,22 +210,8 @@ public class TaskBuilder {
 	}
 
 	// called by VisitCommandNode 
-	public static void ExecCommandVoid(ArrayList<Integer> optionList, ArrayList<ArrayList<String>> cmdsList) {
-		ArrayList<Integer> newOptionList = new ArrayList<Integer>();
-		int size = optionList.size();
-		for(int i = 0; i < size; i++) {
-			Object option = optionList.get(i);
-			if(option instanceof Integer) {
-				newOptionList.add((Integer)option);
-			}
-			else if(option instanceof Double) {
-				newOptionList.add(((Double)option).intValue());
-			}
-			else {
-				throw new RuntimeException(option.getClass() + "is invalid class");
-			}
-		}
-		new TaskBuilder(cmdsList, newOptionList, Utils.VoidType).Invoke();
+	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList, String option) {
+		new TaskBuilder(cmdsList, Integer.parseInt(option), Utils.VoidType).Invoke();
 	}
 
 	private static boolean checkTraceRequirements() {
@@ -254,6 +241,9 @@ public class TaskBuilder {
 }
 
 class PseudoProcess {
+	public final static int mergeErrorToOut = 0;
+	public final static int mergeOutToError = 1;
+
 	protected OutputStream stdin = null;
 	protected InputStream stdout = null;
 	protected InputStream stderr = null;
@@ -287,10 +277,10 @@ class PseudoProcess {
 
 	public void setMergeType(int mergeType) {
 		this.mergeType = mergeType;
-		if(this.mergeType == Utils.mergeErrorToOut) {
+		if(this.mergeType == SubProc.mergeErrorToOut) {
 			this.sBuilder.append(" 2>&1");
 		}
-		else if(this.mergeType == Utils.mergeOutToError) {
+		else if(this.mergeType == SubProc.mergeOutToError) {
 			this.sBuilder.append(" 1>&2");
 		}
 	}
@@ -448,13 +438,13 @@ class SubProc extends PseudoProcess {
 	@Override public void start() {
 		try {
 			ProcessBuilder procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-			if(this.mergeType == Utils.mergeErrorToOut || this.mergeType == Utils.mergeOutToError) {
+			if(this.mergeType == SubProc.mergeErrorToOut || this.mergeType == SubProc.mergeOutToError) {
 				procBuilder.redirectErrorStream(true);
 			}
 			this.prepareHookLibrary(procBuilder.environment());
 			this.proc = procBuilder.start();
 			this.stdin = this.proc.getOutputStream();
-			if(this.mergeType == Utils.mergeOutToError) {
+			if(this.mergeType == SubProc.mergeOutToError) {
 				this.stdout = this.proc.getErrorStream();
 				this.stderr = this.proc.getInputStream();
 			}

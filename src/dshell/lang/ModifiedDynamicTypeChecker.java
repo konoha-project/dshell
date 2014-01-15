@@ -15,6 +15,7 @@ public class ModifiedDynamicTypeChecker extends ZenDynamicTypeChecker {
 
 	public void VisitCommandNode(DShellCommandNode Node) {	//TODO: support context type
 		ZenNameSpace NameSpace = this.GetNameSpace();
+		this.TypedNode(Node, ZenSystem.VoidType);
 		Node.OptionNode = this.TypeCheck(Node.OptionNode, NameSpace, ZenSystem.IntType, ZenTypeChecker.DefaultTypeCheckPolicy);
 		int size = Node.ArgumentList.size();
 		for(int i = 0; i < size; i++) {
@@ -23,7 +24,8 @@ public class ModifiedDynamicTypeChecker extends ZenDynamicTypeChecker {
 			Node.ArgumentList.set(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {
-			Node.PipedNextNode.Accept(this);
+			Node.ParentNode = this.TypeCheck(Node.PipedNextNode
+					, NameSpace, ZenSystem.VoidType, DefaultTypeCheckPolicy);
 		}
 	}
 }

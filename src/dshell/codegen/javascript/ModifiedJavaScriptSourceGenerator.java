@@ -2,6 +2,7 @@ package dshell.codegen.javascript;
 
 import dshell.ast.DShellCommandNode;
 import dshell.lang.ModifiedDynamicTypeChecker;
+import zen.ast.ZenIntNode;
 import zen.codegen.javascript.JavaScriptSourceGenerator;
 
 public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator {
@@ -21,8 +22,6 @@ public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator
 		this.CurrentBuilder.Append("nativeClass.importClass(Packages.dshell.TaskBuilder);\n");
 		this.CurrentBuilder.AppendIndent();
 		this.CurrentBuilder.Append("var argsList = new nativeClass.ArrayList();\n");
-		this.CurrentBuilder.AppendIndent();
-		this.CurrentBuilder.Append("var options = new nativeClass.ArrayList();\n");
 		DShellCommandNode currentNode = Node;
 		int index = 0;
 		while(currentNode != null) {
@@ -38,15 +37,12 @@ public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator
 			}
 			this.CurrentBuilder.AppendIndent();
 			this.CurrentBuilder.Append("argsList.add(" + argList + ");\n");
-			this.CurrentBuilder.AppendIndent();
-			this.CurrentBuilder.Append("options.add(");
-			this.GenerateCode(currentNode.OptionNode);
-			this.CurrentBuilder.Append(");\n");
 			this.CurrentBuilder.Append("\n");
 			currentNode = (DShellCommandNode) currentNode.PipedNextNode;
 		}
+		String option = Long.toString(((ZenIntNode)Node.OptionNode).Value);
 		this.CurrentBuilder.AppendIndent();
-		this.CurrentBuilder.Append("nativeClass.TaskBuilder.ExecCommandVoid(options, argsList);\n");
+		this.CurrentBuilder.Append("nativeClass.TaskBuilder.ExecCommandVoidJS(argsList, \"" + option + "\");\n");
 		this.CurrentBuilder.UnIndent();
 		this.CurrentBuilder.Append("})()");
 	}
