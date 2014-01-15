@@ -1,9 +1,11 @@
-package dshell;
+package dshell.lang;
 
 import dshell.ast.DShellCommandNode;
+import dshell.util.Utils;
 
 import zen.ast.ZenEmptyNode;
 import zen.ast.ZenErrorNode;
+import zen.ast.ZenIntNode;
 import zen.ast.ZenNode;
 import zen.ast.ZenStringNode;
 import zen.deps.LibNative;
@@ -11,7 +13,6 @@ import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
 import zen.lang.ZenSystem;
 import zen.parser.ZenNameSpace;
-import zen.parser.ZenParserConst;
 import zen.parser.ZenToken;
 import zen.parser.ZenTokenContext;
 
@@ -25,12 +26,11 @@ public class DShellGrammar {
 
 	private static void AppendCommand(ZenNameSpace NameSpace, String CommandPath, ZenToken SourceToken) {
 		if(CommandPath.length() > 0) {
-			/*local*/int loc = CommandPath.lastIndexOf('/');
-			/*local*/String Command = CommandPath;
+			int loc = CommandPath.lastIndexOf('/');
+			String Command = CommandPath;
 			if(loc != -1) {
 				if(!Utils.isFileExecutable(CommandPath)) {
-					//NameSpace.Context.ReportError(ErrorLevel, SourceToken, "not executable: " + CommandPath);
-					System.err.println("not executable: " + CommandPath); //FIXME
+					System.err.println("not executable: " + CommandPath); //FIXME: error report
 				} else {
 					Command = CommandPath.substring(loc+1);
 					NameSpace.SetSymbol(Command, NameSpace.GetSyntaxPattern("$DShell$"), SourceToken);
@@ -41,8 +41,7 @@ public class DShellGrammar {
 					NameSpace.SetSymbol(Command, NameSpace.GetSyntaxPattern("$DShell$"), SourceToken);
 					NameSpace.SetSymbol(DShellGrammar.CommandSymbol(Command), CommandPath, null);
 				} else {
-					//NameSpace.Context.ReportError(ErrorLevel, SourceToken, "unknown command: " + CommandPath);
-					System.err.println("unknown command: " + CommandPath);
+					System.err.println("unknown command: " + CommandPath); //FIXME: error report
 				}
 			}
 		}
@@ -50,17 +49,17 @@ public class DShellGrammar {
 
 	public static long ShellCommentToken(ZenTokenContext TokenContext, String SourceText, long pos) {
 		if(LibZen.CharAt(SourceText, pos) == '#') { // shell style SingleLineComment
-			/*local*/long NextPos = pos + 1;
+			long NextPos = pos + 1;
 			while(NextPos < SourceText.length()) {
-				/*local*/char NextChar = LibZen.CharAt(SourceText, NextPos);
+				char NextChar = LibZen.CharAt(SourceText, NextPos);
 				if(NextChar == '\n') {
 					break;
 				}
-				NextPos = NextPos + 1;
+				NextPos++;
 			}
 			return ZenGrammar.IndentToken(TokenContext, SourceText, NextPos);
 		}
-		return ZenParserConst.MismatchedPosition;
+		return ZenTokenContext.MismatchedPosition;
 	}
 
 	public static ZenNode MatchEnv(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
@@ -73,7 +72,7 @@ public class DShellGrammar {
 		String Env  = System.getenv(Name);
 		if(TokenContext.MatchToken("=")) {
 			if(Env == null) {
-				ZenNode ConstNode = TokenContext.ParsePattern(NameSpace, "$Expression$", ZenParserConst.Required);
+				ZenNode ConstNode = TokenContext.ParsePattern(NameSpace, "$Expression$", ZenTokenContext.Required);
 				if(ConstNode.IsErrorNode()) {
 					return ConstNode;
 				}
@@ -90,11 +89,11 @@ public class DShellGrammar {
 	}
 
 	public static ZenNode MatchCommand(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		/*local*/String Command = "";
-		/*local*/ZenToken SourceToken = null;
+		String Command = "";
+		ZenToken SourceToken = null;
 		TokenContext.GetTokenAndMoveForward();
 		while(TokenContext.HasNext()) {
-			/*local*/ZenToken Token = TokenContext.GetTokenAndMoveForward();
+			ZenToken Token = TokenContext.GetTokenAndMoveForward();
 			if(Token.EqualsText(",")) {
 				Token.ParsedText = "";
 			}
@@ -118,7 +117,7 @@ public class DShellGrammar {
 		if(SourceToken.IsError()) {
 			return new ZenErrorNode(SourceToken, "");
 		}
-		return new ZenEmptyNode(SourceToken); //FIXME
+		return new ZenEmptyNode(SourceToken);
 	}
 
 	public static ZenNode MatchFileOperator(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
@@ -126,9 +125,9 @@ public class DShellGrammar {
 	}
 
 	public static ZenNode MatchFilePath(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		/*local*/ZenToken Token = TokenContext.GetToken();
-		/*local*/boolean HasStringExpr = false;
-		/*local*/String Path = null;
+		ZenToken Token = TokenContext.GetToken();
+		boolean HasStringExpr = false;
+		String Path = null;
 		if(Token.IsIndent() || DShellGrammar.StopTokens.indexOf(Token.ParsedText) != -1) {
 			return null;
 		}
@@ -140,17 +139,17 @@ public class DShellGrammar {
 			TokenContext.GetTokenAndMoveForward();
 		}
 		if(Path == null) {
-			/*local*/boolean FoundOpen = false;
+			boolean FoundOpen = false;
 			Path = "";
 			while(TokenContext.HasNext()) {
 				Token = TokenContext.GetToken();
-				/*local*/String ParsedText = Token.ParsedText;
+				String ParsedText = Token.ParsedText;
 				if(Token.IsIndent() || (!FoundOpen && DShellGrammar.StopTokens.indexOf(Token.ParsedText) != -1)) {
 					break;
 				}
 				TokenContext.GetTokenAndMoveForward();
 				if(Token.EqualsText("$")) {   // $HOME/hoge
-					/*local*/ZenToken Token2 = TokenContext.GetToken();
+					ZenToken Token2 = TokenContext.GetToken();
 					if(LibZen.IsVariableName(Token2.ParsedText, 0)) {
 						Path += "${" + Token2.ParsedText + "}";
 						HasStringExpr = true;
@@ -184,20 +183,27 @@ public class DShellGrammar {
 		Path = Path.replaceAll("\\$\\{", "\" + (");
 		Path = Path.replaceAll("\\}", ") + \"");
 		ZenTokenContext LocalContext = new ZenTokenContext(NameSpace, Path, Token.FileLine);
-		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZenParserConst.Required);
+		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZenTokenContext.Required);
+	}
+
+	public static DShellCommandNode SetOptionAndReturn(ZenNode Node, int optionFlag) {
+		ZenIntNode OptionNode = new ZenIntNode(new ZenToken(0, Integer.toString(optionFlag), 0), optionFlag);
+		DShellCommandNode CommandNode = (DShellCommandNode)Node;
+		CommandNode.AppendOption(OptionNode);
+		return CommandNode;
 	}
 
 	public static ZenNode MatchDShell(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
+		int optionFlag = Utils.printable;
 		ZenToken CommandToken = TokenContext.GetToken();
 		ZenNode CommandNode = null;
 		String Command = (String)NameSpace.GetSymbol(DShellGrammar.CommandSymbol(CommandToken.ParsedText));
-		
+
 		if(Command != null) {
 			CommandNode = new DShellCommandNode(ZenSystem.VoidType, new ZenStringNode(CommandToken, Command));
 			TokenContext.GetTokenAndMoveForward();
 		}
-		else { //FIXME
-			//CommandTree.AppendMatchedPattern(NameSpace, TokenContext, "$FilePath$", Required);
+		else {
 			return new ZenErrorNode(CommandToken, "undefined command symbol");
 		}
 		TokenContext.SetBackTrack(false);
@@ -208,21 +214,26 @@ public class DShellGrammar {
 					break;
 				}
 			}
-			if(Token.EqualsText("||") || Token.EqualsText("&&")) {
-				return new ZenErrorNode(Token, "not implemented"); //FIXME
+			if(Token.EqualsText("||") || Token.EqualsText("&&")) { //TODO: support context type
+//				ZenSyntaxPattern SuffixPattern = TokenContext.GetSuffixPattern(NameSpace);
+//				return TokenContext.ApplyMatchPattern(NameSpace, CommandNode, SuffixPattern);
 			}
 			if(Token.EqualsText("|")) {
 				TokenContext.GetTokenAndMoveForward();
-				ZenNode pipedNode = TokenContext.ParsePattern(NameSpace, "$DShell$", ZenParserConst.Required);
+				ZenNode pipedNode = TokenContext.ParsePattern(NameSpace, "$DShell$", ZenTokenContext.Required);
 				if(pipedNode.IsErrorNode()) {
 					return pipedNode;
 				}
 				((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)pipedNode);
-				return CommandNode;
+				return SetOptionAndReturn(CommandNode, optionFlag);
 			}
-			CommandNode = TokenContext.AppendMatchedPattern(CommandNode, NameSpace, "$FilePath$", ZenParserConst.Required);
+			if(Token.EqualsText("&")) {	// set background job
+				TokenContext.GetTokenAndMoveForward();
+				return SetOptionAndReturn(CommandNode, Utils.setFlag(optionFlag, Utils.background, true));
+			}
+			CommandNode = TokenContext.AppendMatchedPattern(CommandNode, NameSpace, "$FilePath$", ZenTokenContext.Required);
 		}
-		return CommandNode;
+		return SetOptionAndReturn(CommandNode, optionFlag);
 	}
 
 	public static void ImportGrammar(ZenNameSpace NameSpace, Class<?> Grammar) {

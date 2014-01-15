@@ -1,8 +1,26 @@
-package dshell;
+package dshell.util;
 
 import java.io.File;
 
 public class Utils {
+	// option flag
+	// global option
+	public final static int returnable      = (1 << 0);
+	public final static int printable       = (1 << 1);
+	public final static int throwable       = (1 << 2);
+	public final static int background      = (1 << 3);
+	public final static int inference       = (1 << 4);
+	// private option
+	public final static int mergeErrorToOut = (1 << 5);
+	public final static int mergeOutToError = (1 << 6);
+	public final static int redirSymbol     = (1 << 7);
+
+	// return type
+	public final static int VoidType    = 0;
+	public final static int BooleanType = 1;
+	public final static int StringType  = 2;
+	public final static int TaskType    = 3;
+
 	public final static boolean isUnixCommand(String cmd) {
 		String[] path = System.getenv("PATH").split(":");
 		for(int i = 0; i < path.length; i++) {

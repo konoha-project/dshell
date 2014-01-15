@@ -2,7 +2,8 @@ package dshell.ast;
 
 import java.util.ArrayList;
 
-import dshell.codegen.ModifiedJavaScriptSourceGenerator;
+import dshell.codegen.javascript.ModifiedJavaScriptSourceGenerator;
+import dshell.lang.ModifiedDynamicTypeChecker;
 
 import zen.ast.ZenIntNode;
 import zen.ast.ZenNode;
@@ -13,7 +14,6 @@ import zen.parser.ZenToken;
 import zen.parser.ZenVisitor;
 
 public class DShellCommandNode extends ZenNode {
-	@Field public ZenType Type;
 	@Field public ArrayList<ZenNode> ArgumentList; // ["ls", "-la"]
 	@Field public ZenNode OptionNode;
 	@Field public ZenNode PipedNextNode;
@@ -24,7 +24,7 @@ public class DShellCommandNode extends ZenNode {
 		this.ArgumentList = new ArrayList<ZenNode>();
 		this.ArgumentList.add(this.SetChild(Node));
 		this.OptionNode = new ZenIntNode(new ZenToken(0, "0", 0), 0);
-		this.ParentNode = null;
+		this.PipedNextNode = null;
 	}
 
 	@Override public void Append(ZenNode Node) {
@@ -42,6 +42,9 @@ public class DShellCommandNode extends ZenNode {
 	@Override public void Accept(ZenVisitor Visitor) {
 		if(Visitor instanceof ModifiedJavaScriptSourceGenerator) {
 			((ModifiedJavaScriptSourceGenerator)Visitor).VisitCommandNode(this);
+		}
+		else if(Visitor instanceof ModifiedDynamicTypeChecker) {
+			((ModifiedDynamicTypeChecker)Visitor).VisitCommandNode(this);
 		}
 		else {
 			throw new RuntimeException(Visitor.getClass().getName() + " is unsupported Visitor");

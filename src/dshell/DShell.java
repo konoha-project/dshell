@@ -1,6 +1,7 @@
 package dshell;
 
-import dshell.codegen.ModifiedJavaScriptSourceGenerator;
+import dshell.codegen.javascript.ModifiedJavaScriptSourceGenerator;
+import dshell.lang.DShellGrammar;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
@@ -23,7 +24,7 @@ public class DShell {
 			String Line = null;
 			while ((Line = ZenMain.ReadLine2(">>> ", "    ")) != null) {
 				try {
-					Object EvaledValue = Generator.RootNameSpace.Eval(Line, linenum);
+					Object EvaledValue = Generator.RootNameSpace.Eval(Line, linenum, interactiveMode);
 					Generator.Logger.ShowReportedErrors();
 					if (EvaledValue != null) {
 						System.out.println(" (" + ZenSystem.GuessType(EvaledValue) + ":");
@@ -31,7 +32,8 @@ public class DShell {
 						System.out.println(LibZen.Stringify(EvaledValue));
 					}
 					linenum++;
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					LibZen.PrintStackTrace(e, linenum);
 					linenum++;
 				}

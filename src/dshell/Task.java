@@ -3,6 +3,8 @@ package dshell;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import dshell.util.Utils;
+
 public class Task {
 	private ProcMonitor monitor;
 	private TaskBuilder dshellProc;
@@ -24,7 +26,7 @@ public class Task {
 		PseudoProcess lastProc = Processes[lastIndex];
 
 		OutputStream stdoutStream = null;
-		if(Utils.is(OptionFlag, TaskBuilder.printable)) {
+		if(Utils.is(OptionFlag, Utils.printable)) {
 			stdoutStream = System.out;
 		}
 		InputStream[] srcOutStreams = new InputStream[1];
@@ -48,7 +50,7 @@ public class Task {
 		this.stderrHandler = new MessageStreamHandler(srcErrorStreams, System.err);
 		this.stderrHandler.showMessage();
 		// start monitor
-		this.isAsyncTask = Utils.is(this.dshellProc.getOptionFlag(), TaskBuilder.background);
+		this.isAsyncTask = Utils.is(this.dshellProc.getOptionFlag(), Utils.background);
 		this.sBuilder = new StringBuilder();
 		if(this.isAsyncTask) {
 			this.sBuilder.append("#AsyncTask");
