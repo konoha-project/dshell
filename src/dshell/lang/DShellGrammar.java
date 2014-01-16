@@ -5,13 +5,13 @@ import dshell.util.Utils;
 
 import zen.ast.ZenEmptyNode;
 import zen.ast.ZenErrorNode;
-import zen.ast.ZenIntNode;
 import zen.ast.ZenNode;
 import zen.ast.ZenStringNode;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
 import zen.parser.ZenNameSpace;
+import zen.parser.ZenSyntaxPattern;
 import zen.parser.ZenToken;
 import zen.parser.ZenTokenContext;
 
@@ -185,13 +185,6 @@ public class DShellGrammar {
 		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZenTokenContext.Required);
 	}
 
-	public static DShellCommandNode SetOptionAndReturn(ZenNode Node, int optionFlag) {
-		ZenIntNode OptionNode = new ZenIntNode(new ZenToken(0, Integer.toString(optionFlag), 0), optionFlag);
-		DShellCommandNode CommandNode = (DShellCommandNode)Node;
-		CommandNode.AppendOption(OptionNode);
-		return CommandNode;
-	}
-
 	private static boolean FindRedirectSymbol(String Symbol) {
 		if(Symbol.equals("1") || Symbol.equals("2") || Symbol.equals(">") 
 				|| Symbol.equals(">>") || Symbol.equals("&")) {
@@ -200,7 +193,7 @@ public class DShellGrammar {
 		return false;
 	}
 
-	private static ZenNode MatchRedirectTarget(ZenNameSpace NameSpace, ZenTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
+	private static ZenNode CreateNodeAndMatchNextRedirect(ZenNameSpace NameSpace, ZenTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
 		ZenNode Node = new DShellCommandNode(new ZenStringNode(new ZenToken(0, RedirectSymbol, 0), RedirectSymbol));
 		if(existTarget) {
 			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$FilePath$", ZenTokenContext.Required);
@@ -209,7 +202,7 @@ public class DShellGrammar {
 		if(PipedNode != null) {
 			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
 		}
-		return SetOptionAndReturn(Node, 0);
+		return Node;
 	}
 
 	// >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>, 1>&1, 1>&2, 2>&1, 2>&2, >&1, >&2
@@ -217,13 +210,13 @@ public class DShellGrammar {
 		ZenToken Token = TokenContext.GetTokenAndMoveForward();
 		String RedirectSymbol = Token.ParsedText;
 		if(Token.EqualsText(">>")) {
-			return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+			return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("&")) {
 			ZenToken Token2 = TokenContext.GetTokenAndMoveForward();
 			if(Token2.EqualsText(">") || Token2.EqualsText(">>")) {
 				RedirectSymbol += Token2.ParsedText;
-				return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 		}
 		else if(Token.EqualsText(">")) {
@@ -233,17 +226,17 @@ public class DShellGrammar {
 				ZenToken Token3 = TokenContext.GetTokenAndMoveForward();
 				if(Token3.EqualsText("1") || Token3.EqualsText("2")) {
 					RedirectSymbol += Token3.ParsedText;
-					return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, false);
+					return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, false);
 				}
-				return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
-			return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+			return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("1") || Token.EqualsText("2")) {
 			ZenToken Token2 = TokenContext.GetTokenAndMoveForward();
 			if(Token2.EqualsText(">>")) {
 				RedirectSymbol += Token2.ParsedText;
-				return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 			else if(Token2.EqualsText(">")) {
 				RedirectSymbol += Token2.ParsedText;
@@ -254,18 +247,35 @@ public class DShellGrammar {
 					ZenToken Token4 = TokenContext.GetTokenAndMoveForward();
 					if(Token4.EqualsText("1") || Token4.EqualsText("2")) {
 						RedirectSymbol += Token4.ParsedText;
-						return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, false);
+						return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, false);
 					}
 					return null;
 				}
-				return MatchRedirectTarget(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 		}
 		return null;
 	}
 
+	public static ZenNode CreateNodeAndMatchNextOption(ZenNameSpace NameSpace, ZenTokenContext TokenContext, String OptionSymbol) {
+		ZenNode Node = new DShellCommandNode(new ZenStringNode(new ZenToken(0, OptionSymbol, 0), OptionSymbol));
+		ZenNode PipedNode = TokenContext.ParsePattern(NameSpace, "$SuffixOption$", ZenTokenContext.Optional);
+		if(PipedNode != null) {
+			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
+		}
+		return Node;
+	}
+
+	public static ZenNode MatchSuffixOption(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
+		ZenToken Token = TokenContext.GetTokenAndMoveForward();
+		String OptionSymbol = Token.ParsedText;
+		if(Token.EqualsText("&")) {	// set background job
+			return CreateNodeAndMatchNextOption(NameSpace, TokenContext, OptionSymbol);
+		}
+		return null;
+	}
+
 	public static ZenNode MatchDShell(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		int optionFlag = Utils.printable;
 		ZenToken CommandToken = TokenContext.GetToken();
 		ZenNode CommandNode = null;
 		String Command = (String)NameSpace.GetSymbol(DShellGrammar.CommandSymbol(CommandToken.ParsedText));
@@ -285,9 +295,9 @@ public class DShellGrammar {
 					break;
 				}
 			}
-			if(Token.EqualsText("||") || Token.EqualsText("&&")) { //TODO: support context type
-//				ZenSyntaxPattern SuffixPattern = TokenContext.GetSuffixPattern(NameSpace);
-//				return TokenContext.ApplyMatchPattern(NameSpace, CommandNode, SuffixPattern);
+			if(Token.EqualsText("||") || Token.EqualsText("&&")) {
+				ZenSyntaxPattern SuffixPattern = TokenContext.GetSuffixPattern(NameSpace);
+				return TokenContext.ApplyMatchPattern(NameSpace, CommandNode, SuffixPattern);
 			}
 			if(Token.EqualsText("|")) {
 				TokenContext.GetTokenAndMoveForward();
@@ -295,23 +305,21 @@ public class DShellGrammar {
 				if(pipedNode.IsErrorNode()) {
 					return pipedNode;
 				}
-				((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)pipedNode);
-				return SetOptionAndReturn(CommandNode, optionFlag);
+				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)pipedNode);
 			}
 			if(FindRedirectSymbol(Token.ParsedText)) {
 				ZenNode RedirectNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZenTokenContext.Optional);
 				if(RedirectNode != null) {
-					((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
-					return SetOptionAndReturn(CommandNode, optionFlag);
+					return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
 				}
 			}
-			if(Token.EqualsText("&")) {	// set background job
-				TokenContext.GetTokenAndMoveForward();
-				return SetOptionAndReturn(CommandNode, Utils.setFlag(optionFlag, Utils.background, true));
+			ZenNode OptionNode = TokenContext.ParsePattern(NameSpace, "$SuffixOption$", ZenTokenContext.Optional);
+			if(OptionNode != null) {
+				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)OptionNode);
 			}
 			CommandNode = TokenContext.AppendMatchedPattern(CommandNode, NameSpace, "$FilePath$", ZenTokenContext.Required);
 		}
-		return SetOptionAndReturn(CommandNode, optionFlag);
+		return CommandNode;
 	}
 
 	public static void ImportGrammar(ZenNameSpace NameSpace, Class<?> Grammar) {
@@ -322,6 +330,7 @@ public class DShellGrammar {
 		NameSpace.AppendSyntax("-", LibNative.LoadMatchFunc(Grammar, "MatchFileOperator"));
 		NameSpace.AppendSyntax("$FilePath$", LibNative.LoadMatchFunc(Grammar, "MatchFilePath"));
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
+		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
 		NameSpace.Generator.SetGrammarInfo("dshell0.1");
 	}

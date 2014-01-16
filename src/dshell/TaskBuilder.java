@@ -30,8 +30,8 @@ public class TaskBuilder {
 	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, int option, int retType) {
 		this.OptionFlag = option;
 		this.retType = retType;
-		ArrayList<ArrayList<String>> newCmdsList = this.PrepareInternalOption(cmdsList);
-		this.Processes = this.CreateProcs(newCmdsList);
+		ArrayList<ArrayList<String>> newCmdsList = this.setInternalOption(cmdsList);
+		this.Processes = this.createProcs(newCmdsList);
 		// generate object representation
 		this.sBuilder = new StringBuilder();
 		for(int i = 0; i< this.Processes.length; i++) {
@@ -45,6 +45,7 @@ public class TaskBuilder {
 		this.sBuilder.append("\n<");
 		switch(this.retType) {
 		case Utils.VoidType: this.sBuilder.append("VoidType"); break;
+		case Utils.IntType: this.sBuilder.append("IntType"); break;
 		case Utils.BooleanType: this.sBuilder.append("BooleanType"); break;
 		case Utils.StringType: this.sBuilder.append("StringType"); break;
 		case Utils.TaskType: this.sBuilder.append("TaskType"); break;
@@ -67,7 +68,7 @@ public class TaskBuilder {
 		this.sBuilder.append(">");
 	}
 
-	public Object Invoke() {
+	public Object invoke() {
 		Task task = new Task(this);
 		if(Utils.is(this.OptionFlag, Utils.background)) {
 			return (this.retType == Utils.TaskType) && Utils.is(this.OptionFlag, Utils.returnable) ? task : null;
@@ -79,6 +80,9 @@ public class TaskBuilder {
 			}
 			else if(this.retType == Utils.BooleanType) {
 				return new Boolean(task.getExitStatus() == 0);
+			}
+			else if(this.retType == Utils.IntType){
+				return new Integer(task.getExitStatus());
 			}
 			else if(this.retType == Utils.TaskType) {
 				return task;
@@ -103,7 +107,7 @@ public class TaskBuilder {
 		return this.sBuilder.toString();
 	}
 
-	private ArrayList<ArrayList<String>> PrepareInternalOption(ArrayList<ArrayList<String>> cmdsList) {
+	private ArrayList<ArrayList<String>> setInternalOption(ArrayList<ArrayList<String>> cmdsList) {
 		boolean enableTrace = false;
 		ArrayList<ArrayList<String>> newCmdsBuffer = new ArrayList<ArrayList<String>>();
 		int listSize = cmdsList.size();
@@ -148,6 +152,10 @@ public class TaskBuilder {
 				}
 				currentCmds = newCmds;
 			}
+			else if(currentCmds.get(0).equals("&")) {
+				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.background, true);
+				continue;
+			}
 			newCmdsBuffer.add(currentCmds);
 		}
 		if(Utils.is(this.OptionFlag, Utils.inference)) {
@@ -156,7 +164,7 @@ public class TaskBuilder {
 		return newCmdsBuffer;
 	}
 
-	private PseudoProcess[] CreateProcs(ArrayList<ArrayList<String>> cmdsList) {
+	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
 		boolean enableSyscallTrace = Utils.is(this.OptionFlag, Utils.inference);
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		int listSize = cmdsList.size();
@@ -210,8 +218,24 @@ public class TaskBuilder {
 	}
 
 	// called by VisitCommandNode 
-	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList, String option) {
-		new TaskBuilder(cmdsList, Integer.parseInt(option), Utils.VoidType).Invoke();
+	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList) {
+		int option = Utils.printable;
+		new TaskBuilder(cmdsList, option, Utils.VoidType).invoke();
+	}
+
+	public static int ExecCommandIntJS(ArrayList<ArrayList<String>> cmdsList) {
+		int option = Utils.printable | Utils.returnable;
+		return ((Integer)new TaskBuilder(cmdsList, option, Utils.IntType).invoke()).intValue();
+	}
+
+	public static boolean ExecCommandBoolJS(ArrayList<ArrayList<String>> cmdsList) {
+		int option = Utils.printable | Utils.returnable;
+		return ((Boolean)new TaskBuilder(cmdsList, option, Utils.BooleanType).invoke()).booleanValue();
+	}
+
+	public static String ExecCommandStringJS(ArrayList<ArrayList<String>> cmdsList) {
+		int option = Utils.returnable;
+		return (String)new TaskBuilder(cmdsList, option, Utils.StringType).invoke();
 	}
 
 	private static boolean checkTraceRequirements() {

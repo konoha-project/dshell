@@ -13,9 +13,10 @@ public class Utils {
 
 	// return type
 	public final static int VoidType    = 0;
-	public final static int BooleanType = 1;
-	public final static int StringType  = 2;
-	public final static int TaskType    = 3;
+	public final static int IntType     = 1;
+	public final static int BooleanType = 2;
+	public final static int StringType  = 3;
+	public final static int TaskType    = 4;
 
 	public final static boolean isUnixCommand(String cmd) {
 		String[] path = System.getenv("PATH").split(":");

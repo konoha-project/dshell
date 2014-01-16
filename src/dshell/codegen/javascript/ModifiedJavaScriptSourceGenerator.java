@@ -1,14 +1,13 @@
 package dshell.codegen.javascript;
 
 import dshell.ast.DShellCommandNode;
-import dshell.lang.ModifiedDynamicTypeChecker;
-import zen.ast.ZenIntNode;
+import dshell.lang.ModifiedTypeInfer;
 import zen.codegen.javascript.JavaScriptSourceGenerator;
 
 public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator {
 	public ModifiedJavaScriptSourceGenerator() {
 		super();
-		this.TypeChecker = new ModifiedDynamicTypeChecker(this.Logger);
+		this.TypeChecker = new ModifiedTypeInfer(this.Logger);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
@@ -40,9 +39,19 @@ public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator
 			this.CurrentBuilder.Append("\n");
 			currentNode = (DShellCommandNode) currentNode.PipedNextNode;
 		}
-		String option = Long.toString(((ZenIntNode)Node.OptionNode).Value);
 		this.CurrentBuilder.AppendIndent();
-		this.CurrentBuilder.Append("nativeClass.TaskBuilder.ExecCommandVoidJS(argsList, \"" + option + "\");\n");
+		if(Node.Type.IsBooleanType()) {
+			this.CurrentBuilder.Append("return nativeClass.TaskBuilder.ExecCommandBoolJS(argsList);\n");
+		}
+		else if(Node.Type.IsIntType()) {
+			this.CurrentBuilder.Append("return nativeClass.TaskBuilder.ExecCommandIntJS(argsList);\n");
+		}
+		else if(Node.Type.IsStringType()) {
+			this.CurrentBuilder.Append("return nativeClass.TaskBuilder.ExecCommandStringJS(argsList);\n");
+		}
+		else if(Node.Type.IsVoidType()) {
+			this.CurrentBuilder.Append("nativeClass.TaskBuilder.ExecCommandVoidJS(argsList);\n");
+		}
 		this.CurrentBuilder.UnIndent();
 		this.CurrentBuilder.Append("})()");
 	}
