@@ -21,27 +21,31 @@ public class DShellGrammar {
 		return "__$" + Symbol;
 	}
 
-	private static void AppendCommand(ZenNameSpace NameSpace, String CommandPath, ZenToken SourceToken) {
-		if(CommandPath.length() > 0) {
-			int loc = CommandPath.lastIndexOf('/');
-			String Command = CommandPath;
-			if(loc != -1) {
-				if(!Utils.isFileExecutable(CommandPath)) {
-					System.err.println("not executable: " + CommandPath); //FIXME: error report
-				} else {
-					Command = CommandPath.substring(loc+1);
-					NameSpace.SetSymbol(Command, NameSpace.GetSyntaxPattern("$DShell$"), SourceToken);
-					NameSpace.SetSymbol(DShellGrammar.CommandSymbol(Command), CommandPath, null);
-				}
-			} else {
-				if(Utils.isUnixCommand(CommandPath)) {
-					NameSpace.SetSymbol(Command, NameSpace.GetSyntaxPattern("$DShell$"), SourceToken);
-					NameSpace.SetSymbol(DShellGrammar.CommandSymbol(Command), CommandPath, null);
-				} else {
-					System.err.println("unknown command: " + CommandPath); //FIXME: error report
-				}
+	private static void AppendCommand(ZenNameSpace NameSpace, String CommandPath, ZenToken KeyToken, ZenToken SourceToken) {
+		if(CommandPath.length() == 0) {
+			return;
+		}
+		int loc = CommandPath.lastIndexOf('/');
+		String Command = CommandPath;
+		if(loc != -1) {
+			if(!Utils.isFileExecutable(CommandPath)) {
+				System.err.println("not executable: " + CommandPath); //FIXME: error report
+				return;
+			}
+			Command = CommandPath.substring(loc + 1);
+		}
+		else {
+			if(!Utils.isUnixCommand(CommandPath)) {
+				System.err.println("unknown command: " + CommandPath); //FIXME: error report
+				return;
 			}
 		}
+		NameSpace.SetSymbol(Command, NameSpace.GetSyntaxPattern("$DShell$"), SourceToken);
+		String CommandPrefix = KeyToken.ParsedText;
+		if(!CommandPrefix.equals(SourceToken.ParsedText) && !NameSpace.HasSymbol(CommandPrefix)) {
+			NameSpace.SetSymbol(CommandPrefix, NameSpace.GetSyntaxPattern("$DShell$"), KeyToken);
+		}
+		NameSpace.SetSymbol(DShellGrammar.CommandSymbol(Command), CommandPath, null);
 	}
 
 	public static long ShellCommentToken(ZenTokenContext TokenContext, String SourceText, long pos) {
@@ -79,40 +83,48 @@ public class DShellGrammar {
 		if(Env == null) {
 			return new ZenErrorNode(Token, "undefined environment variable: " + Name);
 		}
-		else {
-			NameSpace.SetSymbol(Name, Env, Token);
-		}
+		NameSpace.SetSymbol(Name, Env, Token);
 		return new ZenEmptyNode(Token);
 	}
 
 	public static ZenNode MatchCommand(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
 		String Command = "";
+		boolean foundSlash = true;
+		ZenToken KeyToken = null;
+		long lineNum = TokenContext.GetToken().FileLine;
 		ZenToken SourceToken = null;
+		String ParsedText = null;
 		TokenContext.GetTokenAndMoveForward();
 		while(TokenContext.HasNext()) {
 			ZenToken Token = TokenContext.GetTokenAndMoveForward();
+			ParsedText = Token.ParsedText;
+			if(foundSlash && !Token.EqualsText("/")) {
+				foundSlash = false;
+				KeyToken = Token;
+			}
 			if(Token.EqualsText(",")) {
-				Token.ParsedText = "";
+				ParsedText = "";
 			}
 			if(Token.EqualsText("~")) {
-				Token.ParsedText = System.getenv("HOME");
+				ParsedText = System.getenv("HOME");
+			}
+			if(Token.EqualsText("/")) {
+				foundSlash = true;
 			}
 			if(Token.IsDelim() || Token.IsIndent()) {
+				ParsedText = null;
 				break;
 			}
-			SourceToken = Token;
-			Command += Token.ParsedText;
+			Command += ParsedText;
 			if(Token.IsNextWhiteSpace()) {
-				AppendCommand(NameSpace, Command, SourceToken);
+				SourceToken = new ZenToken(0, ParsedText, lineNum);
+				AppendCommand(NameSpace, Command, KeyToken, SourceToken);
 				Command = "";
-				if(SourceToken.IsError()) {
-					return new ZenErrorNode(SourceToken, "");
-				}
 			}
 		}
-		AppendCommand(NameSpace, Command, SourceToken);
-		if(SourceToken.IsError()) {
-			return new ZenErrorNode(SourceToken, "");
+		if(ParsedText != null) {
+			SourceToken = new ZenToken(0, ParsedText, lineNum);
+			AppendCommand(NameSpace, Command, KeyToken, SourceToken);
 		}
 		return new ZenEmptyNode(SourceToken);
 	}
@@ -277,8 +289,22 @@ public class DShellGrammar {
 		return null;
 	}
 
+	private static ZenToken GetJoinedCommandToken(ZenTokenContext TokenContext) {
+		ZenToken Token = TokenContext.GetTokenAndMoveForward();
+		String ParsedText = Token.ParsedText;
+		long lineNum = Token.FileLine;
+		while(!Token.IsNextWhiteSpace()) {
+			if(!TokenContext.HasNext() || MatchStopToken(TokenContext)) {
+				break;
+			}
+			Token = TokenContext.GetTokenAndMoveForward();
+			ParsedText += Token.ParsedText;
+		}
+		return new ZenToken(0, ParsedText, lineNum);
+	}
+
 	public static ZenNode MatchDShell(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		ZenToken CommandToken = TokenContext.GetTokenAndMoveForward();
+		ZenToken CommandToken = GetJoinedCommandToken(TokenContext);
 		String Command = (String)NameSpace.GetSymbol(DShellGrammar.CommandSymbol(CommandToken.ParsedText));
 		if(Command == null) {
 			return new ZenErrorNode(CommandToken, "undefined command symbol");
