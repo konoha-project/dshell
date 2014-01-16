@@ -11,13 +11,11 @@ import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
 import zen.parser.ZenNameSpace;
-import zen.parser.ZenSyntaxPattern;
 import zen.parser.ZenToken;
 import zen.parser.ZenTokenContext;
 
 public class DShellGrammar {
 	private final static String FileOperators = "-d -e -f -r -w -x";
-	private final static String StopTokens = ";,)]}&&||";
 
 	private static String CommandSymbol(String Symbol) {
 		return "__$" + Symbol;
@@ -123,14 +121,26 @@ public class DShellGrammar {
 		return null;
 	}
 
-	public static ZenNode MatchFilePath(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
+	private static boolean MatchStopToken(ZenTokenContext TokenContext) { // ;,)]}&&||
+		ZenToken Token = TokenContext.GetToken();
+		if(Token.IsIndent() || Token.IsDelim()) {
+			return true;
+		}
+		if(Token.EqualsText(",") || Token.EqualsText(")") || Token.EqualsText("]") || 
+				Token.EqualsText("}") || Token.EqualsText("&&") || Token.EqualsText("||")) {
+			return true;
+		}
+		return false;
+	}
+
+	public static ZenNode MatchArgument(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
+		if(MatchStopToken(TokenContext)) {
+			return null;
+		}
 		ZenToken Token = TokenContext.GetToken();
 		boolean HasStringExpr = false;
 		String Path = null;
-		if(Token.IsIndent() || DShellGrammar.StopTokens.indexOf(Token.ParsedText) != -1) {
-			return null;
-		}
-		else if(Token.IsQuoted()) {
+		if(Token.IsQuoted()) {
 			Path = LibZen.UnquoteString(Token.ParsedText);
 			if(Path.indexOf("${") != -1) {
 				HasStringExpr = true;
@@ -143,7 +153,7 @@ public class DShellGrammar {
 			while(TokenContext.HasNext()) {
 				Token = TokenContext.GetToken();
 				String ParsedText = Token.ParsedText;
-				if(Token.IsIndent() || (!FoundOpen && DShellGrammar.StopTokens.indexOf(Token.ParsedText) != -1)) {
+				if(Token.IsIndent() || (!FoundOpen && MatchStopToken(TokenContext))) {
 					break;
 				}
 				TokenContext.GetTokenAndMoveForward();
@@ -185,18 +195,10 @@ public class DShellGrammar {
 		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZenTokenContext.Required);
 	}
 
-	private static boolean FindRedirectSymbol(String Symbol) {
-		if(Symbol.equals("1") || Symbol.equals("2") || Symbol.equals(">") 
-				|| Symbol.equals(">>") || Symbol.equals("&")) {
-			return true;
-		}
-		return false;
-	}
-
 	private static ZenNode CreateNodeAndMatchNextRedirect(ZenNameSpace NameSpace, ZenTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
 		ZenNode Node = new DShellCommandNode(new ZenStringNode(new ZenToken(0, RedirectSymbol, 0), RedirectSymbol));
 		if(existTarget) {
-			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$FilePath$", ZenTokenContext.Required);
+			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$Argument$", ZenTokenContext.Required);
 		}
 		ZenNode PipedNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZenTokenContext.Optional);
 		if(PipedNode != null) {
@@ -276,48 +278,37 @@ public class DShellGrammar {
 	}
 
 	public static ZenNode MatchDShell(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		ZenToken CommandToken = TokenContext.GetToken();
-		ZenNode CommandNode = null;
+		ZenToken CommandToken = TokenContext.GetTokenAndMoveForward();
 		String Command = (String)NameSpace.GetSymbol(DShellGrammar.CommandSymbol(CommandToken.ParsedText));
-
-		if(Command != null) {
-			CommandNode = new DShellCommandNode(new ZenStringNode(CommandToken, Command));
-			TokenContext.GetTokenAndMoveForward();
-		}
-		else {
+		if(Command == null) {
 			return new ZenErrorNode(CommandToken, "undefined command symbol");
 		}
+		ZenNode CommandNode = new DShellCommandNode(new ZenStringNode(CommandToken, Command));
 		TokenContext.SetBackTrack(false);
 		while(TokenContext.HasNext()) {
-			ZenToken Token = TokenContext.GetToken();
-			if(Token.IsIndent() || StopTokens.indexOf(Token.ParsedText) != -1) {
-				if(!Token.EqualsText("|") && !Token.EqualsText("&")) {
-					break;
-				}
-			}
-			if(Token.EqualsText("||") || Token.EqualsText("&&")) {
-				ZenSyntaxPattern SuffixPattern = TokenContext.GetSuffixPattern(NameSpace);
-				return TokenContext.ApplyMatchPattern(NameSpace, CommandNode, SuffixPattern);
-			}
-			if(Token.EqualsText("|")) {
-				TokenContext.GetTokenAndMoveForward();
+			if(TokenContext.MatchToken("|")) {
 				ZenNode pipedNode = TokenContext.ParsePattern(NameSpace, "$DShell$", ZenTokenContext.Required);
 				if(pipedNode.IsErrorNode()) {
 					return pipedNode;
 				}
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)pipedNode);
 			}
-			if(FindRedirectSymbol(Token.ParsedText)) {
-				ZenNode RedirectNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZenTokenContext.Optional);
-				if(RedirectNode != null) {
-					return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
-				}
+			// Match Redirect
+			ZenNode RedirectNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZenTokenContext.Optional);
+			if(RedirectNode != null) {
+				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
 			}
+			// Match Suffix Option
 			ZenNode OptionNode = TokenContext.ParsePattern(NameSpace, "$SuffixOption$", ZenTokenContext.Optional);
 			if(OptionNode != null) {
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)OptionNode);
 			}
-			CommandNode = TokenContext.AppendMatchedPattern(CommandNode, NameSpace, "$FilePath$", ZenTokenContext.Required);
+			// Match Argument
+			ZenNode ArgNode = TokenContext.ParsePattern(NameSpace, "$Argument$", ZenTokenContext.Optional);
+			if(ArgNode == null) {
+				break;
+			}
+			CommandNode.Append(ArgNode);
 		}
 		return CommandNode;
 	}
@@ -328,7 +319,7 @@ public class DShellGrammar {
 		NameSpace.AppendSyntax("letenv", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
 		NameSpace.AppendSyntax("command", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
 		NameSpace.AppendSyntax("-", LibNative.LoadMatchFunc(Grammar, "MatchFileOperator"));
-		NameSpace.AppendSyntax("$FilePath$", LibNative.LoadMatchFunc(Grammar, "MatchFilePath"));
+		NameSpace.AppendSyntax("$Argument$", LibNative.LoadMatchFunc(Grammar, "MatchArgument"));
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
 		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
