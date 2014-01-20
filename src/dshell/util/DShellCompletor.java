@@ -28,12 +28,12 @@ public class DShellCompletor implements Completor {
 		if(argIndex < 0) {
 			return -1;
 		}
-		jline.Completor completor = this.getCompletor(argIndex, argList.getArguments());
+		jline.Completor completor = this.selectCompletor(argIndex, argList.getArguments());
 		int ret = completor.complete(argList.getCursorArgument(), argPos, candidates);
 		if(ret == -1) {
 			return -1;
 		}
-		return ret + (argList.getBufferPosition() - argPos);
+		return ret + argList.getBufferPosition() - argPos;
 	}
 
 	private TreeSet<String> getCommandListFromPath() {
@@ -53,12 +53,12 @@ public class DShellCompletor implements Completor {
 		return commandSet;
 	}
 
-	private jline.Completor getCompletor(int argIndex, String[] args) {
+	private jline.Completor selectCompletor(int argIndex, String[] args) {
 		if(argIndex == 0) {
 			return this.commandCompletor;
 		}
 		String prevArg = args[argIndex - 1];
-		if(prevArg.equals("|") || prevArg.equals(">") || prevArg.equals("&&")) {
+		if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
 			return this.commandCompletor;
 		}
 		return this.fileNameCompletor;

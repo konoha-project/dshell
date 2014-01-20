@@ -10,12 +10,14 @@ import zen.ast.ZenStringNode;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
+import zen.parser.ZenLogger;
 import zen.parser.ZenNameSpace;
 import zen.parser.ZenToken;
 import zen.parser.ZenTokenContext;
 
 public class DShellGrammar {
-	private final static String FileOperators = "-d -e -f -r -w -x";
+	// builtin command symbol
+	public final static String timeout = "timeout";
 
 	private static String CommandSymbol(String Symbol) {
 		return "__$" + Symbol;
@@ -29,14 +31,14 @@ public class DShellGrammar {
 		String Command = CommandPath;
 		if(loc != -1) {
 			if(!Utils.isFileExecutable(CommandPath)) {
-				System.err.println("not executable: " + CommandPath); //FIXME: error report
+				NameSpace.Generator.Logger.Report(ZenLogger.ErrorLevel, SourceToken, "not executable: " + CommandPath);
 				return;
 			}
 			Command = CommandPath.substring(loc + 1);
 		}
 		else {
 			if(!Utils.isUnixCommand(CommandPath)) {
-				System.err.println("unknown command: " + CommandPath); //FIXME: error report
+				NameSpace.Generator.Logger.Report(ZenLogger.ErrorLevel, SourceToken, "unknown command: " + CommandPath);
 				return;
 			}
 		}
@@ -112,7 +114,6 @@ public class DShellGrammar {
 				foundSlash = true;
 			}
 			if(Token.IsDelim() || Token.IsIndent()) {
-				ParsedText = null;
 				break;
 			}
 			Command += ParsedText;
@@ -127,10 +128,6 @@ public class DShellGrammar {
 			AppendCommand(NameSpace, Command, KeyToken, SourceToken);
 		}
 		return new ZenEmptyNode(SourceToken);
-	}
-
-	public static ZenNode MatchFileOperator(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
-		return null;
 	}
 
 	private static boolean MatchStopToken(ZenTokenContext TokenContext) { // ;,)]}&&||
@@ -340,15 +337,18 @@ public class DShellGrammar {
 	}
 
 	public static void ImportGrammar(ZenNameSpace NameSpace, Class<?> Grammar) {
-		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken")); 
-		
+		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
+
 		NameSpace.AppendSyntax("letenv", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
 		NameSpace.AppendSyntax("command", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
-		NameSpace.AppendSyntax("-", LibNative.LoadMatchFunc(Grammar, "MatchFileOperator"));
 		NameSpace.AppendSyntax("$Argument$", LibNative.LoadMatchFunc(Grammar, "MatchArgument"));
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
 		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
+		// builtin command
+		// timeout
+		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell2$"), new ZenToken(0, timeout, 0));
+		NameSpace.SetSymbol(CommandSymbol(timeout), timeout, null);
 		NameSpace.Generator.SetGrammarInfo("dshell0.1");
 	}
 }
