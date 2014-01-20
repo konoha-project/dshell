@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Map;
 
+import dshell.lang.DShellGrammar;
 import dshell.util.Utils;
 
 public class TaskBuilder {
@@ -113,7 +114,7 @@ public class TaskBuilder {
 		int listSize = cmdsList.size();
 		for(int i = 0; i < listSize; i++) {
 			ArrayList<String> currentCmds = cmdsList.get(i);
-			if(currentCmds.get(0).equals("timeout")) {
+			if(currentCmds.get(0).equals(DShellGrammar.timeout)) {
 				StringBuilder numBuilder = new StringBuilder();
 				StringBuilder unitBuilder = new StringBuilder();
 				int len = currentCmds.get(1).length();
@@ -152,13 +153,23 @@ public class TaskBuilder {
 				}
 				currentCmds = newCmds;
 			}
-			else if(currentCmds.get(0).equals("&")) {
+			else if(currentCmds.get(0).equals(DShellGrammar.background)) {
 				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.background, true);
+				continue;
+			}
+			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_raise)) {
+				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.throwable, true);
+				continue;
+			}
+			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_trace)) {
+				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.throwable, true);
+				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.inference, true);
+				enableTrace = checkTraceRequirements();
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
 		}
-		if(Utils.is(this.OptionFlag, Utils.inference)) {
+		if(Utils.is(this.OptionFlag, Utils.inference) && Utils.is(this.OptionFlag, Utils.throwable)) {
 			this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.inference, enableTrace);
 		}
 		return newCmdsBuffer;

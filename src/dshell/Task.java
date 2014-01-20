@@ -2,12 +2,14 @@ package dshell;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 
+import dshell.exception.DShellException;
 import dshell.util.Utils;
 
 public class Task {
 	private ProcMonitor monitor;
-	private TaskBuilder dshellProc;
+	private TaskBuilder taskBuilder;
 	private boolean terminated = false;
 	private final boolean isAsyncTask;
 	private MessageStreamHandler stdoutHandler;
@@ -16,11 +18,11 @@ public class Task {
 	private String stderrMessage;
 	private StringBuilder sBuilder;
 
-	public Task(TaskBuilder dshellProc) {
-		this.dshellProc = dshellProc;
+	public Task(TaskBuilder taskBuilder) {
+		this.taskBuilder = taskBuilder;
 		// start task
-		int OptionFlag = this.dshellProc.getOptionFlag();
-		PseudoProcess[] Processes = this.dshellProc.getProcesses();
+		int OptionFlag = this.taskBuilder.getOptionFlag();
+		PseudoProcess[] Processes = this.taskBuilder.getProcesses();
 		int ProcessSize = Processes.length;
 		int lastIndex = ProcessSize - 1;
 		PseudoProcess lastProc = Processes[lastIndex];
@@ -50,7 +52,7 @@ public class Task {
 		this.stderrHandler = new MessageStreamHandler(srcErrorStreams, System.err);
 		this.stderrHandler.showMessage();
 		// start monitor
-		this.isAsyncTask = Utils.is(this.dshellProc.getOptionFlag(), Utils.background);
+		this.isAsyncTask = Utils.is(this.taskBuilder.getOptionFlag(), Utils.background);
 		this.sBuilder = new StringBuilder();
 		if(this.isAsyncTask) {
 			this.sBuilder.append("#AsyncTask");
@@ -59,8 +61,8 @@ public class Task {
 			this.sBuilder.append("#SyncTask");
 		}
 		this.sBuilder.append("\n");
-		this.sBuilder.append(this.dshellProc.toString());
-		this.monitor = new ProcMonitor(this, this.dshellProc, isAsyncTask);
+		this.sBuilder.append(this.taskBuilder.toString());
+		this.monitor = new ProcMonitor(this, this.taskBuilder, isAsyncTask);
 		this.monitor.start();
 	}
 
@@ -81,7 +83,7 @@ public class Task {
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		//new ShellExceptionRaiser(this.dshellProc).raiseException();
+		new ShellExceptionRaiser(this.taskBuilder).raiseException();
 	}
 
 	public void join(long timeout) {
@@ -100,7 +102,7 @@ public class Task {
 
 	public int getExitStatus() {
 		this.checkTermination();
-		PseudoProcess[] procs = this.dshellProc.getProcesses();
+		PseudoProcess[] procs = this.taskBuilder.getProcesses();
 		return procs[procs.length - 1].getRet();
 	}
 
@@ -113,19 +115,19 @@ public class Task {
 
 class ProcMonitor extends Thread {	// TODO: support exit handle
 	private Task task;
-	private TaskBuilder dshellProc;
+	private TaskBuilder taskBuilder;
 	private final boolean isBackground;
 	public final long timeout;
 
-	public ProcMonitor(Task task, TaskBuilder dShellProc, boolean isBackground) {
+	public ProcMonitor(Task task, TaskBuilder taskBuilder, boolean isBackground) {
 		this.task = task;
-		this.dshellProc = dShellProc;
+		this.taskBuilder = taskBuilder;
 		this.isBackground = isBackground;
-		this.timeout =  this.dshellProc.getTimeout();
+		this.timeout =  this.taskBuilder.getTimeout();
 	}
 
 	@Override public void run() {
-		PseudoProcess[] processes = this.dshellProc.getProcesses();
+		PseudoProcess[] processes = this.taskBuilder.getProcesses();
 		int size = processes.length;
 		if(this.timeout > 0) { // timeout
 			try {
@@ -183,6 +185,34 @@ class ProcMonitor extends Thread {	// TODO: support exit handle
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
+		}
+	}
+}
+
+class ShellExceptionRaiser {
+	private TaskBuilder taskBuilder;
+
+	public ShellExceptionRaiser(TaskBuilder taskBuilder) {
+		this.taskBuilder = taskBuilder;
+	}
+
+	public void raiseException() {
+		PseudoProcess[] procs = taskBuilder.getProcesses();
+		boolean enableException = Utils.is(this.taskBuilder.getOptionFlag(), Utils.throwable);
+		ArrayList<RuntimeException> exceptionList = new ArrayList<RuntimeException>();
+		for(int i = 0; i < procs.length; i++) {
+			PseudoProcess targetProc = procs[i];
+			if(!enableException || taskBuilder.getTimeout() > 0) {
+				return;
+			}
+			String message = targetProc.getCmdName();
+			if(targetProc.getRet() != 0) {
+				exceptionList.add(new DShellException(message));
+			}
+			
+		}
+		if(exceptionList.size() > 0) {
+			throw exceptionList.get(0);
 		}
 	}
 }

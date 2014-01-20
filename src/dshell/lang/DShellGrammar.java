@@ -16,7 +16,11 @@ import zen.parser.ZenToken;
 import zen.parser.ZenTokenContext;
 
 public class DShellGrammar {
-	// builtin command symbol
+	// suffix option symbol
+	public final static String background = "&";
+	public final static String errorAction_raise = "--erroraction=raise";
+	public final static String errorAction_trace = "--erroraction=trace";
+	// builtin command symbol 
 	public final static String timeout = "timeout";
 
 	private static String CommandSymbol(String Symbol) {
@@ -132,6 +136,9 @@ public class DShellGrammar {
 
 	private static boolean MatchStopToken(ZenTokenContext TokenContext) { // ;,)]}&&||
 		ZenToken Token = TokenContext.GetToken();
+		if(!TokenContext.HasNext()) {
+			return true;
+		}
 		if(Token.IsIndent() || Token.IsDelim()) {
 			return true;
 		}
@@ -274,13 +281,28 @@ public class DShellGrammar {
 		if(PipedNode != null) {
 			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
 		}
+		if(!MatchStopToken(TokenContext)) {
+			return new ZenErrorNode(TokenContext.GetToken(), "not match stop token");
+		}
 		return Node;
 	}
 
 	public static ZenNode MatchSuffixOption(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
 		ZenToken Token = TokenContext.GetTokenAndMoveForward();
 		String OptionSymbol = Token.ParsedText;
-		if(Token.EqualsText("&")) {	// set background job
+		if(Token.EqualsText(background)) {	// set background job
+			return CreateNodeAndMatchNextOption(NameSpace, TokenContext, OptionSymbol);
+		}
+		if(Token.EqualsText("-") || Token.EqualsText("--")) {
+			while(!Token.IsNextWhiteSpace()) {
+				if(MatchStopToken(TokenContext)) {
+					break;
+				}
+				Token = TokenContext.GetTokenAndMoveForward();
+				OptionSymbol += Token.ParsedText;
+			}
+		}
+		if(OptionSymbol.equals(errorAction_raise) || OptionSymbol.equals(errorAction_trace)) {
 			return CreateNodeAndMatchNextOption(NameSpace, TokenContext, OptionSymbol);
 		}
 		return null;
@@ -288,16 +310,16 @@ public class DShellGrammar {
 
 	private static ZenToken GetJoinedCommandToken(ZenTokenContext TokenContext) {
 		ZenToken Token = TokenContext.GetTokenAndMoveForward();
-		String ParsedText = Token.ParsedText;
+		String CommandSymbol = Token.ParsedText;
 		long lineNum = Token.FileLine;
 		while(!Token.IsNextWhiteSpace()) {
-			if(!TokenContext.HasNext() || MatchStopToken(TokenContext)) {
+			if(MatchStopToken(TokenContext)) {
 				break;
 			}
 			Token = TokenContext.GetTokenAndMoveForward();
-			ParsedText += Token.ParsedText;
+			CommandSymbol += Token.ParsedText;
 		}
-		return new ZenToken(0, ParsedText, lineNum);
+		return new ZenToken(0, CommandSymbol, lineNum);
 	}
 
 	public static ZenNode MatchDShell(ZenNameSpace NameSpace, ZenTokenContext TokenContext, ZenNode LeftNode) {
@@ -324,6 +346,9 @@ public class DShellGrammar {
 			// Match Suffix Option
 			ZenNode OptionNode = TokenContext.ParsePattern(NameSpace, "$SuffixOption$", ZenTokenContext.Optional);
 			if(OptionNode != null) {
+				if(OptionNode instanceof ZenErrorNode) {
+					return OptionNode;
+				}
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)OptionNode);
 			}
 			// Match Argument
@@ -347,7 +372,7 @@ public class DShellGrammar {
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
 		// builtin command
 		// timeout
-		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell2$"), new ZenToken(0, timeout, 0));
+		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell$"), new ZenToken(0, timeout, 0));
 		NameSpace.SetSymbol(CommandSymbol(timeout), timeout, null);
 		NameSpace.Generator.SetGrammarInfo("dshell0.1");
 	}
