@@ -205,8 +205,8 @@ public class DShellGrammar {
 			return new ZenStringNode(Token, Path);
 		}
 		Path = "\"" + Path + "\"";
-		Path = Path.replaceAll("\\$\\{", "\" + (");
-		Path = Path.replaceAll("\\}", ") + \"");
+		Path = Path.replaceAll("\\$\\{", "\" + ");
+		Path = Path.replaceAll("\\}", " + \"");
 		ZenTokenContext LocalContext = new ZenTokenContext(NameSpace, Path, Token.FileLine);
 		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZenTokenContext.Required);
 	}
