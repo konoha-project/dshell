@@ -5,27 +5,27 @@ import java.util.ArrayList;
 import dshell.codegen.javascript.ModifiedJavaScriptSourceGenerator;
 import dshell.lang.ModifiedTypeInfer;
 
-import zen.ast.ZenNode;
-import zen.ast.ZenStringNode;
+import zen.ast.ZNode;
+import zen.ast.ZStringNode;
 import zen.deps.Field;
 import zen.parser.ZVisitor;
 
-public class DShellCommandNode extends ZenNode {
-	@Field public ArrayList<ZenNode> ArgumentList; // ["ls", "-la"]
-	@Field public ZenNode PipedNextNode;
+public class DShellCommandNode extends ZNode {
+	@Field public ArrayList<ZNode> ArgumentList; // ["ls", "-la"]
+	@Field public ZNode PipedNextNode;
 
-	public DShellCommandNode(ZenStringNode Node) {
+	public DShellCommandNode(ZStringNode Node) {
 		super();
-		this.ArgumentList = new ArrayList<ZenNode>();
+		this.ArgumentList = new ArrayList<ZNode>();
 		this.ArgumentList.add(this.SetChild(Node));
 		this.PipedNextNode = null;
 	}
 
-	@Override public void Append(ZenNode Node) {
+	@Override public void Append(ZNode Node) {
 		this.ArgumentList.add(this.SetChild(Node));
 	}
 
-	public ZenNode AppendPipedNextNode(DShellCommandNode Node) {
+	public ZNode AppendPipedNextNode(DShellCommandNode Node) {
 		this.PipedNextNode = this.SetChild(Node);
 		return this;
 	}

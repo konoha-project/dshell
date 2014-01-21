@@ -14,11 +14,11 @@ public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator
 		this.CurrentBuilder.Append("(function() {\n");
 		this.CurrentBuilder.Indent();
 		this.CurrentBuilder.AppendIndent();
-		this.CurrentBuilder.Append("var nativeClass = JavaImporter(Packages.dshell);\n");
+		this.CurrentBuilder.Append("var nativeClass = JavaImporter(Packages.dshell.lib);\n");
 		this.CurrentBuilder.AppendIndent();
 		this.CurrentBuilder.Append("nativeClass.importClass(java.util.ArrayList);\n");
 		this.CurrentBuilder.AppendIndent();
-		this.CurrentBuilder.Append("nativeClass.importClass(Packages.dshell.TaskBuilder);\n");
+		this.CurrentBuilder.Append("nativeClass.importClass(Packages.dshell.lib.TaskBuilder);\n");
 		this.CurrentBuilder.AppendIndent();
 		this.CurrentBuilder.Append("var argsList = new nativeClass.ArrayList();\n");
 		DShellCommandNode currentNode = Node;

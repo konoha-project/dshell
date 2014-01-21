@@ -15,14 +15,14 @@ D-Shell
     $ cd ~/working
     $ git clone git@github.com:konoha-project/libzen.git
     $ cd ./libzen
-    $ git checkout -b 160807f283a35fd6228c0593ecb1dece2dac3150 build
+    $ git checkout -b 73ffcdc02f9a92d4e2a421080252849a2dc04aa4 build
     $ ant
 
 ### Build D-Shell
 
     $ cd ~/working
     $ git clone git@github.com:konoha-project/dshell.git
-    $ cd ./DShell
+    $ cd ./dshell
     $ mkdir ./ext
     $ cp ~/working/libzen/libzen.jar ./ext
     $ make

@@ -1,9 +1,9 @@
 package dshell.lang;
 
 import dshell.ast.DShellCommandNode;
-import zen.ast.ZenNode;
-import zen.lang.ZenSystem;
-import zen.lang.ZenType;
+import zen.ast.ZNode;
+import zen.lang.ZSystem;
+import zen.lang.ZType;
 import zen.lang.ZenTypeChecker;
 import zen.lang.ZenTypeInfer;
 import zen.parser.ZLogger;
@@ -16,11 +16,11 @@ public class ModifiedTypeInfer extends ZenTypeInfer {
 
 	public void VisitCommandNode(DShellCommandNode Node) {	//TODO: support context type
 		ZNameSpace NameSpace = this.GetNameSpace();
-		ZenType ContextType = this.GetContextType();
+		ZType ContextType = this.GetContextType();
 		int size = Node.ArgumentList.size();
 		for(int i = 0; i < size; i++) {
-			ZenNode SubNode = Node.ArgumentList.get(i);
-			SubNode = this.TypeCheck(SubNode, NameSpace, ZenSystem.StringType, ZenTypeChecker.DefaultTypeCheckPolicy);
+			ZNode SubNode = Node.ArgumentList.get(i);
+			SubNode = this.TypeCheck(SubNode, NameSpace, ZSystem.StringType, ZenTypeChecker.DefaultTypeCheckPolicy);
 			Node.ArgumentList.set(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {

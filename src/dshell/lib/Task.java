@@ -1,8 +1,9 @@
-package dshell;
+package dshell.lib;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.EnumMap;
 
 import dshell.exception.DShellException;
 import dshell.util.Utils;
@@ -199,17 +200,16 @@ class ShellExceptionRaiser {
 	public void raiseException() {
 		PseudoProcess[] procs = taskBuilder.getProcesses();
 		boolean enableException = Utils.is(this.taskBuilder.getOptionFlag(), Utils.throwable);
+		if(!enableException || taskBuilder.getTimeout() > 0) {
+			return;
+		}
 		ArrayList<RuntimeException> exceptionList = new ArrayList<RuntimeException>();
 		for(int i = 0; i < procs.length; i++) {
 			PseudoProcess targetProc = procs[i];
-			if(!enableException || taskBuilder.getTimeout() > 0) {
-				return;
-			}
 			String message = targetProc.getCmdName();
 			if(targetProc.getRet() != 0) {
 				exceptionList.add(new DShellException(message));
 			}
-			
 		}
 		if(exceptionList.size() > 0) {
 			throw exceptionList.get(0);
