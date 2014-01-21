@@ -23,6 +23,7 @@ D-Shell
     $ cd ~/working
     $ git clone git@github.com:konoha-project/dshell.git
     $ cd ./DShell
+    $ mkdir ./ext
     $ cp ~/working/libzen/libzen.jar ./ext
     $ make
     $ make install
