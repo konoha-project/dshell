@@ -8,7 +8,7 @@ import zen.deps.LibZen;
 import zen.deps.ZenArray;
 import zen.lang.ZenGrammar;
 import zen.lang.ZenSystem;
-import zen.parser.ZenGenerator;
+import zen.parser.ZGenerator;
 
 public class DShell {
 	public final static String progName  = "D-Shell";
@@ -21,7 +21,7 @@ public class DShell {
 	public final static String license = "BSD-Style Open Source";
 
 	public static void showVersionInfo() {
-		System.out.println(progName + ", version" + version + " (" + LibZen.GetPlatform() + ")");
+		System.out.println(progName + ", version " + version + " (" + LibZen.GetPlatform() + ")");
 		System.out.println(copyright);
 	}
 
@@ -30,7 +30,7 @@ public class DShell {
 		if(args.length > 0) {
 			interactiveMode = false;
 		}
-		ZenGenerator generator = new ModifiedJavaScriptSourceGenerator(); //TODO: using JavaByteCodeGen
+		ZGenerator generator = new ModifiedJavaScriptSourceGenerator(); //TODO: using JavaByteCodeGen
 		LibNative.ImportGrammar(generator.RootNameSpace, ZenGrammar.class.getName());
 		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
 		if(interactiveMode) {

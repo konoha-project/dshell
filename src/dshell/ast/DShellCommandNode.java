@@ -8,7 +8,7 @@ import dshell.lang.ModifiedTypeInfer;
 import zen.ast.ZenNode;
 import zen.ast.ZenStringNode;
 import zen.deps.Field;
-import zen.parser.ZenVisitor;
+import zen.parser.ZVisitor;
 
 public class DShellCommandNode extends ZenNode {
 	@Field public ArrayList<ZenNode> ArgumentList; // ["ls", "-la"]
@@ -30,7 +30,7 @@ public class DShellCommandNode extends ZenNode {
 		return this;
 	}
 
-	@Override public void Accept(ZenVisitor Visitor) {
+	@Override public void Accept(ZVisitor Visitor) {
 		if(Visitor instanceof ModifiedJavaScriptSourceGenerator) {
 			((ModifiedJavaScriptSourceGenerator)Visitor).VisitCommandNode(this);
 		}

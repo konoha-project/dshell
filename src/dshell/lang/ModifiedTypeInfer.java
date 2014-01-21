@@ -6,16 +6,16 @@ import zen.lang.ZenSystem;
 import zen.lang.ZenType;
 import zen.lang.ZenTypeChecker;
 import zen.lang.ZenTypeInfer;
-import zen.parser.ZenLogger;
-import zen.parser.ZenNameSpace;
+import zen.parser.ZLogger;
+import zen.parser.ZNameSpace;
 
 public class ModifiedTypeInfer extends ZenTypeInfer {
-	public ModifiedTypeInfer(ZenLogger Logger) {
+	public ModifiedTypeInfer(ZLogger Logger) {
 		super(Logger);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {	//TODO: support context type
-		ZenNameSpace NameSpace = this.GetNameSpace();
+		ZNameSpace NameSpace = this.GetNameSpace();
 		ZenType ContextType = this.GetContextType();
 		int size = Node.ArgumentList.size();
 		for(int i = 0; i < size; i++) {
