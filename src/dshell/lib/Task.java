@@ -204,15 +204,26 @@ class ShellExceptionRaiser {
 			return;
 		}
 		ArrayList<RuntimeException> exceptionList = new ArrayList<RuntimeException>();
-		for(int i = 0; i < procs.length; i++) {
-			PseudoProcess targetProc = procs[i];
-			String message = targetProc.getCmdName();
-			if(targetProc.getRet() != 0) {
+		for(PseudoProcess proc : procs) {
+			createAndAddException(exceptionList, proc);
+		}
+		if(exceptionList.size() > 0) {	//TODO: MultipleException
+			throw exceptionList.get(0);
+		}
+	}
+
+	private static void createAndAddException(ArrayList<RuntimeException> exceptionList, PseudoProcess proc) {
+		if(proc.getRet() != 0) {
+			String message = proc.getCmdName();
+			if(proc.isTraced()) {
+				// exception inference
+			}
+			else {
 				exceptionList.add(new DShellException(message));
 			}
 		}
-		if(exceptionList.size() > 0) {
-			throw exceptionList.get(0);
+		if(proc instanceof SubProc) {
+			((SubProc)proc).deleteLogFile();
 		}
 	}
 }

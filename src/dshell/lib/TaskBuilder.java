@@ -284,15 +284,6 @@ public class TaskBuilder {
 
 	private static boolean checkTraceRequirements() {
 		if(System.getProperty("os.name").equals("Linux")) {
-			String[] libPaths = {"/lib", "/usr/lib", "/usr/lib64", "/usr/local/lib", "/usr/local/lib64"};
-			for(int i = 0; i < libPaths.length; i++) {
-				String hookLibaryPath = libPaths[i] + "/" + SubProc.hookLibraryName;
-				if(new File(hookLibaryPath).isFile()) {
-					SubProc.hookLibraryPath = hookLibaryPath;
-					SubProc.traceBackendType = SubProc.traceBackend_hookLibrary;
-					return true;
-				}
-			}
 			boolean flag = Utils.isUnixCommand("strace+") && Utils.isUnixCommand("pretty_print_strace_out.py");
 			if(flag) {
 				SubProc.traceBackendType = SubProc.traceBackend_strace_plus;
@@ -407,10 +398,6 @@ class SubProc extends PseudoProcess {
 
 	private final static String logdirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
-	private final static String env_preload = "LD_PRELOAD";
-	private final static String env_ereport = "DSHELL_EREPORT";
-	public final static String hookLibraryName = "libdshellHook.so";
-	public static String hookLibraryPath;
 	
 	public final static int STDOUT_FILENO = 1;
 	public final static int STDERR_FILENO = 2;
@@ -438,10 +425,6 @@ class SubProc extends PseudoProcess {
 		return logNameHeader.toString();
 	}
 
-	public static void deleteLogFile(String logFilePath) {
-		new File(logFilePath).delete();
-	}
-
 	public SubProc(boolean enableSyscallTrace) {
 		super();
 		this.enableSyscallTrace = enableSyscallTrace;
@@ -461,9 +444,6 @@ class SubProc extends PseudoProcess {
 			else if(traceBackendType == traceBackend_strace_plus) {
 				String[] backend_strace_plus = {"strace+", "-k", "-t", "-f", "-F", "-o", logFilePath};
 				traceCmd = backend_strace_plus;
-			}
-			else if(traceBackendType == traceBackend_hookLibrary) {
-				return;
 			}
 			else {
 				throw new RuntimeException("invalid trace backend type");
@@ -509,7 +489,6 @@ class SubProc extends PseudoProcess {
 			if(this.mergeType == SubProc.mergeErrorToOut || this.mergeType == SubProc.mergeOutToError) {
 				procBuilder.redirectErrorStream(true);
 			}
-			this.prepareHookLibrary(procBuilder.environment());
 			this.proc = procBuilder.start();
 			this.stdin = this.proc.getOutputStream();
 			if(this.mergeType == SubProc.mergeOutToError) {
@@ -593,13 +572,6 @@ class SubProc extends PseudoProcess {
 		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
 
-	private void prepareHookLibrary(Map<String, String> env) {
-		if(this.enableSyscallTrace && traceBackendType == traceBackend_hookLibrary) {
-			env.put(env_preload, hookLibraryPath);
-			env.put(env_ereport, this.logFilePath);
-		}
-	}
-
 	@Override public void waitTermination() {
 		try {
 			this.retValue = this.proc.waitFor();
@@ -653,6 +625,12 @@ class SubProc extends PseudoProcess {
 
 	public String getLogFilePath() {
 		return this.logFilePath;
+	}
+
+	public void deleteLogFile() {
+		if(this.logFilePath != null) {
+			new File(this.logFilePath).delete();
+		}
 	}
 
 	@Override public boolean isTraced() {

@@ -21,7 +21,7 @@ public class Utils {
 	public final static boolean isUnixCommand(String cmd) {
 		String[] path = System.getenv("PATH").split(":");
 		for(int i = 0; i < path.length; i++) {
-			if(isFileExists(path[i] + "/" + cmd)) {
+			if(isFileExecutable(path[i] + "/" + cmd)) {
 				return true;
 			}
 		}

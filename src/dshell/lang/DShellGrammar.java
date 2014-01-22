@@ -68,6 +68,17 @@ public class DShellGrammar {
 		return ZTokenContext.MismatchedPosition;
 	}
 
+	public static ZNode MatchImport(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
+		TokenContext.GetTokenAndMoveForward();
+		if(TokenContext.IsToken("command")) {
+			return TokenContext.ParsePattern(NameSpace, "$Command$", ZTokenContext.Required);
+		}
+		if(TokenContext.IsToken("env")) {
+			return TokenContext.ParsePattern(NameSpace, "$Env$", ZTokenContext.Required);
+		}
+		return null;
+	}
+
 	public static ZNode MatchEnv(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
 		TokenContext.GetTokenAndMoveForward();
 		ZToken Token = TokenContext.GetTokenAndMoveForward();
@@ -213,7 +224,7 @@ public class DShellGrammar {
 	private static ZNode CreateNodeAndMatchNextRedirect(ZNameSpace NameSpace, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
 		ZNode Node = new DShellCommandNode(new ZStringNode(new ZToken(0, RedirectSymbol, 0), RedirectSymbol));
 		if(existTarget) {
-			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$Argument$", ZTokenContext.Required);
+			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$CommandArg$", ZTokenContext.Required);
 		}
 		ZNode PipedNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZTokenContext.Optional);
 		if(PipedNode != null) {
@@ -351,7 +362,7 @@ public class DShellGrammar {
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)OptionNode);
 			}
 			// Match Argument
-			ZNode ArgNode = TokenContext.ParsePattern(NameSpace, "$Argument$", ZTokenContext.Optional);
+			ZNode ArgNode = TokenContext.ParsePattern(NameSpace, "$CommandArg$", ZTokenContext.Optional);
 			if(ArgNode == null) {
 				break;
 			}
@@ -364,9 +375,10 @@ public class DShellGrammar {
 		LibNative.ImportGrammar(NameSpace, ZenGrammar.class.getName());
 		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
 
-		NameSpace.AppendSyntax("letenv", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
-		NameSpace.AppendSyntax("command", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
-		NameSpace.AppendSyntax("$Argument$", LibNative.LoadMatchFunc(Grammar, "MatchArgument"));
+		NameSpace.AppendSyntax("import", LibNative.LoadMatchFunc(Grammar, "MatchImport"));
+		NameSpace.AppendSyntax("$Env$", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
+		NameSpace.AppendSyntax("$Command$", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
+		NameSpace.AppendSyntax("$CommandArg$", LibNative.LoadMatchFunc(Grammar, "MatchArgument"));
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
 		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
