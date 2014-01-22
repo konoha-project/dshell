@@ -361,6 +361,7 @@ public class DShellGrammar {
 	}
 
 	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
+		LibNative.ImportGrammar(NameSpace, ZenGrammar.class.getName());
 		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
 
 		NameSpace.AppendSyntax("letenv", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));

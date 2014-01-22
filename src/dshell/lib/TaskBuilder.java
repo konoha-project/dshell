@@ -228,7 +228,7 @@ public class TaskBuilder {
 		return procBuffer.toArray(new PseudoProcess[procBuffer.size()]);
 	}
 
-	// called by VisitCommandNode 
+	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
 	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList) {
 		int option = Utils.printable;
 		new TaskBuilder(cmdsList, option, Utils.VoidType).invoke();
@@ -247,6 +247,39 @@ public class TaskBuilder {
 	public static String ExecCommandStringJS(ArrayList<ArrayList<String>> cmdsList) {
 		int option = Utils.returnable;
 		return (String)new TaskBuilder(cmdsList, option, Utils.StringType).invoke();
+	}
+
+	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
+	public static void ExecCommandVoid(String[][] cmds) {
+		int option = Utils.printable;
+		new TaskBuilder(toCmdsList(cmds), option, Utils.VoidType).invoke();
+	}
+
+	public static int ExecCommandInt(String[][] cmds) {
+		int option = Utils.printable | Utils.returnable;
+		return ((Integer)new TaskBuilder(toCmdsList(cmds), option, Utils.IntType).invoke()).intValue();
+	}
+
+	public static boolean ExecCommandBool(String[][] cmds) {
+		int option = Utils.printable | Utils.returnable;
+		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option, Utils.BooleanType).invoke()).booleanValue();
+	}
+
+	public static String ExecCommandString(String[][] cmds) {
+		int option = Utils.returnable;
+		return (String)new TaskBuilder(toCmdsList(cmds), option, Utils.StringType).invoke();
+	}
+
+	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {
+		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
+		for(String[] cmd : cmds) {
+			ArrayList<String> cmdList = new ArrayList<String>();
+			for(String tempCmd : cmd) {
+				cmdList.add(tempCmd);
+			}
+			cmdsList.add(cmdList);
+		}
+		return cmdsList;
 	}
 
 	private static boolean checkTraceRequirements() {

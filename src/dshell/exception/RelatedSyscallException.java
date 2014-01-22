@@ -1,6 +1,5 @@
 package dshell.exception;
 
-
 public class RelatedSyscallException extends DShellException {
 	private static final long serialVersionUID = 1L;
 	

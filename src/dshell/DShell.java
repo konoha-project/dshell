@@ -1,13 +1,13 @@
 package dshell;
 
-import dshell.codegen.javascript.ModifiedJavaScriptSourceGenerator;
+import zen.codegen.javascript.ModifiedJavaScriptSourceGenerator;
+import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
 import dshell.lang.DShellGrammar;
 import dshell.util.DShellConsole;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
 import zen.lang.ZSystem;
-import zen.lang.ZenGrammar;
 import zen.parser.ZGenerator;
 
 public class DShell {
@@ -31,7 +31,7 @@ public class DShell {
 			interactiveMode = false;
 		}
 		ZGenerator generator = new ModifiedJavaScriptSourceGenerator(); //TODO: using JavaByteCodeGen
-		LibNative.ImportGrammar(generator.RootNameSpace, ZenGrammar.class.getName());
+		//ZGenerator generator = new ModifiedJavaByteCodeGenerator();
 		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
 		if(interactiveMode) {
 			DShellConsole console = new DShellConsole();
