@@ -1,0 +1,30 @@
+dshell	トップ
+
+dshell/docs	ドキュメントトップ
+
+dshell/doscs/preface	序文
+
+dshell/doscs/install	インストールと設定
+
+dshell/doscs/getting-startd	はじめに(入門)
+
+dshell/doscs/langref	言語リファレンス
+
+dshell/doscs/langref/basic	基本的な構文
+
+dshell/doscs/langref/types	データ型
+
+dshell/doscs/langref/variable	変数と定数
+
+dshell/doscs/langref/operators	演算子
+
+dshell/doscs/langref/control-structures	制御構造
+
+dshell/doscs/langref/functions	関数
+
+dshell/doscs/langref/external	外部
+
+dshell/downloads	ダウンロード
+
+dshell/support	ヘルプ
+
