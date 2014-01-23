@@ -1,5 +1,7 @@
 package dshell.lib;
 
+import dshell.util.Utils;
+
 public enum Errno {
 	SUCCESS			,
 	EPERM			,
@@ -132,4 +134,19 @@ public enum Errno {
 	EKEYREVOKED		,
 	EKEYREJECTED	,
 	LAST_ELEMENT	;
+
+	public static Errno toErrrno(int errno) {
+		if(errno <= 0 || errno >= Errno.LAST_ELEMENT.ordinal()) {
+			Utils.fatal(1, "invalid errno: " + errno);
+		}
+		return Errno.values()[errno];
+	}
+
+	public boolean match(String errnoString) {
+		return this.name().equals(errnoString);
+	}
+
+	public boolean match(int errno) {
+		return this.ordinal() == errno;
+	}
 }

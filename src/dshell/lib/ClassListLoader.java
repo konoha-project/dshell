@@ -6,6 +6,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
+import dshell.util.Utils;
+
 public class ClassListLoader {
 	private final String packageName;
 
@@ -29,8 +31,7 @@ public class ClassListLoader {
 			}
 		}
 		catch (IOException e) {
-			System.err.println("getting resource faild: " + path);
-			System.exit(1);
+			Utils.fatal(1, "getting resource faild: " + path);
 		}
 		return classList;
 	}
@@ -53,8 +54,7 @@ public class ClassListLoader {
 					classList.add(Class.forName(className));
 				}
 				catch (ClassNotFoundException e) {
-					System.err.println("loading class failed: " + className);
-					System.exit(1);
+					Utils.fatal(1, "loading class failed: " + className);
 				}
 			}
 		}

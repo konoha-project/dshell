@@ -67,4 +67,14 @@ public class Utils {
 		}
 		return option;
 	}
+
+	public final static void fatal(int status, String message) {
+		StackTraceElement[] elements = Thread.currentThread().getStackTrace();
+		System.err.println("fatal: " + message);
+		for(int i = 2; i < elements.length; i++) {
+			StackTraceElement element = elements[i];
+			System.err.println("\tat " + element);
+		}
+		System.exit(status);
+	}
 }

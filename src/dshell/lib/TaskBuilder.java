@@ -13,7 +13,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Map;
 
 import dshell.lang.DShellGrammar;
 import dshell.util.Utils;
@@ -169,7 +168,7 @@ public class TaskBuilder {
 			}
 			newCmdsBuffer.add(currentCmds);
 		}
-		if(Utils.is(this.OptionFlag, Utils.inference) && Utils.is(this.OptionFlag, Utils.throwable)) {
+		if(Utils.is(this.OptionFlag, Utils.throwable)) {
 			this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.inference, enableTrace);
 		}
 		return newCmdsBuffer;
@@ -284,15 +283,8 @@ public class TaskBuilder {
 
 	private static boolean checkTraceRequirements() {
 		if(System.getProperty("os.name").equals("Linux")) {
-			boolean flag = Utils.isUnixCommand("strace+") && Utils.isUnixCommand("pretty_print_strace_out.py");
-			if(flag) {
-				SubProc.traceBackendType = SubProc.traceBackend_strace_plus;
-				return true;
-			}
-			else {
-				SubProc.traceBackendType = SubProc.traceBackend_strace;
-				return Utils.isUnixCommand("strace");
-			}
+			SubProc.traceBackendType = SubProc.traceBackend_ltrace;
+			return Utils.isUnixCommand("ltrace");
 		}
 		System.err.println("Systemcall Trace is Not Supported");
 		return false;
@@ -391,10 +383,8 @@ class PseudoProcess {
 }
 
 class SubProc extends PseudoProcess {
-	public final static int traceBackend_strace      = 0;
-	public final static int traceBackend_strace_plus = 1;
-	public final static int traceBackend_hookLibrary = 2;
-	public static int traceBackendType = traceBackend_strace;
+	public final static int traceBackend_ltrace      = 0;
+	public static int traceBackendType = traceBackend_ltrace;
 
 	private final static String logdirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
@@ -437,13 +427,9 @@ class SubProc extends PseudoProcess {
 			new File(logdirPath).mkdir();
 
 			String[] traceCmd;
-			if(traceBackendType == traceBackend_strace) {
-				String[] backend_strace = {"strace", "-t", "-f", "-F", "-o", logFilePath};
+			if(traceBackendType == traceBackend_ltrace) {
+				String[] backend_strace = {"ltrace", "-t", "-f", "-S", "-o", logFilePath};
 				traceCmd = backend_strace;
-			}
-			else if(traceBackendType == traceBackend_strace_plus) {
-				String[] backend_strace_plus = {"strace+", "-k", "-t", "-f", "-F", "-o", logFilePath};
-				traceCmd = backend_strace_plus;
 			}
 			else {
 				throw new RuntimeException("invalid trace backend type");

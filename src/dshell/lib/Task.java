@@ -3,7 +3,6 @@ package dshell.lib;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.EnumMap;
 
 import dshell.exception.DShellException;
 import dshell.util.Utils;
@@ -192,9 +191,11 @@ class ProcMonitor extends Thread {	// TODO: support exit handle
 
 class ShellExceptionRaiser {
 	private TaskBuilder taskBuilder;
+	private final CauseInferencer inferencer;
 
 	public ShellExceptionRaiser(TaskBuilder taskBuilder) {
 		this.taskBuilder = taskBuilder;
+		this.inferencer = new CauseInferencer_ltrace();
 	}
 
 	public void raiseException() {
@@ -205,18 +206,22 @@ class ShellExceptionRaiser {
 		}
 		ArrayList<RuntimeException> exceptionList = new ArrayList<RuntimeException>();
 		for(PseudoProcess proc : procs) {
-			createAndAddException(exceptionList, proc);
+			this.createAndAddException(exceptionList, proc);
 		}
 		if(exceptionList.size() > 0) {	//TODO: MultipleException
-			throw exceptionList.get(0);
+			if(exceptionList.get(0) != null) {
+				throw exceptionList.get(0);
+			}
 		}
 	}
 
-	private static void createAndAddException(ArrayList<RuntimeException> exceptionList, PseudoProcess proc) {
-		if(proc.getRet() != 0) {
+	private void createAndAddException(ArrayList<RuntimeException> exceptionList, PseudoProcess proc) {
+		if(proc.isTraced() || proc.getRet() != 0) {
 			String message = proc.getCmdName();
 			if(proc.isTraced()) {
-				// exception inference
+				String logFilePath = ((SubProc)proc).getLogFilePath();
+				ArrayList<String> infoList = this.inferencer.doInference(logFilePath);
+				exceptionList.add(ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()])));
 			}
 			else {
 				exceptionList.add(new DShellException(message));
@@ -227,3 +232,4 @@ class ShellExceptionRaiser {
 		}
 	}
 }
+
