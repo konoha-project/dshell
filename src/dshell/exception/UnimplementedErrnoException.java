@@ -7,4 +7,8 @@ public class UnimplementedErrnoException extends RelatedSyscallException {
 		super(message, commandName, syscalls);
 	}
 	
+	@Override
+	public String toString() {
+		return super.toString() + " :" + this.getErrno() + " has not supported yet";
+	}
 }

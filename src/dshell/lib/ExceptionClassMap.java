@@ -16,7 +16,7 @@ public class ExceptionClassMap {
 
 	static {
 		System.err.println("init ExceptionMap");
-		verifyAndSetExceptionClass(new ClassListLoader("dshell.exception.errno").getClassList());
+		verifyAndSetExceptionClass(new ClassListLoader("dshell.exception.errno").loadClassList());
 	}
 
 	private static void verifyAndSetExceptionClass(ArrayList<Class<?>> exceptionClassList) {
