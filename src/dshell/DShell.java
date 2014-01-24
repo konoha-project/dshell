@@ -64,7 +64,7 @@ public class DShell {
 				ARGV.add(args[i]);
 			}
 			generator.RootNameSpace.SetSymbol("ARGV", ARGV, null);
-			String sourceText = LibNative.LoadScript(scriptName);
+			String sourceText = LibNative.LoadTextFile(scriptName);
 			if (sourceText == null) {
 				LibNative.Exit(1, "file not found: " + scriptName);
 			}

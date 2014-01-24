@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import zen.codegen.javascript.ModifiedJavaScriptSourceGenerator;
 import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
+import zen.codegen.jvm.ModifiedTopLevelInterpreter;
 import dshell.lang.ModifiedTypeInfer;
 
 import zen.ast.ZNode;
@@ -40,6 +41,9 @@ public class DShellCommandNode extends ZNode {
 		}
 		else if(Visitor instanceof ModifiedTypeInfer) {
 			((ModifiedTypeInfer)Visitor).VisitCommandNode(this);
+		}
+		else if(Visitor instanceof ModifiedTopLevelInterpreter) { 
+			((ModifiedTopLevelInterpreter)Visitor).VisitCommandNode(this);
 		}
 		else {
 			throw new RuntimeException(Visitor.getClass().getName() + " is unsupported Visitor");

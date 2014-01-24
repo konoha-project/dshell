@@ -386,6 +386,6 @@ public class DShellGrammar {
 		// timeout
 		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, timeout, 0));
 		NameSpace.SetSymbol(CommandSymbol(timeout), timeout, null);
-		NameSpace.Generator.SetGrammarInfo("dshell0.1");
+		NameSpace.Generator.AppendGrammarInfo("dshell0.1");
 	}
 }

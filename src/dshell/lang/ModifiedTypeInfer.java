@@ -14,9 +14,12 @@ public class ModifiedTypeInfer extends ZenTypeInfer {
 		super(Logger);
 	}
 
-	public void VisitCommandNode(DShellCommandNode Node) {	//TODO: support context type
+	public void VisitCommandNode(DShellCommandNode Node) {
 		ZNameSpace NameSpace = this.GetNameSpace();
 		ZType ContextType = this.GetContextType();
+		if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
+			ContextType = ZSystem.VoidType;
+		}
 		int size = Node.ArgumentList.size();
 		for(int i = 0; i < size; i++) {
 			ZNode SubNode = Node.ArgumentList.get(i);
