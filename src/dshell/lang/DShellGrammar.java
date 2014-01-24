@@ -376,7 +376,9 @@ public class DShellGrammar {
 		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
 
 		NameSpace.AppendSyntax("import", LibNative.LoadMatchFunc(Grammar, "MatchImport"));
+		NameSpace.AppendSyntax("letenv", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
 		NameSpace.AppendSyntax("$Env$", LibNative.LoadMatchFunc(Grammar, "MatchEnv"));
+		NameSpace.AppendSyntax("command", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
 		NameSpace.AppendSyntax("$Command$", LibNative.LoadMatchFunc(Grammar, "MatchCommand"));
 		NameSpace.AppendSyntax("$CommandArg$", LibNative.LoadMatchFunc(Grammar, "MatchArgument"));
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));

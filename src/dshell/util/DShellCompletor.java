@@ -24,7 +24,6 @@ public class DShellCompletor implements Completor {
 		jline.ArgumentCompletor.ArgumentList argList = this.delimiter.delimit(buffer, cursor);
 		int argPos = argList.getArgumentPosition();
 		int argIndex = argList.getCursorArgumentIndex();
-
 		if(argIndex < 0) {
 			return -1;
 		}
@@ -45,7 +44,9 @@ public class DShellCompletor implements Completor {
 			}
 			File[] files = new File(path).listFiles();
 			for(File file : files) {
-				commandSet.add(file.getName());
+				if(file.canExecute()) {
+					commandSet.add(file.getName());
+				}
 			}
 		}
 		return commandSet;

@@ -244,6 +244,11 @@ public class TaskBuilder {
 		return (String)new TaskBuilder(cmdsList, option, Utils.StringType).invoke();
 	}
 
+	public static Task ExecCommandTaskJS(ArrayList<ArrayList<String>> cmdsList) {
+		int option = Utils.printable | Utils.returnable;
+		return (Task)new TaskBuilder(cmdsList, option, Utils.TaskType).invoke();
+	}
+
 	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
 	public static void ExecCommandVoid(String[][] cmds) {
 		int option = Utils.printable;
