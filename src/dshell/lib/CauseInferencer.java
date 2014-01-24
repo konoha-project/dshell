@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 import dshell.util.Utils;
 
 public interface CauseInferencer {
-	public ArrayList<String> doInference(String logFilePath);
+	public ArrayList<String> doInference(SubProc proc);
 }
 
 class CauseInferencer_ltrace implements CauseInferencer {
@@ -39,7 +39,8 @@ class CauseInferencer_ltrace implements CauseInferencer {
 		}
 	}
 
-	public ArrayList<String> doInference(String logFilePath) {
+	public ArrayList<String> doInference(SubProc proc) {
+		String logFilePath = proc.getLogFilePath();
 		ArrayList<String[]> lineList = new ArrayList<String[]>();
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(logFilePath));
@@ -66,6 +67,7 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			System.exit(1);
 		}
 		FunctionContext topLevelContext = createTopLevelFuncContext(lineList);
+		proc.retValue = Integer.parseInt(topLevelContext.getRetValue());
 		return this.findCauseInfo(topLevelContext);
 	}
 
@@ -216,14 +218,6 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			}
 		}
 		return null;
-	}
-
-	public static void main(String[] args) {
-		CauseInferencer_ltrace inferencer = new CauseInferencer_ltrace();
-		ArrayList<String> causeInfo = inferencer.doInference(args[0]);
-		for(String element : causeInfo) {
-			System.out.println(element);
-		}
 	}
 }
 

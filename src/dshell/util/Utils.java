@@ -19,9 +19,9 @@ public class Utils {
 	public final static int TaskType    = 4;
 
 	public final static boolean isUnixCommand(String cmd) {
-		String[] path = System.getenv("PATH").split(":");
-		for(int i = 0; i < path.length; i++) {
-			if(isFileExecutable(path[i] + "/" + cmd)) {
+		String[] paths = System.getenv("PATH").split(":");
+		for(String path : paths) {
+			if(isFileExecutable(path + "/" + cmd)) {
 				return true;
 			}
 		}

@@ -15,12 +15,10 @@ public class ExceptionClassMap {
 	private final static EnumMap<Errno, Class<?>> exceptMap = new EnumMap<Errno, Class<?>>(Errno.class);
 
 	static {
-		System.err.println("init ExceptionMap");
 		verifyAndSetExceptionClass(new ClassListLoader("dshell.exception.errno").loadClassList());
 	}
 
 	private static void verifyAndSetExceptionClass(ArrayList<Class<?>> exceptionClassList) {
-		System.err.println(exceptionClassList.size());
 		for(Class<?> exceptionClass : exceptionClassList) {
 			Annotation[] anos = exceptionClass.getDeclaredAnnotations();
 			if(anos.length == 1 && anos[0] instanceof DerivedFromErrno) {
@@ -98,5 +96,26 @@ public class ExceptionClassMap {
 		}
 		Utils.fatal(1, "Creating Exception failed");
 		return null;
+	}
+
+	public static ArrayList<String> getUnsupportedErrnoList() {
+		ArrayList<String> errnoList = new ArrayList<String>();
+		Errno[] values = Errno.values();
+		for(Errno value : values) {
+			if(value == Errno.SUCCESS || value == Errno.LAST_ELEMENT) {
+				continue;
+			}
+			if(!exceptMap.containsKey(value)) {
+				errnoList.add(value.name());
+			}
+		}
+		return errnoList;
+	}
+
+	public static void main(String[] args) {
+		ArrayList<String> errnoList = ExceptionClassMap.getUnsupportedErrnoList();
+		for(String errnoString : errnoList) {
+			System.err.println(errnoString + " is not supported");
+		}
 	}
 }

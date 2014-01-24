@@ -39,15 +39,13 @@ public class DShellCompletor implements Completor {
 	private TreeSet<String> getCommandListFromPath() {
 		TreeSet<String> commandSet = new TreeSet<String>();
 		String[] paths = System.getenv("PATH").split(":");
-		for(int i = 0; i < paths.length; i++) {
-			String path = paths[i];
+		for(String path : paths) {
 			if(path.startsWith("~")) {
 				path = System.getenv("HOME") + path.substring(1);
 			}
-			File file = new File(path);
-			File[] files = file.listFiles();
-			for(int j = 0; j < files.length; j++) {
-				commandSet.add(files[j].getName());
+			File[] files = new File(path).listFiles();
+			for(File file : files) {
+				commandSet.add(file.getName());
 			}
 		}
 		return commandSet;

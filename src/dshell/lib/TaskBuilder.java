@@ -110,9 +110,7 @@ public class TaskBuilder {
 	private ArrayList<ArrayList<String>> setInternalOption(ArrayList<ArrayList<String>> cmdsList) {
 		boolean enableTrace = false;
 		ArrayList<ArrayList<String>> newCmdsBuffer = new ArrayList<ArrayList<String>>();
-		int listSize = cmdsList.size();
-		for(int i = 0; i < listSize; i++) {
-			ArrayList<String> currentCmds = cmdsList.get(i);
+		for(ArrayList<String> currentCmds : cmdsList) {
 			if(currentCmds.get(0).equals(DShellGrammar.timeout)) {
 				StringBuilder numBuilder = new StringBuilder();
 				StringBuilder unitBuilder = new StringBuilder();
@@ -177,9 +175,7 @@ public class TaskBuilder {
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
 		boolean enableSyscallTrace = Utils.is(this.OptionFlag, Utils.inference);
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
-		int listSize = cmdsList.size();
-		for(int i = 0; i < listSize; i++) {
-			ArrayList<String> currentCmds = cmdsList.get(i);
+		for(ArrayList<String> currentCmds : cmdsList) {
 			String cmdSymbol = currentCmds.get(0);
 			SubProc prevProc = null;
 			int size = procBuffer.size();
@@ -445,11 +441,10 @@ class SubProc extends PseudoProcess {
 		String arg = argList.get(0);
 		this.cmdNameBuilder.append(arg);
 		if(arg.equals("sudo")) {
-			int size = this.commandList.size();
 			ArrayList<String> newCommandList = new ArrayList<String>();
 			newCommandList.add(arg);
-			for(int i = 0; i < size; i++) {
-				newCommandList.add(this.commandList.get(i));
+			for(String cmd : this.commandList) {
+				newCommandList.add(cmd);
 			}
 			this.commandList = newCommandList;
 		}

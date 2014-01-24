@@ -219,8 +219,7 @@ class ShellExceptionRaiser {
 		if(proc.isTraced() || proc.getRet() != 0) {
 			String message = proc.getCmdName();
 			if(proc.isTraced()) {
-				String logFilePath = ((SubProc)proc).getLogFilePath();
-				ArrayList<String> infoList = this.inferencer.doInference(logFilePath);
+				ArrayList<String> infoList = this.inferencer.doInference((SubProc)proc);
 				exceptionList.add(ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()])));
 			}
 			else {
