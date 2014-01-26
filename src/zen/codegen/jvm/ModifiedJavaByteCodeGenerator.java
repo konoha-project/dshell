@@ -13,12 +13,11 @@ import org.objectweb.asm.Type;
 import dshell.ast.DShellCommandNode;
 import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.TaskBuilder;
-
 import zen.ast.ZNode;
-import zen.codegen.jvm.JavaByteCodeGenerator2;
 import zen.lang.ZType;
+import zen.lang.ZenEngine;
 
-public class ModifiedJavaByteCodeGenerator extends JavaByteCodeGenerator2 {
+public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	private static Method ExecCommandVoid;
 	private static Method ExecCommandBool;
 	private static Method ExecCommandInt;
@@ -42,8 +41,10 @@ public class ModifiedJavaByteCodeGenerator extends JavaByteCodeGenerator2 {
 
 	public ModifiedJavaByteCodeGenerator() {
 		super();
-		this.TypeChecker = new ModifiedTypeInfer(this.Logger);
-		this.Interpreter = new ModifiedTopLevelInterpreter(this);
+	}
+
+	@Override public ZenEngine GetEngine() {
+		return new ModifiedReflectionEngine(new ModifiedTypeInfer(this.Logger), this);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {

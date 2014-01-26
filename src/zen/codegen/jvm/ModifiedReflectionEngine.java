@@ -3,12 +3,14 @@ package zen.codegen.jvm;
 import java.util.ArrayList;
 
 import zen.ast.ZNode;
+import zen.lang.ZenTypeChecker;
 import dshell.ast.DShellCommandNode;
+import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.TaskBuilder;
 
-public class ModifiedTopLevelInterpreter extends TopLevelInterpreter {	//TODO: implement unsupported visit api
-	public ModifiedTopLevelInterpreter(ModifiedJavaByteCodeGenerator Generator) {
-		super(Generator);
+public class ModifiedReflectionEngine extends JavaReflectionEngine {	//TODO: implement unsupported visit api
+	public ModifiedReflectionEngine(ModifiedTypeInfer TypeChecker, ModifiedJavaByteCodeGenerator Generator) {
+		super(TypeChecker, Generator);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
@@ -28,13 +30,13 @@ public class ModifiedTopLevelInterpreter extends TopLevelInterpreter {	//TODO: i
 			}
 		}
 		if(Node.Type.IsBooleanType()) {
-			TaskBuilder.ExecCommandBool(values);
+			this.EvaledValue = TaskBuilder.ExecCommandBool(values);
 		}
 		else if(Node.Type.IsIntType()) {
-			TaskBuilder.ExecCommandInt(values);
+			this.EvaledValue = TaskBuilder.ExecCommandInt(values);
 		}
 		else if(Node.Type.IsStringType()) {
-			TaskBuilder.ExecCommandString(values);
+			this.EvaledValue = TaskBuilder.ExecCommandString(values);
 		}
 		else {
 			TaskBuilder.ExecCommandVoid(values);

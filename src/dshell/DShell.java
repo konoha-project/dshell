@@ -8,6 +8,7 @@ import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
 import zen.lang.ZSystem;
+import zen.lang.ZenEngine;
 import zen.parser.ZGenerator;
 
 public class DShell {
@@ -30,19 +31,18 @@ public class DShell {
 		if(args.length > 0) {
 			interactiveMode = false;
 		}
-		ZGenerator generator = new ModifiedJavaScriptSourceGenerator(); //TODO: using JavaByteCodeGen
-		//ZGenerator generator = new ModifiedJavaByteCodeGenerator();
-		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
+
+		ZenEngine engine = loadDShellEngine();
 		if(interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
-			generator.Logger.ShowReportedErrors();
+			engine.Generator.Logger.ShowReportedErrors();
 			int linenum = 1;
 			String line = null;
 			while ((line = console.readLine()) != null) {
 				try {
-					Object evaledValue = generator.RootNameSpace.Eval(line, linenum, interactiveMode);
-					generator.Logger.ShowReportedErrors();
+					Object evaledValue = engine.Eval(line, linenum, interactiveMode);
+					engine.Generator.Logger.ShowReportedErrors();
 					if (evaledValue != null) {
 						System.out.println(" (" + ZSystem.GuessType(evaledValue) + ":");
 						System.out.println(LibNative.GetClassName(evaledValue)+ ") ");
@@ -63,17 +63,24 @@ public class DShell {
 			for(int i = 1; i < args.length; i++) {
 				ARGV.add(args[i]);
 			}
-			generator.RootNameSpace.SetSymbol("ARGV", ARGV, null);
+			engine.Generator.RootNameSpace.SetSymbol("ARGV", ARGV, null);
 			String sourceText = LibNative.LoadTextFile(scriptName);
 			if (sourceText == null) {
 				LibNative.Exit(1, "file not found: " + scriptName);
 			}
 			long fileLine = ZSystem.GetFileLine(scriptName, 1);
-			boolean status = generator.RootNameSpace.Load(sourceText, fileLine);
-			generator.Logger.ShowReportedErrors();
+			boolean status = engine.Load(sourceText, fileLine);
+			engine.Generator.Logger.ShowReportedErrors();
 			if(!status) {
 				LibNative.Exit(1, "abort loading: " + scriptName);
 			}
 		}
+	}
+
+	private final static ZenEngine loadDShellEngine() {
+		//ZGenerator generator = new ModifiedJavaScriptSourceGenerator(); //TODO: using JavaByteCodeGen
+		ZGenerator generator = new ModifiedJavaByteCodeGenerator();
+		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
+		return generator.GetEngine();
 	}
 }

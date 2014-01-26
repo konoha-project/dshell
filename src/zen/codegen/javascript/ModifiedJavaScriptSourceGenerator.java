@@ -7,7 +7,6 @@ import zen.codegen.javascript.JavaScriptSourceGenerator;
 public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator {
 	public ModifiedJavaScriptSourceGenerator() {
 		super();
-		this.TypeChecker = new ModifiedTypeInfer(this.Logger);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
