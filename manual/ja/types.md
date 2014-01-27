@@ -1,6 +1,6 @@
 この章では、 D-Shell でサポートするデータ型について説明します。 
 
-D-Shellでは次のようなデータ型が準備されています。  
+D-Shellでは、次のようなデータ型が準備されています。  
 扱う値の範囲や種類によって適切なデータ型を選択してください。  
 
 # boolean 型
@@ -35,8 +35,8 @@ $ dshell Boolean.ds
 
 # int 型
 ***
-int は整数のデータ型です。リテラルは整数のみ指定可能です。  
-整数の精度としては 64 ビット符号付きです。  
+int は整数のデータ型です。
+リテラルは整数のみ指定可能です。精度は 64 ビット符号付きです。  
 整数と浮動小数点数を混在させて演算した場合、整数は自動的に浮動小数点数に変換されます。  
 浮動小数点数から整数に変換するときはキャスト演算子を使います。  
 (キャストは、単純に小数点以下が切り捨てになります。)  
@@ -68,7 +68,7 @@ $ dshell Int.ds
 
 # float 型
 ***
-float は浮動小数点数 を扱うデータ型です。精度としては 64 ビット(倍精度)です。  
+float は浮動小数点数 を扱うデータ型です。精度は 64 ビット(倍精度)です。  
 浮動小数点のリテラルは実数、または常用対数eによる表現の2通りの方法で記述することができます。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Float.ds" >
@@ -153,7 +153,8 @@ $ dshell EscSeq.ds
 うずまき\nナルト
 </pre>
 
-ダブルクオーテーションで囲まれた文字列(それに相当する文字列)の中には${式}という形式で式 の内容(を文字列化したもの)を埋め込むことができます。  
+## 式展開
+ダブルクオーテーションで囲まれた文字列(それに相当する文字列)の中には${式}という形式で式の内容(を文字列化したもの)を埋め込むことができます。  
 明示的に式展開を止めるには$の前にバックスラッシュを置きます。 
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Interpolation.ds" >
@@ -208,7 +209,7 @@ function call!
 
 # Array 型(T[]型)
 ***
-配列型は、複数個のオブジェクトをコレクションとして扱う最も基本的なデータ構造です。  
+Array 型は、複数個のオブジェクトをコレクションとして扱う最も基本的なデータ構造です。  
 配列クラスを使用すると、配列にアクセスして操作することができます。  
 配列インデックスは 0 から始まります。  
 
@@ -265,15 +266,25 @@ $ dshell HashMap.ds
 int
 </pre>
 
-# Func<TResult, T1, T2..> 型
+# Func<T, U, V, ...> 型
 ***
-Func 型は、メソッドを参照するための型、いわゆるデリゲートです。
-宣言<>内の第二引数(T2...)以降の値を受け取り、第一引数(TResult)に指定された型の値を返す関数をオブジェクト化します。  
+Func 型は、定義済み関数を関数オブジェクトとして格納するデータ型です。
+データ型 T を戻り値のデータ型, U以降を引数のデータ型とする関数をオブジェクト化します。
+
+<pre>
+Func<関数の戻り値のデータ型, 関数の第１引数のデータ型, 関数の第２引数のデータ型, ...>
+
+Func<int>               // function func(): int {} の関数オブジェクト
+Func<boolean, int>      // function func(a: int): boolean {} の関数オブジェクト
+Func<int, int, String>  // function func(a: int, b: String): int {} の関数オブジェクト
+</pre>
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Func.ds" >
-var func: Func<int, int> = function(x: int): int {
+function func(x: int): int {
   return x * 2;
 }
+
+var func: Func<int, int> = func;
 
 println(func(3));
 println(func instanceof Func<int, int>);
@@ -284,4 +295,3 @@ $ dshell Func.ds
 6
 true
 </pre>
-
