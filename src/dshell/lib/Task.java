@@ -1,14 +1,15 @@
 package dshell.lib;
 
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
 import dshell.exception.DShellException;
 
-import static dshell.lib.TaskOption.Global.printable ;
-import static dshell.lib.TaskOption.Global.throwable ;
-import static dshell.lib.TaskOption.Global.background;
+import static dshell.lib.TaskOption.Behavior.printable ;
+import static dshell.lib.TaskOption.Behavior.throwable ;
+import static dshell.lib.TaskOption.Behavior.background;
 
 public class Task {
 	private ProcMonitor monitor;
@@ -27,32 +28,17 @@ public class Task {
 		TaskOption option = this.taskBuilder.getOption();
 		PseudoProcess[] Processes = this.taskBuilder.getProcesses();
 		int ProcessSize = Processes.length;
-		int lastIndex = ProcessSize - 1;
-		PseudoProcess lastProc = Processes[lastIndex];
-
-		OutputStream stdoutStream = null;
-		if(option.is(printable)) {
-			stdoutStream = System.out;
-		}
-		InputStream[] srcOutStreams = new InputStream[1];
-		InputStream[] srcErrorStreams = new InputStream[ProcessSize];
-
 		Processes[0].start();
 		for(int i = 1; i < ProcessSize; i++) {
 			Processes[i].start();
 			Processes[i].pipe(Processes[i - 1]);
 		}
-
 		// Start Message Handler
 		// stdout
-		srcOutStreams[0] = lastProc.accessOutStream();
-		this.stdoutHandler = new MessageStreamHandler(srcOutStreams, stdoutStream);
+		this.stdoutHandler = this.createStdoutHandler();
 		this.stdoutHandler.showMessage();
 		// stderr
-		for(int i = 0; i < ProcessSize; i++) {
-			srcErrorStreams[i] = Processes[i].accessErrorStream();
-		}
-		this.stderrHandler = new MessageStreamHandler(srcErrorStreams, System.err);
+		this.stderrHandler = this.createStderrHandler();
 		this.stderrHandler.showMessage();
 		// start monitor
 		this.isAsyncTask = option.is(background);
@@ -67,6 +53,36 @@ public class Task {
 		this.sBuilder.append(this.taskBuilder.toString());
 		this.monitor = new ProcMonitor(this, this.taskBuilder, isAsyncTask);
 		this.monitor.start();
+	}
+
+	private MessageStreamHandler createStdoutHandler() {
+		TaskOption option = this.taskBuilder.getOption();
+		if(option.supportStdoutHandler()) {
+			OutputStream stdoutStream = null;
+			if(option.is(printable)) {
+				stdoutStream = System.out;
+			}
+			PseudoProcess[] procs = this.taskBuilder.getProcesses();
+			PseudoProcess lastProc = procs[procs.length - 1];
+			InputStream[] srcOutStreams = new InputStream[1];
+			srcOutStreams[0] = lastProc.accessOutStream();
+			return new MessageStreamHandler(srcOutStreams, stdoutStream);
+		}
+		return new EmptyMessageStreamHandler();
+	}
+
+	private MessageStreamHandler createStderrHandler() {
+		TaskOption option = this.taskBuilder.getOption();
+		if(option.supportStderrHandler()) {
+			PseudoProcess[] procs = this.taskBuilder.getProcesses();
+			int size = procs.length;
+			InputStream[] srcErrorStreams = new InputStream[size];
+			for(int i = 0; i < size; i++) {
+				srcErrorStreams[i] = procs[i].accessErrorStream();
+			}
+			return new MessageStreamHandler(srcErrorStreams, System.err);
+		}
+		return new EmptyMessageStreamHandler();
 	}
 
 	@Override public String toString() {
@@ -189,6 +205,54 @@ class ProcMonitor extends Thread {	// TODO: support exit handle
 				throw new RuntimeException(e);
 			}
 		}
+	}
+}
+
+class MessageStreamHandler {
+	private InputStream[] srcStreams;
+	private OutputStream[] destStreams;
+	private ByteArrayOutputStream messageBuffer;
+	private PipeStreamHandler[] streamHandlers;
+
+	public MessageStreamHandler() {	// do nothing
+	}
+
+	public MessageStreamHandler(InputStream[] srcStreams, OutputStream destStream) {
+		this.srcStreams = srcStreams;
+		this.messageBuffer = new ByteArrayOutputStream();
+		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
+		this.destStreams = new OutputStream[]{destStream, this.messageBuffer};
+	}
+
+	public void showMessage() {
+		boolean[] closeOutputs = {false, false};
+		for(int i = 0; i < srcStreams.length; i++) {
+			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], this.destStreams, true, closeOutputs);
+			this.streamHandlers[i].start();
+		}
+	}
+
+	public String waitTermination() {
+		for(int i = 0; i < srcStreams.length; i++) {
+			try {
+				this.streamHandlers[i].join();
+			}
+			catch(InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return this.messageBuffer.toString();
+	}
+}
+
+class EmptyMessageStreamHandler extends MessageStreamHandler {
+	@Override
+	public void showMessage() { // do nothing
+	}
+
+	@Override
+	public String waitTermination() {
+		return "";
 	}
 }
 

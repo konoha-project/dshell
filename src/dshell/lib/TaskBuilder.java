@@ -2,7 +2,6 @@ package dshell.lib;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -10,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -17,13 +17,14 @@ import java.util.Calendar;
 import dshell.lang.DShellGrammar;
 import dshell.lib.ProcOption.MergeType;
 import dshell.lib.ProcOption.OutputType;
+import dshell.lib.ProcOption.ProcPosition;
 import dshell.util.Utils;
 
-import static dshell.lib.TaskOption.Global.returnable;
-import static dshell.lib.TaskOption.Global.printable ;
-import static dshell.lib.TaskOption.Global.throwable ;
-import static dshell.lib.TaskOption.Global.background;
-import static dshell.lib.TaskOption.Global.inference ;
+import static dshell.lib.TaskOption.Behavior.returnable;
+import static dshell.lib.TaskOption.Behavior.printable ;
+import static dshell.lib.TaskOption.Behavior.throwable ;
+import static dshell.lib.TaskOption.Behavior.background;
+import static dshell.lib.TaskOption.Behavior.tracable ;
 
 import static dshell.lib.TaskOption.RetType.VoidType   ;
 import static dshell.lib.TaskOption.RetType.IntType    ;
@@ -35,7 +36,10 @@ import static dshell.lib.ProcOption.MergeType.mergeErrorToOut;
 import static dshell.lib.ProcOption.MergeType.mergeOutToError;
 
 import static dshell.lib.ProcOption.OutputType.STDOUT_FILENO;
-import static dshell.lib.ProcOption.OutputType.STDERR_FILENO;;
+import static dshell.lib.ProcOption.OutputType.STDERR_FILENO;
+
+import static dshell.lib.ProcOption.ProcPosition.firstProc;
+import static dshell.lib.ProcOption.ProcPosition.lastProc;
 
 public class TaskBuilder {
 	private TaskOption option;
@@ -68,21 +72,21 @@ public class TaskBuilder {
 	public Object invoke() {
 		Task task = new Task(this);
 		if(this.option.is(background)) {
-			return (this.option.getRetType() == TaskType) && this.option.is(returnable) ? task : null;
+			return (this.option.isRetType(TaskType) && this.option.is(returnable)) ? task : null;
 		}
 		task.join();
 		if(this.option.is(returnable)) {
-			switch(this.option.getRetType()) {
-			case StringType:
+			if(this.option.isRetType(StringType)) {
 				return task.getOutMessage();
-			case BooleanType:
+			}
+			else if(this.option.isRetType(BooleanType)) {
 				return new Boolean(task.getExitStatus() == 0);
-			case IntType:
+			}
+			else if(this.option.isRetType(IntType)) {
 				return new Integer(task.getExitStatus());
-			case TaskType:
+			}
+			else if(this.option.isRetType(TaskType)) {
 				return task;
-			case VoidType:
-				break;
 			}
 		}
 		return null;
@@ -157,20 +161,19 @@ public class TaskBuilder {
 			}
 			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_trace)) {
 				this.option.setFlag(throwable, true);
-				this.option.setFlag(inference, true);
+				this.option.setFlag(tracable, true);
 				enableTrace = checkTraceRequirements();
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
 		}
 		if(this.option.is(throwable)) {
-			this.option.setFlag(inference, enableTrace);
+			this.option.setFlag(tracable, enableTrace);
 		}
 		return newCmdsBuffer;
 	}
 
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
-		boolean enableSyscallTrace = this.option.is(inference);
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		for(ArrayList<String> currentCmds : cmdsList) {
 			String cmdSymbol = currentCmds.get(0);
@@ -212,12 +215,21 @@ public class TaskBuilder {
 				prevProc.setMergeType(mergeErrorToOut);
 			}
 			else {
-				SubProc proc = new SubProc(enableSyscallTrace);
+				SubProc proc = new SubProc(this.option);
 				proc.setArgumentList(currentCmds);
 				procBuffer.add(proc);
 			}
 		}
-		return procBuffer.toArray(new PseudoProcess[procBuffer.size()]);
+		int size = procBuffer.size();
+		for(int i = 0; i < size; i++) {
+			if(i == 0) {
+				((SubProc)procBuffer.get(i)).setProcPosition(ProcPosition.firstProc);
+			}
+			if(i == size - 1) {
+				((SubProc)procBuffer.get(i)).setProcPosition(ProcPosition.lastProc);
+			}
+		}
+		return procBuffer.toArray(new PseudoProcess[size]);
 	}
 
 	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
@@ -328,8 +340,7 @@ abstract class PseudoProcess {
 
 	abstract public void kill();
 
-	public void waitTermination() {
-	}
+	abstract public void waitTermination();
 
 	public InputStream accessOutStream() {
 		if(!this.stdoutIsDirty) {
@@ -373,7 +384,7 @@ class SubProc extends PseudoProcess {
 
 	private Process proc;
 	private ProcOption procOption;
-	private boolean enableSyscallTrace = false;
+	private TaskOption taskOption;
 	public boolean isKilled = false;
 	public String logFilePath = null;
 
@@ -394,18 +405,17 @@ class SubProc extends PseudoProcess {
 		return logNameHeader.toString();
 	}
 
-	public SubProc(boolean enableSyscallTrace) {
+	public SubProc(TaskOption taskOption) {
 		super();
-		this.enableSyscallTrace = enableSyscallTrace;
+		this.taskOption = taskOption;
 		this.procOption = new ProcOption();
-		initTrace();
+		this.initTrace();
 	}
 
 	private void initTrace() {
-		if(this.enableSyscallTrace) {
+		if(this.taskOption.is(tracable)) {
 			logFilePath = new String(logdirPath + "/" + createLogNameHeader() + ".log");
 			new File(logdirPath).mkdir();
-
 			String[] traceCmd;
 			if(traceBackendType == traceBackend_ltrace) {
 				String[] backend_strace = {"ltrace", "-t", "-f", "-S", "-o", logFilePath};
@@ -414,11 +424,14 @@ class SubProc extends PseudoProcess {
 			else {
 				throw new RuntimeException("invalid trace backend type");
 			}
-			
 			for(int i = 0; i < traceCmd.length; i++) {
 				this.commandList.add(traceCmd[i]);
 			}
 		}
+	}
+
+	public void setProcPosition(ProcPosition procPosition) {
+		this.procOption.setProcPosition(procPosition);
 	}
 
 	@Override public void setArgumentList(ArrayList<String> argList) {
@@ -451,6 +464,7 @@ class SubProc extends PseudoProcess {
 	@Override public void start() {
 		try {
 			ProcessBuilder procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
+			this.setStreamBehavior(procBuilder);
 			if(this.procOption.getMergeType() == mergeErrorToOut || this.procOption.getMergeType() == mergeOutToError) {
 				procBuilder.redirectErrorStream(true);
 			}
@@ -487,13 +501,32 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
+	private void setStreamBehavior(ProcessBuilder procBuilder) {
+		if(this.procOption.isProcPosition(firstProc)) {
+			procBuilder.redirectInput(Redirect.INHERIT);
+			if(this.inFileStream != null) {
+				procBuilder.redirectInput(Redirect.PIPE);
+			}
+		}
+		if(this.procOption.isProcPosition(lastProc)) {
+			procBuilder.redirectOutput(Redirect.INHERIT);
+			if(this.outFileStream != null || this.taskOption.supportStdoutHandler()) {
+				procBuilder.redirectOutput(Redirect.PIPE);
+			}
+		}
+		procBuilder.redirectError(Redirect.INHERIT);
+		if(this.errFileStream !=  null || this.taskOption.supportStderrHandler()) {
+			procBuilder.redirectError(Redirect.PIPE);
+		}
+	}
+
 	public void setInputRedirect(String readFileName) {
 		this.sBuilder.append(" <");
 		this.sBuilder.append(readFileName);
 		try {
 			this.inFileStream = new FileInputStream(readFileName);
 		}
-		catch (FileNotFoundException e) {
+		catch(FileNotFoundException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -553,7 +586,7 @@ class SubProc extends PseudoProcess {
 		try {
 			this.retValue = this.proc.waitFor();
 		}
-		catch (InterruptedException e) {
+		catch(InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -575,23 +608,8 @@ class SubProc extends PseudoProcess {
 			procKiller.waitFor();
 			this.isKilled = true;
 			//LibGreenTea.print("[killed]: " + this.getCmdName());
-		} 
-		catch (NoSuchFieldException e) {
-			throw new RuntimeException(e);
-		} 
-		catch (SecurityException e) {
-			throw new RuntimeException(e);
-		} 
-		catch (IllegalArgumentException e) {
-			throw new RuntimeException(e);
-		} 
-		catch (IllegalAccessException e) {
-			throw new RuntimeException(e);
-		} 
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		} 
-		catch (InterruptedException e) {
+		}
+		catch(Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -611,42 +629,7 @@ class SubProc extends PseudoProcess {
 	}
 
 	@Override public boolean isTraced() {
-		return this.enableSyscallTrace;
-	}
-}
-
-class MessageStreamHandler {
-	private InputStream[] srcStreams;
-	private OutputStream[] destStreams;
-	private ByteArrayOutputStream messageBuffer;
-	private PipeStreamHandler[] streamHandlers;
-
-	public MessageStreamHandler(InputStream[] srcStreams, OutputStream destStream) {
-		this.srcStreams = srcStreams;
-		this.messageBuffer = new ByteArrayOutputStream();
-		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
-		OutputStream[] tempStreams = {destStream, this.messageBuffer};
-		this.destStreams = tempStreams;
-	}
-
-	public void showMessage() {
-		boolean[] closeOutputs = {false, false};
-		for(int i = 0; i < srcStreams.length; i++) {
-			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], this.destStreams, true, closeOutputs);
-			this.streamHandlers[i].start();
-		}
-	}
-
-	public String waitTermination() {
-		for(int i = 0; i < srcStreams.length; i++) {
-			try {
-				this.streamHandlers[i].join();
-			} 
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return this.messageBuffer.toString();
+		return this.taskOption.is(tracable);
 	}
 }
 
