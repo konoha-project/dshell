@@ -15,11 +15,30 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
+import dshell.lib.ProcOption.MergeType;
+import dshell.lib.ProcOption.OutputType;
 import dshell.util.Utils;
 
+import static dshell.lib.TaskOption.Global.returnable;
+import static dshell.lib.TaskOption.Global.printable ;
+import static dshell.lib.TaskOption.Global.throwable ;
+import static dshell.lib.TaskOption.Global.background;
+import static dshell.lib.TaskOption.Global.inference ;
+
+import static dshell.lib.TaskOption.RetType.VoidType   ;
+import static dshell.lib.TaskOption.RetType.IntType    ;
+import static dshell.lib.TaskOption.RetType.BooleanType;
+import static dshell.lib.TaskOption.RetType.StringType ;
+import static dshell.lib.TaskOption.RetType.TaskType   ;
+
+import static dshell.lib.ProcOption.MergeType.mergeErrorToOut;
+import static dshell.lib.ProcOption.MergeType.mergeOutToError;
+
+import static dshell.lib.ProcOption.OutputType.STDOUT_FILENO;
+import static dshell.lib.ProcOption.OutputType.STDERR_FILENO;;
+
 public class TaskBuilder {
-	private int OptionFlag;
-	private int retType;
+	private TaskOption option;
 	private PseudoProcess[] Processes;
 	private long timeout = -1;
 	private StringBuilder sBuilder;
@@ -27,9 +46,8 @@ public class TaskBuilder {
 	public MessageStreamHandler stdoutHandler;
 	public MessageStreamHandler stderrHandler;
 
-	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, int option, int retType) {
-		this.OptionFlag = option;
-		this.retType = retType;
+	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
+		this.option = option;
 		ArrayList<ArrayList<String>> newCmdsList = this.setInternalOption(cmdsList);
 		this.Processes = this.createProcs(newCmdsList);
 		// generate object representation
@@ -43,49 +61,28 @@ public class TaskBuilder {
 			this.sBuilder.append("}");
 		}
 		this.sBuilder.append("\n<");
-		switch(this.retType) {
-		case Utils.VoidType: this.sBuilder.append("VoidType"); break;
-		case Utils.IntType: this.sBuilder.append("IntType"); break;
-		case Utils.BooleanType: this.sBuilder.append("BooleanType"); break;
-		case Utils.StringType: this.sBuilder.append("StringType"); break;
-		case Utils.TaskType: this.sBuilder.append("TaskType"); break;
-		}
-		if(Utils.is(this.OptionFlag, Utils.returnable)) {
-			this.sBuilder.append("|returnable");
-		}
-		if(Utils.is(this.OptionFlag, Utils.printable)) {
-			this.sBuilder.append("|printable");
-		}
-		if(Utils.is(this.OptionFlag, Utils.throwable)) {
-			this.sBuilder.append("|throwable");
-		}
-		if(Utils.is(this.OptionFlag, Utils.background)) {
-			this.sBuilder.append("|background");
-		}
-		if(Utils.is(this.OptionFlag, Utils.inference)) {
-			this.sBuilder.append("|inference");
-		}
+		this.sBuilder.append(this.option.toString());
 		this.sBuilder.append(">");
 	}
 
 	public Object invoke() {
 		Task task = new Task(this);
-		if(Utils.is(this.OptionFlag, Utils.background)) {
-			return (this.retType == Utils.TaskType) && Utils.is(this.OptionFlag, Utils.returnable) ? task : null;
+		if(this.option.is(background)) {
+			return (this.option.getRetType() == TaskType) && this.option.is(returnable) ? task : null;
 		}
 		task.join();
-		if(Utils.is(this.OptionFlag, Utils.returnable)) {
-			if(this.retType == Utils.StringType) {
+		if(this.option.is(returnable)) {
+			switch(this.option.getRetType()) {
+			case StringType:
 				return task.getOutMessage();
-			}
-			else if(this.retType == Utils.BooleanType) {
+			case BooleanType:
 				return new Boolean(task.getExitStatus() == 0);
-			}
-			else if(this.retType == Utils.IntType){
+			case IntType:
 				return new Integer(task.getExitStatus());
-			}
-			else if(this.retType == Utils.TaskType) {
+			case TaskType:
 				return task;
+			case VoidType:
+				break;
 			}
 		}
 		return null;
@@ -95,8 +92,8 @@ public class TaskBuilder {
 		return this.Processes;
 	}
 
-	public int getOptionFlag() {
-		return this.OptionFlag;
+	public TaskOption getOption() {
+		return this.option;
 	}
 
 	public long getTimeout() {
@@ -151,29 +148,29 @@ public class TaskBuilder {
 				currentCmds = newCmds;
 			}
 			else if(currentCmds.get(0).equals(DShellGrammar.background)) {
-				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.background, true);
+				this.option.setFlag(background, true);
 				continue;
 			}
 			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_raise)) {
-				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.throwable, true);
+				this.option.setFlag(throwable, true);
 				continue;
 			}
 			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_trace)) {
-				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.throwable, true);
-				this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.inference, true);
+				this.option.setFlag(throwable, true);
+				this.option.setFlag(inference, true);
 				enableTrace = checkTraceRequirements();
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
 		}
-		if(Utils.is(this.OptionFlag, Utils.throwable)) {
-			this.OptionFlag = Utils.setFlag(this.OptionFlag, Utils.inference, enableTrace);
+		if(this.option.is(throwable)) {
+			this.option.setFlag(inference, enableTrace);
 		}
 		return newCmdsBuffer;
 	}
 
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
-		boolean enableSyscallTrace = Utils.is(this.OptionFlag, Utils.inference);
+		boolean enableSyscallTrace = this.option.is(inference);
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		for(ArrayList<String> currentCmds : cmdsList) {
 			String cmdSymbol = currentCmds.get(0);
@@ -186,33 +183,33 @@ public class TaskBuilder {
 				prevProc.setInputRedirect(currentCmds.get(1));
 			}
 			else if(cmdSymbol.equals("1>") || cmdSymbol.equals(">")) {
-				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), false);
+				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), false);
 			}	
 			else if(cmdSymbol.equals("1>>") || cmdSymbol.equals(">>")) {
-				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), true);
+				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals("2>")) {
-				prevProc.setOutputRedirect(SubProc.STDERR_FILENO, currentCmds.get(1), false);
+				prevProc.setOutputRedirect(STDERR_FILENO, currentCmds.get(1), false);
 			}
 			else if(cmdSymbol.equals("2>>")) {
-				prevProc.setOutputRedirect(SubProc.STDERR_FILENO, currentCmds.get(1), true);
+				prevProc.setOutputRedirect(STDERR_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {
-				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), false);
-				prevProc.setMergeType(SubProc.mergeErrorToOut);
+				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), false);
+				prevProc.setMergeType(mergeErrorToOut);
 			}
 			else if(cmdSymbol.equals("&>>")) {
-				prevProc.setOutputRedirect(SubProc.STDOUT_FILENO, currentCmds.get(1), true);
-				prevProc.setMergeType(SubProc.mergeErrorToOut);
+				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), true);
+				prevProc.setMergeType(mergeErrorToOut);
 			}
 			else if(cmdSymbol.equals(">&1") || cmdSymbol.equals("1>&1") || cmdSymbol.equals("2>&2")) {
 				// do nothing
 			}
 			else if(cmdSymbol.equals("1>&2")) {
-				prevProc.setMergeType(SubProc.mergeOutToError);
+				prevProc.setMergeType(mergeOutToError);
 			}
 			else if(cmdSymbol.equals("2>&1")) {
-				prevProc.setMergeType(SubProc.mergeErrorToOut);
+				prevProc.setMergeType(mergeErrorToOut);
 			}
 			else {
 				SubProc proc = new SubProc(enableSyscallTrace);
@@ -225,49 +222,49 @@ public class TaskBuilder {
 
 	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
 	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList) {
-		int option = Utils.printable;
-		new TaskBuilder(cmdsList, option, Utils.VoidType).invoke();
+		TaskOption option = TaskOption.of(VoidType, printable);
+		new TaskBuilder(cmdsList, option).invoke();
 	}
 
 	public static int ExecCommandIntJS(ArrayList<ArrayList<String>> cmdsList) {
-		int option = Utils.printable | Utils.returnable;
-		return ((Integer)new TaskBuilder(cmdsList, option, Utils.IntType).invoke()).intValue();
+		TaskOption option = TaskOption.of(IntType, printable, returnable);
+		return ((Integer)new TaskBuilder(cmdsList, option).invoke()).intValue();
 	}
 
 	public static boolean ExecCommandBoolJS(ArrayList<ArrayList<String>> cmdsList) {
-		int option = Utils.printable | Utils.returnable;
-		return ((Boolean)new TaskBuilder(cmdsList, option, Utils.BooleanType).invoke()).booleanValue();
+		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
+		return ((Boolean)new TaskBuilder(cmdsList, option).invoke()).booleanValue();
 	}
 
 	public static String ExecCommandStringJS(ArrayList<ArrayList<String>> cmdsList) {
-		int option = Utils.returnable;
-		return (String)new TaskBuilder(cmdsList, option, Utils.StringType).invoke();
+		TaskOption option = TaskOption.of(StringType, returnable);
+		return (String)new TaskBuilder(cmdsList, option).invoke();
 	}
 
 	public static Task ExecCommandTaskJS(ArrayList<ArrayList<String>> cmdsList) {
-		int option = Utils.printable | Utils.returnable;
-		return (Task)new TaskBuilder(cmdsList, option, Utils.TaskType).invoke();
+		TaskOption option = TaskOption.of(TaskType, printable, returnable);
+		return (Task)new TaskBuilder(cmdsList, option).invoke();
 	}
 
 	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
 	public static void ExecCommandVoid(String[][] cmds) {
-		int option = Utils.printable;
-		new TaskBuilder(toCmdsList(cmds), option, Utils.VoidType).invoke();
+		TaskOption option = TaskOption.of(VoidType, printable);
+		new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	public static int ExecCommandInt(String[][] cmds) {
-		int option = Utils.printable | Utils.returnable;
-		return ((Integer)new TaskBuilder(toCmdsList(cmds), option, Utils.IntType).invoke()).intValue();
+		TaskOption option = TaskOption.of(IntType, printable, returnable);
+		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
 	}
 
 	public static boolean ExecCommandBool(String[][] cmds) {
-		int option = Utils.printable | Utils.returnable;
-		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option, Utils.BooleanType).invoke()).booleanValue();
+		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
+		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option).invoke()).booleanValue();
 	}
 
 	public static String ExecCommandString(String[][] cmds) {
-		int option = Utils.returnable;
-		return (String)new TaskBuilder(toCmdsList(cmds), option, Utils.StringType).invoke();
+		TaskOption option = TaskOption.of(StringType, returnable);
+		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {
@@ -292,10 +289,7 @@ public class TaskBuilder {
 	}
 }
 
-class PseudoProcess {
-	public final static int mergeErrorToOut = 0;
-	public final static int mergeOutToError = 1;
-
+abstract class PseudoProcess {
 	protected OutputStream stdin = null;
 	protected InputStream stdout = null;
 	protected InputStream stderr = null;
@@ -307,7 +301,6 @@ class PseudoProcess {
 	protected boolean stdoutIsDirty = false;
 	protected boolean stderrIsDirty = false;
 
-	protected int mergeType = -1;
 	protected int retValue = 0;
 
 	public PseudoProcess() {
@@ -327,25 +320,13 @@ class PseudoProcess {
 		}
 	}
 
-	public void setMergeType(int mergeType) {
-		this.mergeType = mergeType;
-		if(this.mergeType == SubProc.mergeErrorToOut) {
-			this.sBuilder.append(" 2>&1");
-		}
-		else if(this.mergeType == SubProc.mergeOutToError) {
-			this.sBuilder.append(" 1>&2");
-		}
-	}
-
-	public void start() {
-	}
+	abstract public void start();
 
 	public void pipe(PseudoProcess srcProc) {
 		new PipeStreamHandler(srcProc.accessOutStream(), this.stdin, true).start();
 	}
 
-	public void kill() {
-	}
+	abstract public void kill();
 
 	public void waitTermination() {
 	}
@@ -384,16 +365,14 @@ class PseudoProcess {
 }
 
 class SubProc extends PseudoProcess {
-	public final static int traceBackend_ltrace      = 0;
+	public final static int traceBackend_ltrace = 0;
 	public static int traceBackendType = traceBackend_ltrace;
 
 	private final static String logdirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
-	
-	public final static int STDOUT_FILENO = 1;
-	public final static int STDERR_FILENO = 2;
 
 	private Process proc;
+	private ProcOption procOption;
 	private boolean enableSyscallTrace = false;
 	public boolean isKilled = false;
 	public String logFilePath = null;
@@ -405,7 +384,6 @@ class SubProc extends PseudoProcess {
 	private static String createLogNameHeader() {
 		Calendar cal = Calendar.getInstance();
 		StringBuilder logNameHeader = new StringBuilder();
-
 		logNameHeader.append(cal.get(Calendar.YEAR) + "-");
 		logNameHeader.append((cal.get(Calendar.MONTH) + 1) + "-");
 		logNameHeader.append(cal.get(Calendar.DATE) + "-");
@@ -419,6 +397,7 @@ class SubProc extends PseudoProcess {
 	public SubProc(boolean enableSyscallTrace) {
 		super();
 		this.enableSyscallTrace = enableSyscallTrace;
+		this.procOption = new ProcOption();
 		initTrace();
 	}
 
@@ -472,12 +451,12 @@ class SubProc extends PseudoProcess {
 	@Override public void start() {
 		try {
 			ProcessBuilder procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-			if(this.mergeType == SubProc.mergeErrorToOut || this.mergeType == SubProc.mergeOutToError) {
+			if(this.procOption.getMergeType() == mergeErrorToOut || this.procOption.getMergeType() == mergeOutToError) {
 				procBuilder.redirectErrorStream(true);
 			}
 			this.proc = procBuilder.start();
 			this.stdin = this.proc.getOutputStream();
-			if(this.mergeType == SubProc.mergeOutToError) {
+			if(this.procOption.getMergeType() == mergeOutToError) {
 				this.stdout = this.proc.getErrorStream();
 				this.stderr = this.proc.getInputStream();
 			}
@@ -492,6 +471,19 @@ class SubProc extends PseudoProcess {
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	public void setMergeType(MergeType mergeType) {
+		this.procOption.setMergeType(mergeType);
+		switch(this.procOption.getMergeType()) {
+		case withoutMerge: break;
+		case mergeErrorToOut:
+			this.sBuilder.append(" 2>&1");
+			break;
+		case mergeOutToError:
+			this.sBuilder.append(" 1>&2");
+			break;
 		}
 	}
 
@@ -515,7 +507,7 @@ class SubProc extends PseudoProcess {
 		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
 
-	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
+	public void setOutputRedirect(OutputType fd, String writeFileName, boolean append) {
 		try {
 			if(fd == STDOUT_FILENO) {
 				this.outFileStream = new FileOutputStream(writeFileName, append);
@@ -535,25 +527,24 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
-	private void writeFile(int fd) {
-		InputStream srcStream;
-		OutputStream destStream;
-		if(fd == STDOUT_FILENO) {
+	private void writeFile(OutputType fd) {
+		InputStream srcStream = null;
+		OutputStream destStream = null;
+		switch(fd) {
+		case STDOUT_FILENO:
 			if(this.outFileStream == null) {
 				return;
 			}
 			srcStream = this.accessOutStream();
 			destStream = new BufferedOutputStream(this.outFileStream);
-		}
-		else if(fd == STDERR_FILENO) {
+			break;
+		case STDERR_FILENO:
 			if(this.errFileStream == null) {
 				return;
 			}
 			srcStream = this.accessErrorStream();
 			destStream = new BufferedOutputStream(this.errFileStream);
-		}
-		else {
-			throw new RuntimeException("invalid file descriptor");
+			break;
 		}
 		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
@@ -685,7 +676,7 @@ class PipeStreamHandler extends Thread {
 		this.closeInput = closeInput;
 		this.closeOutputs = closeOutputs;
 		for(int i = 0; i < this.outputs.length; i++) {
-			this.outputs[i] = outputs[i] == null ? new NullStream() : outputs[i];
+			this.outputs[i] = (outputs[i] == null) ? new NullStream() : outputs[i];
 		}
 	}
 

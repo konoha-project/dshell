@@ -5,7 +5,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import dshell.exception.DShellException;
-import dshell.util.Utils;
+
+import static dshell.lib.TaskOption.Global.printable ;
+import static dshell.lib.TaskOption.Global.throwable ;
+import static dshell.lib.TaskOption.Global.background;
 
 public class Task {
 	private ProcMonitor monitor;
@@ -21,14 +24,14 @@ public class Task {
 	public Task(TaskBuilder taskBuilder) {
 		this.taskBuilder = taskBuilder;
 		// start task
-		int OptionFlag = this.taskBuilder.getOptionFlag();
+		TaskOption option = this.taskBuilder.getOption();
 		PseudoProcess[] Processes = this.taskBuilder.getProcesses();
 		int ProcessSize = Processes.length;
 		int lastIndex = ProcessSize - 1;
 		PseudoProcess lastProc = Processes[lastIndex];
 
 		OutputStream stdoutStream = null;
-		if(Utils.is(OptionFlag, Utils.printable)) {
+		if(option.is(printable)) {
 			stdoutStream = System.out;
 		}
 		InputStream[] srcOutStreams = new InputStream[1];
@@ -52,7 +55,7 @@ public class Task {
 		this.stderrHandler = new MessageStreamHandler(srcErrorStreams, System.err);
 		this.stderrHandler.showMessage();
 		// start monitor
-		this.isAsyncTask = Utils.is(this.taskBuilder.getOptionFlag(), Utils.background);
+		this.isAsyncTask = option.is(background);
 		this.sBuilder = new StringBuilder();
 		if(this.isAsyncTask) {
 			this.sBuilder.append("#AsyncTask");
@@ -200,7 +203,7 @@ class ShellExceptionRaiser {
 
 	public void raiseException() {
 		PseudoProcess[] procs = taskBuilder.getProcesses();
-		boolean enableException = Utils.is(this.taskBuilder.getOptionFlag(), Utils.throwable);
+		boolean enableException = this.taskBuilder.getOption().is(throwable);
 		if(!enableException || taskBuilder.getTimeout() > 0) {
 			return;
 		}
