@@ -10,8 +10,8 @@ interface CLibraryWrapper extends com.sun.jna.Library {
 	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
 	
 	int chdir(String path);
-	//char *getcwd(char *buf, size_t size);
 	String getcwd(byte[] buf, int size);
+	void perror(String s); 
 }
 
 public class BuiltinCommandMap {
@@ -42,10 +42,15 @@ public class BuiltinCommandMap {
 	}
 
 	public static int changeDirectory(String path) {
+		String targetPath = path;
 		if(path.equals("")) {
-			return CLibraryWrapper.INSTANCE.chdir(System.getenv("HOME"));
+			targetPath = System.getenv("HOME");
 		}
-		return CLibraryWrapper.INSTANCE.chdir(path);
+		int status = CLibraryWrapper.INSTANCE.chdir(targetPath);
+		if(status == -1) {
+			CLibraryWrapper.INSTANCE.perror("dshell: cd");
+		}
+		return status;
 	}
 
 	public static String getWorkingDirectory() {

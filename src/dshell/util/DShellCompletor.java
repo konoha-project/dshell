@@ -1,9 +1,11 @@
 package dshell.util;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+import dshell.lib.BuiltinCommandMap;
 import jline.Completor;
 
 public class DShellCompletor implements Completor {
@@ -14,7 +16,7 @@ public class DShellCompletor implements Completor {
 	public DShellCompletor() {
 		this.commandCompletor = new jline.SimpleCompletor("dummy");
 		commandCompletor.setCandidates(getCommandListFromPath());
-		this.fileNameCompletor = new jline.FileNameCompletor();
+		this.fileNameCompletor = new DShellFileNameCompletor();
 		this.delimiter = new jline.ArgumentCompletor.WhitespaceArgumentDelimiter();
 	}
 
@@ -48,6 +50,11 @@ public class DShellCompletor implements Completor {
 					commandSet.add(file.getName());
 				}
 			}
+		}
+		// add builtin command
+		ArrayList<String> symbolList = BuiltinCommandMap.getCommandSymbolList();
+		for(String symbol : symbolList) {
+			commandSet.add(symbol);
 		}
 		return commandSet;
 	}
