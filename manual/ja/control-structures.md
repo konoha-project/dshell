@@ -28,7 +28,7 @@ $ dshell If.ds
 
 ## if else
 
-if 構文に続く論理式が false の場合、else ステートメント（ブロック）に記述された命令を実行します。
+if 構文に続く論理式が false の場合、else ステートメントブロックに記述された命令を実行します。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Else.ds" >
 function func(num):int {
@@ -55,7 +55,7 @@ $ dshell Else.ds
 
 ## else if
 
-if 構文の論理式が false かつ、else if 構文の論理式が true の場合、ステートメント（ブロック）に記述された命令を実行します。  
+if 構文の論理式が false かつ、else if 構文の論理式が true の場合、ステートメントブロックに記述された命令を実行します。  
 else if 構文では単独の条件分岐だけではなく複数の条件分岐を使ってステートメントブロックを追加することができます。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ElseIf.ds" >
@@ -86,7 +86,7 @@ fuga
 
 # while
 ***
-while ループは、while 構文に続く論理式が true の間、ステートメントに記述された命令を繰り返します。  
+while ループは、while 構文に続く論理式が true の間、ステートメントブロックに記述された命令を繰り返します。  
 C/C++ の while ループと同様の動作をします。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: While.ds" >
@@ -111,7 +111,7 @@ $ dshell While.ds
 # break
 ***
 break は、現在実行中の while 構造の実行を終了します。  
-break 文を使うと、現在繰り返しているループ構造のブロックから抜け出すことができます。
+break 文を使うと、現在繰り返しているループ構造のステートメントブロックから抜け出すことができます。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Break.ds" >
 function func() {
@@ -157,7 +157,7 @@ sub call!
 # try / catch / finally (例外処理)
 ***
 実行中の処理に例外が発生した場合、発生した例外を捕捉するには、コードを try ブロックで囲みます。  
-各tryブロックには、対応する catch ブロックが存在する必要があります。  
+各 try ブロックには、対応する catch ブロックが存在する必要があります。  
 異なる型の例外を捕捉するために複数の catch ブロックを使用することができます。  
 また、catch ブロックの後に finally ブロックも指定できます。  
 finally ブロックに書いたコードは、try および catch ブロックの後で常に実行されます。
