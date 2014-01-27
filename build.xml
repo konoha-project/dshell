@@ -12,6 +12,7 @@
 		<mkdir dir="${build_dir}" />
 		<javac srcdir="${source_dir}" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
 			<classpath path="${libzen_jar}" />
+			<classpath path="ext/jna-4.0.0.jar" />
 			<include name="**/*.java" />
 			<compilerarg value="-Xlint:deprecation" />
 			<compilerarg value="-Xlint:unchecked" />
@@ -29,6 +30,7 @@
 				<attribute name="Main-Class" value="dshell.DShell" />
 			</manifest>
 			<zipfileset src="${libzen_jar}" />
+			<zipfileset src="ext/jna-4.0.0.jar" />
 		</jar>
 	</target>
 

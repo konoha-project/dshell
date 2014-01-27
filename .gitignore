@@ -80,4 +80,4 @@ GTAGS
 GSYMS
 /build
 /dshell.jar
-/ext
+/ext/libzen*

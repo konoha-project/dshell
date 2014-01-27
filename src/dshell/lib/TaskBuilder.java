@@ -177,10 +177,10 @@ public class TaskBuilder {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		for(ArrayList<String> currentCmds : cmdsList) {
 			String cmdSymbol = currentCmds.get(0);
-			SubProc prevProc = null;
+			PseudoProcess prevProc = null;
 			int size = procBuffer.size();
 			if(size > 0) {
-				prevProc = (SubProc)procBuffer.get(size - 1);
+				prevProc = procBuffer.get(size - 1);
 			}
 			if(cmdSymbol.equals("<")) {
 				prevProc.setInputRedirect(currentCmds.get(1));
@@ -215,21 +215,29 @@ public class TaskBuilder {
 				prevProc.setMergeType(mergeErrorToOut);
 			}
 			else {
-				SubProc proc = new SubProc(this.option);
-				proc.setArgumentList(currentCmds);
-				procBuffer.add(proc);
+				procBuffer.add(this.createProc(currentCmds));
 			}
 		}
 		int size = procBuffer.size();
 		for(int i = 0; i < size; i++) {
 			if(i == 0) {
-				((SubProc)procBuffer.get(i)).setProcPosition(ProcPosition.firstProc);
+				procBuffer.get(i).setProcPosition(ProcPosition.firstProc);
 			}
 			if(i == size - 1) {
-				((SubProc)procBuffer.get(i)).setProcPosition(ProcPosition.lastProc);
+				procBuffer.get(i).setProcPosition(ProcPosition.lastProc);
 			}
 		}
 		return procBuffer.toArray(new PseudoProcess[size]);
+	}
+
+	private PseudoProcess createProc(ArrayList<String> cmds) {
+		PseudoProcess proc = BuiltinCommandMap.createCommand(cmds);
+		if(proc != null) {
+			return proc;
+		}
+		proc = new SubProc(this.option);
+		proc.setArgumentList(cmds);
+		return proc;
 	}
 
 	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
@@ -332,6 +340,10 @@ abstract class PseudoProcess {
 		}
 	}
 
+	abstract public void setProcPosition(ProcPosition procPosition);
+	abstract public void setMergeType(MergeType mergeType);
+	abstract public void setInputRedirect(String readFileName);
+	abstract public void setOutputRedirect(OutputType fd, String writeFileName, boolean append);
 	abstract public void start();
 
 	public void pipe(PseudoProcess srcProc) {
@@ -339,7 +351,6 @@ abstract class PseudoProcess {
 	}
 
 	abstract public void kill();
-
 	abstract public void waitTermination();
 
 	public InputStream accessOutStream() {
@@ -430,11 +441,13 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
+	@Override
 	public void setProcPosition(ProcPosition procPosition) {
 		this.procOption.setProcPosition(procPosition);
 	}
 
-	@Override public void setArgumentList(ArrayList<String> argList) {
+	@Override
+	public void setArgumentList(ArrayList<String> argList) {
 		String arg = argList.get(0);
 		this.cmdNameBuilder.append(arg);
 		if(arg.equals("sudo")) {
@@ -461,7 +474,8 @@ class SubProc extends PseudoProcess {
 		this.sBuilder.append("]");
 	}
 
-	@Override public void start() {
+	@Override
+	public void start() {
 		try {
 			ProcessBuilder procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
 			this.setStreamBehavior(procBuilder);
@@ -488,6 +502,7 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
+	@Override
 	public void setMergeType(MergeType mergeType) {
 		this.procOption.setMergeType(mergeType);
 		switch(this.procOption.getMergeType()) {
@@ -520,6 +535,7 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
+	@Override
 	public void setInputRedirect(String readFileName) {
 		this.sBuilder.append(" <");
 		this.sBuilder.append(readFileName);
@@ -540,6 +556,7 @@ class SubProc extends PseudoProcess {
 		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
 
+	@Override
 	public void setOutputRedirect(OutputType fd, String writeFileName, boolean append) {
 		try {
 			if(fd == STDOUT_FILENO) {
@@ -582,7 +599,8 @@ class SubProc extends PseudoProcess {
 		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
 
-	@Override public void waitTermination() {
+	@Override
+	public void waitTermination() {
 		try {
 			this.retValue = this.proc.waitFor();
 		}
@@ -591,7 +609,8 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
-	@Override public void kill() {
+	@Override
+	public void kill() {
 		if(System.getProperty("os.name").startsWith("Windows")) {
 			this.proc.destroy();
 			return;
@@ -663,7 +682,8 @@ class PipeStreamHandler extends Thread {
 		}
 	}
 
-	@Override public void run() {
+	@Override
+	public void run() {
 		if(this.input == null) {
 			return;
 		}
@@ -693,11 +713,11 @@ class PipeStreamHandler extends Thread {
 	}
 	
 	class NullStream extends OutputStream {
-		@Override public void write(int b) throws IOException {
-			// do nothing
+		@Override
+		public void write(int b) throws IOException {	// do nothing
 		}
-		@Override public void close() {
-			//do nothing
+		@Override
+		public void close() {	//do nothing
 		}
 	}
 }

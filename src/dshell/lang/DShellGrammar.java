@@ -1,5 +1,7 @@
 package dshell.lang;
 
+import java.util.ArrayList;
+
 import zen.ast.ZEmptyNode;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
@@ -12,6 +14,7 @@ import zen.parser.ZNameSpace;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.ast.DShellCommandNode;
+import dshell.lib.BuiltinCommandMap;
 import dshell.util.Utils;
 
 public class DShellGrammar {
@@ -388,6 +391,12 @@ public class DShellGrammar {
 		// timeout
 		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, timeout, 0));
 		NameSpace.SetSymbol(CommandSymbol(timeout), timeout, null);
+		// from BultinCommandMap
+		ArrayList<String> symbolList = BuiltinCommandMap.getCommandSymbolList();
+		for(String symbol : symbolList) {
+			NameSpace.SetSymbol(symbol, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, symbol, 0));
+			NameSpace.SetSymbol(CommandSymbol(symbol), symbol, null);
+		}
 		NameSpace.Generator.AppendGrammarInfo("dshell0.1");
 	}
 }
