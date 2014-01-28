@@ -3,7 +3,6 @@ package zen.codegen.jvm;
 import java.util.ArrayList;
 
 import zen.ast.ZNode;
-import zen.lang.ZenTypeChecker;
 import dshell.ast.DShellCommandNode;
 import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.TaskBuilder;

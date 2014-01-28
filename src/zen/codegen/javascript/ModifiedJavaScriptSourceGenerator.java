@@ -1,7 +1,6 @@
 package zen.codegen.javascript;
 
 import dshell.ast.DShellCommandNode;
-import dshell.lang.ModifiedTypeInfer;
 import zen.codegen.javascript.JavaScriptSourceGenerator;
 
 public class ModifiedJavaScriptSourceGenerator extends JavaScriptSourceGenerator {

@@ -1,6 +1,5 @@
 package dshell.util;
 
-import java.io.File;
 import java.io.IOException;
 
 import dshell.lib.BuiltinCommandMap;
@@ -59,8 +58,6 @@ public class DShellConsole {
 	private String[] getPrompts() {
 		String homeDir = System.getenv("HOME");
 		String[] prompts = new String[2];
-		//String currentDir = System.getProperty("user.dir");
-		//String currentDir = new File(".").getAbsoluteFile().getParent();
 		String currentDir = BuiltinCommandMap.getWorkingDirectory();
 		if(currentDir.startsWith(homeDir)) {
 			int index = homeDir.length();
