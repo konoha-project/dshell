@@ -32,6 +32,15 @@ public class DShellCommandNode extends ZNode {
 		return this;
 	}
 
+	public ZNode AppendOptionNode(DShellCommandNode Node) {
+		DShellCommandNode CurrentNode = this;
+		while(CurrentNode.PipedNextNode != null) {
+			CurrentNode = (DShellCommandNode) CurrentNode.PipedNextNode;
+		}
+		CurrentNode.AppendPipedNextNode(Node);
+		return this;
+	}
+
 	@Override public void Accept(ZVisitor Visitor) {
 		if(Visitor instanceof ModifiedJavaScriptSourceGenerator) {
 			((ModifiedJavaScriptSourceGenerator)Visitor).VisitCommandNode(this);

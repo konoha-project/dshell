@@ -229,14 +229,10 @@ public class DShellGrammar {
 		if(existTarget) {
 			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$CommandArg$", ZTokenContext.Required);
 		}
-		ZNode PipedNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZTokenContext.Optional);
-		if(PipedNode != null) {
-			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
-		}
 		return Node;
 	}
 
-	// >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>, 1>&1, 1>&2, 2>&1, 2>&2, >&1, >&2
+	// >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
 	public static ZNode MatchRedirect(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetTokenAndMoveForward();
 		String RedirectSymbol = Token.ParsedText;
@@ -254,11 +250,6 @@ public class DShellGrammar {
 			ZToken Token2 = TokenContext.GetToken();
 			if(Token2.EqualsText("&")) {
 				RedirectSymbol += Token2.ParsedText;
-				ZToken Token3 = TokenContext.GetTokenAndMoveForward();
-				if(Token3.EqualsText("1") || Token3.EqualsText("2")) {
-					RedirectSymbol += Token3.ParsedText;
-					return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, false);
-				}
 				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 			return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
@@ -271,17 +262,6 @@ public class DShellGrammar {
 			}
 			else if(Token2.EqualsText(">")) {
 				RedirectSymbol += Token2.ParsedText;
-				ZToken Token3 = TokenContext.GetToken();
-				if(Token3.EqualsText("&")) {
-					RedirectSymbol += Token3.ParsedText;
-					TokenContext.GetTokenAndMoveForward();
-					ZToken Token4 = TokenContext.GetTokenAndMoveForward();
-					if(Token4.EqualsText("1") || Token4.EqualsText("2")) {
-						RedirectSymbol += Token4.ParsedText;
-						return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, false);
-					}
-					return null;
-				}
 				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 		}
@@ -354,7 +334,8 @@ public class DShellGrammar {
 			// Match Redirect
 			ZNode RedirectNode = TokenContext.ParsePattern(NameSpace, "$Redirect$", ZTokenContext.Optional);
 			if(RedirectNode != null) {
-				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
+				((DShellCommandNode)CommandNode).AppendOptionNode((DShellCommandNode)RedirectNode);
+				continue;
 			}
 			// Match Suffix Option
 			ZNode OptionNode = TokenContext.ParsePattern(NameSpace, "$SuffixOption$", ZTokenContext.Optional);

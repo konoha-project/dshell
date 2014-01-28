@@ -78,7 +78,7 @@ public class DShell {
 					continue;
 				}
 				try {
-					Object evaledValue = engine.Eval(line, linenum, interactiveMode);
+					Object evaledValue = engine.Eval(line, linenum, this.interactiveMode);
 					engine.Generator.Logger.ShowReportedErrors();
 					if (this.debugMode && evaledValue != null) {
 						System.out.println(" (" + ZSystem.GuessType(evaledValue) + ":");

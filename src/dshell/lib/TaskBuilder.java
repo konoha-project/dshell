@@ -1,11 +1,6 @@
 package dshell.lib;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,9 +10,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
-import dshell.lib.ProcOption.MergeType;
-import dshell.lib.ProcOption.OutputType;
-import dshell.lib.ProcOption.ProcPosition;
 import dshell.util.Utils;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -31,15 +23,6 @@ import static dshell.lib.TaskOption.RetType.IntType    ;
 import static dshell.lib.TaskOption.RetType.BooleanType;
 import static dshell.lib.TaskOption.RetType.StringType ;
 import static dshell.lib.TaskOption.RetType.TaskType   ;
-
-import static dshell.lib.ProcOption.MergeType.mergeErrorToOut;
-import static dshell.lib.ProcOption.MergeType.mergeOutToError;
-
-import static dshell.lib.ProcOption.OutputType.STDOUT_FILENO;
-import static dshell.lib.ProcOption.OutputType.STDERR_FILENO;
-
-import static dshell.lib.ProcOption.ProcPosition.firstProc;
-import static dshell.lib.ProcOption.ProcPosition.lastProc;
 
 public class TaskBuilder {
 	private TaskOption option;
@@ -186,47 +169,31 @@ public class TaskBuilder {
 				prevProc.setInputRedirect(currentCmds.get(1));
 			}
 			else if(cmdSymbol.equals("1>") || cmdSymbol.equals(">")) {
-				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), false);
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
 			}	
 			else if(cmdSymbol.equals("1>>") || cmdSymbol.equals(">>")) {
-				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), true);
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals("2>")) {
-				prevProc.setOutputRedirect(STDERR_FILENO, currentCmds.get(1), false);
+				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), false);
 			}
 			else if(cmdSymbol.equals("2>>")) {
-				prevProc.setOutputRedirect(STDERR_FILENO, currentCmds.get(1), true);
+				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {
-				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), false);
-				prevProc.setMergeType(mergeErrorToOut);
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
+				prevProc.mergeErrorToOut();
 			}
 			else if(cmdSymbol.equals("&>>")) {
-				prevProc.setOutputRedirect(STDOUT_FILENO, currentCmds.get(1), true);
-				prevProc.setMergeType(mergeErrorToOut);
-			}
-			else if(cmdSymbol.equals(">&1") || cmdSymbol.equals("1>&1") || cmdSymbol.equals("2>&2")) {
-				// do nothing
-			}
-			else if(cmdSymbol.equals("1>&2")) {
-				prevProc.setMergeType(mergeOutToError);
-			}
-			else if(cmdSymbol.equals("2>&1")) {
-				prevProc.setMergeType(mergeErrorToOut);
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
+				prevProc.mergeErrorToOut();
 			}
 			else {
 				procBuffer.add(this.createProc(currentCmds));
 			}
 		}
 		int size = procBuffer.size();
-		for(int i = 0; i < size; i++) {
-			if(i == 0) {
-				procBuffer.get(i).setProcPosition(ProcPosition.firstProc);
-			}
-			if(i == size - 1) {
-				procBuffer.get(i).setProcPosition(ProcPosition.lastProc);
-			}
-		}
+		procBuffer.get(size - 1).setProcPosition(true);
 		return procBuffer.toArray(new PseudoProcess[size]);
 	}
 
@@ -310,6 +277,9 @@ public class TaskBuilder {
 }
 
 abstract class PseudoProcess {
+	public static final int STDOUT_FILENO = 1;
+	public static final int STDERR_FILENO = 2;
+
 	protected OutputStream stdin = null;
 	protected InputStream stdout = null;
 	protected InputStream stderr = null;
@@ -320,6 +290,8 @@ abstract class PseudoProcess {
 
 	protected boolean stdoutIsDirty = false;
 	protected boolean stderrIsDirty = false;
+	
+	protected boolean isLastProc = false;
 
 	protected int retValue = 0;
 
@@ -339,19 +311,20 @@ abstract class PseudoProcess {
 			this.cmdNameBuilder.append(this.commandList.get(i));
 		}
 	}
-
-	abstract public void setProcPosition(ProcPosition procPosition);
-	abstract public void setMergeType(MergeType mergeType);
+	abstract public void mergeErrorToOut();
 	abstract public void setInputRedirect(String readFileName);
-	abstract public void setOutputRedirect(OutputType fd, String writeFileName, boolean append);
+	abstract public void setOutputRedirect(int fd, String writeFileName, boolean append);
 	abstract public void start();
+	abstract public void kill();
+	abstract public void waitTermination();
 
 	public void pipe(PseudoProcess srcProc) {
 		new PipeStreamHandler(srcProc.accessOutStream(), this.stdin, true).start();
 	}
 
-	abstract public void kill();
-	abstract public void waitTermination();
+	public void setProcPosition(boolean isLastProc) {
+		this.isLastProc = isLastProc;
+	}
 
 	public InputStream accessOutStream() {
 		if(!this.stdoutIsDirty) {
@@ -393,15 +366,11 @@ class SubProc extends PseudoProcess {
 	private final static String logdirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
 
+	private ProcessBuilder procBuilder;
 	private Process proc;
-	private ProcOption procOption;
 	private TaskOption taskOption;
 	public boolean isKilled = false;
 	public String logFilePath = null;
-
-	private FileInputStream inFileStream = null;
-	private FileOutputStream outFileStream = null;
-	private FileOutputStream errFileStream = null;
 
 	private static String createLogNameHeader() {
 		Calendar cal = Calendar.getInstance();
@@ -419,7 +388,6 @@ class SubProc extends PseudoProcess {
 	public SubProc(TaskOption taskOption) {
 		super();
 		this.taskOption = taskOption;
-		this.procOption = new ProcOption();
 		this.initTrace();
 	}
 
@@ -439,11 +407,6 @@ class SubProc extends PseudoProcess {
 				this.commandList.add(traceCmd[i]);
 			}
 		}
-	}
-
-	@Override
-	public void setProcPosition(ProcPosition procPosition) {
-		this.procOption.setProcPosition(procPosition);
 	}
 
 	@Override
@@ -472,30 +435,19 @@ class SubProc extends PseudoProcess {
 			this.sBuilder.append(arg);
 		}
 		this.sBuilder.append("]");
+		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
+		this.procBuilder.inheritIO();
+		this.procBuilder.redirectOutput(Redirect.PIPE);
 	}
 
 	@Override
 	public void start() {
 		try {
-			ProcessBuilder procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-			this.setStreamBehavior(procBuilder);
-			if(this.procOption.getMergeType() == mergeErrorToOut || this.procOption.getMergeType() == mergeOutToError) {
-				procBuilder.redirectErrorStream(true);
-			}
+			this.setStreamBehavior();
 			this.proc = procBuilder.start();
 			this.stdin = this.proc.getOutputStream();
-			if(this.procOption.getMergeType() == mergeOutToError) {
-				this.stdout = this.proc.getErrorStream();
-				this.stderr = this.proc.getInputStream();
-			}
-			else {
-				this.stdout = this.proc.getInputStream();
-				this.stderr = this.proc.getErrorStream();
-			}
-			// input & output redirect
-			this.readFile();
-			this.writeFile(STDOUT_FILENO);
-			this.writeFile(STDERR_FILENO);
+			this.stdout = this.proc.getInputStream();
+			this.stderr = this.proc.getErrorStream();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
@@ -503,100 +455,48 @@ class SubProc extends PseudoProcess {
 	}
 
 	@Override
-	public void setMergeType(MergeType mergeType) {
-		this.procOption.setMergeType(mergeType);
-		switch(this.procOption.getMergeType()) {
-		case withoutMerge: break;
-		case mergeErrorToOut:
-			this.sBuilder.append(" 2>&1");
-			break;
-		case mergeOutToError:
-			this.sBuilder.append(" 1>&2");
-			break;
-		}
+	public void mergeErrorToOut() {
+		this.procBuilder.redirectErrorStream(true);
+		this.sBuilder.append("mergeErrorToOut");
 	}
 
-	private void setStreamBehavior(ProcessBuilder procBuilder) {
-		if(this.procOption.isProcPosition(firstProc)) {
-			procBuilder.redirectInput(Redirect.INHERIT);
-			if(this.inFileStream != null) {
-				procBuilder.redirectInput(Redirect.PIPE);
+	private void setStreamBehavior() {
+		if(this.isLastProc) {
+			if(this.procBuilder.redirectOutput().file() == null && !this.taskOption.supportStdoutHandler()) {
+				procBuilder.redirectOutput(Redirect.INHERIT);
 			}
 		}
-		if(this.procOption.isProcPosition(lastProc)) {
-			procBuilder.redirectOutput(Redirect.INHERIT);
-			if(this.outFileStream != null || this.taskOption.supportStdoutHandler()) {
-				procBuilder.redirectOutput(Redirect.PIPE);
-			}
-		}
-		procBuilder.redirectError(Redirect.INHERIT);
-		if(this.errFileStream !=  null || this.taskOption.supportStderrHandler()) {
-			procBuilder.redirectError(Redirect.PIPE);
+		if(this.procBuilder.redirectError().file() == null && this.taskOption.supportStderrHandler()) {
+			this.procBuilder.redirectError(Redirect.PIPE);
 		}
 	}
 
 	@Override
 	public void setInputRedirect(String readFileName) {
+		this.procBuilder.redirectInput(new File(readFileName));
 		this.sBuilder.append(" <");
 		this.sBuilder.append(readFileName);
-		try {
-			this.inFileStream = new FileInputStream(readFileName);
-		}
-		catch(FileNotFoundException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private void readFile() {
-		if(this.inFileStream == null) {
-			return;
-		}
-		InputStream srcStream = new BufferedInputStream(inFileStream);
-		OutputStream destStream = this.stdin;
-		new PipeStreamHandler(srcStream, destStream, true).start();
 	}
 
 	@Override
-	public void setOutputRedirect(OutputType fd, String writeFileName, boolean append) {
-		try {
-			if(fd == STDOUT_FILENO) {
-				this.outFileStream = new FileOutputStream(writeFileName, append);
-			} 
-			else if(fd == STDERR_FILENO) {
-				this.errFileStream = new FileOutputStream(writeFileName, append);
-			}
-			this.sBuilder.append(" " + fd);
+	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
+		File file = new File(writeFileName);
+		Redirect redirDest = Redirect.to(file);
+		if(append) {
+			redirDest = Redirect.appendTo(file);
+		}
+		if(fd == STDOUT_FILENO) {
+			this.procBuilder.redirectOutput(redirDest);
+		} 
+		else if(fd == STDERR_FILENO) {
+			this.procBuilder.redirectError(redirDest);
+		}
+		this.sBuilder.append(" " + fd);
+		this.sBuilder.append(">");
+		if(append) {
 			this.sBuilder.append(">");
-			if(append) {
-				this.sBuilder.append(">");
-			}
-			this.sBuilder.append(writeFileName);
 		}
-		catch (FileNotFoundException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private void writeFile(OutputType fd) {
-		InputStream srcStream = null;
-		OutputStream destStream = null;
-		switch(fd) {
-		case STDOUT_FILENO:
-			if(this.outFileStream == null) {
-				return;
-			}
-			srcStream = this.accessOutStream();
-			destStream = new BufferedOutputStream(this.outFileStream);
-			break;
-		case STDERR_FILENO:
-			if(this.errFileStream == null) {
-				return;
-			}
-			srcStream = this.accessErrorStream();
-			destStream = new BufferedOutputStream(this.errFileStream);
-			break;
-		}
-		new PipeStreamHandler(srcStream, destStream, true).start();
+		this.sBuilder.append(writeFileName);
 	}
 
 	@Override

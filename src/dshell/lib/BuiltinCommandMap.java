@@ -2,10 +2,6 @@ package dshell.lib;
 
 import java.util.ArrayList;
 
-import dshell.lib.ProcOption.MergeType;
-import dshell.lib.ProcOption.OutputType;
-import dshell.lib.ProcOption.ProcPosition;
-
 interface CLibraryWrapper extends com.sun.jna.Library {
 	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
 	
@@ -73,23 +69,25 @@ public class BuiltinCommandMap {
 }
 
 abstract class BuiltinCommand extends PseudoProcess {
-	public void setProcPosition(ProcPosition procPosition) {
+	@Override
+	public void mergeErrorToOut() {
 	}	// do nothing
 
-	public void setMergeType(MergeType mergeType) {
-	}	// do nothing
-
+	@Override
 	public void setInputRedirect(String readFileName) {
 	}	// do nothing
 
-	public void setOutputRedirect(OutputType fd, String writeFileName, boolean append) {
+	@Override
+	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
 	}	// do nothing
 
 	abstract public void start();
 
+	@Override
 	public void kill() { // do nothing
 	}
 
+	@Override
 	public void waitTermination() { // do nothing
 	}
 }
