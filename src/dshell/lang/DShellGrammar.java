@@ -20,10 +20,9 @@ import dshell.util.Utils;
 public class DShellGrammar {
 	// suffix option symbol
 	public final static String background = "&";
-	public final static String errorAction_raise = "--erroraction=raise";
-	public final static String errorAction_trace = "--erroraction=trace";
-	// builtin command symbol 
+	// prefix option symbol 
 	public final static String timeout = "timeout";
+	public final static String trace = "trace";
 
 	private static String CommandSymbol(String Symbol) {
 		return "__$" + Symbol;
@@ -89,19 +88,8 @@ public class DShellGrammar {
 			return new ZErrorNode(Token, "name");
 		}
 		String Name = Token.ParsedText;
-		String Env  = System.getenv(Name);
-		if(TokenContext.MatchToken("=")) {
-			if(Env == null) {
-				ZNode ConstNode = TokenContext.ParsePattern(NameSpace, "$Expression$", ZTokenContext.Required);
-				if(ConstNode.IsErrorNode()) {
-					return ConstNode;
-				}
-				Env = ((ZStringNode)ConstNode).StringValue;
-			}
-		}
-		if(Env == null) {
-			return new ZErrorNode(Token, "undefined environment variable: " + Name);
-		}
+		String Env = System.getenv(Name);
+		Env = (Env == null) ? "" : Env;
 		NameSpace.SetSymbol(Name, Env, Token);
 		return new ZEmptyNode(Token);
 	}
@@ -286,18 +274,6 @@ public class DShellGrammar {
 		if(Token.EqualsText(background)) {	// set background job
 			return CreateNodeAndMatchNextOption(NameSpace, TokenContext, OptionSymbol);
 		}
-		if(Token.EqualsText("-") || Token.EqualsText("--")) {
-			while(!Token.IsNextWhiteSpace()) {
-				if(MatchStopToken(TokenContext)) {
-					break;
-				}
-				Token = TokenContext.GetTokenAndMoveForward();
-				OptionSymbol += Token.ParsedText;
-			}
-		}
-		if(OptionSymbol.equals(errorAction_raise) || OptionSymbol.equals(errorAction_trace)) {
-			return CreateNodeAndMatchNextOption(NameSpace, TokenContext, OptionSymbol);
-		}
 		return null;
 	}
 
@@ -368,16 +344,21 @@ public class DShellGrammar {
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
 		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
-		// builtin command
+		// prefix option
 		// timeout
-		NameSpace.SetSymbol(timeout, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, timeout, 0));
-		NameSpace.SetSymbol(CommandSymbol(timeout), timeout, null);
+		setOptionalSymbol(NameSpace, timeout);
+		// trace
+		setOptionalSymbol(NameSpace, trace);
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommandMap.getCommandSymbolList();
 		for(String symbol : symbolList) {
-			NameSpace.SetSymbol(symbol, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, symbol, 0));
-			NameSpace.SetSymbol(CommandSymbol(symbol), symbol, null);
+			setOptionalSymbol(NameSpace, symbol);
 		}
 		NameSpace.Generator.AppendGrammarInfo("dshell0.1");
+	}
+
+	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol) {
+		NameSpace.SetSymbol(symbol, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, symbol, 0));
+		NameSpace.SetSymbol(CommandSymbol(symbol), symbol, null);
 	}
 }

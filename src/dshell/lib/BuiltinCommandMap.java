@@ -2,6 +2,8 @@ package dshell.lib;
 
 import java.util.ArrayList;
 
+import dshell.lib.BuiltinCommandMap.BuiltinCommandSymbol;
+
 interface CLibraryWrapper extends com.sun.jna.Library {
 	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
 	
@@ -11,9 +13,66 @@ interface CLibraryWrapper extends com.sun.jna.Library {
 }
 
 public class BuiltinCommandMap {
-	private static enum BuiltinCommandSymbol {
-		cd,
-		exit;
+	public static enum BuiltinCommandSymbol {
+		cd {
+			@Override
+			public String getUsage() {
+				return "cd [dir]";
+			}
+
+			@Override
+			public String getDetail() {
+				return "    Changing the current directory to DIR. The Environment variable" + "\n" +
+					   "    HOME is the default DIR.  A null directory name is the same as " + "\n" +
+					   "    the current directory.";
+			}
+		},
+		exit {
+			@Override
+			public String getUsage() {
+				return "exit [n]";
+			}
+			
+			@Override
+			public String getDetail() {
+				return "    Exit the shell with a status of N.  If N is omitted, the exit  " + "\n" +
+					   "    status is 0.";
+			}
+		},
+		help {
+			@Override
+			public String getUsage() {
+				return "help [-s] [pattern ...]";
+			}
+			
+			@Override
+			public String getDetail() {
+				return "    Display helpful information about builtin commands.";
+			}
+		},
+		log;
+
+		public String getUsage() {
+			return "currently not defined";
+		}
+
+		public String getDetail() {
+			return "    currently not defined";
+		}
+
+		public static String getNotMatchedMessage(String commandSymbol) {
+			return "-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.";
+		}
+
+		public static boolean match(String symbol) {
+			BuiltinCommandSymbol[] symbols = BuiltinCommandSymbol.values();
+			for(BuiltinCommandSymbol currentSymbol : symbols) {
+				if(currentSymbol.name().equals(symbol)) {
+					return true;
+				}
+			}
+			return false;
+		}
 	}
 
 	public static ArrayList<String> getCommandSymbolList() {
@@ -34,6 +93,10 @@ public class BuiltinCommandMap {
 			command = new Command_exit();
 			command.setArgumentList(cmds);
 		}
+		else if(BuiltinCommandSymbol.help.name().equals(cmds.get(0))) {
+			command = new Command_help();
+			command.setArgumentList(cmds);
+		}
 		return command;
 	}
 
@@ -42,11 +105,7 @@ public class BuiltinCommandMap {
 		if(path.equals("")) {
 			targetPath = System.getenv("HOME");
 		}
-		int status = CLibraryWrapper.INSTANCE.chdir(targetPath);
-		if(status == -1) {
-			CLibraryWrapper.INSTANCE.perror("dshell: cd");
-		}
-		return status;
+		return CLibraryWrapper.INSTANCE.chdir(targetPath);
 	}
 
 	public static String getWorkingDirectory() {
@@ -101,6 +160,9 @@ class Command_cd extends BuiltinCommand {
 			path = this.commandList.get(1);
 		}
 		this.retValue = BuiltinCommandMap.changeDirectory(path);
+		if(this.retValue == -1) {
+			CLibraryWrapper.INSTANCE.perror("-dshell: cd");
+		}
 	}
 }
 
@@ -117,5 +179,48 @@ class Command_exit extends BuiltinCommand {
 			}
 		}
 		System.exit(status);
+	}
+}
+
+class Command_help extends BuiltinCommand {
+	@Override
+	public void start() {
+		int size = this.commandList.size();
+		boolean foundValidCommand = false;
+		boolean isShortHelp = false;
+		if(size == 1) {
+			this.printAllCommandUsage();
+			return;
+		}
+		for(int i = 1; i < size; i++) {
+			String arg = this.commandList.get(i);
+			if(arg.equals("-s") && size == 2) {
+				this.printAllCommandUsage();
+				return;
+			}
+			else if(arg.equals("-s") && i == 1) {
+				isShortHelp = true;
+			}
+			else {
+				if(BuiltinCommandSymbol.match(arg)) {
+					foundValidCommand = true;
+					BuiltinCommandSymbol symbol = BuiltinCommandSymbol.valueOf(arg);
+					System.out.println(arg + ": " + symbol.getUsage());
+					if(!isShortHelp) {
+						System.out.println(symbol.getDetail());
+					}
+				}
+			}
+		}
+		if(!foundValidCommand) {
+			System.err.println(BuiltinCommandSymbol.getNotMatchedMessage(this.commandList.get(size - 1)));
+		}
+	}
+
+	private void printAllCommandUsage() {
+		BuiltinCommandSymbol[] symbols = BuiltinCommandSymbol.values();
+		for(BuiltinCommandSymbol symbol : symbols) {
+			System.out.println(symbol.getUsage());
+		}
 	}
 }

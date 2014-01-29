@@ -124,7 +124,7 @@ public class TaskBuilder {
 				}
 				currentCmds = newCmds;
 			}
-			else if(currentCmds.get(0).equals("trace")) {
+			else if(currentCmds.get(0).equals(DShellGrammar.trace)) {
 				enableTrace = checkTraceRequirements();
 				int baseIndex = 1;
 				ArrayList<String> newCmds = new ArrayList<String>();
@@ -136,16 +136,6 @@ public class TaskBuilder {
 			}
 			else if(currentCmds.get(0).equals(DShellGrammar.background)) {
 				this.option.setFlag(background, true);
-				continue;
-			}
-			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_raise)) {
-				this.option.setFlag(throwable, true);
-				continue;
-			}
-			else if(currentCmds.get(0).equals(DShellGrammar.errorAction_trace)) {
-				this.option.setFlag(throwable, true);
-				this.option.setFlag(tracable, true);
-				enableTrace = checkTraceRequirements();
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
@@ -209,7 +199,7 @@ public class TaskBuilder {
 
 	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
 	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList) {
-		TaskOption option = TaskOption.of(VoidType, printable);
+		TaskOption option = TaskOption.of(VoidType, printable, throwable);
 		new TaskBuilder(cmdsList, option).invoke();
 	}
 
@@ -235,7 +225,7 @@ public class TaskBuilder {
 
 	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
 	public static void ExecCommandVoid(String[][] cmds) {
-		TaskOption option = TaskOption.of(VoidType, printable);
+		TaskOption option = TaskOption.of(VoidType, printable, throwable);
 		new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 

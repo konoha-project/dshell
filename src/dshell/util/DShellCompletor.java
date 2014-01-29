@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+import dshell.lang.DShellGrammar;
 import dshell.lib.BuiltinCommandMap;
 import jline.Completor;
 
@@ -64,6 +65,10 @@ public class DShellCompletor implements Completor {
 			return this.commandCompletor;
 		}
 		String prevArg = args[argIndex - 1];
+		if(prevArg.equals(DShellGrammar.timeout) || prevArg.equals(DShellGrammar.trace) 
+				|| prevArg.equals("command") || prevArg.equals("import")) {
+			return this.commandCompletor;
+		}
 		if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
 			return this.commandCompletor;
 		}

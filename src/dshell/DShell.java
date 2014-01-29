@@ -25,7 +25,6 @@ public class DShell {
 
 	private boolean interactiveMode = true;
 	private boolean debugMode = false;
-	private String scriptName = null;
 	private String sourceText = null;
 	private ZenArray<String> ARGV;
 
@@ -50,14 +49,14 @@ public class DShell {
 				}
 			}
 			else if(!foundScriptFile) {
-				this.scriptName = optionSymbol;
-				this.sourceText = LibNative.LoadTextFile(this.scriptName);
+				this.sourceText = LibNative.LoadTextFile(optionSymbol);
 				if (this.sourceText == null) {
-					LibNative.Exit(1, "file not found: " + this.scriptName);
+					LibNative.Exit(1, "file not found: " + optionSymbol);
 				}
 				foundScriptFile = true;
 				this.interactiveMode = false;
 				this.ARGV = ZenArray.NewZenArray(ZSystem.StringType);
+				this.ARGV.add(optionSymbol);
 			}
 			else {
 				this.ARGV.add(optionSymbol);
@@ -94,12 +93,13 @@ public class DShell {
 			System.out.println("");
 		}
 		else {
+			String scriptName = this.ARGV.get(0);
 			engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);
-			long fileLine = ZSystem.GetFileLine(this.scriptName, 1);
+			long fileLine = ZSystem.GetFileLine(scriptName, 1);
 			boolean status = engine.Load(this.sourceText, fileLine);
 			engine.Generator.Logger.ShowReportedErrors();
 			if(!status) {
-				LibNative.Exit(1, "abort loading: " + this.scriptName);
+				LibNative.Exit(1, "abort loading: " + scriptName);
 			}
 		}
 	}
