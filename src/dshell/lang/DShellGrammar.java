@@ -83,10 +83,11 @@ public class DShellGrammar {
 
 	public static ZNode MatchEnv(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
 		TokenContext.GetTokenAndMoveForward();
-		ZToken Token = TokenContext.GetTokenAndMoveForward();
-		if(!LibZen.IsVariableName(Token.ParsedText, 0)) {
-			return new ZErrorNode(Token, "name");
+		ZNode Node = TokenContext.ParsePattern(NameSpace, "$Identifier$", ZTokenContext.Required);
+		if(Node.IsErrorNode()) {
+			return Node;
 		}
+		ZToken Token = Node.SourceToken;
 		String Name = Token.ParsedText;
 		String Env = System.getenv(Name);
 		Env = (Env == null) ? "" : Env;

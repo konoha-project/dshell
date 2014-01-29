@@ -60,10 +60,6 @@ public class BuiltinCommandMap {
 			return "    currently not defined";
 		}
 
-		public static String getNotMatchedMessage(String commandSymbol) {
-			return "-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.";
-		}
-
 		public static boolean match(String symbol) {
 			BuiltinCommandSymbol[] symbols = BuiltinCommandSymbol.values();
 			for(BuiltinCommandSymbol currentSymbol : symbols) {
@@ -85,19 +81,18 @@ public class BuiltinCommandMap {
 
 	public static BuiltinCommand createCommand(ArrayList<String> cmds) {
 		BuiltinCommand command = null;
-		if(BuiltinCommandSymbol.cd.name().equals(cmds.get(0))) {
-			command = new Command_cd();
-			command.setArgumentList(cmds);
+		String commandSymbol = cmds.get(0);
+		if(BuiltinCommandSymbol.match(commandSymbol)) {
+			try {
+				Class<?> classObject = Class.forName("dshell.lib.Command_" + commandSymbol);
+				command = (BuiltinCommand) classObject.newInstance();
+				command.setArgumentList(cmds);
+				return command;
+			}
+			catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			}
 		}
-		else if(BuiltinCommandSymbol.exit.name().equals(cmds.get(0))) {
-			command = new Command_exit();
-			command.setArgumentList(cmds);
-		}
-		else if(BuiltinCommandSymbol.help.name().equals(cmds.get(0))) {
-			command = new Command_help();
-			command.setArgumentList(cmds);
-		}
-		return command;
+		return null;
 	}
 
 	public static int changeDirectory(String path) {
@@ -190,13 +185,13 @@ class Command_help extends BuiltinCommand {
 		boolean isShortHelp = false;
 		if(size == 1) {
 			this.printAllCommandUsage();
-			return;
+			foundValidCommand = true;
 		}
 		for(int i = 1; i < size; i++) {
 			String arg = this.commandList.get(i);
 			if(arg.equals("-s") && size == 2) {
 				this.printAllCommandUsage();
-				return;
+				foundValidCommand = true;
 			}
 			else if(arg.equals("-s") && i == 1) {
 				isShortHelp = true;
@@ -213,8 +208,9 @@ class Command_help extends BuiltinCommand {
 			}
 		}
 		if(!foundValidCommand) {
-			System.err.println(BuiltinCommandSymbol.getNotMatchedMessage(this.commandList.get(size - 1)));
+			this.printNotMatchedMessage(this.commandList.get(size - 1));
 		}
+		this.retValue = foundValidCommand ? 0 : 1;
 	}
 
 	private void printAllCommandUsage() {
@@ -222,5 +218,9 @@ class Command_help extends BuiltinCommand {
 		for(BuiltinCommandSymbol symbol : symbols) {
 			System.out.println(symbol.getUsage());
 		}
+	}
+
+	private void printNotMatchedMessage(String commandSymbol) {
+		System.err.println("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
 	}
 }
