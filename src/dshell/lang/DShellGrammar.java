@@ -224,7 +224,7 @@ public class DShellGrammar {
 		return LocalContext.ParsePattern(NameSpace, "$Expression$", ZTokenContext.Required);
 	}
 
-	private static ZNode CreateNodeAndMatchNextRedirect(ZNameSpace NameSpace, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
+	private static ZNode CreateRedirectNode(ZNameSpace NameSpace, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
 		ZNode Node = new DShellCommandNode(new ZStringNode(new ZToken(0, RedirectSymbol, 0), RedirectSymbol));
 		if(existTarget) {
 			Node = TokenContext.AppendMatchedPattern(Node, NameSpace, "$CommandArg$", ZTokenContext.Required);
@@ -232,37 +232,37 @@ public class DShellGrammar {
 		return Node;
 	}
 
-	// >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
+	// <, >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
 	public static ZNode MatchRedirect(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetTokenAndMoveForward();
 		String RedirectSymbol = Token.ParsedText;
-		if(Token.EqualsText(">>")) {
-			return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+		if(Token.EqualsText(">>") || Token.EqualsText("<")) {
+			return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("&")) {
 			ZToken Token2 = TokenContext.GetTokenAndMoveForward();
 			if(Token2.EqualsText(">") || Token2.EqualsText(">>")) {
 				RedirectSymbol += Token2.ParsedText;
-				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 		}
 		else if(Token.EqualsText(">")) {
 			ZToken Token2 = TokenContext.GetToken();
 			if(Token2.EqualsText("&")) {
 				RedirectSymbol += Token2.ParsedText;
-				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 			}
-			return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+			return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("1") || Token.EqualsText("2")) {
 			ZToken Token2 = TokenContext.GetTokenAndMoveForward();
 			if(Token2.EqualsText(">>")) {
 				RedirectSymbol += Token2.ParsedText;
-				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 			else if(Token2.EqualsText(">")) {
 				RedirectSymbol += Token2.ParsedText;
-				return CreateNodeAndMatchNextRedirect(NameSpace, TokenContext, RedirectSymbol, true);
+				return CreateRedirectNode(NameSpace, TokenContext, RedirectSymbol, true);
 			}
 		}
 		return null;

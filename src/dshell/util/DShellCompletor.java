@@ -10,7 +10,7 @@ import jline.Completor;
 
 public class DShellCompletor implements Completor {
 	private jline.SimpleCompletor commandCompletor;
-	private jline.FileNameCompletor fileNameCompletor;
+	private DShellFileNameCompletor fileNameCompletor;
 	private jline.ArgumentCompletor.ArgumentDelimiter delimiter;
 
 	public DShellCompletor() {
