@@ -37,6 +37,9 @@ public class ModifiedReflectionEngine extends JavaReflectionEngine {	//TODO: imp
 		else if(Node.Type.IsStringType()) {
 			this.EvaledValue = TaskBuilder.ExecCommandString(values);
 		}
+		else if(Node.Type.ShortName.equals("Task")) {
+			this.EvaledValue = TaskBuilder.ExecCommandTask(values);
+		}
 		else {
 			TaskBuilder.ExecCommandVoid(values);
 		}

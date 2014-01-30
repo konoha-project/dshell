@@ -11,18 +11,24 @@ import java.util.ArrayList;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCommandNode;
+import dshell.exception.DShellException;
+import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.ModifiedTypeInfer;
+import dshell.lib.ClassListLoader;
+import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import zen.ast.ZNode;
+import zen.deps.NativeTypeTable;
 import zen.lang.ZType;
 import zen.lang.ZenEngine;
+import zen.parser.ZToken;
 
 public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	private static Method ExecCommandVoid;
 	private static Method ExecCommandBool;
 	private static Method ExecCommandInt;
 	private static Method ExecCommandString;
-	//private static Method ExecCommandTask;
+	private static Method ExecCommandTask;
 	
 	static {
 		try {
@@ -30,7 +36,7 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", String[][].class);
 			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", String[][].class);
 			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", String[][].class);
-			//ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", String[][].class);
+			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", String[][].class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -41,6 +47,10 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 
 	public ModifiedJavaByteCodeGenerator() {
 		super();
+		this.importNativeClass(Task.class);
+		this.importNativeClass(DShellException.class);
+		this.importNativeClass(UnimplementedErrnoException.class);
+		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
 	}
 
 	@Override public ZenEngine GetEngine() {
@@ -81,9 +91,9 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		else if(Node.Type.IsStringType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandString);
 		}
-//		else if(LibZen.EqualsString(Node.Type.toString(), "Task")) {
-//			this.CurrentBuilder.InvokeMethodCall(Node.Type, JLib.ExecCommandTask);
-//		}
+		else if(Node.Type.ShortName.equals("Task")) {
+			this.invokeStaticMethod(Node.Type, ExecCommandTask);
+		}
 		else {
 			this.invokeStaticMethod(Node.Type, ExecCommandVoid);
 		}
@@ -92,5 +102,16 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.CurrentBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
+	}
+
+	private void importNativeClass(Class<?> classObject) {
+		ZType type = NativeTypeTable.GetZenType(classObject);
+		this.RootNameSpace.SetSymbol(classObject.getSimpleName(), type, new ZToken(0, classObject.getCanonicalName(), 0));
+	}
+
+	private void importNativeClassList(ArrayList<Class<?>> classObjList) {
+		for(Class<?> classObj : classObjList) {
+			this.importNativeClass(classObj);
+		}
 	}
 }

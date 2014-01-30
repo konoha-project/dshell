@@ -244,6 +244,11 @@ public class TaskBuilder {
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
+	public static Task ExecCommandTask(String[][] cmds) {
+		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
+		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
+	}
+
 	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {
 		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
 		for(String[] cmd : cmds) {

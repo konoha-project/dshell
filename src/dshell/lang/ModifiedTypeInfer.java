@@ -1,7 +1,9 @@
 package dshell.lang;
 
 import dshell.ast.DShellCommandNode;
+import dshell.lib.Task;
 import zen.ast.ZNode;
+import zen.deps.NativeTypeTable;
 import zen.lang.ZSystem;
 import zen.lang.ZType;
 import zen.lang.ZenTypeChecker;
@@ -18,7 +20,7 @@ public class ModifiedTypeInfer extends ZenTypeInfer {
 		ZNameSpace NameSpace = this.GetNameSpace();
 		ZType ContextType = this.GetContextType();
 		if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
-			ContextType = ZSystem.VoidType;
+			ContextType = NativeTypeTable.GetZenType(Task.class);
 		}
 		int size = Node.ArgumentList.size();
 		for(int i = 0; i < size; i++) {
