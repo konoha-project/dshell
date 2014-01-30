@@ -12,24 +12,24 @@ C/C++ と異なり、1 や 0 のような整数値は、論理値の代わりに
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Boolean.ds" >
 function func() {
 
-  var a: boolean = true;
-  var b = false;
+  var a: boolean = true
+  var b = false
 
-  println(a);
-  println(b);
+  log a
+  log b
 
-  assert(a instanceof boolean);
-  assert(b instanceof boolean);
+  assert(a instanceof boolean)
+  assert(b instanceof boolean)
 }
 
-func();
-true
-false
+func()
 </pre>
 
 
 <pre class="toolbar:1" title="実行例">
 $ dshell Boolean.ds
+true
+false
 </pre>
 
 
@@ -44,19 +44,20 @@ int は整数のデータ型です。
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Int.ds" >
 function func(): boolean {
 
-  var a = 10;
-  var b = -1;
-  var c:int = 9223372036854775807;
+  var a = 10
+  var b = -1
+  var c:int = 9223372036854775807
 
-  println(a);
-  assert(a instanceof int);
-  println(b);
-  assert(b instanceof int);
-  println(c);
-  assert(c instanceof int);
-  return true;
+  log a
+  assert(a instanceof int)
+  log b
+  assert(b instanceof int)
+  log c
+  assert(c instanceof int)
+  return true
 }
-func();
+
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -74,18 +75,17 @@ float は浮動小数点数 を扱うデータ型です。精度は 64 ビット
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Float.ds" >
 function func(): boolean {
 
-  var a = 3.14;
-  var b: float = 0.5e3;
+  var a = 3.14
+  var b: float = 0.5e3
 
-  println(a);
-  assert(a instanceof float);
-  println(b);
-  assert(b instanceof float);
-  return true;
+  log a
+  assert(a instanceof float)
+  log b
+  assert(b instanceof float)
+  return true
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -104,12 +104,13 @@ String は、連結された文字列を扱うデータ型です。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: String.ds" >
 function func() {
-  var str: String = "うずまきナルト";
-  println(str);
-  assert(str instanceof String);
+
+  var str: String = "うずまきナルト"
+  log str
+  assert(str instanceof String)
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -138,12 +139,13 @@ String 型に格納できる文字数は使えるメモリ (heap memory) のサ�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: EscSeq.ds" >
 function func() {
-  println("うずまき\nナルト");
-  println('うずまき\nナルト');
-  println(str);
+
+  log "うずまき\nナルト"
+  log 'うずまき\nナルト'
+  log str
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -158,8 +160,8 @@ $ dshell EscSeq.ds
 明示的に式展開を止めるには$の前にバックスラッシュを置きます。 
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Interpolation.ds" >
-println("西暦${1900 + 114}年");
-println("西暦\${1900 + 114}年");
+log "西暦${1900 + 114}年"
+log "西暦\${1900 + 114}年"
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -174,12 +176,13 @@ String 型は、Java のパッケージである java.lang.String のメソッ�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ReplaceAll.ds" >
 function func() {
-  var str: String = "はるのサクラ";
-  str.replaceAll("はるの", "うずまき");
-  println(str);
+
+  var str: String = "はるのサクラ"
+  str.replaceAll("はるの", "うずまき")
+  log str
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -195,11 +198,12 @@ $ dshell ReplaceAll.ds
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Void.ds" >
 function func(void): void {
-  println("function call!");
-  return;
+
+  log "function call!"
+  return
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -215,23 +219,23 @@ Array 型は、複数個のオブジェクトをコレクションとして扱�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Array.ds" >
 function func() {
-  var a: Array<int> = [12, 34, 56, 78, 90];
-  var b = ["hoge", "piyo", "fuga"];
 
-  assert(a instanceof Array<int>);
-  assert(b instanceof Array<String>);
+  var a: int[] = [12, 34, 56, 78, 90]
+  var b = ["hoge", "piyo", "fuga"]
 
-  var i: int = 0;
+  assert(a instanceof int[])
+  assert(b instanceof String[])
 
-  while(i < a.length) {
-    println(a[i]);
+  for(x in a) {
+    log x
   }
 
-  i = 0;
-
-  while(i < b.length) {
-    println(b[i]);
+  for(y in b) {
+    log y
   }
+}
+
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -252,18 +256,20 @@ Map 型は、キーと値のペアを持ち、キーを使いそれとペアと�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: HashMap.ds" >
 function func() {
-
-  var map: Map<int> = {"hoge": 3, "fuga": 5};
-  println(map["hoge"]);
-  assert(map instanceof Map<int>);
+  var map: Map<int> = { "hoge": 3, "piyo": 5, "fuga": 7 }
+  for(key in map) { log map[key] }
+  assert(map instanceof Map<int>)
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
 $ dshell HashMap.ds
-int
+3
+5
+7
+true
 </pre>
 
 # Func<T, U, V, ...> 型
@@ -281,13 +287,12 @@ Func<int, int, String>  // function func(a: int, b: String): int {} の関数オ
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Func.ds" >
 function func(x: int): int {
-  return x * 2;
+  return x * 2
 }
 
-var func: Func<int, int> = func;
-
-println(func(3));
-println(func instanceof Func<int, int>);
+var func: Func<int, int> = func
+log func(3)
+assert(func instanceof Func<int, int>)
 </pre>
 
 <pre class="toolbar:1" title="実行例">

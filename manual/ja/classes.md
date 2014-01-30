@@ -9,20 +9,21 @@ D-Shellでは、C++ や Java と同様にクラスを定義することができ
 
 <pre>
 class クラス名 {
-  field フィールド名1 : データ型1;
-  field フィールド名2 : データ型2;
+  field フィールド名1 : データ型1 = 初期値
+  field フィールド名2 : データ型2 = 初期値
   ...
 }
 </pre>
 
 フィールドのデータ型の定義は必須です。  
+フィールドのメンバ変数には初期値を指定できます。  
 メンバ関数のデータ型は 第１引数をレシーバとするFunc 型(関数オブジェクト型)で定義します。  
 
 <pre class="toolbar:1" title="定義例">
 class Person {
-  field name : String;
-  field age : int;
-  field isChild : Func<boolean, this, int>;
+  field name : String = "naruto"
+  field age : int = 17
+  field isChild : Func<boolean, this, int>
 }
 </pre>
 
@@ -31,20 +32,27 @@ class ステートメントブロックのあとにメンバ関数を定義す�
 <pre>
 // クラス定義
 class Person {
-  field name : String;
-  field age : int;
-  field isChild : Func<boolean, this, int>;
+  field name : String = "naruto"
+  field age : int = 17
+  field isChild : Func<boolean, this, int>
 }
 
 // メンバ関数定義
-function isChild(x:Person, a:int) :boolean { return (a > 5)? true : false; }
+function isChild(x: Person, a: int) :boolean { return (a > 5)? true : false; }
 </pre>
 
 # オブジェクト生成
 ***
-クラスのオブジェクトの生成には new 演算子を使用します。  
+クラスのオブジェクト生成には、二つの方法があります。  
+
+* new 演算子を指定する  
 <pre>
-var obj = new Person();
+var obj = new Person()
+</pre>
+
+* データを指定する
+<pre>
+var obj = Person { name: "naruto", age: 17 }
 </pre>
 
 クラスのメンバ関数の呼び出しには、二つの方法があります。  
@@ -52,35 +60,37 @@ var obj = new Person();
 * クラスオブジェクトの後に「ドット」付けてメンバ関数を指定する  
 
 <pre>
-var a = obj.isChild();
+var a = obj.isChild()
 </pre>
 
 * メンバ関数のパラメータにクラスオブジェクトを指定する  
 <pre>
-var b =isChild(obj);
+var b =isChild(obj)
 </pre>
 
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Class.ds" >
 // クラス定義
 class Person {
-  field name : String;
-  field age : int;
-  field isChild : Func<boolean, this, int>;
+  field name : String = "naruto"
+  field age : int = 17
+  field isChild : Func<boolean, this, int>
 }
 
 // メンバ関数定義
-function isChild(x:Person, a:int) :boolean { return (a > 5)? true : false; }
+function isChild(x: Person, a: int) :boolean { return (a > 5)? true : false; }
 
 func() {
-  var obj = new Person();
+  var obj1 = new Person()
+  var obj2 = Person { name: "sakura", age: 16 }
+
   // クラスオブジェクトの後に「ドット」付けてメンバ関数を指定
-  println(obj.isChild(6));
+  log obj1.isChild(6)
   // メンバ関数のパラメータにクラスオブジェクトを指定
-  println(isChild(obj, 1));
+  log isChild(ob2, 1)
 }
 
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
