@@ -17,8 +17,10 @@ import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.ClassListLoader;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
+import dshell.util.Utils;
 import zen.ast.ZNode;
 import zen.deps.NativeTypeTable;
+import zen.lang.ZSystem;
 import zen.lang.ZType;
 import zen.lang.ZenEngine;
 import zen.parser.ZToken;
@@ -43,6 +45,8 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 			System.err.println("method loading failed");
 			System.exit(1);
 		}
+		NativeMethodTable.Import(ZSystem.StringType, "=~", ZSystem.StringType, Utils.class, "matchRegex");
+		NativeMethodTable.Import("assert", ZSystem.BooleanType, Utils.class, "assertResult");
 	}
 
 	public ModifiedJavaByteCodeGenerator() {

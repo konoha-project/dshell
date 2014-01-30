@@ -1,6 +1,8 @@
 package dshell.util;
 
 import java.io.File;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 public class Utils {
 	public final static boolean isUnixCommand(String cmd) {
@@ -61,5 +63,22 @@ public class Utils {
 			System.err.println("\tat " + element);
 		}
 		System.exit(status);
+	}
+
+	public static boolean matchRegex(String target, String regex) {
+		try {
+			Pattern pattern = Pattern.compile(regex);
+			return pattern.matcher(target).find();
+		}
+		catch (PatternSyntaxException e) {
+		}
+		return false;
+	}
+
+	public static void assertResult(boolean result) {
+		if(!result) {
+			System.err.println("Assertion Faild");
+			System.exit(1);
+		}
 	}
 }

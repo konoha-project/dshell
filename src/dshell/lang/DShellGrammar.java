@@ -9,6 +9,7 @@ import zen.ast.ZStringNode;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;
+import zen.lang.ZenPrecedence;
 import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
 import zen.parser.ZToken;
@@ -345,6 +346,8 @@ public class DShellGrammar {
 		NameSpace.AppendSyntax("$Redirect$", LibNative.LoadMatchFunc(Grammar, "MatchRedirect"));
 		NameSpace.AppendSyntax("$SuffixOption$", LibNative.LoadMatchFunc(Grammar, "MatchSuffixOption"));
 		NameSpace.AppendSyntax("$DShell$", LibNative.LoadMatchFunc(Grammar, "MatchDShell"));
+		NameSpace.AppendSuffixSyntax("=~", ZenPrecedence.CStyleEquals, LibNative.LoadMatchFunc(ZenGrammar.class, "MatchComparator"));
+		NameSpace.AppendSyntax("assert", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
 		// prefix option
 		// timeout
 		setOptionalSymbol(NameSpace, timeout);
