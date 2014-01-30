@@ -183,7 +183,8 @@ public class TaskBuilder {
 			}
 		}
 		int size = procBuffer.size();
-		procBuffer.get(size - 1).setProcPosition(true);
+		procBuffer.get(0).setFirstProcFlag(true);
+		procBuffer.get(size - 1).setLastProcFlag(true);
 		return procBuffer.toArray(new PseudoProcess[size]);
 	}
 
@@ -285,7 +286,8 @@ abstract class PseudoProcess {
 
 	protected boolean stdoutIsDirty = false;
 	protected boolean stderrIsDirty = false;
-	
+
+	protected boolean isFirstProc = false;
 	protected boolean isLastProc = false;
 
 	protected int retValue = 0;
@@ -317,7 +319,11 @@ abstract class PseudoProcess {
 		new PipeStreamHandler(srcProc.accessOutStream(), this.stdin, true).start();
 	}
 
-	public void setProcPosition(boolean isLastProc) {
+	public void setFirstProcFlag(boolean isFirstProc) {
+		this.isFirstProc = isFirstProc;
+	}
+
+	public void setLastProcFlag(boolean isLastProc) {
 		this.isLastProc = isLastProc;
 	}
 
@@ -431,8 +437,7 @@ class SubProc extends PseudoProcess {
 		}
 		this.sBuilder.append("]");
 		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-		this.procBuilder.inheritIO();
-		this.procBuilder.redirectOutput(Redirect.PIPE);
+		this.procBuilder.redirectError(Redirect.INHERIT);
 	}
 
 	@Override
@@ -456,6 +461,11 @@ class SubProc extends PseudoProcess {
 	}
 
 	private void setStreamBehavior() {
+		if(this.isFirstProc) {
+			if(this.procBuilder.redirectInput().file() == null) {
+				procBuilder.redirectInput(Redirect.INHERIT);
+			}
+		}
 		if(this.isLastProc) {
 			if(this.procBuilder.redirectOutput().file() == null && !this.taskOption.supportStdoutHandler()) {
 				procBuilder.redirectOutput(Redirect.INHERIT);

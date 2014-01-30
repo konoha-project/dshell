@@ -15,6 +15,24 @@ interface CLibraryWrapper extends com.sun.jna.Library {
 
 public class BuiltinCommandMap {
 	public static enum BuiltinCommandSymbol {
+		assertResult {	// not builtin command
+			@Override
+			public String getUsage() {
+				return "assert [bool_expr]";
+			}
+
+			@Override
+			public String getDetail() {
+				return "    Assertion statement in dshell.  If BOOL_EXPR is true, the " + "\n" +
+					   "    statement will pass normaly.  If BOOL_EXPR is false, the " + "\n" +
+					   "    statement will fail with displaying `AssertionError'.";
+			}
+
+			@Override
+			public String getExternalName() {
+				return "assert";
+			}
+		},
 		cd {
 			@Override
 			public String getUsage() {
@@ -51,7 +69,24 @@ public class BuiltinCommandMap {
 				return "    Display helpful information about builtin commands.";
 			}
 		},
-		log;
+		log {
+			@Override
+			public String getUsage() {
+				return "log [argument ...]";
+			}
+			
+			@Override
+			public String getDetail() {
+				return "    Display arguments.  If shell option --logging:stout or " + "\n" +
+					   "    --logging:stderr is set, display arguments to stdout or " + "\n" +
+					   "    stderr.  If shell option --logging:syslog is set, write " + "\n" +
+					   "    arguments to syslog.";
+			}
+		};
+
+		public String getExternalName() {
+			return this.name();
+		}
 
 		public String getUsage() {
 			return "currently not defined";
@@ -64,11 +99,21 @@ public class BuiltinCommandMap {
 		public static boolean match(String symbol) {
 			BuiltinCommandSymbol[] symbols = BuiltinCommandSymbol.values();
 			for(BuiltinCommandSymbol currentSymbol : symbols) {
-				if(currentSymbol.name().equals(symbol)) {
+				if(currentSymbol.getExternalName().equals(symbol)) {
 					return true;
 				}
 			}
 			return false;
+		}
+
+		public static BuiltinCommandSymbol valueOfSymbol(String symbol) {
+			BuiltinCommandSymbol[] symbols = BuiltinCommandSymbol.values();
+			for(BuiltinCommandSymbol currentSymbol : symbols) {
+				if(currentSymbol.getExternalName().equals(symbol)) {
+					return currentSymbol;
+				}
+			}
+			throw new IllegalArgumentException("Illegal Symbol: " + symbol);
 		}
 	}
 
@@ -204,7 +249,7 @@ class Command_help extends BuiltinCommand {
 			else {
 				if(BuiltinCommandSymbol.match(arg)) {
 					foundValidCommand = true;
-					BuiltinCommandSymbol symbol = BuiltinCommandSymbol.valueOf(arg);
+					BuiltinCommandSymbol symbol = BuiltinCommandSymbol.valueOfSymbol(arg);
 					System.out.println(arg + ": " + symbol.getUsage());
 					if(!isShortHelp) {
 						System.out.println(symbol.getDetail());
