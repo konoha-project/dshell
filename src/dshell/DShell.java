@@ -5,12 +5,15 @@ import java.io.PrintStream;
 import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
 import dshell.lang.DShellGrammar;
 import dshell.util.DShellConsole;
+import dshell.util.LoggingContext;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
 import zen.lang.ZSystem;
 import zen.lang.ZenEngine;
 import zen.parser.ZGenerator;
+ 
+import static dshell.util.LoggingContext.AppenderType;
 
 public class DShell {
 	public final static String progName  = "D-Shell";
@@ -42,6 +45,22 @@ public class DShell {
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
+				}
+				else if(optionSymbol.equals("--logging:stdout")) {
+					LoggingContext.getContext().changeAppender(AppenderType.stdout);
+				}
+				else if(optionSymbol.equals("--logging:stderr")) {
+					LoggingContext.getContext().changeAppender(AppenderType.stderr);
+				}
+				else if(optionSymbol.equals("--logging:syslog")) {
+					int nextIndex = i + 1;
+					if(nextIndex < args.length && !args[nextIndex].startsWith("-")) {
+						LoggingContext.getContext().changeAppender(AppenderType.syslog, args[nextIndex]);
+						i++;
+					}
+					else {
+						LoggingContext.getContext().changeAppender(AppenderType.syslog);
+					}
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
@@ -115,6 +134,9 @@ public class DShell {
 		stream.println("Options:");
 		stream.println("    --debug");
 		stream.println("    --help");
+		stream.println("    --logging:stdout");
+		stream.println("    --logging:stderr");
+		stream.println("    --logging:syslog [host address]");
 		stream.println("    --version");
 		System.exit(status);
 	}

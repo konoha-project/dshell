@@ -3,6 +3,7 @@ package dshell.lib;
 import java.util.ArrayList;
 
 import dshell.lib.BuiltinCommandMap.BuiltinCommandSymbol;
+import dshell.util.LoggingContext;
 
 interface CLibraryWrapper extends com.sun.jna.Library {
 	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
@@ -89,7 +90,11 @@ public class BuiltinCommandMap {
 				command.setArgumentList(cmds);
 				return command;
 			}
-			catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			catch (ClassNotFoundException e) {	
+			}
+			catch(InstantiationException e) {
+			}
+			catch (IllegalAccessException e) {
 			}
 		}
 		return null;
@@ -222,5 +227,24 @@ class Command_help extends BuiltinCommand {
 
 	private void printNotMatchedMessage(String commandSymbol) {
 		System.err.println("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
+	}
+}
+
+class Command_log extends BuiltinCommand {
+	@Override
+	public void start() {
+		int size = this.commandList.size();
+		if(size == 1) {
+			return;
+		}
+		StringBuilder sBuilder = new StringBuilder();
+		for(int i = 1; i < size; i++) {
+			if(i != 1) {
+				sBuilder.append(" ");
+			}
+			sBuilder.append(this.commandList.get(i));
+		}
+		System.out.println(sBuilder.toString());
+		LoggingContext.getContext().getLogger().warn(sBuilder.toString());
 	}
 }

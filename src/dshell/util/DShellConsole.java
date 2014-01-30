@@ -2,6 +2,8 @@ package dshell.util;
 
 import java.io.IOException;
 
+import jline.ANSIBuffer.ANSICodes;
+
 import dshell.lib.BuiltinCommandMap;
 
 import zen.deps.LibZen;
@@ -11,6 +13,8 @@ public class DShellConsole {
 	private String userName = System.getProperty("user.name");
 	
 	public DShellConsole() {
+		Runtime.getRuntime().addShutdownHook(new ShutdownOp());
+		System.out.print(ANSICodes.attrib(36));
 		try {
 			this.consoleReader = new jline.ConsoleReader();
 			this.consoleReader.addCompletor(new DShellCompletor());
@@ -72,5 +76,11 @@ public class DShellConsole {
 		prompts[0] = prompt;
 		prompts[1] = promptBuilder.toString();
 		return prompts;
+	}
+}
+
+class ShutdownOp extends Thread {
+	@Override public void run() {
+		System.out.print(ANSICodes.attrib(0));
 	}
 }
