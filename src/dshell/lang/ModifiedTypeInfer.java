@@ -1,7 +1,10 @@
 package dshell.lang;
 
+import zen.ast.ZCatchNode;
 import zen.ast.ZNode;
+import zen.ast.ZTryNode;
 import zen.deps.NativeTypeTable;
+import zen.deps.Var;
 import zen.lang.ZenTypeSafer;
 import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
@@ -27,8 +30,26 @@ public class ModifiedTypeInfer extends ZenTypeSafer {
 			Node.ArgumentList.set(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {
-			Node.ParentNode = this.CheckType(Node.PipedNextNode, NameSpace, ContextType);
+			Node.PipedNextNode = this.CheckType(Node.PipedNextNode, NameSpace, ContextType);
 		}
 		this.TypedNode(Node, ContextType);
+	}
+
+	@Override public void VisitTryNode(ZTryNode Node) {
+		@Var ZNameSpace NameSpace = this.GetNameSpace();
+		Node.TryNode = this.CheckType(Node.TryNode, NameSpace, ZType.VoidType);
+		if(Node.CatchNode != null) {
+			Node.CatchNode = this.CheckType(Node.CatchNode, NameSpace, ZType.VoidType);
+		}
+		if(Node.FinallyNode != null) {
+			Node.FinallyNode = this.CheckType(Node.FinallyNode, NameSpace, ZType.VoidType);
+		}
+		this.TypedNode(Node, ZType.VoidType);
+	}
+
+	@Override public void VisitCatchNode(ZCatchNode Node) {
+		ZNameSpace NameSpace = this.GetNameSpace();
+		Node.BodyNode = this.CheckType(Node.BodyNode, NameSpace, ZType.VoidType);
+		this.TypedNode(Node, ZType.VoidType);
 	}
 }

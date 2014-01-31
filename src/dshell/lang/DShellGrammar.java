@@ -2,12 +2,14 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
+import zen.ast.ZCatchNode;
 import zen.ast.ZEmptyNode;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
+import zen.deps.Var;
 import zen.lang.ZFunc;
 import zen.lang.ZenGrammar;
 import zen.lang.ZenPrecedence;
@@ -16,6 +18,7 @@ import zen.parser.ZNameSpace;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.lib.BuiltinCommand;
 import dshell.util.Utils;
 
@@ -94,7 +97,8 @@ public class DShellGrammar {
 //		String Env = System.getenv(Name);
 //		Env = (Env == null) ? "" : Env;
 //		NameSpace.SetSymbol(Name, Env, Token);
-		return new ZEmptyNode(Token);
+//		return new ZEmptyNode(Token);
+		return new DShellDummyNode();
 	}
 
 	public static ZNode MatchCommand(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
@@ -131,11 +135,11 @@ public class DShellGrammar {
 				Command = "";
 			}
 		}
-		if(ParsedText != null) {
-			SourceToken = new ZToken(0, ParsedText, lineNum);
+		if(!Command.equals("")) {
+			SourceToken = new ZToken(0, Command, lineNum);
 			AppendCommand(NameSpace, Command, KeyToken, SourceToken);
 		}
-		return new ZEmptyNode(SourceToken);
+		return new DShellDummyNode();
 	}
 
 	private static boolean MatchStopToken(ZTokenContext TokenContext) { // ;,)]}&&||
@@ -335,6 +339,17 @@ public class DShellGrammar {
 		return CommandNode;
 	}
 
+	public static ZNode MatchCatch(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
+		@Var ZNode CatchNode = new ZCatchNode();
+		CatchNode = TokenContext.MatchNodeToken(CatchNode, NameSpace, "catch", ZTokenContext.Required2);
+		CatchNode = TokenContext.MatchNodeToken(CatchNode, NameSpace, "(", ZTokenContext.Required2);
+		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, NameSpace, "$Identifier$", ZTokenContext.Required2);
+		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, NameSpace, "$TypeAnnotation$", ZTokenContext.Required2);
+		CatchNode = TokenContext.MatchNodeToken(CatchNode, NameSpace, ")", ZTokenContext.Required2);
+		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, NameSpace, "$Block$", ZTokenContext.Required2);
+		return CatchNode;
+	}
+
 	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
 		LibNative.ImportGrammar(NameSpace, ZenGrammar.class.getName());
 		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
@@ -351,6 +366,7 @@ public class DShellGrammar {
 		NameSpace.DefineSuffixSyntax("=~", ZenPrecedence.CStyleEquals, LibNative.LoadMatchFunc(ZenGrammar.class, "MatchComparator"));
 		NameSpace.DefineSyntax("assert", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
 		NameSpace.DefineSyntax("log", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
+		NameSpace.DefineSyntax("$Catch$", LibNative.LoadMatchFunc(Grammar, "MatchCatch"));
 		// prefix option
 		// timeout
 		setOptionalSymbol(NameSpace, timeout);
@@ -367,7 +383,5 @@ public class DShellGrammar {
 	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol) {
 		NameSpace.DefineSyntax(symbol, MatchDShell);
 		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZToken(0, symbol, 0), symbol));
-//		NameSpace.SetSymbol(symbol, NameSpace.GetSyntaxPattern("$DShell$"), new ZToken(0, symbol, 0));
-//		NameSpace.SetSymbol(CommandSymbol(symbol), symbol, null);
 	}
 }

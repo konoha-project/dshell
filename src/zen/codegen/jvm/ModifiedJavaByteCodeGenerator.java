@@ -3,6 +3,7 @@ package zen.codegen.jvm;
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.DUP;
+import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 
 import java.lang.reflect.Method;
@@ -19,6 +20,7 @@ import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZNode;
+import zen.ast.ZTryNode;
 import zen.deps.NativeTypeTable;
 import zen.lang.ZenEngine;
 import zen.parser.ZToken;
@@ -101,6 +103,24 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		else {
 			this.invokeStaticMethod(Node.Type, ExecCommandVoid);
 		}
+	}
+
+	@Override public void VisitTryNode(ZTryNode Node) {
+		TryCatchLabel Label = new TryCatchLabel();
+		this.TryCatchLabel.push(Label); // push
+		// try block
+		this.CurrentBuilder.visitLabel(Label.beginTryLabel);
+		Node.TryNode.Accept(this);
+		this.CurrentBuilder.visitLabel(Label.endTryLabel);
+		this.CurrentBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
+		// catch block
+		Node.CatchNode.Accept(this);
+		// finally block
+		this.CurrentBuilder.visitLabel(Label.finallyLabel);
+		if(Node.FinallyNode != null) {
+			Node.FinallyNode.Accept(this);
+		}
+		this.TryCatchLabel.pop();
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
