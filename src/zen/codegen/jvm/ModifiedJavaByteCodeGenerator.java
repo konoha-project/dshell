@@ -20,10 +20,9 @@ import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZNode;
 import zen.deps.NativeTypeTable;
-import zen.lang.ZSystem;
-import zen.lang.ZType;
 import zen.lang.ZenEngine;
 import zen.parser.ZToken;
+import zen.type.ZType;
 
 public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	private static Method ExecCommandVoid;
@@ -45,8 +44,9 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 			System.err.println("method loading failed");
 			System.exit(1);
 		}
-		NativeMethodTable.Import(ZSystem.StringType, "=~", ZSystem.StringType, Utils.class, "matchRegex");
-		NativeMethodTable.Import("assert", ZSystem.BooleanType, Utils.class, "assertResult");
+		NativeMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
+		NativeMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
+		NativeMethodTable.Import("log", ZType.VarType, Utils.class, "log");
 	}
 
 	public ModifiedJavaByteCodeGenerator() {
@@ -110,7 +110,7 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 
 	private void importNativeClass(Class<?> classObject) {
 		ZType type = NativeTypeTable.GetZenType(classObject);
-		this.RootNameSpace.SetSymbol(classObject.getSimpleName(), type, new ZToken(0, classObject.getCanonicalName(), 0));
+		this.RootNameSpace.SetTypeName(classObject.getSimpleName(), type, new ZToken(0, classObject.getCanonicalName(), 0));
 	}
 
 	private void importNativeClassList(ArrayList<Class<?>> classObjList) {

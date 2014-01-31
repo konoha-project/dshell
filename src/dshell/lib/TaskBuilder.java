@@ -189,7 +189,7 @@ public class TaskBuilder {
 	}
 
 	private PseudoProcess createProc(ArrayList<String> cmds) {
-		PseudoProcess proc = BuiltinCommandMap.createCommand(cmds);
+		PseudoProcess proc = BuiltinCommand.createCommand(cmds);
 		if(proc != null) {
 			return proc;
 		}

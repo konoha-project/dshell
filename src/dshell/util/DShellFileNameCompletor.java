@@ -3,7 +3,6 @@ package dshell.util;
 import java.io.File;
 import java.util.List;
 
-import dshell.lib.BuiltinCommandMap;
 import jline.FileNameCompletor;
 
 public class DShellFileNameCompletor extends FileNameCompletor {
@@ -19,7 +18,7 @@ public class DShellFileNameCompletor extends FileNameCompletor {
 			translated = new File(System.getProperty("user.home")).getParentFile().getAbsolutePath();
 		}
 		else if(!translated.startsWith(File.separator)) {
-			String workingDir = BuiltinCommandMap.getWorkingDirectory();
+			String workingDir = Utils.getWorkingDirectory();
 			if(workingDir.equals("/")) {
 				workingDir = "";
 			}

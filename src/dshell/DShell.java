@@ -12,6 +12,7 @@ import zen.deps.ZenArray;
 import zen.lang.ZSystem;
 import zen.lang.ZenEngine;
 import zen.parser.ZGenerator;
+import zen.type.ZType;
  
 import static dshell.util.LoggingContext.AppenderType;
 
@@ -74,7 +75,7 @@ public class DShell {
 				}
 				foundScriptFile = true;
 				this.interactiveMode = false;
-				this.ARGV = ZenArray.NewZenArray(ZSystem.StringType);
+				this.ARGV = ZenArray.NewZenArray(ZType.StringType);
 				this.ARGV.add(optionSymbol);
 			}
 			else {
@@ -113,7 +114,7 @@ public class DShell {
 		}
 		else {
 			String scriptName = this.ARGV.get(0);
-			engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);
+			//engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);	//FIXME
 			long fileLine = ZSystem.GetFileLine(scriptName, 1);
 			boolean status = engine.Load(this.sourceText, fileLine);
 			engine.Generator.Logger.ShowReportedErrors();

@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import jline.ANSIBuffer.ANSICodes;
 
-import dshell.lib.BuiltinCommandMap;
-
 import zen.deps.LibZen;
 
 public class DShellConsole {
@@ -14,7 +12,6 @@ public class DShellConsole {
 	
 	public DShellConsole() {
 		Runtime.getRuntime().addShutdownHook(new ShutdownOp());
-		System.out.print(ANSICodes.attrib(36));
 		try {
 			this.consoleReader = new jline.ConsoleReader();
 			this.consoleReader.addCompletor(new DShellCompletor());
@@ -30,6 +27,7 @@ public class DShellConsole {
 		String prompt2 = prompts[1];
 		String line;
 		try {
+			System.out.print(ANSICodes.attrib(36));
 			line = this.consoleReader.readLine(prompt);
 		}
 		catch (IOException e) {
@@ -62,7 +60,7 @@ public class DShellConsole {
 	private String[] getPrompts() {
 		String homeDir = System.getenv("HOME");
 		String[] prompts = new String[2];
-		String currentDir = BuiltinCommandMap.getWorkingDirectory();
+		String currentDir = Utils.getWorkingDirectory();
 		if(currentDir.startsWith(homeDir)) {
 			int index = homeDir.length();
 			currentDir = "~" + currentDir.substring(index);
