@@ -7,18 +7,17 @@ D-Shell では、関数(ユーザ定義関数)を定義することができま�
 関数は、function 構文で定義されます。 
 <pre>
 function 関数名(引数名: 引数のデータ型, ...): 戻り値のデータ型 {
-  処理;
+  処理
 }
 </pre>
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: FunctionSample1.ds" >
 function f(a: int, b: int): int {
-  return a + b;
+  return a + b
 }
 
-f(1, 2);
-f(3, 4);
-
+f(1, 2)
+f(3, 4)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -31,12 +30,11 @@ $ dshell FunctionSample1.ds
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: FunctionSample2.ds" >
 function f(a, b) {
-  return a + b;
+  return a + b
 }
 
-println(f(1, 2));
-println(f(3, 4));
-
+log f(1, 2)
+log f(3, 4)
 </pre>
 
 <pre class="toolbar:1" title="実行例">

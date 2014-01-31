@@ -11,14 +11,13 @@ if 構文の論理式が true の場合、ステートメントブロックに�
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: If.ds" >
 function func(x: num):void {
   if (num == 2) {
-    println(num);
+    log num
   }
 }
 
-func(1);
-func(2);
-func(3);
-
+func(1)
+func(2)
+func(3)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -33,17 +32,16 @@ if 構文に続く論理式が false の場合、else ステートメントブ�
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Else.ds" >
 function func(num):int {
   if (num > 2) {
-    return num;
+    return num
   }
   else {
-    return -1;
+    return -1
   }
 }
 
-println(func(1));
-println(func(2));
-println(func(3));
-
+log func(1)
+log func(2)
+log func(3)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -61,20 +59,19 @@ else if 構文では単独の条件分岐だけではなく複数の条件分岐
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ElseIf.ds" >
 function func(num: int): String {
   if(num == 1) {
-    return "hoge";
+    return "hoge"
   }
   else if(num == 2) {
-    return "piyo";
+    return "piyo"
   }
   else {
-    return "fuga";
+    return "fuga"
   }
 }
 
-println(func(1));
-println(func(2));
-println(func(3));
-
+log func(1)
+log func(2)
+log func(3)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -91,21 +88,55 @@ C/C++ の while ループと同様の動作をします。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: While.ds" >
 function func() {
-  var num = 1;
+  var num = 1
   while (num < 3) {
-    println(num);
-    num = num + 1;
+    log num
+    num = num + 1
   }
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
 $ dshell While.ds
 1
 2
+</pre>
+
+# for
+***
+for ループは、配列や連想配列のデータ構造の各要素に対して、ステートメントブロックに記述された命令を繰り返します。  
+対象となるオブジェクトが配列の場合は変数に値を代入し、連想配列の場合は変数にキーが代入されます。  
+
+<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Foreach.ds" >
+function func() {
+  var arr: int[] = [1, 2, 3, 5, 7]
+  var map: Map<int> = {"a": 1, "b": 2, "c": 3 }
+
+  # 配列の場合
+  for(val in arr) {
+    log val
+  }
+  # 連想配列の場合
+  for(key in map) {
+    log "${key} => ${map[key]}"
+  }
+}
+
+func()
+</pre>
+
+<pre class="toolbar:1" title="実行例">
+$ dshell Foreach.ds
+1
+2
+3
+5
+7
+a => 1
+b => 2
+c => 3
 </pre>
 
 # break
@@ -115,18 +146,17 @@ break 文を使うと、現在繰り返しているループ構造のステー�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Break.ds" >
 function func() {
-  var num = 1;
+  var num = 1
   while (num) {
-    println(num);
-    num = num + 1;
+    log num
+    num = num + 1
     if(num == 3) {
-      break;
+      break
     }
   }
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -145,8 +175,7 @@ function sub(): String {
   return "sub call!"
 }
 
-println(sub());
-
+log sub()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -163,32 +192,31 @@ sub call!
 finally ブロックに書いたコードは、try および catch ブロックの後で常に実行されます。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Exception.ds" >
-command ls;
+import command ls
 
-void func(String dir) {
-  println("func call!");
+function func(dir: String) {
+  log "func call!"
   try {
-    println("try");
+    log "try"
 
     // TODO: dirで例外が発生する処理
     ls -l $dir
 
   } catch(DShellException1 e) {
-    println("catch1");
+    log "catch1"
     
   } catch(DShellException2 e) {
-    println("catch2");
+    log "catch2"
     
   } finally {
-    println("finaly");
+    log "finaly"
     
   }
 }
 
-func("no exception");
-func("exception1");
-func("exception2");
-
+func("no exception")
+func("exception1")
+func("exception2")
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -204,6 +232,5 @@ func call!
 try
 catch2
 finaly
-
 </pre>
 

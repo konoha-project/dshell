@@ -1,38 +1,16 @@
 この章では、 D-Shell の基本的な構文について説明します。  
 
-# エントリーポイント
+# エントリポイント
 ***
-D-Shell では、C や Java と同様にトップレベルにメイン関数を定義することができます。  
-メイン関数は、スクリプトデータのすべての評価がおわったあと、自動的に呼び出される関数です。  
-メイン関数を定義するには、ユーザ定義関数と同様に function ステートメントを使用します。  
-
-<pre>
-@Export function main() {
-  関数の処理
-}
-</pre>
-
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: EntryPoint.ds" >
-@Export function main() {
-  var name = "naruto";
-  var age = 17;
-  println("${name} : ${age}")
-}
-</pre>
-
-<pre class="toolbar:1" title="実行例">
-$ dshell EntryPoint.ds p1 p2
-naruto : 17
-</pre>
+D-Shell には、C や Java のような main 関数がありません。  
+対話モードでは、プロンプトに入力された順に命令を実行します。  
+バッチモードでは、指定したスクリプトファイルの先頭から順番に命令を実行します。  
 
 # 命令の分離(処理の区切り)
 ***
-D-Shellでは、C や Java と同様に命令の区切りにはセミコロンが必要となります。  
-
-<pre>
-var num = 1;
-println("Hello");
-</pre>
+D-Shellでは、命令の区切りは改行です。  
+複数のコマンドをセミコロン(;)で区切り、連続して実行することもできます。  
+(セミコロンで改行が入力されたのと同じ扱いとなります)  
 
 # コマンドラインオプションの利用
 ***
@@ -41,14 +19,12 @@ D-Shellでは、スクリプトを実行するときに、コマンドライン�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Commandline.ds" >
 function func() {
-  var i = 0;
-  for(i=0; i&lt;ARGV.length; i++) {
-    println(ARGV[i]);
+  for(arg in ARGV) {
+    log arg
   }
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -83,42 +59,63 @@ p2
 
 # 画面への出力
 ***
-プログラムから画面への出力は print 関数または println 関数を使用します。  
 
-* println関数
-println 関数は、自動的に末尾に改行が付加されます。  
+* 内部コマンドの利用( log コマンド)
+D-Shell にビルトインコマンド組み込まれている log コマンドを利用する例です。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Println.ds" >
-println("Hello, World.");
-println(123);
-println(true);
-print
+<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputLog.ds" >
+function func() {
+  log "Hello, World."
+  log 123
+}
+
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
-$ dshell Println.ds
+$ dshell OutputLog.ds
 Hello, World.
 123
-true
 </pre>
 
-* print 関数
-print 関数は、引数がそのまま標準出力へ表示されます。  
-改行の自動的な付加は行われません。  
+* 外部コマンドの利用( echo コマンド)
+外部コマンドの echo を D-Shell にインポートして利用する例です。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Print.ds" >
-print("Hello, World.");
-print(123);
-print(true);
-print
+<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputEcho.ds" >
+import command echo
+function func() {
+  echo "Hello, World."
+  echo 123
+}
+
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
-$ dshell Print.ds
-Hello, World.123true
+$ dshell OutputEcho.ds
+Hello, World.
+123
+</pre>
+
+* Javaメソッドの利用( println 関数)
+Java の println 関数を D-Shell にインポートして利用する例です。
+
+<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputPrintln.ds" >
+import java.lang.System
+function func() {
+  System.out.println("Hello, World.")
+  System.out.println(123)
+}
+
+func()
+</pre>
+
+<pre class="toolbar:1" title="実行例">
+$ dshell OutputPrintln.ds
+Hello, World.
+123
 </pre>
 
 # 予約語
-D-SHell では、以下の予約語があり、予約語と同一の変数名や関数名を使うことはできません。 
+D-Shell では、制御構造は糖衣構文により再定義することが可能なため、予約語の制限はありません。 
 
-* 予約語一覧

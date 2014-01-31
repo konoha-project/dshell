@@ -15,19 +15,18 @@ var 変数名: データ型 = 初期値
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Variable.ds" >
 function func() {
-  var age: int = 17;
-  var name = "uzumaki naruto";
+  var age: int = 17
+  var name = "uzumaki naruto"
 
-  println(age);
-  println(name);
+  log age
+  log name
 }
 
-func();
+func()
 
 # 関数外では age, name は参照できない
-# println(age); 未定義の変数の参照(エラー)
-# println(name); 未定義の変数の参照(エラー)
-
+# log age 未定義の変数の参照(エラー)
+# log name 未定義の変数の参照(エラー)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -64,25 +63,24 @@ instanceof 演算子は、次のような構文で利用します。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: TypeCast.ds" >
 function func() {
-  var a: int = 123;
-  var b: float = 2.0;
-  var c: String = "45.67";
+  var a: int = 123
+  var b: float = 2.0
+  var c: String = "45.67"
 
-  var d = (float)a;
-  var e = (int)b;
-  var f = (String)c;
+  var d = (float)a
+  var e = (int)b
+  var f = (String)c
 
-  assert(d instanceof (float));
-  assert(e instanceof (int));
-  assert(f instanceof (String));
+  assert(d instanceof (float))
+  assert(e instanceof (int))
+  assert(f instanceof (String))
 
-  println(d);
-  println(e);
-  println(f);
+  log d
+  log e
+  log f
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -91,15 +89,6 @@ $ dshell TypeCast.ds
 2
 45.67
 </pre>
-
-
-
-# オブジェクト
-***
-
-* オブジェクト生成
-
-
 
 # 定数
 ***
@@ -114,16 +103,16 @@ let 定数名 = 設定値
 定数は関数内で宣言を行うとローカルなブロックスコープを持ち、関数外で宣言を行うとグローバルなスコープを持つようになります。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Constant.ds" >
-let color ="red";
+let color ="red"
 
 void func() {
-  let color = "green";
-  println("local color: ${color}");
+  let color = "green"
+  log "local color: ${color}"
 }
 
-func();
+func()
 
-println("top color: ${color}");
+log "top color: ${color}"
 </pre>
 
 <pre class="toolbar:1" title="実行例">

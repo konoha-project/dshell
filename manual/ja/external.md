@@ -6,23 +6,22 @@ D-Shell では、プログラム内で Java のクラスを読み込み、その
 クラスを利用するには import 構文で宣言します。  
 
 <pre>
-import クラス名 as シンボル名
+import クラス名
 </pre>
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: FileWrite.ds" >
-import java.io.File as File;
-import java.io.FileWriter as FileWriter;
+import java.io.File
+import java.io.FileWriter
 
 function func() {
 
-  var filewriter: FileWriter = new FileWriter(File("/tmp/file.txt"));
+  var filewriter: FileWriter = new FileWriter(File("/tmp/file.txt"))
 
-  filewriter.write("Hello World!");
-  filewriter.close();
+  filewriter.write("Hello World!")
+  filewriter.close()
 }
 
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -43,7 +42,7 @@ import command コマンド名(スペース区切りで複数宣言可能)
 </pre>
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
-import command echo pwd;
+import command echo pwd
 
 echo "Hello, World."
 pwd
@@ -65,14 +64,12 @@ import command hoge   // hoge という名前のコマンドがないためエ�
 パラメータに変数を使用する場合、コマンドの後に $変数名(または定数名) を指定することで、変数の展開が行われます。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
-import command ls;
-
+import command ls
 function func() {
-  var dir = "/dev/null";
+  var dir = "/dev/null"
   ls -ltr $dir
 }
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -83,14 +80,12 @@ crw-rw-rw- 1 root root 1, 3 2013-05-27 10:33 /dev/null
 コマンド実行時の標準出力への出力結果は文字列として扱うことができます。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
-import command ls;
-
+import command ls
 function func() {
   result: String = ls -ltr /tmp
-  println(result);
+  log result
 }
-func();
-
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -118,18 +113,16 @@ hoge
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Exception.ds" >
 
-import command ls;
-
+import command ls
 function func() {
   try {
     // ls コマンド失敗
     ls /hoge
   } catch(e) {
-    println("catch!");
+    log "catch!"
   }
 }
-
-func();
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -149,33 +142,21 @@ import env 環境変数名
 import 宣言後、環境変数名の定数が参照できるようになります。
 <pre>
 import env HOME
-println(HOME)    // 環境変数 HOME の値が表示される(/home/hogehoge など)
+log HOME    // 環境変数 HOME の値が表示される(/home/hogehoge など)
 </pre>
 
-指定した環境変数が存在しない場合、import 宣言時に異常終了します。(未定義の値)
-<pre>
-import env HOGE   // HOGEという名前の環境変数がないためエラーとなる
-</pre>
-
-import 宣言時にデフォルト値を指定することができます。
-デフォルト値を指定すると、指定した環境変数が未定義の場合、デフォルト値が定数に設定されます。
-
-<pre>
-import env HOGE = "hogehoge"   // デフォルト値 hogehoge を指定
-println(HOGE)  // 環境変数 HOGE が未定義の場合 hogehoge が表示される
-</pre>
+指定した環境変数が存在しない場合、定数を参照しても空文字が返ります。
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル:  GetEnv.ds" >
 import env HOME               // 定義済み環境変数
-import env HOGE               // 未定義の環境変数 => import 宣言時にエラー
-import env HOGE = "hogehoge"  // デフォルト値指定
+import env HOGE               // 未定義の環境変数 => 値が""(空文字)の定数 HOGE が定義される
 
-println(HOME)  // 環境変数 HOME の値が表示される(/home/hogehoge など)
-println(HOGE)  // hogehoge が表示される
+log HOME  // 環境変数 HOME の値が出力される(/home/hogehoge など)
+log HOGE  // ""(空文字) が出力される
 </pre>
 
 <pre class="toolbar:1" title="実行例">
 $ dshell GetEnv.ds
 /home/hogehoge
-hogehoge
+
 </pre>
