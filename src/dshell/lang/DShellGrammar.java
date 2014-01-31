@@ -3,7 +3,6 @@ package dshell.lang;
 import java.util.ArrayList;
 
 import zen.ast.ZCatchNode;
-import zen.ast.ZEmptyNode;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -19,6 +18,7 @@ import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
+import dshell.ast.DShellTryNode;
 import dshell.lib.BuiltinCommand;
 import dshell.util.Utils;
 
@@ -92,7 +92,7 @@ public class DShellGrammar {
 		if(Node.IsErrorNode()) {
 			return Node;
 		}
-		ZToken Token = Node.SourceToken;	// FIXME
+//		ZToken Token = Node.SourceToken;	// FIXME
 //		String Name = Token.ParsedText;
 //		String Env = System.getenv(Name);
 //		Env = (Env == null) ? "" : Env;
@@ -339,6 +339,29 @@ public class DShellGrammar {
 		return CommandNode;
 	}
 
+	public static ZNode MatchDShellTry(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
+		@Var ZNode TryNode = new DShellTryNode();
+		TryNode = TokenContext.MatchNodeToken(TryNode, NameSpace, "try", ZTokenContext.Required2);
+		TryNode = TokenContext.AppendMatchedPattern(TryNode, NameSpace, "$Block$", ZTokenContext.Required2);
+		int count = 0;
+		while(true) {
+			if(TokenContext.IsNewLineToken("catch")) {
+				TryNode = TokenContext.AppendMatchedPattern(TryNode, NameSpace, "$Catch$", ZTokenContext.Required2);
+				count = count + 1;
+				continue;
+			}
+			if(TokenContext.MatchNewLineToken("finally")) {
+				TryNode = TokenContext.AppendMatchedPattern(TryNode, NameSpace, "$Block$", ZTokenContext.Required2);
+				count = count + 1;
+			}
+			break;
+		}
+		if(count == 0 && !TryNode.IsErrorNode()) {
+			return ((DShellTryNode)TryNode).TryNode; // no catch and finally
+		}
+		return TryNode;
+	}
+
 	public static ZNode MatchCatch(ZNameSpace NameSpace, ZTokenContext TokenContext, ZNode LeftNode) {
 		@Var ZNode CatchNode = new ZCatchNode();
 		CatchNode = TokenContext.MatchNodeToken(CatchNode, NameSpace, "catch", ZTokenContext.Required2);
@@ -366,6 +389,7 @@ public class DShellGrammar {
 		NameSpace.DefineSuffixSyntax("=~", ZenPrecedence.CStyleEquals, LibNative.LoadMatchFunc(ZenGrammar.class, "MatchComparator"));
 		NameSpace.DefineSyntax("assert", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
 		NameSpace.DefineSyntax("log", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
+		NameSpace.DefineSyntax("try", LibNative.LoadMatchFunc(Grammar, "MatchDShellTry"));
 		NameSpace.DefineSyntax("$Catch$", LibNative.LoadMatchFunc(Grammar, "MatchCatch"));
 		// prefix option
 		// timeout

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import zen.ast.ZNode;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.TaskBuilder;
 
@@ -29,19 +30,23 @@ public class ModifiedReflectionEngine extends JavaReflectionEngine {	//TODO: imp
 			}
 		}
 		if(Node.Type.IsBooleanType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandBool(values);
+			this.EvaledValue = TaskBuilder.ExecCommandBoolTopLevel(values);
 		}
 		else if(Node.Type.IsIntType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandInt(values);
+			this.EvaledValue = TaskBuilder.ExecCommandIntTopLevel(values);
 		}
 		else if(Node.Type.IsStringType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandString(values);
+			this.EvaledValue = TaskBuilder.ExecCommandStringTopLevel(values);
 		}
 		else if(Node.Type.ShortName.equals("Task")) {
-			this.EvaledValue = TaskBuilder.ExecCommandTask(values);
+			this.EvaledValue = TaskBuilder.ExecCommandTaskTopLevel(values);
 		}
 		else {
-			TaskBuilder.ExecCommandVoid(values);
+			TaskBuilder.ExecCommandVoidTopLevel(values);
 		}
+	}
+
+	public void VisitTryNode(DShellTryNode Node) {
+		this.Unsupported(Node, "try");
 	}
 }

@@ -2,7 +2,6 @@ package dshell.ast;
 
 import java.util.ArrayList;
 
-import zen.codegen.javascript.ModifiedJavaScriptSourceGenerator;
 import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
 import zen.codegen.jvm.ModifiedReflectionEngine;
 import dshell.lang.ModifiedTypeInfer;
@@ -42,10 +41,7 @@ public class DShellCommandNode extends ZNode {
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {
-		if(Visitor instanceof ModifiedJavaScriptSourceGenerator) {
-			((ModifiedJavaScriptSourceGenerator)Visitor).VisitCommandNode(this);
-		}
-		else if(Visitor instanceof ModifiedJavaByteCodeGenerator) {
+		if(Visitor instanceof ModifiedJavaByteCodeGenerator) {
 			((ModifiedJavaByteCodeGenerator)Visitor).VisitCommandNode(this);
 		}
 		else if(Visitor instanceof ModifiedTypeInfer) {

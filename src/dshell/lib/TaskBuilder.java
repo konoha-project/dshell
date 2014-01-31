@@ -198,32 +198,31 @@ public class TaskBuilder {
 		return proc;
 	}
 
-	// called by ModifiedJavaScriptSourceGenerator#VisitCommandNode 
-	public static void ExecCommandVoidJS(ArrayList<ArrayList<String>> cmdsList) {
-		TaskOption option = TaskOption.of(VoidType, printable, throwable);
-		new TaskBuilder(cmdsList, option).invoke();
+	// called by ModifiedReflectionEngine#VisitCommandNode
+	public static void ExecCommandVoidTopLevel(String[][] cmds) {
+		TaskOption option = TaskOption.of(VoidType, printable);
+		new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static int ExecCommandIntJS(ArrayList<ArrayList<String>> cmdsList) {
+	public static int ExecCommandIntTopLevel(String[][] cmds) {
 		TaskOption option = TaskOption.of(IntType, printable, returnable);
-		return ((Integer)new TaskBuilder(cmdsList, option).invoke()).intValue();
+		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
 	}
 
-	public static boolean ExecCommandBoolJS(ArrayList<ArrayList<String>> cmdsList) {
+	public static boolean ExecCommandBoolTopLevel(String[][] cmds) {
 		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
-		return ((Boolean)new TaskBuilder(cmdsList, option).invoke()).booleanValue();
+		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option).invoke()).booleanValue();
 	}
 
-	public static String ExecCommandStringJS(ArrayList<ArrayList<String>> cmdsList) {
+	public static String ExecCommandStringTopLevel(String[][] cmds) {
 		TaskOption option = TaskOption.of(StringType, returnable);
-		return (String)new TaskBuilder(cmdsList, option).invoke();
+		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static Task ExecCommandTaskJS(ArrayList<ArrayList<String>> cmdsList) {
+	public static Task ExecCommandTaskTopLevel(String[][] cmds) {
 		TaskOption option = TaskOption.of(TaskType, printable, returnable);
-		return (Task)new TaskBuilder(cmdsList, option).invoke();
+		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
-
 	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
 	public static void ExecCommandVoid(String[][] cmds) {
 		TaskOption option = TaskOption.of(VoidType, printable, throwable);

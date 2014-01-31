@@ -12,7 +12,9 @@ import java.util.ArrayList;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
+import dshell.exception.MultipleException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.ClassListLoader;
@@ -20,7 +22,6 @@ import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZNode;
-import zen.ast.ZTryNode;
 import zen.deps.NativeTypeTable;
 import zen.lang.ZenEngine;
 import zen.parser.ZToken;
@@ -55,6 +56,7 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		super();
 		this.importNativeClass(Task.class);
 		this.importNativeClass(DShellException.class);
+		this.importNativeClass(MultipleException.class);
 		this.importNativeClass(UnimplementedErrnoException.class);
 		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
 	}
@@ -105,7 +107,7 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		}
 	}
 
-	@Override public void VisitTryNode(ZTryNode Node) {
+	public void VisitTryNode(DShellTryNode Node) {
 		TryCatchLabel Label = new TryCatchLabel();
 		this.TryCatchLabel.push(Label); // push
 		// try block
@@ -114,7 +116,9 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		this.CurrentBuilder.visitLabel(Label.endTryLabel);
 		this.CurrentBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 		// catch block
-		Node.CatchNode.Accept(this);
+		for(ZNode CatchNode : Node.CatchNodeList) {
+			CatchNode.Accept(this);
+		}
 		// finally block
 		this.CurrentBuilder.visitLabel(Label.finallyLabel);
 		if(Node.FinallyNode != null) {

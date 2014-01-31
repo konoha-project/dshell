@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 
 import dshell.exception.DShellException;
+import dshell.exception.MultipleException;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
@@ -275,10 +276,14 @@ class ShellExceptionRaiser {
 		for(PseudoProcess proc : procs) {
 			this.createAndAddException(exceptionList, proc);
 		}
-		if(exceptionList.size() > 0) {	//TODO: MultipleException
+		int size = exceptionList.size();
+		if(size == 1) {	//TODO: MultipleException
 			if(exceptionList.get(0) != null) {
 				throw exceptionList.get(0);
 			}
+		}
+		else if(size > 1) {
+			throw new MultipleException("", exceptionList.toArray(new DShellException[size]));
 		}
 	}
 
