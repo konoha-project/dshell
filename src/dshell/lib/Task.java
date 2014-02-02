@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
-
+import dshell.exception.NullException;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
@@ -272,24 +272,32 @@ class ShellExceptionRaiser {
 		if(!enableException || taskBuilder.getTimeout() > 0) {
 			return;
 		}
-		ArrayList<RuntimeException> exceptionList = new ArrayList<RuntimeException>();
+		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
 		for(PseudoProcess proc : procs) {
 			this.createAndAddException(exceptionList, proc);
 		}
 		int size = exceptionList.size();
-		if(size == 1) {	//TODO: MultipleException
-			if(exceptionList.get(0) != null) {
+		if(size == 1) {
+			if(!(exceptionList.get(0) instanceof NullException)) {
 				throw exceptionList.get(0);
 			}
 		}
 		else if(size > 1) {
-			throw new MultipleException("", exceptionList.toArray(new DShellException[size]));
+			int count = 0;
+			for(DShellException exception : exceptionList) {
+				if(!(exception instanceof NullException)) {
+					count++;
+				}
+			}
+			if(count != size) {
+				throw new MultipleException("", exceptionList.toArray(new DShellException[size]));
+			}
 		}
 	}
 
-	private void createAndAddException(ArrayList<RuntimeException> exceptionList, PseudoProcess proc) {
+	private void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc) {
+		String message = proc.getCmdName();
 		if(proc.isTraced() || proc.getRet() != 0) {
-			String message = proc.getCmdName();
 			if(proc.isTraced()) {
 				ArrayList<String> infoList = this.inferencer.doInference((SubProc)proc);
 				exceptionList.add(ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()])));
@@ -297,6 +305,9 @@ class ShellExceptionRaiser {
 			else {
 				exceptionList.add(new DShellException(message));
 			}
+		}
+		else {
+			exceptionList.add(new NullException(message));
 		}
 		if(proc instanceof SubProc) {
 			((SubProc)proc).deleteLogFile();

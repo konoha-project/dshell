@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 
 import dshell.exception.DShellException;
+import dshell.exception.NullException;
 import dshell.exception.RelatedSyscallException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.util.Utils;
@@ -66,7 +67,7 @@ public class ExceptionClassMap {
 		Object[] args = {message, message, causeInfo};
 		String errnoString = causeInfo[2];
 		if(Errno.SUCCESS.match(errnoString)) {
-			return null;
+			return new NullException(message);
 		}
 		if(Errno.LAST_ELEMENT.match(errnoString)) {
 			return new DShellException(message);
@@ -95,7 +96,7 @@ public class ExceptionClassMap {
 			e.printStackTrace();
 		}
 		Utils.fatal(1, "Creating Exception failed");
-		return null;
+		return null;	// unreachable 
 	}
 
 	public static ArrayList<String> getUnsupportedErrnoList() {

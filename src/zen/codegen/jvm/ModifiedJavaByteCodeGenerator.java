@@ -15,6 +15,7 @@ import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
+import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.ModifiedTypeInfer;
 import dshell.lib.ClassListLoader;
@@ -48,6 +49,7 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 			System.exit(1);
 		}
 		NativeMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
+		NativeMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
 		NativeMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
 		NativeMethodTable.Import("log", ZType.VarType, Utils.class, "log");
 	}
@@ -58,11 +60,12 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		this.importNativeClass(DShellException.class);
 		this.importNativeClass(MultipleException.class);
 		this.importNativeClass(UnimplementedErrnoException.class);
+		this.importNativeClass(NullException.class);
 		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
 	}
 
 	@Override public ZenEngine GetEngine() {
-		return new ModifiedReflectionEngine(new ModifiedTypeInfer(this.Logger), this);
+		return new ModifiedReflectionEngine(new ModifiedTypeInfer(this), this);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {

@@ -75,6 +75,10 @@ public class Utils {
 		return false;
 	}
 
+	public static boolean unmatchRegex(String target, String regex) {
+		return !matchRegex(target, regex);
+	}
+
 	public static void assertResult(boolean result) {
 		if(!result) {
 			System.err.println("Assertion Faild");

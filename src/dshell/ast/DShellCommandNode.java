@@ -15,8 +15,8 @@ public class DShellCommandNode extends ZNode {
 	@Field public ArrayList<ZNode> ArgumentList; // ["ls", "-la"]
 	@Field public ZNode PipedNextNode;
 
-	public DShellCommandNode(ZStringNode Node) {
-		super();
+	public DShellCommandNode(ZNode ParentNode, ZStringNode Node) {
+		super(ParentNode, Node.SourceToken);
 		this.ArgumentList = new ArrayList<ZNode>();
 		this.ArgumentList.add(this.SetChild(Node));
 		this.PipedNextNode = null;

@@ -15,7 +15,7 @@ D-Shell
     $ cd ~/working
     $ git clone git@github.com:konoha-project/libzen.git
     $ cd ./libzen
-    $ git checkout -b build 3e6294471a3c88a2f803e2ea15514ffe2cb0312f
+    $ git checkout -b build b9a3fccc60e95a1141fbf91a293358883106fff0
     $ ant
 
 ### Build D-Shell

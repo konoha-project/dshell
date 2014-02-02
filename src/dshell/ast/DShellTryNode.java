@@ -14,8 +14,8 @@ public class DShellTryNode extends ZNode {
 	public ArrayList<ZNode> CatchNodeList;
 	public ZNode FinallyNode = null;
 
-	public DShellTryNode() {
-		super();
+	public DShellTryNode(ZNode ParentNode) {
+		super(ParentNode, null);
 		this.CatchNodeList = new ArrayList<ZNode>();
 	}
 
