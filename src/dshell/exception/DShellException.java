@@ -2,14 +2,22 @@ package dshell.exception;
 
 public class DShellException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
+	private String errorMessage;
 
 	public DShellException(String message) {
 		super(message);
+		this.errorMessage = "";
 	}
 	
 	@Override public Throwable fillInStackTrace() {
 		return this;
 	}
-	// this exception is raised by GtSubProc.runCommand 
-	// when syscall trace is disabled
+
+	public void setErrorMessage(String errorMessage) {
+		this.errorMessage = errorMessage;
+	}
+
+	public String getErrorMessage() {
+		return this.errorMessage;
+	}
 }

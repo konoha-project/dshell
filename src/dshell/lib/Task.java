@@ -37,10 +37,10 @@ public class Task {
 		// Start Message Handler
 		// stdout
 		this.stdoutHandler = this.createStdoutHandler();
-		this.stdoutHandler.showMessage();
+		this.stdoutHandler.startHandler();
 		// stderr
 		this.stderrHandler = this.createStderrHandler();
-		this.stderrHandler.showMessage();
+		this.stderrHandler.startHandler();
 		// start monitor
 		this.isAsyncTask = option.is(background);
 		this.sBuilder = new StringBuilder();
@@ -103,7 +103,7 @@ public class Task {
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		new ShellExceptionRaiser(this.taskBuilder).raiseException();
+		new ShellExceptionRaiser(this.taskBuilder, this.stderrHandler.getEachBuffers()).raiseException();
 	}
 
 	public void join(long timeout) {
@@ -211,8 +211,9 @@ class ProcMonitor extends Thread {	// TODO: support exit handle
 
 class MessageStreamHandler {
 	private InputStream[] srcStreams;
-	private OutputStream[] destStreams;
+	private OutputStream destStream;
 	private ByteArrayOutputStream messageBuffer;
+	private ByteArrayOutputStream[] eachBuffers;
 	private PipeStreamHandler[] streamHandlers;
 
 	public MessageStreamHandler() {	// do nothing
@@ -222,13 +223,16 @@ class MessageStreamHandler {
 		this.srcStreams = srcStreams;
 		this.messageBuffer = new ByteArrayOutputStream();
 		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
-		this.destStreams = new OutputStream[]{destStream, this.messageBuffer};
+		this.destStream = destStream;
+		this.eachBuffers = new ByteArrayOutputStream[this.srcStreams.length];
 	}
 
-	public void showMessage() {
-		boolean[] closeOutputs = {false, false};
+	public void startHandler() {
+		boolean[] closeOutputs = {false, false, false};
 		for(int i = 0; i < srcStreams.length; i++) {
-			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], this.destStreams, true, closeOutputs);
+			this.eachBuffers[i] = new ByteArrayOutputStream();
+			OutputStream[] destStreams = new OutputStream[]{destStream, this.messageBuffer, this.eachBuffers[i]};
+			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], destStreams, true, closeOutputs);
 			this.streamHandlers[i].start();
 		}
 	}
@@ -244,26 +248,37 @@ class MessageStreamHandler {
 		}
 		return this.messageBuffer.toString();
 	}
+
+	public ByteArrayOutputStream[] getEachBuffers() {
+		return this.eachBuffers;
+	}
 }
 
 class EmptyMessageStreamHandler extends MessageStreamHandler {
 	@Override
-	public void showMessage() { // do nothing
+	public void startHandler() { // do nothing
 	}
 
 	@Override
 	public String waitTermination() {
 		return "";
 	}
+
+	@Override
+	public ByteArrayOutputStream[] getEachBuffers() {
+		return new ByteArrayOutputStream[0];
+	}
 }
 
 class ShellExceptionRaiser {
 	private TaskBuilder taskBuilder;
 	private final CauseInferencer inferencer;
+	private final ByteArrayOutputStream[] eachBuifers;
 
-	public ShellExceptionRaiser(TaskBuilder taskBuilder) {
+	public ShellExceptionRaiser(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuifers) {
 		this.taskBuilder = taskBuilder;
 		this.inferencer = new CauseInferencer_ltrace();
+		this.eachBuifers = eachBuifers;
 	}
 
 	public void raiseException() {
@@ -273,8 +288,10 @@ class ShellExceptionRaiser {
 			return;
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
-		for(PseudoProcess proc : procs) {
-			this.createAndAddException(exceptionList, proc);
+		for(int i = 0; i < procs.length; i++) {
+			PseudoProcess proc = procs[i];
+			String errorMessage = this.eachBuifers[i].toString();
+			this.createAndAddException(exceptionList, proc, errorMessage);
 		}
 		int size = exceptionList.size();
 		if(size == 1) {
@@ -295,16 +312,19 @@ class ShellExceptionRaiser {
 		}
 	}
 
-	private void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc) {
+	private void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
 		String message = proc.getCmdName();
 		if(proc.isTraced() || proc.getRet() != 0) {
+			DShellException exception;
 			if(proc.isTraced()) {
 				ArrayList<String> infoList = this.inferencer.doInference((SubProc)proc);
-				exceptionList.add(ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()])));
+				exception = ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()]));
 			}
 			else {
-				exceptionList.add(new DShellException(message));
+				exception = new DShellException(message);
 			}
+			exception.setErrorMessage(errorMessage);
+			exceptionList.add(exception);
 		}
 		else {
 			exceptionList.add(new NullException(message));
