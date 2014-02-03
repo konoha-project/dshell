@@ -113,3 +113,36 @@ true
 true
 true
 </pre>
+
+# パターンマッチング演算子
+***
+正規表現の条件式を表すために使用します。  
+例|名前|処理
+--|--
+A =~ B|正規表現|文字列 A が 正規表現パターン B を満たす場合に true
+
+<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Regex.ds" >
+function f() {
+  var str = "abc"
+  if (str =~ "^a") {
+    log "match!"
+  }
+  else {
+    log "not match!"
+  }
+  if (str =~ "^b") {
+    log "match!"
+  }
+  else {
+    log "not match!"
+  }
+}
+f()
+</pre>
+
+<pre class="toolbar:1" title="実行例">
+$ dshell Regex.ds
+match!
+not match!
+</pre>
+
