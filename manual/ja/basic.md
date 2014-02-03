@@ -61,7 +61,7 @@ p2
 ***
 
 * 内部コマンドの利用( log コマンド)
-D-Shell にビルトインコマンド組み込まれている log コマンドを利用する例です。  
+D-Shell にビルトインコマンドとして組み込まれている log コマンドを利用する例です。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputLog.ds" >
 function func() {
