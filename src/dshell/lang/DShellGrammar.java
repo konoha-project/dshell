@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import zen.ast.ZBlockNode;
 import zen.ast.ZCatchNode;
 import zen.ast.ZErrorNode;
+import zen.ast.ZGetNameNode;
 import zen.ast.ZLetNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -30,6 +31,7 @@ public class DShellGrammar {
 	// prefix option symbol 
 	public final static String timeout = "timeout";
 	public final static String trace = "trace";
+	public final static String location = "location";
 
 	private static String CommandSymbol(String Symbol) {
 		return "__$" + Symbol;
@@ -375,6 +377,30 @@ public class DShellGrammar {
 		return CatchNode;
 	}
 
+	public static ZNode MatchLocationDef(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {	//TODO: multiple host, ssh
+		TokenContext.GetTokenAndMoveForward();
+		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Identifier$", ZTokenContext.Required2);
+		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
+			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext.Required2);
+			if(!ValueNode.IsErrorNode()) {
+				String NameSymbol = ((ZGetNameNode)Node).VarName;
+				ParentNode.GetNameSpace().DefineSyntax(NameSymbol, LibNative.LoadMatchFunc(DShellGrammar.class, "MatchLocation"));
+				ParentNode.GetNameSpace().SetGlobalSymbol(NameSymbol, (ZStringNode)ValueNode);
+				return new DShellDummyNode(ParentNode);
+			}
+		}
+		return null;
+	}
+
+	public static ZNode MatchLocation(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
+		ZToken Token = TokenContext.GetTokenAndMoveForward();
+		ZStringNode KeyNode = new ZStringNode(ParentNode, new ZToken(0, location, TokenContext.ParsingLine), location);
+		DShellCommandNode Node = new DShellCommandNode(ParentNode, KeyNode);
+		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.ParsedText));
+		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required2);
+		return Node.AppendPipedNextNode((DShellCommandNode) PipedNode);
+	}
+
 	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
 		LibNative.ImportGrammar(NameSpace, ZenGrammar.class.getName());
 		NameSpace.AppendTokenFunc("#", LibNative.LoadTokenFunc(Grammar, "ShellCommentToken"));
@@ -393,6 +419,7 @@ public class DShellGrammar {
 		NameSpace.DefineSyntax("log", LibNative.LoadMatchFunc(ZenGrammar.class, "MatchUnary"));
 		NameSpace.DefineStatement("try", LibNative.LoadMatchFunc(Grammar, "MatchDShellTry"));
 		NameSpace.DefineSyntax("$Catch$", LibNative.LoadMatchFunc(Grammar, "MatchCatch"));
+		NameSpace.DefineSyntax(location, LibNative.LoadMatchFunc(Grammar, "MatchLocationDef"));
 		// prefix option
 		// timeout
 		setOptionalSymbol(NameSpace, timeout);

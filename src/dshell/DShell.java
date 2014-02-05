@@ -4,6 +4,7 @@ import java.io.PrintStream;
 
 import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
 import dshell.lang.DShellGrammar;
+import dshell.remote.DShellDaemon;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
 import zen.deps.LibNative;
@@ -40,6 +41,9 @@ public class DShell {
 				if(optionSymbol.equals("--version")) {
 					showVersionInfo();
 					System.exit(0);
+				}
+				else if(optionSymbol.equals("--daemon")) {
+					new DShellDaemon().waitConnection();	// never return
 				}
 				else if(optionSymbol.equals("--debug")) {
 					this.debugMode = true;
@@ -133,6 +137,7 @@ public class DShell {
 		stream.println(shellInfo);
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
 		stream.println("Options:");
+		stream.println("    --daemon");
 		stream.println("    --debug");
 		stream.println("    --help");
 		stream.println("    --logging:stdout");

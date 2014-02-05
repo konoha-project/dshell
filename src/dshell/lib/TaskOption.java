@@ -5,15 +5,20 @@ import static dshell.lib.TaskOption.Behavior.throwable;
 import static dshell.lib.TaskOption.RetType.StringType;
 import static dshell.lib.TaskOption.RetType.TaskType;
 
+import java.io.Serializable;
 import java.util.EnumSet;
 
-public class TaskOption {
+public class TaskOption implements Serializable {
+	private static final long serialVersionUID = 5651190312973095075L;
+
 	public static enum Behavior {
 		returnable,
 		printable ,
 		throwable ,
 		background,
 		tracable ,
+		client,
+		server,
 	}
 
 	public static enum RetType {

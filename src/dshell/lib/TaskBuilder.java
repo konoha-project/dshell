@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
+import dshell.remote.RemoteContext;
+import dshell.remote.RemoteProcClient;
+import dshell.remote.RemoteProcServer;
 import dshell.util.Utils;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -17,6 +20,8 @@ import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.Behavior.tracable ;
+import static dshell.lib.TaskOption.Behavior.client;
+import static dshell.lib.TaskOption.Behavior.server;
 
 import static dshell.lib.TaskOption.RetType.VoidType   ;
 import static dshell.lib.TaskOption.RetType.IntType    ;
@@ -30,10 +35,16 @@ public class TaskBuilder {
 	private long timeout = -1;
 	private StringBuilder sBuilder;
 
-	public MessageStreamHandler stdoutHandler;
-	public MessageStreamHandler stderrHandler;
+	public final RemoteContext context;
+	public OutputStream remoteOutStream = null;
+	public OutputStream remoteErrStream = null;
 
 	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
+		this(null, cmdsList, option);
+	}
+
+	public TaskBuilder(RemoteContext context, ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
+		this.context = context;
 		this.option = option;
 		ArrayList<ArrayList<String>> newCmdsList = this.setInternalOption(cmdsList);
 		this.Processes = this.createProcs(newCmdsList);
@@ -148,12 +159,23 @@ public class TaskBuilder {
 
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
-		for(ArrayList<String> currentCmds : cmdsList) {
+		if(this.option.is(server) && this.context != null) {
+			this.option.setFlag(background, false);	// TODO: background
+			this.timeout = -1;	// TODO: timeout
+			RemoteProcServer proc = new RemoteProcServer(this.context);
+			procBuffer.add(proc);
+//			this.remoteOutStream = proc.outStream;
+//			this.remoteErrStream = proc.errStream;
+			
+		}
+		int size = cmdsList.size();
+		for(int i = 0; i < size; i++) {
+			ArrayList<String> currentCmds = cmdsList.get(i);
 			String cmdSymbol = currentCmds.get(0);
 			PseudoProcess prevProc = null;
-			int size = procBuffer.size();
-			if(size > 0) {
-				prevProc = procBuffer.get(size - 1);
+			int currentbufferSize = procBuffer.size();
+			if(currentbufferSize > 0) {
+				prevProc = procBuffer.get(currentbufferSize - 1);
 			}
 			if(cmdSymbol.equals("<")) {
 				prevProc.setInputRedirect(currentCmds.get(1));
@@ -178,14 +200,25 @@ public class TaskBuilder {
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 				prevProc.mergeErrorToOut();
 			}
+			else if(cmdSymbol.equals(DShellGrammar.location)) {
+				this.option.setFlag(client, true);
+				RemoteProcClient proc = new RemoteProcClient(this.option);
+				ArrayList<ArrayList<String>> subList = new ArrayList<ArrayList<String>>();
+				for(int index = i + 1; index < size; index++) {
+					subList.add(cmdsList.get(index));
+				}
+				proc.setArgumentList(currentCmds, subList);
+				procBuffer.add(proc);
+				break;
+			}
 			else {
 				procBuffer.add(this.createProc(currentCmds));
 			}
 		}
-		int size = procBuffer.size();
+		int bufferSize = procBuffer.size();
 		procBuffer.get(0).setFirstProcFlag(true);
-		procBuffer.get(size - 1).setLastProcFlag(true);
-		return procBuffer.toArray(new PseudoProcess[size]);
+		procBuffer.get(bufferSize - 1).setLastProcFlag(true);
+		return procBuffer.toArray(new PseudoProcess[bufferSize]);
 	}
 
 	private PseudoProcess createProc(ArrayList<String> cmds) {
@@ -271,94 +304,6 @@ public class TaskBuilder {
 	}
 }
 
-abstract class PseudoProcess {
-	public static final int STDOUT_FILENO = 1;
-	public static final int STDERR_FILENO = 2;
-
-	protected OutputStream stdin = null;
-	protected InputStream stdout = null;
-	protected InputStream stderr = null;
-
-	protected StringBuilder cmdNameBuilder;
-	protected ArrayList<String> commandList;
-	protected StringBuilder sBuilder;
-
-	protected boolean stdoutIsDirty = false;
-	protected boolean stderrIsDirty = false;
-
-	protected boolean isFirstProc = false;
-	protected boolean isLastProc = false;
-
-	protected int retValue = 0;
-
-	public PseudoProcess() {
-		this.cmdNameBuilder = new StringBuilder();
-		this.commandList = new ArrayList<String>();
-		this.sBuilder = new StringBuilder();
-	}
-
-	public void setArgumentList(ArrayList<String> argList) {
-		this.commandList = argList;
-		int size = this.commandList.size();
-		for(int i = 0; i < size; i++) {
-			if(i != 0) {
-				this.cmdNameBuilder.append(" ");
-			}
-			this.cmdNameBuilder.append(this.commandList.get(i));
-		}
-	}
-	abstract public void mergeErrorToOut();
-	abstract public void setInputRedirect(String readFileName);
-	abstract public void setOutputRedirect(int fd, String writeFileName, boolean append);
-	abstract public void start();
-	abstract public void kill();
-	abstract public void waitTermination();
-
-	public void pipe(PseudoProcess srcProc) {
-		new PipeStreamHandler(srcProc.accessOutStream(), this.stdin, true).start();
-	}
-
-	public void setFirstProcFlag(boolean isFirstProc) {
-		this.isFirstProc = isFirstProc;
-	}
-
-	public void setLastProcFlag(boolean isLastProc) {
-		this.isLastProc = isLastProc;
-	}
-
-	public InputStream accessOutStream() {
-		if(!this.stdoutIsDirty) {
-			this.stdoutIsDirty = true;
-			return this.stdout;
-		}
-		return null;
-	}
-
-	public InputStream accessErrorStream() {
-		if(!this.stderrIsDirty) {
-			this.stderrIsDirty = true;
-			return this.stderr;
-		}
-		return null;
-	}
-
-	public int getRet() {
-		return this.retValue;
-	}
-
-	public String getCmdName() {
-		return this.cmdNameBuilder.toString();
-	}
-
-	public boolean isTraced() {
-		return false;
-	}
-
-	@Override public String toString() {
-		return this.sBuilder.toString();
-	}
-}
-
 class SubProc extends PseudoProcess {
 	public final static int traceBackend_ltrace = 0;
 	public static int traceBackendType = traceBackend_ltrace;
@@ -437,6 +382,7 @@ class SubProc extends PseudoProcess {
 		this.sBuilder.append("]");
 		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
 		this.procBuilder.redirectError(Redirect.INHERIT);
+		this.stderrIsDirty = true;
 	}
 
 	@Override
@@ -457,26 +403,31 @@ class SubProc extends PseudoProcess {
 	public void mergeErrorToOut() {
 		this.procBuilder.redirectErrorStream(true);
 		this.sBuilder.append("mergeErrorToOut");
+		this.stderrIsDirty = true;
 	}
 
 	private void setStreamBehavior() {
 		if(this.isFirstProc) {
 			if(this.procBuilder.redirectInput().file() == null) {
 				procBuilder.redirectInput(Redirect.INHERIT);
+				this.stdinIsDirty = true;
 			}
 		}
 		if(this.isLastProc) {
 			if(this.procBuilder.redirectOutput().file() == null && !this.taskOption.supportStdoutHandler()) {
 				procBuilder.redirectOutput(Redirect.INHERIT);
+				this.stdoutIsDirty = true;
 			}
 		}
 		if(this.procBuilder.redirectError().file() == null && this.taskOption.supportStderrHandler()) {
 			this.procBuilder.redirectError(Redirect.PIPE);
+			this.stderrIsDirty = false;
 		}
 	}
 
 	@Override
 	public void setInputRedirect(String readFileName) {
+		this.stdinIsDirty = true;
 		this.procBuilder.redirectInput(new File(readFileName));
 		this.sBuilder.append(" <");
 		this.sBuilder.append(readFileName);
@@ -490,9 +441,11 @@ class SubProc extends PseudoProcess {
 			redirDest = Redirect.appendTo(file);
 		}
 		if(fd == STDOUT_FILENO) {
+			this.stdoutIsDirty = true;
 			this.procBuilder.redirectOutput(redirDest);
 		} 
 		else if(fd == STDERR_FILENO) {
+			this.stderrIsDirty = true;
 			this.procBuilder.redirectError(redirDest);
 		}
 		this.sBuilder.append(" " + fd);
@@ -558,6 +511,7 @@ class SubProc extends PseudoProcess {
 
 // copied from http://blog.art-of-coding.eu/piping-between-processes/
 class PipeStreamHandler extends Thread {
+	public final static int defaultBufferSize = 512;
 	private InputStream input;
 	private OutputStream[] outputs;
 	private boolean closeInput;
@@ -575,8 +529,7 @@ class PipeStreamHandler extends Thread {
 		this.closeOutputs[0] = closeStream;
 	}
 
-	public PipeStreamHandler(InputStream input, 
-			OutputStream[] outputs, boolean closeInput, boolean[] closeOutputs) {
+	public PipeStreamHandler(InputStream input, OutputStream[] outputs, boolean closeInput, boolean[] closeOutputs) {
 		this.input = input;
 		this.outputs = new OutputStream[outputs.length];
 		this.closeInput = closeInput;
@@ -592,7 +545,7 @@ class PipeStreamHandler extends Thread {
 			return;
 		}
 		try {
-			byte[] buffer = new byte[512];
+			byte[] buffer = new byte[defaultBufferSize];
 			int read = 0;
 			while(read > -1) {
 				read = this.input.read(buffer, 0, buffer.length);

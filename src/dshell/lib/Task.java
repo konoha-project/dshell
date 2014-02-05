@@ -3,6 +3,7 @@ package dshell.lib;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import dshell.exception.DShellException;
@@ -12,16 +13,19 @@ import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
 
-public class Task {
-	private ProcMonitor monitor;
-	private TaskBuilder taskBuilder;
+public class Task implements Serializable {
+	private static final long serialVersionUID = 7531968866962967914L;
+	transient private ProcMonitor monitor;
+	transient private TaskBuilder taskBuilder;
+	transient private MessageStreamHandler stdoutHandler;
+	transient private MessageStreamHandler stderrHandler;
 	private boolean terminated = false;
 	private final boolean isAsyncTask;
-	private MessageStreamHandler stdoutHandler;
-	private MessageStreamHandler stderrHandler;
 	private String stdoutMessage;
 	private String stderrMessage;
-	private StringBuilder sBuilder;
+	private ArrayList<Integer> exitStatusList;
+	private String representString;
+	protected DShellException exception = new NullException("");
 
 	public Task(TaskBuilder taskBuilder) {
 		this.taskBuilder = taskBuilder;
@@ -43,15 +47,17 @@ public class Task {
 		this.stderrHandler.startHandler();
 		// start monitor
 		this.isAsyncTask = option.is(background);
-		this.sBuilder = new StringBuilder();
+		StringBuilder sBuilder;
+		sBuilder = new StringBuilder();
 		if(this.isAsyncTask) {
-			this.sBuilder.append("#AsyncTask");
+			sBuilder.append("#AsyncTask");
 		}
 		else {
-			this.sBuilder.append("#SyncTask");
+			sBuilder.append("#SyncTask");
 		}
-		this.sBuilder.append("\n");
-		this.sBuilder.append(this.taskBuilder.toString());
+		sBuilder.append("\n");
+		sBuilder.append(this.taskBuilder.toString());
+		this.representString = sBuilder.toString();
 		this.monitor = new ProcMonitor(this, this.taskBuilder, isAsyncTask);
 		this.monitor.start();
 	}
@@ -67,7 +73,7 @@ public class Task {
 			PseudoProcess lastProc = procs[procs.length - 1];
 			InputStream[] srcOutStreams = new InputStream[1];
 			srcOutStreams[0] = lastProc.accessOutStream();
-			return new MessageStreamHandler(srcOutStreams, stdoutStream);
+			return new MessageStreamHandler(srcOutStreams, stdoutStream, this.taskBuilder.remoteOutStream);
 		}
 		return new EmptyMessageStreamHandler();
 	}
@@ -81,16 +87,16 @@ public class Task {
 			for(int i = 0; i < size; i++) {
 				srcErrorStreams[i] = procs[i].accessErrorStream();
 			}
-			return new MessageStreamHandler(srcErrorStreams, System.err);
+			return new MessageStreamHandler(srcErrorStreams, System.err, this.taskBuilder.remoteErrStream);
 		}
 		return new EmptyMessageStreamHandler();
 	}
 
 	@Override public String toString() {
-		return this.sBuilder.toString();
+		return this.representString;
 	}
 
-	public void join() {
+	protected void joinAndSetException() {
 		if(this.terminated) {
 			return;
 		}
@@ -99,11 +105,23 @@ public class Task {
 			this.stdoutMessage = this.stdoutHandler.waitTermination();
 			this.stderrMessage = this.stderrHandler.waitTermination();
 			monitor.join();
+			this.exitStatusList = new ArrayList<Integer>();
+			for(PseudoProcess proc : this.taskBuilder.getProcesses()) {
+				this.exitStatusList.add(proc.getRet());
+			}
 		} 
 		catch (InterruptedException e) {
 			throw new RuntimeException(e);
 		}
-		new ShellExceptionRaiser(this.taskBuilder, this.stderrHandler.getEachBuffers()).raiseException();
+		// exception raising
+		this.exception = new ShellExceptionBuilder(this.taskBuilder, this.stderrHandler.getEachBuffers()).getException();
+	}
+
+	public void join() {
+		this.joinAndSetException();
+		if(this.taskBuilder.getOption().is(throwable) && !(this.exception instanceof NullException)) {
+			throw this.exception;
+		}
 	}
 
 	public void join(long timeout) {
@@ -122,8 +140,7 @@ public class Task {
 
 	public int getExitStatus() {
 		this.checkTermination();
-		PseudoProcess[] procs = this.taskBuilder.getProcesses();
-		return procs[procs.length - 1].getRet();
+		return this.exitStatusList.get(this.exitStatusList.size() - 1);
 	}
 
 	private void checkTermination() {
@@ -211,7 +228,8 @@ class ProcMonitor extends Thread {	// TODO: support exit handle
 
 class MessageStreamHandler {
 	private InputStream[] srcStreams;
-	private OutputStream destStream;
+	private OutputStream consoleStream;
+	private OutputStream remoteStream;
 	private ByteArrayOutputStream messageBuffer;
 	private ByteArrayOutputStream[] eachBuffers;
 	private PipeStreamHandler[] streamHandlers;
@@ -219,19 +237,20 @@ class MessageStreamHandler {
 	public MessageStreamHandler() {	// do nothing
 	}
 
-	public MessageStreamHandler(InputStream[] srcStreams, OutputStream destStream) {
+	public MessageStreamHandler(InputStream[] srcStreams, OutputStream consoleStream, OutputStream remoteStream) {
 		this.srcStreams = srcStreams;
 		this.messageBuffer = new ByteArrayOutputStream();
 		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
-		this.destStream = destStream;
+		this.consoleStream = consoleStream;
+		this.remoteStream = remoteStream;
 		this.eachBuffers = new ByteArrayOutputStream[this.srcStreams.length];
 	}
 
 	public void startHandler() {
-		boolean[] closeOutputs = {false, false, false};
+		boolean[] closeOutputs = {false, false, false, true};
 		for(int i = 0; i < srcStreams.length; i++) {
 			this.eachBuffers[i] = new ByteArrayOutputStream();
-			OutputStream[] destStreams = new OutputStream[]{destStream, this.messageBuffer, this.eachBuffers[i]};
+			OutputStream[] destStreams = new OutputStream[]{this.consoleStream, this.messageBuffer, this.eachBuffers[i], this.remoteStream};
 			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], destStreams, true, closeOutputs);
 			this.streamHandlers[i].start();
 		}
@@ -270,22 +289,22 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 	}
 }
 
-class ShellExceptionRaiser {
+class ShellExceptionBuilder {
 	private TaskBuilder taskBuilder;
 	private final CauseInferencer inferencer;
 	private final ByteArrayOutputStream[] eachBuifers;
 
-	public ShellExceptionRaiser(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuifers) {
+	public ShellExceptionBuilder(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuifers) {
 		this.taskBuilder = taskBuilder;
 		this.inferencer = new CauseInferencer_ltrace();
 		this.eachBuifers = eachBuifers;
 	}
 
-	public void raiseException() {
+	public DShellException getException() {
 		PseudoProcess[] procs = taskBuilder.getProcesses();
 		boolean enableException = this.taskBuilder.getOption().is(throwable);
 		if(!enableException || taskBuilder.getTimeout() > 0) {
-			return;
+			return new NullException("");
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
 		for(int i = 0; i < procs.length; i++) {
@@ -296,7 +315,7 @@ class ShellExceptionRaiser {
 		int size = exceptionList.size();
 		if(size == 1) {
 			if(!(exceptionList.get(0) instanceof NullException)) {
-				throw exceptionList.get(0);
+				return exceptionList.get(0);
 			}
 		}
 		else if(size > 1) {
@@ -306,10 +325,11 @@ class ShellExceptionRaiser {
 					count++;
 				}
 			}
-			if(count != size) {
-				throw new MultipleException("", exceptionList.toArray(new DShellException[size]));
+			if(count != 0) {
+				return new MultipleException("", exceptionList.toArray(new DShellException[size]));
 			}
 		}
+		return new NullException("");
 	}
 
 	private void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
