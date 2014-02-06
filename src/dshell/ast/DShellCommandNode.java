@@ -5,13 +5,14 @@ import zen.ast.ZListNode;
 import zen.ast.ZNode;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.codegen.jvm.ModifiedJavaEngine;
+import zen.parser.ZToken;
 import zen.parser.ZVisitor;
 
 public class DShellCommandNode extends ZListNode {
 	public ZNode PipedNextNode;
 
-	public DShellCommandNode(ZNode ParentNode) {
-		super(ParentNode, null, 0);
+	public DShellCommandNode(ZNode ParentNode, ZToken Token) {
+		super(ParentNode, Token, 0);
 		this.PipedNextNode = null;
 	}
 

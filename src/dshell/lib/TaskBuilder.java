@@ -19,7 +19,6 @@ import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
-import static dshell.lib.TaskOption.Behavior.tracable ;
 import static dshell.lib.TaskOption.Behavior.client;
 import static dshell.lib.TaskOption.Behavior.server;
 
@@ -103,7 +102,6 @@ public class TaskBuilder {
 	}
 
 	private ArrayList<ArrayList<String>> setInternalOption(ArrayList<ArrayList<String>> cmdsList) {
-		boolean enableTrace = false;
 		ArrayList<ArrayList<String>> newCmdsBuffer = new ArrayList<ArrayList<String>>();
 		for(ArrayList<String> currentCmds : cmdsList) {
 			if(currentCmds.get(0).equals(DShellGrammar.timeout)) {
@@ -135,24 +133,11 @@ public class TaskBuilder {
 				}
 				currentCmds = newCmds;
 			}
-			else if(currentCmds.get(0).equals(DShellGrammar.trace)) {
-				enableTrace = checkTraceRequirements();
-				int baseIndex = 1;
-				ArrayList<String> newCmds = new ArrayList<String>();
-				int size = currentCmds.size();
-				for(int j = baseIndex; j < size; j++) {
-					newCmds.add(currentCmds.get(j));
-				}
-				currentCmds = newCmds;
-			}
 			else if(currentCmds.get(0).equals(DShellGrammar.background)) {
 				this.option.setFlag(background, true);
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
-		}
-		if(this.option.is(throwable)) {
-			this.option.setFlag(tracable, enableTrace);
 		}
 		return newCmdsBuffer;
 	}
@@ -210,8 +195,16 @@ public class TaskBuilder {
 				procBuffer.add(proc);
 				break;
 			}
+			else if(cmdSymbol.equals(DShellGrammar.trace)) {
+				int cmdSize = currentCmds.size();
+				ArrayList<String> newCmds = new ArrayList<String>();
+				for(int index = 1; index < cmdSize; index++) {
+					newCmds.add(currentCmds.get(index));
+				}
+				procBuffer.add(this.createProc(newCmds, checkTraceRequirements()));
+			}
 			else {
-				procBuffer.add(this.createProc(currentCmds));
+				procBuffer.add(this.createProc(currentCmds, false));
 			}
 		}
 		int bufferSize = procBuffer.size();
@@ -220,12 +213,12 @@ public class TaskBuilder {
 		return procBuffer.toArray(new PseudoProcess[bufferSize]);
 	}
 
-	private PseudoProcess createProc(ArrayList<String> cmds) {
+	private PseudoProcess createProc(ArrayList<String> cmds, boolean enableTrace) {
 		PseudoProcess proc = BuiltinCommand.createCommand(cmds);
 		if(proc != null) {
 			return proc;
 		}
-		proc = new SubProc(this.option);
+		proc = new SubProc(this.option, enableTrace);
 		proc.setArgumentList(cmds);
 		return proc;
 	}
@@ -314,6 +307,7 @@ class SubProc extends PseudoProcess {
 	private Process proc;
 	private TaskOption taskOption;
 	public boolean isKilled = false;
+	private boolean enableTrace = false;
 	public String logFilePath = null;
 
 	private static String createLogNameHeader() {
@@ -329,14 +323,15 @@ class SubProc extends PseudoProcess {
 		return logNameHeader.toString();
 	}
 
-	public SubProc(TaskOption taskOption) {
+	public SubProc(TaskOption taskOption, boolean enableTrace) {
 		super();
 		this.taskOption = taskOption;
+		this.enableTrace = enableTrace;
 		this.initTrace();
 	}
 
 	private void initTrace() {
-		if(this.taskOption.is(tracable)) {
+		if(this.enableTrace) {
 			logFilePath = new String(logdirPath + "/" + createLogNameHeader() + ".log");
 			new File(logdirPath).mkdir();
 			String[] traceCmd;
@@ -504,7 +499,7 @@ class SubProc extends PseudoProcess {
 	}
 
 	@Override public boolean isTraced() {
-		return this.taskOption.is(tracable);
+		return this.enableTrace;
 	}
 }
 

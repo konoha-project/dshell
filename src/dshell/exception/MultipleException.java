@@ -1,18 +1,28 @@
 package dshell.exception;
 
-import zen.deps.NativeTypeTable;
-import zen.deps.ZenArray;
+import dshell.lib.DShellExceptionArray;
+import zen.codegen.jvm.JavaTypeTable;
+import zen.type.ZType;
 
 public class MultipleException extends DShellException {
 	private static final long serialVersionUID = 1L;
-	private ZenArray<DShellException> exceptionArray;
+	private DShellExceptionArray exceptionArray;
 
-	public MultipleException(String message, Exception[] exceptions) {
+	public MultipleException(String message, DShellException[] exceptions) {
 		super(message);
-		this.exceptionArray = ZenArray.NewZenArray(NativeTypeTable.GetZenType(DShellException.class));
+		ZType nativeType = JavaTypeTable.GetZenType(DShellException.class);
+		this.exceptionArray = new DShellExceptionArray(nativeType.TypeId);
+		for(DShellException exception : exceptions) {
+			this.exceptionArray.Add(exception);
+		}
 	}
 
-	public ZenArray<DShellException> getExceptions() {
+	public DShellExceptionArray getExceptions() {
 		return this.exceptionArray;
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass().getCanonicalName() + ": " + this.exceptionArray.toString();
 	}
 }

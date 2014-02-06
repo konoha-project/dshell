@@ -46,7 +46,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ZType.VoidType);
 	}
 
-	@Override public void VisitCatchNode(ZCatchNode Node) {
+	@Override public void VisitCatchNode(ZCatchNode Node) {	//FIXME
 		Node.AST[ZCatchNode.Block] = this.CheckType(Node.AST[ZCatchNode.Block], ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);
 	}

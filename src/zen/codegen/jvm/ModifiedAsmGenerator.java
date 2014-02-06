@@ -19,25 +19,34 @@ import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.ClassListLoader;
+import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
-import zen.ast.ZNode;
 import zen.codegen.jvm.AsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.lang.ZenEngine;
 import zen.type.ZType;
+import zen.type.ZTypePool;
 
 public class ModifiedAsmGenerator extends AsmGenerator {
-	private static Method ExecCommandVoid;
-	private static Method ExecCommandBool;
-	private static Method ExecCommandInt;
-	private static Method ExecCommandString;
-	private static Method ExecCommandTask;
-	
-	static {
+	private Method ExecCommandVoid;
+	private Method ExecCommandBool;
+	private Method ExecCommandInt;
+	private Method ExecCommandString;
+	private Method ExecCommandTask;
+
+	public ModifiedAsmGenerator() {
+		super();
+		this.importNativeClass(Task.class);
+		this.importNativeClass(DShellException.class);
+		this.importNativeClass(MultipleException.class);
+		this.importNativeClass(UnimplementedErrnoException.class);
+		this.importNativeClass(NullException.class);
+		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
+
 		try {
 			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);
 			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", String[][].class);
@@ -54,16 +63,11 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
 		JavaMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
 		JavaMethodTable.Import("log", ZType.VarType, Utils.class, "log");
-	}
-
-	public ModifiedAsmGenerator() {
-		super();
-		this.importNativeClass(Task.class);
-		this.importNativeClass(DShellException.class);
-		this.importNativeClass(MultipleException.class);
-		this.importNativeClass(UnimplementedErrnoException.class);
-		this.importNativeClass(NullException.class);
-		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
+		
+		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
+		ZType DShellExceptionArrayType = ZTypePool.GetGenericType1(ZType.ArrayType, DShellExceptionType);
+		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
+		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
 	}
 
 	@Override public ZenEngine GetEngine() {
@@ -71,35 +75,34 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
-		ArrayList<ArrayList<ZNode>> Args = new ArrayList<ArrayList<ZNode>>();
+		this.CurrentBuilder.SetLineNumber(Node);
+		ArrayList<DShellCommandNode> nodeList = new ArrayList<DShellCommandNode>();
 		DShellCommandNode node = Node;
 		while(node != null) {
-			ArrayList<ZNode> argumentList = new ArrayList<ZNode>();
-			int size = node.GetListSize();
-			for(int i = 0; i < size; i++) {
-				argumentList.add(node.GetListAt(i));
-			}
-			Args.add(argumentList);
+			nodeList.add(node);
 			node = (DShellCommandNode) node.PipedNextNode;
 		}
-		// new String[][n]
-		this.CurrentBuilder.visitLdcInsn(Args.size());
+		// new String[n][]
+		int size = nodeList.size();
+		this.CurrentBuilder.visitLdcInsn(size);
 		this.CurrentBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String[].class));
-		for(int i = 0; i < Args.size(); i++) {
+		for(int i = 0; i < size; i++) {
 			// new String[m];
-			ArrayList<ZNode> Arg = Args.get(i);
+			DShellCommandNode currentNode = nodeList.get(i);
+			int listSize = currentNode.GetListSize();
 			this.CurrentBuilder.visitInsn(DUP);
 			this.CurrentBuilder.visitLdcInsn(i);
-			this.CurrentBuilder.visitLdcInsn(Arg.size());
+			this.CurrentBuilder.visitLdcInsn(listSize);
 			this.CurrentBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String.class));
-			for(int j = 0; j < Arg.size(); j++) {
+			for(int j = 0; j < listSize; j++ ) {
 				this.CurrentBuilder.visitInsn(DUP);
 				this.CurrentBuilder.visitLdcInsn(j);
-				Arg.get(j).Accept(this);
+				currentNode.GetListAt(j).Accept(this);
 				this.CurrentBuilder.visitInsn(AASTORE);
 			}
 			this.CurrentBuilder.visitInsn(AASTORE);
 		}
+		
 		if(Node.Type.IsBooleanType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandBool);
 		}

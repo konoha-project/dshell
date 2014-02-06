@@ -15,7 +15,6 @@ import zen.deps.Var;
 import zen.lang.ZFunc;
 import zen.lang.ZenGrammar;
 import zen.lang.ZenPrecedence;
-import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
 import zen.parser.ZSource;
 import zen.parser.ZToken;
@@ -228,7 +227,7 @@ public class DShellGrammar {
 	}
 
 	private static ZNode CreateRedirectNode(ZNode ParentNode, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
-		ZNode Node = new DShellCommandNode(ParentNode);
+		ZNode Node = new DShellCommandNode(ParentNode, null);
 		Node.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, null, RedirectSymbol));
 		if(existTarget) {
 			Node = TokenContext.MatchPattern(Node, ZNode.AppendIndex, "$CommandArg$", ZTokenContext.Required);
@@ -276,7 +275,7 @@ public class DShellGrammar {
 	}
 
 	public static ZNode CreateNodeAndMatchNextOption(ZNode ParentNode, ZTokenContext TokenContext, String OptionSymbol) {
-		ZNode Node = new DShellCommandNode(ParentNode);
+		ZNode Node = new DShellCommandNode(ParentNode, null);
 		Node.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, null, OptionSymbol));
 		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional);
 		if(PipedNode != null) {
@@ -321,7 +320,7 @@ public class DShellGrammar {
 		if(Command == null) {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}
-		ZNode CommandNode = new DShellCommandNode(ParentNode);
+		ZNode CommandNode = new DShellCommandNode(ParentNode, CommandToken);
 		CommandNode.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
@@ -408,7 +407,7 @@ public class DShellGrammar {
 		ZToken Token = TokenContext.GetToken();
 		TokenContext.MoveNext();
 		ZStringNode KeyNode = new ZStringNode(ParentNode, null, location);
-		DShellCommandNode Node = new DShellCommandNode(ParentNode);
+		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token);
 		Node.Set(ZNode.AppendIndex, KeyNode);
 		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));
 		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);

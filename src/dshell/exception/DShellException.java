@@ -8,10 +8,6 @@ public class DShellException extends RuntimeException {
 		super(message);
 		this.errorMessage = "";
 	}
-	
-	@Override public Throwable fillInStackTrace() {
-		return this;
-	}
 
 	public void setErrorMessage(String errorMessage) {
 		this.errorMessage = errorMessage;

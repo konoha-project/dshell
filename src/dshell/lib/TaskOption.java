@@ -16,7 +16,6 @@ public class TaskOption implements Serializable {
 		printable ,
 		throwable ,
 		background,
-		tracable ,
 		client,
 		server,
 	}
