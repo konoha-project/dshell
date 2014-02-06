@@ -16,7 +16,6 @@ import static dshell.lib.TaskOption.Behavior.printable;
 import static dshell.lib.TaskOption.Behavior.throwable;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.server;
-
 import static dshell.lib.TaskOption.RetType.TaskType;
 
 public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote hosts
@@ -24,6 +23,7 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 	private TaskOption option;
 	private ArrayList<ArrayList<String>> remoteCommandsList;
 	private Task remoteTask = null;
+	private Thread requestHandler;
 
 	public RemoteProcClient(TaskOption option) {
 		this.option = TaskOption.of(TaskType, returnable, server);
@@ -88,50 +88,55 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 				e.printStackTrace();
 			}
 		}
-		new Thread() {
+		this.requestHandler = new Thread() {
 			@Override
 			public void run() {
-				byte[] buffer = new byte[512];
 				while(true) {
-					int request = context.receiveRequest();
-					int count = 0;
-					if(context.matchRequest(request, RemoteContext.STREAM_REQ)) {
-						int size = context.getStreamSize(request);
-						int readSize = context.receiveStream(buffer, size);
+					int[] reqs = context.receiveRequest();
+					int request = reqs[0];
+					int option = reqs[1];
+					if(request == RemoteContext.STREAM_REQ) {
+						StreamRequest streamReq = context.receiveStream();
+						byte[] buffer = streamReq.getBuffer();
 						try {
-							if(context.matchStreamType(request, RemoteContext.OUT_STREAM)) {
-								outReceiveStream.write(buffer, 0, readSize);
+							if(option == RemoteContext.OUT_STREAM) {
+								outReceiveStream.write(buffer, 0, buffer.length);
 							}
-							else if(context.matchStreamType(request, RemoteContext.ERR_STREAM)) {
-								errReceiveStream.write(buffer, 0, readSize);
+							else if(option == RemoteContext.ERR_STREAM) {
+								errReceiveStream.write(buffer, 0, buffer.length);
 							}
 							else {
-								Utils.fatal(1, "invalid stream type: " + request);
+								Utils.fatal(1, "invalid stream type: " + option);
 							}
 						}
 						catch(IOException e) {
 							e.printStackTrace();
 						}
 					}
-					else if(context.matchRequest(request, RemoteContext.EOS_REQ)) {
-						if(count == 2) {
-							break;
+					else if(request == RemoteContext.EOS_REQ) {
+						try {
+							if(option == RemoteContext.OUT_STREAM) {
+								outReceiveStream.close();
+							}
+							else if(option == RemoteContext.ERR_STREAM) {
+								errReceiveStream.close();
+							}
+							else {
+								Utils.fatal(1, "invalid stream type: " + option);
+							}
 						}
-						count++;
+						catch (IOException e) {
+							e.printStackTrace();
+						}
 					}
-					else if(context.matchRequest(request, RemoteContext.RESULT_REQ)) {
-						Task task = context.receiveTask();
-						synchronized (errReceiveStream) {
-							remoteTask = task;
-						}
+					else if(request == RemoteContext.RESULT_REQ) {
+						remoteTask = context.receiveTask();
 						break;
-					}
-					else {
-						Utils.fatal(1, "invalid request: " + request);
 					}
 				}
 			}
-		}.start();
+		};
+		this.requestHandler.start();
 	}
 
 	@Override 
@@ -141,18 +146,12 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 
 	@Override 
 	public void waitTermination() {
-		while(true) {
-			try {
-				Thread.sleep(10);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			synchronized (TaskType) {
-				if(remoteTask != null) {
-					break;
-				}
-			}
+		try {
+			this.requestHandler.join();
+			this.context.closeSocket();
+		}
+		catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 		System.out.println(this.remoteTask.getOutMessage());
 	}

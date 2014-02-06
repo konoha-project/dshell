@@ -3,13 +3,15 @@ package zen.codegen.jvm;
 import java.util.ArrayList;
 
 import zen.ast.ZNode;
+import zen.codegen.jvm.JavaEngine;
+import zen.codegen.jvm.JavaSolution;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
-import dshell.lang.ModifiedTypeInfer;
+import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.TaskBuilder;
 
-public class ModifiedReflectionEngine extends JavaReflectionEngine {	//TODO: implement unsupported visit api
-	public ModifiedReflectionEngine(ModifiedTypeInfer TypeChecker, ModifiedJavaByteCodeGenerator Generator) {
+public class ModifiedJavaEngine extends JavaEngine {	//TODO: implement unsupported visit api
+	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaSolution Generator) {
 		super(TypeChecker, Generator);
 	}
 
@@ -17,7 +19,12 @@ public class ModifiedReflectionEngine extends JavaReflectionEngine {	//TODO: imp
 		ArrayList<ArrayList<ZNode>> args = new ArrayList<ArrayList<ZNode>>();
 		DShellCommandNode node = Node;
 		while(node != null) {
-			args.add(node.ArgumentList);
+			ArrayList<ZNode> argumentList = new ArrayList<ZNode>();
+			int size = node.GetListSize();
+			for(int i = 0; i < size; i++) {
+				argumentList.add(node.GetListAt(i));
+			}
+			args.add(argumentList);
 			node = (DShellCommandNode) node.PipedNextNode;
 		}
 		String[][] values = new String[args.size()][];

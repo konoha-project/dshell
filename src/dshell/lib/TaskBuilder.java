@@ -166,7 +166,6 @@ public class TaskBuilder {
 			procBuffer.add(proc);
 //			this.remoteOutStream = proc.outStream;
 //			this.remoteErrStream = proc.errStream;
-			
 		}
 		int size = cmdsList.size();
 		for(int i = 0; i < size; i++) {

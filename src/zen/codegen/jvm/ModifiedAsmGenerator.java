@@ -17,18 +17,20 @@ import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
-import dshell.lang.ModifiedTypeInfer;
+import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.ClassListLoader;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZNode;
-import zen.deps.NativeTypeTable;
+import zen.codegen.jvm.AsmGenerator;
+import zen.codegen.jvm.JavaMethodTable;
+import zen.codegen.jvm.JavaTypeTable;
+import zen.codegen.jvm.TryCatchLabel;
 import zen.lang.ZenEngine;
-import zen.parser.ZToken;
 import zen.type.ZType;
 
-public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
+public class ModifiedAsmGenerator extends AsmGenerator {
 	private static Method ExecCommandVoid;
 	private static Method ExecCommandBool;
 	private static Method ExecCommandInt;
@@ -48,13 +50,13 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 			System.err.println("method loading failed");
 			System.exit(1);
 		}
-		NativeMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
-		NativeMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
-		NativeMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
-		NativeMethodTable.Import("log", ZType.VarType, Utils.class, "log");
+		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
+		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
+		JavaMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
+		JavaMethodTable.Import("log", ZType.VarType, Utils.class, "log");
 	}
 
-	public ModifiedJavaByteCodeGenerator() {
+	public ModifiedAsmGenerator() {
 		super();
 		this.importNativeClass(Task.class);
 		this.importNativeClass(DShellException.class);
@@ -65,14 +67,19 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	}
 
 	@Override public ZenEngine GetEngine() {
-		return new ModifiedReflectionEngine(new ModifiedTypeInfer(this), this);
+		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
 		ArrayList<ArrayList<ZNode>> Args = new ArrayList<ArrayList<ZNode>>();
 		DShellCommandNode node = Node;
 		while(node != null) {
-			Args.add(node.ArgumentList);
+			ArrayList<ZNode> argumentList = new ArrayList<ZNode>();
+			int size = node.GetListSize();
+			for(int i = 0; i < size; i++) {
+				argumentList.add(node.GetListAt(i));
+			}
+			Args.add(argumentList);
 			node = (DShellCommandNode) node.PipedNextNode;
 		}
 		// new String[][n]
@@ -115,17 +122,18 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 		this.TryCatchLabel.push(Label); // push
 		// try block
 		this.CurrentBuilder.visitLabel(Label.beginTryLabel);
-		Node.TryNode.Accept(this);
+		Node.AST[DShellTryNode.Try].Accept(this);
 		this.CurrentBuilder.visitLabel(Label.endTryLabel);
 		this.CurrentBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 		// catch block
-		for(ZNode CatchNode : Node.CatchNodeList) {
-			CatchNode.Accept(this);
+		int size = Node.GetListSize();
+		for(int i = 0; i < size; i++) {
+			Node.GetListAt(i).Accept(this);
 		}
 		// finally block
 		this.CurrentBuilder.visitLabel(Label.finallyLabel);
-		if(Node.FinallyNode != null) {
-			Node.FinallyNode.Accept(this);
+		if(Node.AST[DShellTryNode.Finally] != null) {
+			Node.AST[DShellTryNode.Finally].Accept(this);
 		}
 		this.TryCatchLabel.pop();
 	}
@@ -136,8 +144,8 @@ public class ModifiedJavaByteCodeGenerator extends Java6ByteCodeGenerator {
 	}
 
 	private void importNativeClass(Class<?> classObject) {
-		ZType type = NativeTypeTable.GetZenType(classObject);
-		this.RootNameSpace.SetTypeName(classObject.getSimpleName(), type, new ZToken(0, classObject.getCanonicalName(), 0));
+		ZType type = JavaTypeTable.GetZenType(classObject);
+		this.RootNameSpace.SetTypeName(classObject.getSimpleName(), type, null);
 	}
 
 	private void importNativeClassList(ArrayList<Class<?>> classObjList) {

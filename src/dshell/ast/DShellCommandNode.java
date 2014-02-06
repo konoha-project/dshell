@@ -1,29 +1,18 @@
 package dshell.ast;
 
-import java.util.ArrayList;
-
-import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
-import zen.codegen.jvm.ModifiedReflectionEngine;
-import dshell.lang.ModifiedTypeInfer;
-
+import dshell.lang.ModifiedTypeSafer;
+import zen.ast.ZListNode;
 import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.deps.Field;
+import zen.codegen.jvm.ModifiedAsmGenerator;
+import zen.codegen.jvm.ModifiedJavaEngine;
 import zen.parser.ZVisitor;
 
-public class DShellCommandNode extends ZNode {
-	@Field public ArrayList<ZNode> ArgumentList; // ["ls", "-la"]
-	@Field public ZNode PipedNextNode;
+public class DShellCommandNode extends ZListNode {
+	public ZNode PipedNextNode;
 
-	public DShellCommandNode(ZNode ParentNode, ZStringNode Node) {
-		super(ParentNode, Node.SourceToken);
-		this.ArgumentList = new ArrayList<ZNode>();
-		this.ArgumentList.add(this.SetChild(Node));
+	public DShellCommandNode(ZNode ParentNode) {
+		super(ParentNode, null, 0);
 		this.PipedNextNode = null;
-	}
-
-	@Override public void Append(ZNode Node) {
-		this.ArgumentList.add(this.SetChild(Node));
 	}
 
 	public ZNode AppendPipedNextNode(DShellCommandNode Node) {
@@ -41,14 +30,14 @@ public class DShellCommandNode extends ZNode {
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {
-		if(Visitor instanceof ModifiedJavaByteCodeGenerator) {
-			((ModifiedJavaByteCodeGenerator)Visitor).VisitCommandNode(this);
+		if(Visitor instanceof ModifiedAsmGenerator) {
+			((ModifiedAsmGenerator)Visitor).VisitCommandNode(this);
 		}
-		else if(Visitor instanceof ModifiedTypeInfer) {
-			((ModifiedTypeInfer)Visitor).VisitCommandNode(this);
+		else if(Visitor instanceof ModifiedTypeSafer) {
+			((ModifiedTypeSafer)Visitor).VisitCommandNode(this);
 		}
-		else if(Visitor instanceof ModifiedReflectionEngine) {
-			((ModifiedReflectionEngine)Visitor).VisitCommandNode(this);
+		else if(Visitor instanceof ModifiedJavaEngine) {
+			((ModifiedJavaEngine)Visitor).VisitCommandNode(this);
 		}
 		else {
 			throw new RuntimeException(Visitor.getClass().getName() + " is unsupported Visitor");

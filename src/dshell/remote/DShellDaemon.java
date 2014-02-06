@@ -51,7 +51,6 @@ public class DShellDaemon {
 						System.out.println("send result request:-->");
 						System.out.println(task);
 						context.sendTask(task);
-//						context.closeSocket();
 						System.out.println("close connection");
 					}
 				}.start();
@@ -68,12 +67,10 @@ class CommandRequest implements Serializable {
 	private static final long serialVersionUID = -5370173768728461622L;
 	private final ArrayList<ArrayList<String>> commandsList;
 	private final TaskOption option;
-//	private final ArrayList<String> flagList;
 
 	public CommandRequest(ArrayList<ArrayList<String>> commandsList, TaskOption option) {
 		this.commandsList = commandsList;
 		this.option = option;
-		//this.flagList = new ArrayList<String>();
 		
 	}
 
@@ -85,7 +82,23 @@ class CommandRequest implements Serializable {
 		return this.option;
 	}
 
-//	public String toString() {
-//		return this.commandsList.toString() + "::: option " + this.option;
-//	}
+	public String toString() {
+		return this.commandsList.toString() + "::: option " + this.option;
+	}
+}
+
+class StreamRequest implements Serializable {
+	private static final long serialVersionUID = -2578711133223106633L;
+	private final byte[] buffer;
+
+	public StreamRequest(byte[] buffer, int size) {
+		this.buffer = new byte[size];
+		for(int i = 0; i < size; i++) {
+			this.buffer[i] = buffer[i];
+		}
+	}
+
+	public byte[] getBuffer() {
+		return this.buffer;
+	}
 }

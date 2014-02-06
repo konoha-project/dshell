@@ -13,8 +13,7 @@ public class RemoteProcServer extends PseudoProcess {
 	private final RemoteContext context;
 	public final OutputStream outStream;
 	public final OutputStream errStream;
-
-	private boolean isShutdown = false;
+	private Thread requestHandler;
 	
 	public RemoteProcServer(RemoteContext context) {
 		this.context = context;
@@ -44,47 +43,44 @@ public class RemoteProcServer extends PseudoProcess {
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		new Thread() {
+		this.requestHandler = new Thread() {
 			@Override
 			public void run() {
-				byte[] buffer = new byte[512];
 				while(true) {
-					int request = context.receiveRequest();
-					if(context.matchRequest(request, RemoteContext.STREAM_REQ)) {
-						if(context.matchStreamType(request, RemoteContext.IN_STREAM)) {
-							int size = context.getStreamSize(request);
-							int readSize = context.receiveStream(buffer, size);
+					int[] reqs = context.receiveRequest();
+					int request = reqs[0];
+					int option = reqs[1];
+					if(request == RemoteContext.STREAM_REQ) {
+						if(option == RemoteContext.IN_STREAM) {
+							StreamRequest streamReq = context.receiveStream();
+							byte[] buffer = streamReq.getBuffer();
 							try {
-								inReceiveStream.write(buffer, 0, readSize);
+								inReceiveStream.write(buffer, 0, buffer.length);
 							}
 							catch (IOException e) {
 								e.printStackTrace();
 							}
 						}
 						else {
-							Utils.fatal(1, "invalid stream type: " + request);
+							Utils.fatal(1, "invalid stream type: " + option);
 						}
 					}
-					else if(context.matchRequest(request, RemoteContext.EOS_REQ)) {
-						if(context.matchStreamType(request, RemoteContext.IN_STREAM)) {
+					else if(request == RemoteContext.EOS_REQ) {
+						if(option == RemoteContext.IN_STREAM) {
 							try {
+								System.out.println("receive End OF InputStream");
 								inReceiveStream.close();
-								synchronized (inReceiveStream) {
-									isShutdown = true;
-								}
-								break;
 							}
 							catch (IOException e) {
 								e.printStackTrace();
 							}
+							break;
 						}
-					}
-					else {
-						Utils.fatal(1, "invalid request: " + request);
 					}
 				}
 			}
-		}.start();
+		};
+		this.requestHandler.start();
 	}
 
 	@Override
@@ -93,20 +89,12 @@ public class RemoteProcServer extends PseudoProcess {
 
 	@Override
 	public void waitTermination() {
-		while(true) {
-			try {
-				Thread.sleep(10);
-			}
-			catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-			synchronized (context) {
-				if(this.isShutdown) {
-					break;
-				}
-			}
+		try {
+			this.requestHandler.join();
 		}
-		
+		catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 
 	class RemoteOutputStream extends OutputStream {
@@ -119,6 +107,7 @@ public class RemoteProcServer extends PseudoProcess {
 		}
 		@Override
 		public void write(int b) throws IOException {
+			throw new RuntimeException();
 		}	// do nothing. do not call it
 		@Override
 		public void write(byte[] b, int off, int len) throws IOException {

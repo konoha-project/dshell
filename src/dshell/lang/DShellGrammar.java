@@ -17,6 +17,7 @@ import zen.lang.ZenGrammar;
 import zen.lang.ZenPrecedence;
 import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
+import zen.parser.ZSource;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.ast.DShellCommandNode;
@@ -37,7 +38,7 @@ public class DShellGrammar {
 		return "__$" + Symbol;
 	}
 
-	private static void AppendCommand(ZNode ParentNode, String CommandPath, ZToken KeyToken, ZToken SourceToken) {
+	private static void AppendCommand(ZNode ParentNode, String CommandPath, String CommandPrefix) {
 		if(CommandPath.length() == 0) {
 			return;
 		}
@@ -45,79 +46,80 @@ public class DShellGrammar {
 		int loc = CommandPath.lastIndexOf('/');
 		String Command = CommandPath;
 		if(loc != -1) {
-			if(!Utils.isFileExecutable(CommandPath)) {
-				NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "not executable: " + CommandPath);
+			if(!Utils.isFileExecutable(CommandPath)) {	//FIXME: error report
+				//NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "not executable: " + CommandPath);
 				return;
 			}
 			Command = CommandPath.substring(loc + 1);
 		}
 		else {
 			if(!Utils.isUnixCommand(CommandPath)) {
-				NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "unknown command: " + CommandPath);
+				//NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "unknown command: " + CommandPath);
 				return;
 			}
 		}
 		NameSpace.DefineSyntax(Command, MatchDShell);
-		String CommandPrefix = KeyToken.ParsedText;
-		if(!CommandPrefix.equals(SourceToken.ParsedText)) {	//FIXME: check duplication
+		if(!CommandPrefix.equals(CommandPath)) {	//FIXME: check duplication
 			NameSpace.DefineSyntax(CommandPrefix, MatchDShell);
 		}
-		NameSpace.SetLocalSymbol(CommandSymbol(Command), new ZStringNode(ParentNode, SourceToken, CommandPath));
+		NameSpace.SetLocalSymbol(CommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 
-	public static long ShellCommentToken(ZTokenContext TokenContext, String SourceText, long pos) {
-		if(LibZen.CharAt(SourceText, pos) == '#') { // shell style SingleLineComment
-			long NextPos = pos + 1;
-			while(NextPos < SourceText.length()) {
-				char NextChar = LibZen.CharAt(SourceText, NextPos);
-				if(NextChar == '\n') {
-					break;
-				}
-				NextPos++;
+	public static boolean ShellCommentToken(ZSource Source) {
+		while(Source.HasChar()) {
+			char ch = Source.ParseChar();
+			if(ch == '\n') {
+				break;
 			}
-			return ZenGrammar.IndentToken(TokenContext, SourceText, NextPos);
+			Source.MoveNext();
 		}
-		return ZTokenContext.MismatchedPosition;
+		return true;
+	}
+
+	public final static boolean IsNextWhiteSpace(ZToken Token) {
+		char ch = Token.Source.SourceAt(Token.EndIndex);
+		if(ch == ' ' || ch == '\t' || ch == '\n') {
+			return true;
+		}
+		return false;
 	}
 
 	public static ZNode MatchImport(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		TokenContext.GetTokenAndMoveForward();
-		if(TokenContext.IsToken("command")) {
-			return TokenContext.ParsePattern(ParentNode, "$Command$", ZTokenContext.Required2);
+		TokenContext.MoveNext();
+		ZToken Token = TokenContext.GetToken();
+		if(Token.EqualsText("command")) {
+			return TokenContext.ParsePattern(ParentNode, "$Command$", ZTokenContext.Required);
 		}
-		if(TokenContext.IsToken("env")) {
-			return TokenContext.ParsePattern(ParentNode, "$Env$", ZTokenContext.Required2);
+		if(Token.EqualsText("env")) {
+			return TokenContext.ParsePattern(ParentNode, "$Env$", ZTokenContext.Required);
 		}
 		return null;
 	}
 
 	public static ZNode MatchEnv(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode LetNode = new ZLetNode(ParentNode);
-		LetNode = TokenContext.MatchNodeToken(LetNode, "env", ZTokenContext.Required2);
-		LetNode = TokenContext.AppendMatchedPattern(LetNode, "$Identifier$", ZTokenContext.Required2);
-		LetNode.Append(null);
-		LetNode.Append(ParentNode.GetNameSpace().GetTypeNode("String", new ZToken(0, "String", 0)));
+		LetNode = TokenContext.MatchToken(LetNode, "env", ZTokenContext.Required);
+		LetNode = TokenContext.MatchPattern(LetNode, ZNode.NameInfo, "$Name$", ZTokenContext.Required);
+		LetNode.Set(ZNode.TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
 		String Name = ((ZLetNode)LetNode).Symbol;
 		String Env = System.getenv(Name);
 		Env = (Env == null) ? "" : Env;
-		LetNode.Append(new ZStringNode(ParentNode, new ZToken(0, Env, 0), Env));
+		LetNode.Set(ZLetNode.InitValue, new ZStringNode(ParentNode, null, Env));
 		return LetNode;
 	}
 
 	public static ZNode MatchCommand(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		String Command = "";
 		boolean foundSlash = true;
-		ZToken KeyToken = null;
-		long lineNum = TokenContext.GetToken().FileLine;
-		ZToken SourceToken = null;
+		String KeySymbol = null;
 		String ParsedText = null;
-		TokenContext.GetTokenAndMoveForward();
+		TokenContext.MoveNext();
 		while(TokenContext.HasNext()) {
-			ZToken Token = TokenContext.GetTokenAndMoveForward();
-			ParsedText = Token.ParsedText;
+			ZToken Token = TokenContext.GetToken();
+			ParsedText = Token.GetText();
 			if(foundSlash && !Token.EqualsText("/")) {
 				foundSlash = false;
-				KeyToken = Token;
+				KeySymbol = ParsedText;
 			}
 			if(Token.EqualsText(",")) {
 				ParsedText = "";
@@ -128,19 +130,19 @@ public class DShellGrammar {
 			if(Token.EqualsText("/")) {
 				foundSlash = true;
 			}
-			if(Token.IsDelim() || Token.IsIndent()) {
+			if(Token.EqualsText(";") || Token.IsIndent()) {
 				break;
 			}
 			Command += ParsedText;
-			if(Token.IsNextWhiteSpace()) {
-				SourceToken = new ZToken(0, ParsedText, lineNum);
-				AppendCommand(ParentNode, Command, KeyToken, SourceToken);
+			if(IsNextWhiteSpace(Token)) {
+				AppendCommand(ParentNode, Command, KeySymbol);
 				Command = "";
+				foundSlash = true;
 			}
+			TokenContext.MoveNext();
 		}
 		if(!Command.equals("")) {
-			SourceToken = new ZToken(0, Command, lineNum);
-			AppendCommand(ParentNode, Command, KeyToken, SourceToken);
+			AppendCommand(ParentNode, Command, KeySymbol);
 		}
 		return new DShellDummyNode(ParentNode);
 	}
@@ -150,7 +152,7 @@ public class DShellGrammar {
 		if(!TokenContext.HasNext()) {
 			return true;
 		}
-		if(Token.IsIndent() || Token.IsDelim()) {
+		if(Token.IsIndent() || Token.EqualsText(";")) {
 			return true;
 		}
 		if(Token.EqualsText(",") || Token.EqualsText(")") || Token.EqualsText("]") || 
@@ -167,30 +169,31 @@ public class DShellGrammar {
 		ZToken Token = TokenContext.GetToken();
 		boolean HasStringExpr = false;
 		String Path = null;
-		if(Token.IsQuoted()) {
-			Path = LibZen.UnquoteString(Token.ParsedText);
-			if(Path.indexOf("${") != -1) {
+		if(Token.toString().startsWith("\"")) {
+			Path = Token.GetText();
+			if(Path.indexOf("${") != -1 && Path.lastIndexOf("}") != -1) {
 				HasStringExpr = true;
 			}
-			TokenContext.GetTokenAndMoveForward();
+			TokenContext.MoveNext();
 		}
 		if(Path == null) {
 			boolean FoundOpen = false;
 			Path = "";
 			while(TokenContext.HasNext()) {
 				Token = TokenContext.GetToken();
-				String ParsedText = Token.ParsedText;
+				String ParsedText = Token.GetText();
 				if(Token.IsIndent() || (!FoundOpen && MatchStopToken(TokenContext))) {
 					break;
 				}
-				TokenContext.GetTokenAndMoveForward();
+				TokenContext.MoveNext();
 				if(Token.EqualsText("$")) {   // $HOME/hoge
 					ZToken Token2 = TokenContext.GetToken();
-					if(LibZen.IsVariableName(Token2.ParsedText, 0)) {
-						Path += "${" + Token2.ParsedText + "}";
+					String ParsedText2 = Token2.GetText();
+					if(LibZen.IsVariableName(ParsedText2, 0)) {
+						Path += "${" + ParsedText2 + "}";
 						HasStringExpr = true;
-						TokenContext.GetTokenAndMoveForward();
-						if(Token2.IsNextWhiteSpace()) {
+						TokenContext.MoveNext();
+						if(IsNextWhiteSpace(Token2)) {
 							break;
 						}
 						continue;
@@ -207,7 +210,7 @@ public class DShellGrammar {
 					ParsedText = System.getenv("HOME");
 				}
 				Path += ParsedText;
-				if(!FoundOpen && Token.IsNextWhiteSpace()) {
+				if(!FoundOpen && IsNextWhiteSpace(Token)) {
 					break;
 				}
 			}
@@ -219,48 +222,53 @@ public class DShellGrammar {
 		Path = Path.replaceAll("\\$\\{", "\" + ");
 		Path = Path.replaceAll("\\}", " + \"");
 		ZNameSpace NameSpace = ParentNode.GetNameSpace();
-		ZTokenContext LocalContext = new ZTokenContext(TokenContext.Generator, NameSpace, Path, Token.FileLine);
-		return LocalContext.ParsePattern(new ZBlockNode(NameSpace), "$Expression$", ZTokenContext.Required2);
+		new ZTokenContext(TokenContext.Generator, NameSpace, Token.GetFileName(), Token.GetLineNumber(), Path);
+		ZTokenContext LocalContext = new ZTokenContext(TokenContext.Generator, NameSpace, Token.GetFileName(), Token.GetLineNumber(), Path);
+		return LocalContext.ParsePattern(new ZBlockNode(NameSpace), "$Expression$", ZTokenContext.Required);
 	}
 
 	private static ZNode CreateRedirectNode(ZNode ParentNode, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
-		ZNode Node = new DShellCommandNode(ParentNode, new ZStringNode(ParentNode, new ZToken(0, RedirectSymbol, 0), RedirectSymbol));
+		ZNode Node = new DShellCommandNode(ParentNode);
+		Node.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, null, RedirectSymbol));
 		if(existTarget) {
-			Node = TokenContext.AppendMatchedPattern(Node, "$CommandArg$", ZTokenContext.Required2);
+			Node = TokenContext.MatchPattern(Node, ZNode.AppendIndex, "$CommandArg$", ZTokenContext.Required);
 		}
 		return Node;
 	}
 
 	// <, >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
 	public static ZNode MatchRedirect(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZToken Token = TokenContext.GetTokenAndMoveForward();
-		String RedirectSymbol = Token.ParsedText;
+		ZToken Token = TokenContext.GetToken();
+		TokenContext.MoveNext();
+		String RedirectSymbol = Token.GetText();
 		if(Token.EqualsText(">>") || Token.EqualsText("<")) {
 			return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("&")) {
-			ZToken Token2 = TokenContext.GetTokenAndMoveForward();
+			ZToken Token2 = TokenContext.GetToken();
+			TokenContext.MoveNext();
 			if(Token2.EqualsText(">") || Token2.EqualsText(">>")) {
-				RedirectSymbol += Token2.ParsedText;
+				RedirectSymbol += Token2.GetText();
 				return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 			}
 		}
 		else if(Token.EqualsText(">")) {
 			ZToken Token2 = TokenContext.GetToken();
 			if(Token2.EqualsText("&")) {
-				RedirectSymbol += Token2.ParsedText;
+				RedirectSymbol += Token2.GetText();
 				return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 			}
 			return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 		}
 		else if(Token.EqualsText("1") || Token.EqualsText("2")) {
-			ZToken Token2 = TokenContext.GetTokenAndMoveForward();
+			ZToken Token2 = TokenContext.GetToken();
+			TokenContext.MoveNext();
 			if(Token2.EqualsText(">>")) {
-				RedirectSymbol += Token2.ParsedText;
+				RedirectSymbol += Token2.GetText();
 				return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 			}
 			else if(Token2.EqualsText(">")) {
-				RedirectSymbol += Token2.ParsedText;
+				RedirectSymbol += Token2.GetText();
 				return CreateRedirectNode(ParentNode, TokenContext, RedirectSymbol, true);
 			}
 		}
@@ -268,8 +276,9 @@ public class DShellGrammar {
 	}
 
 	public static ZNode CreateNodeAndMatchNextOption(ZNode ParentNode, ZTokenContext TokenContext, String OptionSymbol) {
-		ZNode Node = new DShellCommandNode(ParentNode, new ZStringNode(ParentNode, new ZToken(0, OptionSymbol, 0), OptionSymbol));
-		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional2);
+		ZNode Node = new DShellCommandNode(ParentNode);
+		Node.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, null, OptionSymbol));
+		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional);
 		if(PipedNode != null) {
 			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
 		}
@@ -280,8 +289,9 @@ public class DShellGrammar {
 	}
 
 	public static ZNode MatchSuffixOption(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZToken Token = TokenContext.GetTokenAndMoveForward();
-		String OptionSymbol = Token.ParsedText;
+		ZToken Token = TokenContext.GetToken();
+		TokenContext.MoveNext();
+		String OptionSymbol = Token.GetText();
 		if(Token.EqualsText(background)) {	// set background job
 			return CreateNodeAndMatchNextOption(ParentNode, TokenContext, OptionSymbol);
 		}
@@ -289,44 +299,46 @@ public class DShellGrammar {
 	}
 
 	private static ZToken GetJoinedCommandToken(ZTokenContext TokenContext) {
-		ZToken Token = TokenContext.GetTokenAndMoveForward();
-		String CommandSymbol = Token.ParsedText;
-		long lineNum = Token.FileLine;
-		while(!Token.IsNextWhiteSpace()) {
+		ZToken Token = TokenContext.GetToken();
+		String CommandSymbol = Token.GetText();
+		TokenContext.MoveNext();
+		while(!IsNextWhiteSpace(Token)) {
 			if(MatchStopToken(TokenContext)) {
 				break;
 			}
-			Token = TokenContext.GetTokenAndMoveForward();
-			CommandSymbol += Token.ParsedText;
+			Token = TokenContext.GetToken();
+			CommandSymbol += Token.GetText();
+			TokenContext.MoveNext();
 		}
-		return new ZToken(0, CommandSymbol, lineNum);
+		ZSource CommandSource = new ZSource(Token.GetFileName(), Token.GetLineNumber(), CommandSymbol, TokenContext);
+		return new ZToken(CommandSource, 0, CommandSymbol.length());
 	}
 
 	private static ZFunc MatchDShell = LibNative.LoadMatchFunc(DShellGrammar.class, "MatchDShell");
 	public static ZNode MatchDShell(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken CommandToken = GetJoinedCommandToken(TokenContext);
-		String Command = ((ZStringNode)ParentNode.GetNameSpace().GetSymbolNode(DShellGrammar.CommandSymbol(CommandToken.ParsedText))).StringValue;
+		String Command = ((ZStringNode)ParentNode.GetNameSpace().GetSymbolNode(DShellGrammar.CommandSymbol(CommandToken.GetText()))).StringValue;
 		if(Command == null) {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}
-		ZNode CommandNode = new DShellCommandNode(ParentNode, new ZStringNode(ParentNode, CommandToken, Command));
-		TokenContext.SetBackTrack(false);
+		ZNode CommandNode = new DShellCommandNode(ParentNode);
+		CommandNode.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
-				ZNode pipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required2);
-				if(pipedNode.IsErrorNode()) {
-					return pipedNode;
+				ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
+				if(PipedNode.IsErrorNode()) {
+					return PipedNode;
 				}
-				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)pipedNode);
+				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)PipedNode);
 			}
 			// Match Redirect
-			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, "$Redirect$", ZTokenContext.Optional2);
+			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, "$Redirect$", ZTokenContext.Optional);
 			if(RedirectNode != null) {
 				((DShellCommandNode)CommandNode).AppendOptionNode((DShellCommandNode)RedirectNode);
 				continue;
 			}
 			// Match Suffix Option
-			ZNode OptionNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional2);
+			ZNode OptionNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional);
 			if(OptionNode != null) {
 				if(OptionNode instanceof ZErrorNode) {
 					return OptionNode;
@@ -334,54 +346,54 @@ public class DShellGrammar {
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)OptionNode);
 			}
 			// Match Argument
-			ZNode ArgNode = TokenContext.ParsePattern(ParentNode, "$CommandArg$", ZTokenContext.Optional2);
+			ZNode ArgNode = TokenContext.ParsePattern(ParentNode, "$CommandArg$", ZTokenContext.Optional);
 			if(ArgNode == null) {
 				break;
 			}
-			CommandNode.Append(ArgNode);
+			CommandNode.Set(ZNode.AppendIndex, ArgNode);
 		}
 		return CommandNode;
 	}
 
 	public static ZNode MatchDShellTry(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		@Var ZNode TryNode = new DShellTryNode(ParentNode);
-		TryNode = TokenContext.MatchNodeToken(TryNode, "try", ZTokenContext.Required2);
-		TryNode = TokenContext.AppendMatchedPattern(TryNode, "$Block$", ZTokenContext.Required2);
+		TryNode = TokenContext.MatchToken(TryNode, "try", ZTokenContext.Required);
+		TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode.Try, "$Block$", ZTokenContext.Required);
 		int count = 0;
 		while(true) {
 			if(TokenContext.IsNewLineToken("catch")) {
-				TryNode = TokenContext.AppendMatchedPattern(TryNode, "$Catch$", ZTokenContext.Required2);
+				TryNode = TokenContext.MatchPattern(TryNode, ZNode.AppendIndex, "$Catch$", ZTokenContext.Required);
 				count = count + 1;
 				continue;
 			}
 			if(TokenContext.MatchNewLineToken("finally")) {
-				TryNode = TokenContext.AppendMatchedPattern(TryNode, "$Block$", ZTokenContext.Required2);
+				TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode.Finally, "$Block$", ZTokenContext.Required);
 				count = count + 1;
 			}
 			break;
 		}
 		if(count == 0 && !TryNode.IsErrorNode()) {
-			return ((DShellTryNode)TryNode).TryNode; // no catch and finally
+			return ((DShellTryNode)TryNode).AST[DShellTryNode.Try]; // no catch and finally
 		}
 		return TryNode;
 	}
 
 	public static ZNode MatchCatch(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		@Var ZNode CatchNode = new ZCatchNode(ParentNode);
-		CatchNode = TokenContext.MatchNodeToken(CatchNode, "catch", ZTokenContext.Required2);
-		CatchNode = TokenContext.MatchNodeToken(CatchNode, "(", ZTokenContext.Required2);
-		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, "$Identifier$", ZTokenContext.Required2);
-		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, "$TypeAnnotation$", ZTokenContext.Required2);
-		CatchNode = TokenContext.MatchNodeToken(CatchNode, ")", ZTokenContext.Required2);
-		CatchNode = TokenContext.AppendMatchedPattern(CatchNode, "$Block$", ZTokenContext.Required2);
+		CatchNode = TokenContext.MatchToken(CatchNode, "catch", ZTokenContext.Required);
+		CatchNode = TokenContext.MatchToken(CatchNode, "(", ZTokenContext.Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode.NameInfo, "$Name$", ZTokenContext.Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode.TypeInfo, "$TypeAnnotation$", ZTokenContext.Required);
+		CatchNode = TokenContext.MatchToken(CatchNode, ")", ZTokenContext.Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, ZCatchNode.Block, "$Block$", ZTokenContext.Required);
 		return CatchNode;
 	}
 
 	public static ZNode MatchLocationDef(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {	//TODO: multiple host, ssh
-		TokenContext.GetTokenAndMoveForward();
-		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Identifier$", ZTokenContext.Required2);
+		TokenContext.MoveNext();
+		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Identifier$", ZTokenContext.Required);
 		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
-			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext.Required2);
+			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext.Required);
 			if(!ValueNode.IsErrorNode()) {
 				String NameSymbol = ((ZGetNameNode)Node).VarName;
 				ParentNode.GetNameSpace().DefineSyntax(NameSymbol, LibNative.LoadMatchFunc(DShellGrammar.class, "MatchLocation"));
@@ -393,12 +405,17 @@ public class DShellGrammar {
 	}
 
 	public static ZNode MatchLocation(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZToken Token = TokenContext.GetTokenAndMoveForward();
-		ZStringNode KeyNode = new ZStringNode(ParentNode, new ZToken(0, location, TokenContext.ParsingLine), location);
-		DShellCommandNode Node = new DShellCommandNode(ParentNode, KeyNode);
-		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.ParsedText));
-		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required2);
-		return Node.AppendPipedNextNode((DShellCommandNode) PipedNode);
+		ZToken Token = TokenContext.GetToken();
+		TokenContext.MoveNext();
+		ZStringNode KeyNode = new ZStringNode(ParentNode, null, location);
+		DShellCommandNode Node = new DShellCommandNode(ParentNode);
+		Node.Set(ZNode.AppendIndex, KeyNode);
+		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));
+		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
+		if(!PipedNode.IsErrorNode()) {
+			return Node.AppendPipedNextNode((DShellCommandNode) PipedNode);
+		}
+		return null;
 	}
 
 	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
@@ -435,6 +452,6 @@ public class DShellGrammar {
 
 	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol) {
 		NameSpace.DefineSyntax(symbol, MatchDShell);
-		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), new ZToken(0, symbol, 0), symbol));
+		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
 	}
 }

@@ -2,11 +2,12 @@ package dshell;
 
 import java.io.PrintStream;
 
-import zen.codegen.jvm.ModifiedJavaByteCodeGenerator;
 import dshell.lang.DShellGrammar;
 import dshell.remote.DShellDaemon;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
+import dshell.util.Utils;
+import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
@@ -14,7 +15,6 @@ import zen.lang.ZSystem;
 import zen.lang.ZenEngine;
 import zen.parser.ZGenerator;
 import zen.type.ZType;
- 
 import static dshell.util.LoggingContext.AppenderType;
 
 public class DShell {
@@ -30,7 +30,6 @@ public class DShell {
 
 	private boolean interactiveMode = true;
 	private boolean debugMode = false;
-	private String sourceText = null;
 	private ZenArray<String> ARGV;
 
 	private DShell(String[] args) {
@@ -73,10 +72,6 @@ public class DShell {
 				}
 			}
 			else if(!foundScriptFile) {
-				this.sourceText = LibNative.LoadTextFile(optionSymbol);
-				if (this.sourceText == null) {
-					LibNative.Exit(1, "file not found: " + optionSymbol);
-				}
 				foundScriptFile = true;
 				this.interactiveMode = false;
 				this.ARGV = ZenArray.NewZenArray(ZType.StringType);
@@ -101,7 +96,7 @@ public class DShell {
 					continue;
 				}
 				try {
-					Object evaledValue = engine.Eval(line, linenum, this.interactiveMode);
+					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
 					engine.Generator.Logger.ShowReportedErrors();
 					if (this.debugMode && evaledValue != null) {
 						System.out.println(" (" + ZSystem.GuessType(evaledValue) + ":");
@@ -119,11 +114,10 @@ public class DShell {
 		else {
 			String scriptName = this.ARGV.get(0);
 			//engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);	//FIXME
-			long fileLine = ZSystem.GetFileLine(scriptName, 1);
-			boolean status = engine.Load(this.sourceText, fileLine);
+			boolean status = engine.Load(scriptName);
 			engine.Generator.Logger.ShowReportedErrors();
 			if(!status) {
-				LibNative.Exit(1, "abort loading: " + scriptName);
+				Utils.fatal(1, "abort loading: " + scriptName);
 			}
 		}
 	}
@@ -148,7 +142,7 @@ public class DShell {
 	}
 
 	private final static ZenEngine loadDShellEngine() {
-		ZGenerator generator = new ModifiedJavaByteCodeGenerator();
+		ZGenerator generator = new ModifiedAsmGenerator();
 		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
 		return generator.GetEngine();
 	}
