@@ -96,21 +96,16 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 					int request = reqs[0];
 					int option = reqs[1];
 					if(request == RemoteContext.STREAM_REQ) {
-						StreamRequest streamReq = context.receiveStream();
-						byte[] buffer = streamReq.getBuffer();
-						try {
-							if(option == RemoteContext.OUT_STREAM) {
-								outReceiveStream.write(buffer, 0, buffer.length);
-							}
-							else if(option == RemoteContext.ERR_STREAM) {
-								errReceiveStream.write(buffer, 0, buffer.length);
-							}
-							else {
-								Utils.fatal(1, "invalid stream type: " + option);
-							}
+						if(option == RemoteContext.OUT_STREAM) {
+							//outReceiveStream.write(context.receiveStream());
+							System.out.write(context.receiveStream());
 						}
-						catch(IOException e) {
-							e.printStackTrace();
+						else if(option == RemoteContext.ERR_STREAM) {
+							//errReceiveStream.write(context.receiveStream());
+							System.err.write(context.receiveStream());
+						}
+						else {
+							Utils.fatal(1, "invalid stream type: " + option);
 						}
 					}
 					else if(request == RemoteContext.EOS_REQ) {
@@ -133,6 +128,9 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 						remoteTask = context.receiveTask();
 						break;
 					}
+					else {
+						break;
+					}
 				}
 			}
 		};
@@ -153,7 +151,11 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println(this.remoteTask.getOutMessage());
+	}
+
+	@Override
+	public boolean checkTermination() {
+		return true;	//FIXME
 	}
 
 	public Task getRemoteTask() {
@@ -163,11 +165,8 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 	class RedirToRemoteInputStream extends OutputStream {
 		@Override
 		public void write(int b) throws IOException {
-		}	// do nothing. do not call it
-		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
-			context.sendStream(RemoteContext.IN_STREAM, b, len);
-		}
+			context.sendStream(RemoteContext.IN_STREAM, b);
+		}	
 		@Override
 		public void close() {	//do nothing
 			context.sendEndOfStream(RemoteContext.IN_STREAM);

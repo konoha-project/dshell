@@ -15,7 +15,7 @@ import static dshell.lib.TaskOption.Behavior.background;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
-	transient private ProcMonitor monitor;
+	transient private Thread stateMonitor;
 	transient private TaskBuilder taskBuilder;
 	transient private MessageStreamHandler stdoutHandler;
 	transient private MessageStreamHandler stderrHandler;
@@ -58,8 +58,31 @@ public class Task implements Serializable {
 		sBuilder.append("\n");
 		sBuilder.append(this.taskBuilder.toString());
 		this.representString = sBuilder.toString();
-		this.monitor = new ProcMonitor(this, this.taskBuilder, isAsyncTask);
-		this.monitor.start();
+		if(this.isAsyncTask) {
+			this.stateMonitor = new Thread() {
+				@Override public void run() {
+					if(timeoutIfEnable()) {
+						return;
+					}
+					while(true) {
+						if(checkTermination()) {
+							StringBuilder msgBuilder = new StringBuilder();
+							msgBuilder.append("Terminated Task: " + representString);
+							System.err.println(msgBuilder.toString());
+							// run exit handler
+							return;
+						}
+						try {
+							Thread.sleep(100); // sleep thread
+						}
+						catch (InterruptedException e) {
+							throw new RuntimeException(e);
+						}
+					}
+				}
+			};
+			this.stateMonitor.start();
+		}
 	}
 
 	private MessageStreamHandler createStdoutHandler() {
@@ -96,28 +119,35 @@ public class Task implements Serializable {
 		return this.representString;
 	}
 
-	protected void joinAndSetException() {
-		if(this.terminated) {
-			return;
-		}
-		try {
-			this.terminated = true;
-			this.stdoutMessage = this.stdoutHandler.waitTermination();
-			this.stderrMessage = this.stderrHandler.waitTermination();
-			monitor.join();
-			this.exitStatusList = new ArrayList<Integer>();
-			for(PseudoProcess proc : this.taskBuilder.getProcesses()) {
-				this.exitStatusList.add(proc.getRet());
+	private void joinAndSetException() {
+		this.terminated = true;
+		if(!this.isAsyncTask) {
+			if(!this.timeoutIfEnable()) {
+				this.waitTermination();
 			}
-		} 
-		catch (InterruptedException e) {
-			throw new RuntimeException(e);
+		}
+		else {
+			try {
+				stateMonitor.join();
+			}
+			catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		this.stdoutMessage = this.stdoutHandler.waitTermination();
+		this.stderrMessage = this.stderrHandler.waitTermination();
+		this.exitStatusList = new ArrayList<Integer>();
+		for(PseudoProcess proc : this.taskBuilder.getProcesses()) {
+			this.exitStatusList.add(proc.getRet());
 		}
 		// exception raising
 		this.exception = new ShellExceptionBuilder(this.taskBuilder, this.stderrHandler.getEachBuffers()).getException();
 	}
 
 	public void join() {
+		if(this.terminated) {
+			return;
+		}
 		this.joinAndSetException();
 		if(this.taskBuilder.getOption().is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
@@ -129,100 +159,61 @@ public class Task implements Serializable {
 	}
 
 	public String getOutMessage() {
-		this.checkTermination();
+		this.join();
 		return this.stdoutMessage;
 	}
 
 	public String getErrorMessage() {
-		this.checkTermination();
+		this.join();
 		return this.stderrMessage;
 	}
 
 	public int getExitStatus() {
-		this.checkTermination();
+		this.join();
 		return this.exitStatusList.get(this.exitStatusList.size() - 1);
 	}
 
-	private void checkTermination() {
-		if(!this.terminated) {
-			throw new IllegalThreadStateException("Task is not Terminated");
-		}
-	}
-}
-
-class ProcMonitor extends Thread {	// TODO: support exit handle
-	private Task task;
-	private TaskBuilder taskBuilder;
-	private final boolean isBackground;
-	public final long timeout;
-
-	public ProcMonitor(Task task, TaskBuilder taskBuilder, boolean isBackground) {
-		this.task = task;
-		this.taskBuilder = taskBuilder;
-		this.isBackground = isBackground;
-		this.timeout =  this.taskBuilder.getTimeout();
-	}
-
-	@Override public void run() {
-		PseudoProcess[] processes = this.taskBuilder.getProcesses();
-		int size = processes.length;
-		if(this.timeout > 0) { // timeout
+	private boolean timeoutIfEnable() {
+		long timeout = this.taskBuilder.getTimeout();
+		if(timeout > 0) { // timeout
 			try {
 				Thread.sleep(timeout);	// ms
 				StringBuilder msgBuilder = new StringBuilder();
-				msgBuilder.append("Timeout Task: ");
-				for(int i = 0; i < size; i++) {
-					processes[i].kill();
-					if(i != 0) {
-						msgBuilder.append("| ");
-					}
-					msgBuilder.append(processes[i].getCmdName());
-				}
+				msgBuilder.append("Timeout Task: " + this.toString());
+				this.kill();
 				System.err.println(msgBuilder.toString());
 				// run exit handler
+				return true;
 			} 
 			catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
-			return;
 		}
-		if(!this.isBackground) {	// wait termination for sync task
-			for(int i = 0; i < size; i++) {
-				processes[i].waitTermination();
-			}
+		return false;
+	}
+
+	private void kill() {
+		PseudoProcess[] procs = this.taskBuilder.getProcesses();
+		for(int i = 0; i < procs.length; i++) {
+			procs[i].kill();
 		}
-		while(this.isBackground) {	// check termination for async task
-			int count = 0;
-			for(int i = 0; i < size; i++) {
-				SubProc subProc = (SubProc)processes[i];
-				try {
-					subProc.checkTermination();
-					count++;
-				}
-				catch(IllegalThreadStateException e) {
-					// process has not terminated yet. do nothing
-				}
-			}
-			if(count == size) {
-				StringBuilder msgBuilder = new StringBuilder();
-				msgBuilder.append("Terminated Task: ");
-				for(int i = 0; i < size; i++) {
-					if(i != 0) {
-						msgBuilder.append("| ");
-					}
-					msgBuilder.append(processes[i].getCmdName());
-				}
-				System.err.println(msgBuilder.toString());
-				// run exit handler
-				return;
-			}
-			try {
-				Thread.sleep(100); // sleep thread
-			}
-			catch (InterruptedException e) {
-				throw new RuntimeException(e);
+	}
+
+	private void waitTermination() {
+		PseudoProcess[] procs = this.taskBuilder.getProcesses();
+		for(int i = 0; i < procs.length; i++) {
+			procs[i].waitTermination();
+		}
+	}
+
+	private boolean checkTermination() {
+		PseudoProcess[] procs = this.taskBuilder.getProcesses();
+		for(int i = 0; i < procs.length; i++) {
+			if(!procs[i].checkTermination()) {
+				return false;
 			}
 		}
+		return true;
 	}
 }
 

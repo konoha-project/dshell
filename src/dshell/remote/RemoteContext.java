@@ -30,20 +30,14 @@ public class RemoteContext {
 		this.socket = socket;
 	}
 
-	private void sendRequest(int request) {
-		try {
-			if(this.socketOutputStream == null) {
-				this.socketOutputStream = new ObjectOutputStream(this.socket.getOutputStream());
-			}
-			this.socketOutputStream.write(request);
-			this.socketOutputStream.flush();
+	private void sendRequest(int request) throws IOException {
+		if(this.socketOutputStream == null) {
+			this.socketOutputStream = new ObjectOutputStream(this.socket.getOutputStream());
 		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		this.socketOutputStream.write(request);
 	}
 
-	private void sendRequest(int request, int option) {
+	private void sendRequest(int request, int option) throws IOException {
 		this.sendRequest((request << reqShiftWidth) | option);
 	}
 
@@ -68,11 +62,23 @@ public class RemoteContext {
 	}
 
 	public synchronized void sendStartRequest() {
-		this.sendRequest(START_REQ, 0);
+		try {
+			this.sendRequest(START_REQ, 0);
+			this.socketOutputStream.flush();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public synchronized void sendShutdownRequest() {
-		this.sendRequest(SHUTDOWN_REQ, 0);
+		try {
+			this.sendRequest(SHUTDOWN_REQ, 0);
+			this.socketOutputStream.flush();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public synchronized void sendCommand(CommandRequest commandReq) {
@@ -123,12 +129,10 @@ public class RemoteContext {
 		return null;
 	}
 
-	public synchronized void sendStream(int streamType, byte[] buffer, int size) {
+	public synchronized void sendStream(int streamType, int b) {
 		try {
 			this.sendRequest(STREAM_REQ, streamType);
-			StreamRequest request = new StreamRequest(buffer, size);
-			System.err.println(request.getBuffer());
-			this.socketOutputStream.writeObject(request);
+			this.socketOutputStream.write(b);
 			this.socketOutputStream.flush();
 		}
 		catch (IOException e) {
@@ -136,23 +140,24 @@ public class RemoteContext {
 		}
 	}
 
-	public StreamRequest receiveStream() {
+	public int receiveStream() {
 		try {
-			StreamRequest request = (StreamRequest) this.socketInputStream.readObject();
-			System.out.println(request.getBuffer());
-			return request;
+			return this.socketInputStream.read();
 		}
 		catch (IOException e) {
 			e.printStackTrace();
 		}
-		catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		}
-		return null;
+		return -1;
 	}
 
 	public synchronized void sendEndOfStream(int streamType) {
-		this.sendRequest(EOS_REQ, streamType);
+		try {
+			this.sendRequest(EOS_REQ, streamType);
+			this.socketOutputStream.flush();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void closeSocket() {

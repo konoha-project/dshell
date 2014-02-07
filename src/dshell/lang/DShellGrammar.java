@@ -85,7 +85,7 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("log", unaryPattern);
 		NameSpace.DefineStatement("try", new DShellTryPattern());
 		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());
-		NameSpace.DefineExpression(location, new LocationDefinePattern());
+		NameSpace.DefineStatement(location, new LocationDefinePattern());
 		// prefix option
 		// timeout
 		setOptionalSymbol(NameSpace, timeout, dshellPattern);

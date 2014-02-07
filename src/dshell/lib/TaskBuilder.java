@@ -149,8 +149,8 @@ public class TaskBuilder {
 			this.timeout = -1;	// TODO: timeout
 			RemoteProcServer proc = new RemoteProcServer(this.context);
 			procBuffer.add(proc);
-//			this.remoteOutStream = proc.outStream;
-//			this.remoteErrStream = proc.errStream;
+			this.remoteOutStream = proc.outStream;
+			this.remoteErrStream = proc.errStream;
 		}
 		int size = cmdsList.size();
 		for(int i = 0; i < size; i++) {
@@ -484,8 +484,14 @@ class SubProc extends PseudoProcess {
 		}
 	}
 
-	public void checkTermination() {
-		this.retValue = this.proc.exitValue();
+	public boolean checkTermination() {
+		try {
+			this.retValue = this.proc.exitValue();
+			return true;
+		}
+		catch(IllegalThreadStateException e) {
+			return false;
+		}
 	}
 
 	public String getLogFilePath() {

@@ -47,6 +47,7 @@ public abstract class PseudoProcess {
 	abstract public void start();
 	abstract public void kill();
 	abstract public void waitTermination();
+	abstract public boolean checkTermination();
 
 	public void pipe(PseudoProcess srcProc) {
 		new PipeStreamHandler(srcProc.accessOutStream(), this.accessInStream(), true).start();

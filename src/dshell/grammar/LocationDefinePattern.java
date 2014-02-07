@@ -16,7 +16,7 @@ public class LocationDefinePattern extends ZMatchFunction {
 	@Override	//TODO: multiple host, ssh
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		TokenContext.MoveNext();
-		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Identifier$", ZTokenContext.Required);
+		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Name$", ZTokenContext.Required);
 		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
 			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext.Required);
 			if(!ValueNode.IsErrorNode()) {

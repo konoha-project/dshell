@@ -27,6 +27,11 @@ public abstract class BuiltinCommand extends PseudoProcess {
 	public void waitTermination() { // do nothing
 	}
 
+	@Override
+	public boolean checkTermination() {
+		return true;
+	}
+
 	public static BuiltinCommand createCommand(ArrayList<String> cmds) {
 		String commandSymbol = cmds.get(0);
 		boolean matchCommand = false;

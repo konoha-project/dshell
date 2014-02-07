@@ -66,6 +66,7 @@ public class CommandPattern extends ZMatchFunction {
 		if(loc != -1) {
 			if(!Utils.isFileExecutable(CommandPath)) {	//FIXME: error report
 				//NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "not executable: " + CommandPath);
+				System.err.println("not executable: " + CommandPath);
 				return;
 			}
 			Command = CommandPath.substring(loc + 1);
@@ -73,6 +74,7 @@ public class CommandPattern extends ZMatchFunction {
 		else {
 			if(!Utils.isUnixCommand(CommandPath)) {
 				//NameSpace.Generator.Logger.Report(ZLogger.ErrorLevel, SourceToken, "unknown command: " + CommandPath);
+				System.err.println("unknown command: " + CommandPath);
 				return;
 			}
 		}

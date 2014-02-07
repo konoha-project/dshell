@@ -1,9 +1,8 @@
 package dshell.remote;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.util.ArrayList;
 
 import dshell.lib.PseudoProcess;
@@ -13,7 +12,6 @@ public class RemoteProcServer extends PseudoProcess {
 	private final RemoteContext context;
 	public final OutputStream outStream;
 	public final OutputStream errStream;
-	private Thread requestHandler;
 	
 	public RemoteProcServer(RemoteContext context) {
 		this.context = context;
@@ -36,51 +34,36 @@ public class RemoteProcServer extends PseudoProcess {
 
 	@Override
 	public void start() {
-		final PipedOutputStream inReceiveStream = new PipedOutputStream();
-		try {
-			this.stdout = new PipedInputStream(inReceiveStream);
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
-		this.requestHandler = new Thread() {
+		this.stdout = new InputStream() {
+			boolean close = false;
 			@Override
-			public void run() {
-				while(true) {
-					int[] reqs = context.receiveRequest();
-					int request = reqs[0];
-					int option = reqs[1];
-					if(request == RemoteContext.STREAM_REQ) {
-						if(option == RemoteContext.IN_STREAM) {
-							StreamRequest streamReq = context.receiveStream();
-							byte[] buffer = streamReq.getBuffer();
-							try {
-								inReceiveStream.write(buffer, 0, buffer.length);
-							}
-							catch (IOException e) {
-								e.printStackTrace();
-							}
-						}
-						else {
-							Utils.fatal(1, "invalid stream type: " + option);
-						}
+			public int read() throws IOException {
+				int[] reqs = context.receiveRequest();
+				int request = reqs[0];
+				int option = reqs[1];
+				if(request == RemoteContext.STREAM_REQ) {
+					if(option == RemoteContext.IN_STREAM && !close) {
+						return context.receiveStream();
 					}
-					else if(request == RemoteContext.EOS_REQ) {
-						if(option == RemoteContext.IN_STREAM) {
-							try {
-								System.out.println("receive End OF InputStream");
-								inReceiveStream.close();
-							}
-							catch (IOException e) {
-								e.printStackTrace();
-							}
-							break;
-						}
+					else {
+						Utils.fatal(1, "invalid stream type: " + option);
 					}
 				}
+				else if(request == RemoteContext.EOS_REQ) {
+					if(option == RemoteContext.IN_STREAM) {
+						close = true;
+						return -1;
+					}
+					else {
+						Utils.fatal(1, "invalid stream type: " + option);
+					}
+				}
+				else {
+					Utils.fatal(1, "invalid request type: " + request);
+				}
+				return -1;
 			}
 		};
-		this.requestHandler.start();
 	}
 
 	@Override
@@ -89,12 +72,11 @@ public class RemoteProcServer extends PseudoProcess {
 
 	@Override
 	public void waitTermination() {
-		try {
-			this.requestHandler.join();
-		}
-		catch (InterruptedException e) {
-			e.printStackTrace();
-		}
+	}
+
+	@Override
+	public boolean checkTermination() {
+		return true;	//FIXME
 	}
 
 	class RemoteOutputStream extends OutputStream {
@@ -107,11 +89,7 @@ public class RemoteProcServer extends PseudoProcess {
 		}
 		@Override
 		public void write(int b) throws IOException {
-			throw new RuntimeException();
-		}	// do nothing. do not call it
-		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
-			context.sendStream(this.streamType, b, len);
+			context.sendStream(this.streamType, b);
 		}
 		@Override
 		public void close() {	//do nothing

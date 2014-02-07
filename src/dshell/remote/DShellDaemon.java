@@ -83,22 +83,6 @@ class CommandRequest implements Serializable {
 	}
 
 	public String toString() {
-		return this.commandsList.toString() + "::: option " + this.option;
-	}
-}
-
-class StreamRequest implements Serializable {
-	private static final long serialVersionUID = -2578711133223106633L;
-	private final byte[] buffer;
-
-	public StreamRequest(byte[] buffer, int size) {
-		this.buffer = new byte[size];
-		for(int i = 0; i < size; i++) {
-			this.buffer[i] = buffer[i];
-		}
-	}
-
-	public byte[] getBuffer() {
-		return this.buffer;
+		return this.commandsList.toString() + ":::" + this.option;
 	}
 }
