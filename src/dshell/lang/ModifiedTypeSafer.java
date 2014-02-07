@@ -1,11 +1,13 @@
 package dshell.lang;
 
+import zen.ast.ZBlockNode;
 import zen.ast.ZCatchNode;
 import zen.ast.ZNode;
-import zen.deps.NativeTypeTable;
+import zen.codegen.jvm.JavaTypeTable;
 import zen.lang.ZenTypeSafer;
 import zen.parser.ZGenerator;
 import zen.type.ZType;
+import zen.type.ZVarType;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
 import dshell.lib.Task;
@@ -18,7 +20,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 	public void VisitCommandNode(DShellCommandNode Node) {
 		ZType ContextType = this.GetContextType();
 		if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
-			ContextType = NativeTypeTable.GetZenType(Task.class);
+			ContextType = JavaTypeTable.GetZenType(Task.class);
 		}
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
@@ -47,7 +49,15 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 	}
 
 	@Override public void VisitCatchNode(ZCatchNode Node) {	//FIXME
-		Node.AST[ZCatchNode.Block] = this.CheckType(Node.AST[ZCatchNode.Block], ZType.VoidType);
+		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode.Block];
+		if(BlockNode.GetListSize() == 0) {
+			this.Logger.ReportWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
+		}
+		if(!(Node.ExceptionType instanceof ZVarType)) {
+			Node.ExceptionType = this.VarScope.NewVarType(Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
+			BlockNode.NameSpace.SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
+		}
+		Node.AST[ZCatchNode.Block] = this.CheckType(BlockNode, ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);
 	}
 }

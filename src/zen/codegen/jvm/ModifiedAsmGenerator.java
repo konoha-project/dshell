@@ -40,12 +40,12 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 
 	public ModifiedAsmGenerator() {
 		super();
-		this.importNativeClass(Task.class);
-		this.importNativeClass(DShellException.class);
-		this.importNativeClass(MultipleException.class);
-		this.importNativeClass(UnimplementedErrnoException.class);
-		this.importNativeClass(NullException.class);
-		this.importNativeClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
+		this.importJavaClass(Task.class);
+		this.importJavaClass(DShellException.class);
+		this.importJavaClass(MultipleException.class);
+		this.importJavaClass(UnimplementedErrnoException.class);
+		this.importJavaClass(NullException.class);
+		this.importJavaClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
 
 		try {
 			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);
@@ -146,14 +146,14 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 		this.CurrentBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 	}
 
-	private void importNativeClass(Class<?> classObject) {
+	private void importJavaClass(Class<?> classObject) {
 		ZType type = JavaTypeTable.GetZenType(classObject);
-		this.RootNameSpace.SetTypeName(classObject.getSimpleName(), type, null);
+		this.RootNameSpace.SetTypeName(type, null);
 	}
 
-	private void importNativeClassList(ArrayList<Class<?>> classObjList) {
+	private void importJavaClassList(ArrayList<Class<?>> classObjList) {
 		for(Class<?> classObj : classObjList) {
-			this.importNativeClass(classObj);
+			this.importJavaClass(classObj);
 		}
 	}
 }
