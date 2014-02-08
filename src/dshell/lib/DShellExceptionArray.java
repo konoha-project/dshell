@@ -1,16 +1,19 @@
 package dshell.lib;
 
-import dshell.exception.DShellException;
-import zen.deps.ZenObject;
-import zen.deps.ZenObjectArray;
+import java.io.Serializable;
 
-public class DShellExceptionArray extends ZenObject {
+import dshell.exception.DShellException;
+import zen.deps.ZObject;
+import zen.deps.ZObjectArray;
+
+public class DShellExceptionArray extends ZObject implements Serializable {
+	private static final long serialVersionUID = -64642177189609802L;
 	private int size;
 	private DShellException[] values;
-	public DShellExceptionArray(int TypeId) {
+	public DShellExceptionArray(int TypeId, DShellException[] values) {
 		super(TypeId);
-		this.values = new DShellException[1];
-		this.size = 0;
+		this.values = values;
+		this.size = this.values.length;
 	}
 	@Override public String toString() {
 		String s = "[";
@@ -33,7 +36,7 @@ public class DShellExceptionArray extends ZenObject {
 		if(index < array.size) {
 			return array.values[(int)index];
 		}
-		ZenObjectArray.ThrowOutOfArrayIndex(array.size, index);
+		ZObjectArray.ThrowOutOfArrayIndex(array.size, index);
 		return null;
 	}
 
@@ -41,7 +44,7 @@ public class DShellExceptionArray extends ZenObject {
 		if(index < array.size) {
 			array.values[(int)index] = value;
 		}
-		ZenObjectArray.ThrowOutOfArrayIndex(array.size, index);
+		ZObjectArray.ThrowOutOfArrayIndex(array.size, index);
 	}
 
 	public final void Add(DShellException value) {

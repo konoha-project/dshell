@@ -12,6 +12,7 @@ import dshell.exception.NullException;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
+import static dshell.lib.TaskOption.Behavior.server;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
@@ -149,7 +150,8 @@ public class Task implements Serializable {
 			return;
 		}
 		this.joinAndSetException();
-		if(this.taskBuilder.getOption().is(throwable) && !(this.exception instanceof NullException)) {
+		TaskOption option = this.taskBuilder.getOption();
+		if(!option.is(server) && option.is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
 		}
 	}
