@@ -1,0 +1,3 @@
+[submodule "ext/libzen"]
+	path = ext/libzen
+	url = https://github.com/konoha-project/libzen.git
