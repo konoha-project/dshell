@@ -23,7 +23,7 @@ import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
-import zen.codegen.jvm.AsmGenerator;
+import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
@@ -31,7 +31,7 @@ import zen.lang.ZenEngine;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
-public class ModifiedAsmGenerator extends AsmGenerator {
+public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
 	private Method ExecCommandInt;
@@ -75,7 +75,7 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
-		this.CurrentBuilder.SetLineNumber(Node);
+		this.AsmBuilder.SetLineNumber(Node);
 		ArrayList<DShellCommandNode> nodeList = new ArrayList<DShellCommandNode>();
 		DShellCommandNode node = Node;
 		while(node != null) {
@@ -84,23 +84,23 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 		}
 		// new String[n][]
 		int size = nodeList.size();
-		this.CurrentBuilder.visitLdcInsn(size);
-		this.CurrentBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String[].class));
+		this.AsmBuilder.visitLdcInsn(size);
+		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String[].class));
 		for(int i = 0; i < size; i++) {
 			// new String[m];
 			DShellCommandNode currentNode = nodeList.get(i);
 			int listSize = currentNode.GetListSize();
-			this.CurrentBuilder.visitInsn(DUP);
-			this.CurrentBuilder.visitLdcInsn(i);
-			this.CurrentBuilder.visitLdcInsn(listSize);
-			this.CurrentBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String.class));
+			this.AsmBuilder.visitInsn(DUP);
+			this.AsmBuilder.visitLdcInsn(i);
+			this.AsmBuilder.visitLdcInsn(listSize);
+			this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String.class));
 			for(int j = 0; j < listSize; j++ ) {
-				this.CurrentBuilder.visitInsn(DUP);
-				this.CurrentBuilder.visitLdcInsn(j);
+				this.AsmBuilder.visitInsn(DUP);
+				this.AsmBuilder.visitLdcInsn(j);
 				currentNode.GetListAt(j).Accept(this);
-				this.CurrentBuilder.visitInsn(AASTORE);
+				this.AsmBuilder.visitInsn(AASTORE);
 			}
-			this.CurrentBuilder.visitInsn(AASTORE);
+			this.AsmBuilder.visitInsn(AASTORE);
 		}
 		
 		if(Node.Type.IsBooleanType()) {
@@ -124,17 +124,17 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 		TryCatchLabel Label = new TryCatchLabel();
 		this.TryCatchLabel.push(Label); // push
 		// try block
-		this.CurrentBuilder.visitLabel(Label.beginTryLabel);
+		this.AsmBuilder.visitLabel(Label.beginTryLabel);
 		Node.AST[DShellTryNode.Try].Accept(this);
-		this.CurrentBuilder.visitLabel(Label.endTryLabel);
-		this.CurrentBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
+		this.AsmBuilder.visitLabel(Label.endTryLabel);
+		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 		// catch block
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
 			Node.GetListAt(i).Accept(this);
 		}
 		// finally block
-		this.CurrentBuilder.visitLabel(Label.finallyLabel);
+		this.AsmBuilder.visitLabel(Label.finallyLabel);
 		if(Node.AST[DShellTryNode.Finally] != null) {
 			Node.AST[DShellTryNode.Finally].Accept(this);
 		}
@@ -143,7 +143,7 @@ public class ModifiedAsmGenerator extends AsmGenerator {
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
 		String owner = Type.getInternalName(method.getDeclaringClass());
-		this.CurrentBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
+		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 	}
 
 	private void importJavaClass(Class<?> classObject) {
