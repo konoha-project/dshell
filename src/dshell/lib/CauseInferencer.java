@@ -102,10 +102,15 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			Utils.fatal(1, "match: " + calledFunc);
 		}
 		if(!calledFunc.startsWith("<")) {
-			if(calledFunc.startsWith("exit")) {
+			if(this.isExitFunction(calledFunc)) {
 				FunctionContext exitContext = this.matchUnfinishedFunc(parsedInfo);
 				if(parentContext.funcName.equals(mainName)) {
-					parentContext.setRetValue(exitContext.param);
+					if(calledFunc.startsWith("exit")) {
+						parentContext.setRetValue(exitContext.param);
+					}
+					else {
+						parentContext.setRetValue(exitContext.param.split(", ")[0]);
+					}
 					return index;
 				}
 				Utils.fatal(1, "invalid funcname: " + parentContext.funcName + ", " + calledFunc);
@@ -218,6 +223,18 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			}
 		}
 		return null;
+	}
+
+	private boolean isExitFunction(String calledFunc) {
+		if(calledFunc.startsWith("exit")) {
+			return true;
+		}
+		else if(calledFunc.startsWith("error")) {
+			if(!calledFunc.startsWith("error(0")) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
