@@ -3,8 +3,7 @@ package dshell.util;
 import java.io.IOException;
 
 import jline.ANSIBuffer.ANSICodes;
-
-import zen.deps.LibZen;
+import zen.main.ZenMain;
 
 public class DShellConsole {
 	private jline.ConsoleReader consoleReader = null;
@@ -38,7 +37,7 @@ public class DShellConsole {
 		}
 		if(prompt2 != null) {
 			int level = 0;
-			while((level = LibZen.CheckBraceLevel(line)) > 0) {
+			while((level = ZenMain.CheckBraceLevel(line)) > 0) {
 				String Line2;
 				try {
 					Line2 = this.consoleReader.readLine(prompt2);

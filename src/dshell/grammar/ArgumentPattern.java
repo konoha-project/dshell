@@ -39,7 +39,7 @@ public class ArgumentPattern extends ZMatchFunction {
 				if(Token.EqualsText("$")) {   // $HOME/hoge
 					ZToken Token2 = TokenContext.GetToken();
 					String ParsedText2 = Token2.GetText();
-					if(LibZen.IsVariableName(ParsedText2, 0)) {
+					if(Token2.IsNameSymbol()) {
 						Path += "${" + ParsedText2 + "}";
 						HasStringExpr = true;
 						TokenContext.MoveNext();

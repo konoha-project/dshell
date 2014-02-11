@@ -46,7 +46,7 @@ public class RemoteContext {
 			if(this.socketInputStream == null) {
 				this.socketInputStream = new ObjectInputStream(this.socket.getInputStream());
 			}
-			int req =  this.socketInputStream.read();
+			int req = this.socketInputStream.read();
 			int mask = 0xfc;
 			return new int[] {req >> reqShiftWidth, (req | mask) & ~mask};
 		}

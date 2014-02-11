@@ -1,12 +1,18 @@
 package dshell.remote;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.Serializable;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import dshell.lib.PseudoProcess;
 import dshell.lib.Task;
@@ -69,15 +75,9 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 
 	@Override 
 	public void start() {
-		final PipedOutputStream outReceiveStream = new PipedOutputStream();
-		final PipedOutputStream errReceiveStream = new PipedOutputStream();
 		this.stdin = new RedirToRemoteInputStream();
-		try {
-			this.stdout = new PipedInputStream(outReceiveStream);
-			this.stderr = new PipedInputStream(errReceiveStream);
-		}
-		catch (IOException e) {
-			e.printStackTrace();
+		if(this.option.supportStdoutHandler()) {
+			
 		}
 		this.context.sendStartRequest();
 		if(this.isFirstProc) {
@@ -97,11 +97,9 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 					int option = reqs[1];
 					if(request == RemoteContext.STREAM_REQ) {
 						if(option == RemoteContext.OUT_STREAM) {
-							//outReceiveStream.write(context.receiveStream());
 							System.out.write(context.receiveStream());
 						}
 						else if(option == RemoteContext.ERR_STREAM) {
-							//errReceiveStream.write(context.receiveStream());
 							System.err.write(context.receiveStream());
 						}
 						else {
@@ -109,20 +107,6 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 						}
 					}
 					else if(request == RemoteContext.EOS_REQ) {
-						try {
-							if(option == RemoteContext.OUT_STREAM) {
-								outReceiveStream.close();
-							}
-							else if(option == RemoteContext.ERR_STREAM) {
-								errReceiveStream.close();
-							}
-							else {
-								Utils.fatal(1, "invalid stream type: " + option);
-							}
-						}
-						catch (IOException e) {
-							e.printStackTrace();
-						}
 					}
 					else if(request == RemoteContext.RESULT_REQ) {
 						remoteTask = context.receiveTask();
@@ -170,6 +154,61 @@ public class RemoteProcClient extends PseudoProcess {	// TODO: multiple remote h
 		@Override
 		public void close() {	//do nothing
 			context.sendEndOfStream(RemoteContext.IN_STREAM);
+		}
+	}
+
+	class RemoteInputStream extends InputStream {
+		private final LinkedBlockingQueue<StreamRequest> targetQueue;
+		private boolean closed = false;
+		private int currentIndex;
+		private int currentBufferSize;
+		private byte[] currentBuffer = null;
+
+		public RemoteInputStream(LinkedBlockingQueue<StreamRequest> targetQueue) {
+			this.targetQueue = targetQueue;
+		}
+
+		@Override
+		public int read() throws IOException {
+			if(this.closed) {
+				return -1;
+			}
+			
+			return -1;
+		}
+		@Override
+		public void close() {	//do nothing
+			this.closed = true;
+		}
+	}
+
+	class StreamRequest implements Serializable {
+		public static final int defaulrBufferSize = 32;
+		private static final long serialVersionUID = -9141655789457233677L;
+		private final byte[] buffer;
+
+		public StreamRequest() {
+			byte[] buffer = new byte[] {0};
+			this.buffer = buffer;
+		}
+
+		public StreamRequest(byte[] buffer) {
+			int size = buffer.length;
+			this.buffer = new byte[size];
+			for(int i = 0; i < size; i++) {
+				this.buffer[i] = buffer[i];
+			}
+		}
+
+		public byte[] getBuffer() {
+			return this.buffer;
+		}
+	}
+
+	class EndOfStreamRequest extends StreamRequest {
+		private static final long serialVersionUID = 1758719870593483917L;
+		public EndOfStreamRequest() {
+			super();
 		}
 	}
 }

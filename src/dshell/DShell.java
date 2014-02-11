@@ -8,11 +8,11 @@ import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
 import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
-import zen.deps.LibNative;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
 import zen.lang.ZSystem;
 import zen.lang.ZenEngine;
+import zen.main.ZenMain;
 import zen.parser.ZGenerator;
 import zen.type.ZType;
 import static dshell.util.LoggingContext.AppenderType;
@@ -26,7 +26,7 @@ public class DShell {
 	public final static String version = "0.1";
 	public final static String copyright = "Copyright (c) 2013-2014, Konoha project authors";
 	public final static String license = "BSD-Style Open Source";
-	public final static String shellInfo = progName + ", version " + version + " (" + LibZen.GetPlatform() + ")";
+	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ")";
 
 	private boolean interactiveMode = true;
 	private boolean debugMode = false;
@@ -41,8 +41,20 @@ public class DShell {
 					showVersionInfo();
 					System.exit(0);
 				}
-				else if(optionSymbol.equals("--daemon")) {
-					new DShellDaemon().waitConnection();	// never return
+				else if(optionSymbol.startsWith("--daemon")) {
+					if(optionSymbol.equals("--daemon")) {
+						new DShellDaemon().waitConnection();	// never return
+					}
+					else {
+						try {
+							int port = Integer.parseInt(optionSymbol.split(":")[1]);
+							new DShellDaemon(port);
+						}
+						catch(Exception e) {
+							System.err.println("dshell: " + optionSymbol + ": invalid option");
+							showHelpAndExit(1, System.err);
+						}
+					}
 				}
 				else if(optionSymbol.equals("--debug")) {
 					this.debugMode = true;
@@ -88,7 +100,7 @@ public class DShell {
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
-			engine.Generator.Logger.ShowReportedErrors();
+			engine.Generator.Logger.ShowErrors();
 			int linenum = 1;
 			String line = null;
 			while ((line = console.readLine()) != null) {
@@ -97,15 +109,15 @@ public class DShell {
 				}
 				try {
 					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
-					engine.Generator.Logger.ShowReportedErrors();
+					engine.Generator.Logger.ShowErrors();
 					if (this.debugMode && evaledValue != null) {
 						System.out.print(" (" + ZSystem.GuessType(evaledValue) + ":");
-						System.out.print(LibNative.GetClassName(evaledValue)+ ") ");
-						System.out.println(LibZen.Stringify(evaledValue));
+						System.out.print(LibZen.GetClassName(evaledValue)+ ") ");
+						System.out.println(LibZen._Stringify(evaledValue));
 					}
 				}
 				catch (Exception e) {
-					LibZen.PrintStackTrace(e, linenum);
+					ZenMain.PrintStackTrace(e, linenum);
 				}
 				linenum++;
 			}
@@ -115,7 +127,7 @@ public class DShell {
 			String scriptName = this.ARGV.get(0);
 			//engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);	//FIXME
 			boolean status = engine.Load(scriptName);
-			engine.Generator.Logger.ShowReportedErrors();
+			engine.Generator.Logger.ShowErrors();
 			if(!status) {
 				Utils.fatal(1, "abort loading: " + scriptName);
 			}
@@ -132,6 +144,7 @@ public class DShell {
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
 		stream.println("Options:");
 		stream.println("    --daemon");
+		stream.println("    --daemon:[port]");
 		stream.println("    --debug");
 		stream.println("    --help");
 		stream.println("    --logging:stdout");
@@ -143,7 +156,7 @@ public class DShell {
 
 	private final static ZenEngine loadDShellEngine() {
 		ZGenerator generator = new ModifiedAsmGenerator();
-		LibNative.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
+		LibZen.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
 		return generator.GetEngine();
 	}
 
