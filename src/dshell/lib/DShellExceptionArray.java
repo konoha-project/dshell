@@ -15,17 +15,17 @@ public class DShellExceptionArray extends ZObject implements Serializable {
 		this.values = values;
 		this.size = this.values.length;
 	}
-	@Override public String toString() {
-		String s = "[";
+	@Override protected void Stringfy(StringBuilder sb) {
+		sb.append("[");
 		int i = 0;
 		while(i < this.size) {
 			if(i > 0) {
-				s += ", ";
+				sb.append(", ");
 			}
-			s += this.values[i].getClass().getSimpleName();
+			sb.append(this.values[i].getClass().getSimpleName());
 			i = i + 1;
 		}
-		return s + "]";
+		sb.append("]");
 	}
 
 	public final long Size() {
