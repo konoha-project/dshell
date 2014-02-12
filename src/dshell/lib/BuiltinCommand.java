@@ -32,6 +32,12 @@ public abstract class BuiltinCommand extends PseudoProcess {
 		return true;
 	}
 
+	protected void printArgumentErrorAndSetStatus(BuiltinSymbol symbol) {
+		System.err.println("-dshell: " + symbol.name() + ": invalid argument");
+		System.err.println(symbol.name() + ": " + symbol.getUsage());
+		this.retValue = 1;
+	}
+
 	public static BuiltinCommand createCommand(ArrayList<String> cmds) {
 		String commandSymbol = cmds.get(0);
 		boolean matchCommand = false;
@@ -88,14 +94,23 @@ class Command_cd extends BuiltinCommand {
 class Command_exit extends BuiltinCommand {
 	@Override
 	public void start() {
-		int status = 0;
+		int status;
 		int size = this.commandList.size();
-		if(size > 1) {
+		if(size == 1) {
+			status = 0;
+		}
+		else if(size == 2) {
 			try {
 				status = Integer.parseInt(this.commandList.get(1));
 			}
 			catch(NumberFormatException e) {
+				this.printArgumentErrorAndSetStatus(BuiltinSymbol.exit);
+				return;
 			}
+		}
+		else {
+			this.printArgumentErrorAndSetStatus(BuiltinSymbol.exit);
+			return;
 		}
 		System.exit(status);
 	}
@@ -146,5 +161,18 @@ class Command_help extends BuiltinCommand {
 
 	private void printNotMatchedMessage(String commandSymbol) {
 		System.err.println("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
+	}
+}
+
+class Command_log extends BuiltinCommand {
+	@Override
+	public void start() {
+		int size = this.commandList.size();
+		if(size != 2) {
+			this.printArgumentErrorAndSetStatus(BuiltinSymbol.log);
+			return;
+		}
+		Utils.log(this.commandList.get(1));
+		this.retValue = 0;
 	}
 }

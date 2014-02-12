@@ -1,26 +1,6 @@
 package dshell.lib;
 
 public enum BuiltinSymbol {
-	assertResult {	// not builtin command
-		@Override
-		public String getUsage() {
-			return "assert [bool_expr]";
-		}
-		@Override
-		public String getDetail() {
-			return "    Assertion statement in dshell.  If BOOL_EXPR is true, the " + "\n" +
-				   "    statement will pass normaly.  If BOOL_EXPR is false, the " + "\n" +
-				   "    statement will fail with displaying `AssertionError'.";
-		}
-		@Override
-		public String getExternalName() {
-			return "assert";
-		}
-		@Override
-		public boolean isCommandSymbol() {
-			return false;
-		}
-	},
 	cd {
 		@Override
 		public String getUsage() {
@@ -57,22 +37,14 @@ public enum BuiltinSymbol {
 	log {	// not builtin command
 		@Override
 		public String getUsage() {
-			return "log [expr]";
+			return "log [symbol]";
 		}
 		@Override
 		public String getDetail() {
-			return "    Logging Statement.  Display value of EXPR.  If shell option " + "\n" +
+			return "    Logging Command.  Display SYMBOL.  If shell option " + "\n" +
 				   "    --logging:stout or --logging:stderr is set, display value to " + "\n" +
 				   "    stdout or stderr.  If shell option --logging:syslog is set, " + "\n" +
 				   "    write value to syslog.";
-		}
-		@Override
-		public String getExternalName() {
-			return "log";
-		}
-		@Override
-		public boolean isCommandSymbol() {
-			return false;
 		}
 	};
 

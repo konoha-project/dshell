@@ -80,7 +80,6 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("$DShell$", dshellPattern);
 		NameSpace.DefineRightExpression("=~", ZenPrecedence.CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence.CStyleEquals, comparatorPattern);
-		NameSpace.DefineExpression("assert", unaryPattern);
 		NameSpace.DefineExpression("log", unaryPattern);
 		NameSpace.DefineStatement("try", new DShellTryPattern());
 		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());

@@ -3,7 +3,6 @@ package dshell;
 import java.io.PrintStream;
 
 import dshell.lang.DShellGrammar;
-import dshell.remote.DShellDaemon;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
 import dshell.util.Utils;
@@ -40,26 +39,14 @@ public class DShell {
 					showVersionInfo();
 					System.exit(0);
 				}
-				else if(optionSymbol.startsWith("--daemon")) {
-					if(optionSymbol.equals("--daemon")) {
-						new DShellDaemon().waitConnection();	// never return
-					}
-					else {
-						try {
-							int port = Integer.parseInt(optionSymbol.split(":")[1]);
-							new DShellDaemon(port);
-						}
-						catch(Exception e) {
-							System.err.println("dshell: " + optionSymbol + ": invalid option");
-							showHelpAndExit(1, System.err);
-						}
-					}
-				}
 				else if(optionSymbol.equals("--debug")) {
 					this.debugMode = true;
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
+				}
+				else if(optionSymbol.equals("--logging:file") && i + 1 < args.length) {
+					LoggingContext.getContext().changeAppender(AppenderType.file, args[++i]);
 				}
 				else if(optionSymbol.equals("--logging:stdout")) {
 					LoggingContext.getContext().changeAppender(AppenderType.stdout);
@@ -142,10 +129,9 @@ public class DShell {
 		stream.println(shellInfo);
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
 		stream.println("Options:");
-		stream.println("    --daemon");
-		stream.println("    --daemon:[port]");
 		stream.println("    --debug");
 		stream.println("    --help");
+		stream.println("    --logging:file [file path (appendable)]");
 		stream.println("    --logging:stdout");
 		stream.println("    --logging:stderr");
 		stream.println("    --logging:syslog [host address]");

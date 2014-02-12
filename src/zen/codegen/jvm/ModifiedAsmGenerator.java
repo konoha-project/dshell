@@ -61,7 +61,6 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
-		JavaMethodTable.Import("assert", ZType.BooleanType, Utils.class, "assertResult");
 		JavaMethodTable.Import("log", ZType.VarType, Utils.class, "log");
 		
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
