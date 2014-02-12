@@ -8,10 +8,10 @@ import dshell.util.LoggingContext;
 import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
-import zen.deps.ZenArray;
-import zen.lang.ZenEngine;
 import zen.main.ZenMain;
+import zen.obsolete.ZenArray;
 import zen.parser.ZGenerator;
+import zen.parser.ZScriptEngine;
 import zen.type.ZType;
 import static dshell.util.LoggingContext.AppenderType;
 
@@ -82,7 +82,7 @@ public class DShell {
 	}
 
 	private void execute() {
-		ZenEngine engine = loadDShellEngine();
+		ZScriptEngine engine = loadDShellEngine();
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
@@ -139,7 +139,7 @@ public class DShell {
 		System.exit(status);
 	}
 
-	private final static ZenEngine loadDShellEngine() {
+	private final static ZScriptEngine loadDShellEngine() {
 		ZGenerator generator = new ModifiedAsmGenerator();
 		LibZen.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
 		return generator.GetEngine();
