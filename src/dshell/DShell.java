@@ -111,7 +111,7 @@ public class DShell {
 					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
 					engine.Generator.Logger.ShowErrors();
 					if (this.debugMode && evaledValue != null) {
-						System.out.print(" (" + ZSystem.GuessType(evaledValue) + ":");
+						System.out.print(" (" + /*ZSystem.GuessType(evaledValue)*/ ":");
 						System.out.print(LibZen.GetClassName(evaledValue)+ ") ");
 						System.out.println(LibZen._Stringify(evaledValue));
 					}

@@ -49,7 +49,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 	}
 
 	@Override public void VisitCatchNode(ZCatchNode Node) {	//FIXME
-		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode.Block];
+		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode._Block];
 		if(BlockNode.GetListSize() == 0) {
 			this.Logger.ReportWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
 		}
@@ -57,7 +57,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 			Node.ExceptionType = this.VarScope.NewVarType(Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
 			BlockNode.NameSpace.SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
 		}
-		Node.AST[ZCatchNode.Block] = this.CheckType(BlockNode, ZType.VoidType);
+		Node.AST[ZCatchNode._Block] = this.CheckType(BlockNode, ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);
 	}
 }

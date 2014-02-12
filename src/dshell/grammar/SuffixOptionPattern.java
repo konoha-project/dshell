@@ -24,7 +24,7 @@ public class SuffixOptionPattern extends ZMatchFunction {
 
 	public ZNode CreateNodeAndMatchNextOption(ZNode ParentNode, ZTokenContext TokenContext, String OptionSymbol) {
 		ZNode Node = new DShellCommandNode(ParentNode, null);
-		Node.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, null, OptionSymbol));
+		Node.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, null, OptionSymbol));
 		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional);
 		if(PipedNode != null) {
 			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);

@@ -14,7 +14,7 @@ public class DShellTryPattern extends ZMatchFunction {
 		int count = 0;
 		while(true) {
 			if(TokenContext.IsNewLineToken("catch")) {
-				TryNode = TokenContext.MatchPattern(TryNode, ZNode.AppendIndex, "$Catch$", ZTokenContext.Required);
+				TryNode = TokenContext.MatchPattern(TryNode, ZNode._AppendIndex, "$Catch$", ZTokenContext.Required);
 				count = count + 1;
 				continue;
 			}
