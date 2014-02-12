@@ -8,8 +8,8 @@ import zen.codegen.jvm.ModifiedJavaEngine;
 import zen.parser.ZVisitor;
 
 public class DShellTryNode extends ZListNode {
-	public final static int Try = 0;
-	public final static int Finally = 1;
+	public final static int _Try = 0;
+	public final static int _Finally = 1;
 
 	public DShellTryNode(ZNode ParentNode) {
 		super(ParentNode, null, 2);

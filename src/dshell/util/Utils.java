@@ -79,13 +79,6 @@ public class Utils {
 		return !matchRegex(target, regex);
 	}
 
-	public static void assertResult(boolean result) {
-		if(!result) {
-			System.err.println("Assertion Faild");
-			System.exit(1);
-		}
-	}
-
 	public static void log(Object value) {
 		System.out.println(value);
 		LoggingContext.getContext().getLogger().warn(value);

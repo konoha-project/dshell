@@ -16,8 +16,6 @@ public class TaskOption implements Serializable {
 		printable ,
 		throwable ,
 		background,
-		client,
-		server,
 	}
 
 	public static enum RetType {

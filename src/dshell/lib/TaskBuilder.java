@@ -10,17 +10,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
-import dshell.remote.RemoteContext;
-import dshell.remote.RemoteProcClient;
-import dshell.remote.RemoteProcServer;
 import dshell.util.Utils;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
-import static dshell.lib.TaskOption.Behavior.client;
-import static dshell.lib.TaskOption.Behavior.server;
 
 import static dshell.lib.TaskOption.RetType.VoidType   ;
 import static dshell.lib.TaskOption.RetType.IntType    ;
@@ -34,16 +29,7 @@ public class TaskBuilder {
 	private long timeout = -1;
 	private StringBuilder sBuilder;
 
-	public final RemoteContext context;
-	public OutputStream remoteOutStream = null;
-	public OutputStream remoteErrStream = null;
-
 	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
-		this(null, cmdsList, option);
-	}
-
-	public TaskBuilder(RemoteContext context, ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
-		this.context = context;
 		this.option = option;
 		ArrayList<ArrayList<String>> newCmdsList = this.setInternalOption(cmdsList);
 		this.Processes = this.createProcs(newCmdsList);
@@ -144,14 +130,6 @@ public class TaskBuilder {
 
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
-		if(this.option.is(server) && this.context != null) {
-			this.option.setFlag(background, false);	// TODO: background
-			this.timeout = -1;	// TODO: timeout
-			RemoteProcServer proc = new RemoteProcServer(this.context);
-			procBuffer.add(proc);
-			this.remoteOutStream = proc.outStream;
-			this.remoteErrStream = proc.errStream;
-		}
 		int size = cmdsList.size();
 		for(int i = 0; i < size; i++) {
 			ArrayList<String> currentCmds = cmdsList.get(i);
@@ -185,15 +163,6 @@ public class TaskBuilder {
 				prevProc.mergeErrorToOut();
 			}
 			else if(cmdSymbol.equals(DShellGrammar.location)) {
-				this.option.setFlag(client, true);
-				RemoteProcClient proc = new RemoteProcClient(this.option);
-				ArrayList<ArrayList<String>> subList = new ArrayList<ArrayList<String>>();
-				for(int index = i + 1; index < size; index++) {
-					subList.add(cmdsList.get(index));
-				}
-				proc.setArgumentList(currentCmds, subList);
-				procBuffer.add(proc);
-				break;
 			}
 			else if(cmdSymbol.equals(DShellGrammar.trace)) {
 				int cmdSize = currentCmds.size();

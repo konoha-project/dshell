@@ -35,15 +35,15 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 	}
 
 	public void VisitTryNode(DShellTryNode Node) {
-		Node.AST[DShellTryNode.Try] = this.CheckType(Node.AST[DShellTryNode.Try], ZType.VoidType);
+		Node.AST[DShellTryNode._Try] = this.CheckType(Node.AST[DShellTryNode._Try], ZType.VoidType);
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
 			ZNode CatchNode = Node.GetListAt(i);
 			CatchNode = this.CheckType(CatchNode, ZType.VoidType);
 			Node.SetListAt(i, CatchNode);
 		}
-		if(Node.AST[DShellTryNode.Finally] != null) {
-			Node.AST[DShellTryNode.Finally] = this.CheckType(Node.AST[DShellTryNode.Finally], ZType.VoidType);
+		if(Node.AST[DShellTryNode._Finally] != null) {
+			Node.AST[DShellTryNode._Finally] = this.CheckType(Node.AST[DShellTryNode._Finally], ZType.VoidType);
 		}
 		this.TypedNode(Node, ZType.VoidType);
 	}

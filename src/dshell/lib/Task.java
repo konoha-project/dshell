@@ -12,7 +12,6 @@ import dshell.exception.NullException;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
-import static dshell.lib.TaskOption.Behavior.server;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
@@ -97,7 +96,7 @@ public class Task implements Serializable {
 			PseudoProcess lastProc = procs[procs.length - 1];
 			InputStream[] srcOutStreams = new InputStream[1];
 			srcOutStreams[0] = lastProc.accessOutStream();
-			return new MessageStreamHandler(srcOutStreams, stdoutStream, this.taskBuilder.remoteOutStream);
+			return new MessageStreamHandler(srcOutStreams, stdoutStream);
 		}
 		return new EmptyMessageStreamHandler();
 	}
@@ -111,7 +110,7 @@ public class Task implements Serializable {
 			for(int i = 0; i < size; i++) {
 				srcErrorStreams[i] = procs[i].accessErrorStream();
 			}
-			return new MessageStreamHandler(srcErrorStreams, System.err, this.taskBuilder.remoteErrStream);
+			return new MessageStreamHandler(srcErrorStreams, System.err);
 		}
 		return new EmptyMessageStreamHandler();
 	}
@@ -151,7 +150,7 @@ public class Task implements Serializable {
 		}
 		this.joinAndSetException();
 		TaskOption option = this.taskBuilder.getOption();
-		if(!option.is(server) && option.is(throwable) && !(this.exception instanceof NullException)) {
+		if(option.is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
 		}
 	}
@@ -222,7 +221,6 @@ public class Task implements Serializable {
 class MessageStreamHandler {
 	private InputStream[] srcStreams;
 	private OutputStream consoleStream;
-	private OutputStream remoteStream;
 	private ByteArrayOutputStream messageBuffer;
 	private ByteArrayOutputStream[] eachBuffers;
 	private PipeStreamHandler[] streamHandlers;
@@ -230,20 +228,19 @@ class MessageStreamHandler {
 	public MessageStreamHandler() {	// do nothing
 	}
 
-	public MessageStreamHandler(InputStream[] srcStreams, OutputStream consoleStream, OutputStream remoteStream) {
+	public MessageStreamHandler(InputStream[] srcStreams, OutputStream consoleStream) {
 		this.srcStreams = srcStreams;
 		this.messageBuffer = new ByteArrayOutputStream();
 		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
 		this.consoleStream = consoleStream;
-		this.remoteStream = remoteStream;
 		this.eachBuffers = new ByteArrayOutputStream[this.srcStreams.length];
 	}
 
 	public void startHandler() {
-		boolean[] closeOutputs = {false, false, false, true};
+		boolean[] closeOutputs = {false, false, false};
 		for(int i = 0; i < srcStreams.length; i++) {
 			this.eachBuffers[i] = new ByteArrayOutputStream();
-			OutputStream[] destStreams = new OutputStream[]{this.consoleStream, this.messageBuffer, this.eachBuffers[i], this.remoteStream};
+			OutputStream[] destStreams = new OutputStream[]{this.consoleStream, this.messageBuffer, this.eachBuffers[i]};
 			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], destStreams, true, closeOutputs);
 			this.streamHandlers[i].start();
 		}
