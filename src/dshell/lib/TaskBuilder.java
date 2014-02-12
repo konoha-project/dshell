@@ -90,42 +90,36 @@ public class TaskBuilder {
 	private ArrayList<ArrayList<String>> setInternalOption(ArrayList<ArrayList<String>> cmdsList) {
 		ArrayList<ArrayList<String>> newCmdsBuffer = new ArrayList<ArrayList<String>>();
 		for(ArrayList<String> currentCmds : cmdsList) {
-			if(currentCmds.get(0).equals(DShellGrammar.timeout)) {
-				StringBuilder numBuilder = new StringBuilder();
-				StringBuilder unitBuilder = new StringBuilder();
-				int len = currentCmds.get(1).length();
-				for(int j = 0; j < len; j++) {
-					char ch = currentCmds.get(1).charAt(j);
-					if(Character.isDigit(ch)) {
-						numBuilder.append(ch);
-					}
-					else {
-						unitBuilder.append(ch);
-					}
-				}
-				long num = Integer.parseInt(numBuilder.toString());
-				String unit = unitBuilder.toString();
-				if(unit.equals("s")) {
-					num = num * 1000;
-				}
-				if(num >= 0) {
-					this.timeout = num;
-				}
-				int baseIndex = 2;
-				ArrayList<String> newCmds = new ArrayList<String>();
-				int size = currentCmds.size();
-				for(int j = baseIndex; j < size; j++) {
-					newCmds.add(currentCmds.get(j));
-				}
-				currentCmds = newCmds;
-			}
-			else if(currentCmds.get(0).equals(DShellGrammar.background)) {
-				this.option.setFlag(background, true);
+			if(currentCmds.get(0).equals(DShellGrammar.background)) {
+				this.option.setFlag(background, this.option.isRetType(TaskType) || this.option.isRetType(VoidType));
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
 		}
 		return newCmdsBuffer;
+	}
+
+	private void setTimeout(String timeSymbol) {
+		StringBuilder numBuilder = new StringBuilder();
+		StringBuilder unitBuilder = new StringBuilder();
+		int len = timeSymbol.length();
+		for(int j = 0; j < len; j++) {
+			char ch = timeSymbol.charAt(j);
+			if(Character.isDigit(ch)) {
+				numBuilder.append(ch);
+			}
+			else {
+				unitBuilder.append(ch);
+			}
+		}
+		long num = Integer.parseInt(numBuilder.toString());
+		String unit = unitBuilder.toString();
+		if(unit.equals("s")) {
+			num = num * 1000;
+		}
+		if(num >= 0) {
+			this.timeout = num;
+		}
 	}
 
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
@@ -163,6 +157,14 @@ public class TaskBuilder {
 				prevProc.mergeErrorToOut();
 			}
 			else if(cmdSymbol.equals(DShellGrammar.location)) {
+				ArrayList<ArrayList<String>> sendingCmdsList = new ArrayList<ArrayList<String>>();
+				for(int j = i + 1; j < size; j++) {
+					sendingCmdsList.add(cmdsList.get(j));
+				}
+				PseudoProcess proc = new RequestSender(sendingCmdsList, this.option.is(background));
+				proc.setArgumentList(currentCmds);
+				procBuffer.add(proc);
+				break;
 			}
 			else if(cmdSymbol.equals(DShellGrammar.trace)) {
 				int cmdSize = currentCmds.size();
@@ -171,6 +173,15 @@ public class TaskBuilder {
 					newCmds.add(currentCmds.get(index));
 				}
 				procBuffer.add(this.createProc(newCmds, checkTraceRequirements()));
+			}
+			else if(cmdSymbol.equals(DShellGrammar.timeout)) {
+				this.setTimeout(currentCmds.get(1));
+				int cmdSize = currentCmds.size();
+				ArrayList<String> newCmds = new ArrayList<String>();
+				for(int index = 2; index < cmdSize; index++) {
+					newCmds.add(currentCmds.get(index));
+				}
+				procBuffer.add(this.createProc(newCmds, false));
 			}
 			else {
 				procBuffer.add(this.createProc(currentCmds, false));
