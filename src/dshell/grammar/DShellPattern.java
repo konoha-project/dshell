@@ -19,7 +19,7 @@ public class DShellPattern extends ZMatchFunction {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}
 		ZNode CommandNode = new DShellCommandNode(ParentNode, CommandToken);
-		CommandNode.Set(ZNode.AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
+		CommandNode.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
 				ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
@@ -47,7 +47,7 @@ public class DShellPattern extends ZMatchFunction {
 			if(ArgNode == null) {
 				break;
 			}
-			CommandNode.Set(ZNode.AppendIndex, ArgNode);
+			CommandNode.Set(ZNode._AppendIndex, ArgNode);
 		}
 		return CommandNode;
 	}

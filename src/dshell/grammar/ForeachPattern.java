@@ -49,9 +49,9 @@ public class ForeachPattern extends ZMatchFunction {
 		if(SizeDeclNode.IsErrorNode()) {
 			return SizeDeclNode;
 		}
-		Node.Set(ZNode.AppendIndex, SizeDeclNode);
+		Node.Set(ZNode._AppendIndex, SizeDeclNode);
 		ZNode WhileNode = new ZWhileNode(SizeDeclNode);
-		SizeDeclNode.Set(ZNode.AppendIndex, WhileNode);
+		SizeDeclNode.Set(ZNode._AppendIndex, WhileNode);
 		WhileNode.Set(ZWhileNode._Cond, this.CreateCondNode(WhileNode, TokenContext));
 		ZNode BlockNode = this.MatchAndCreateBlockNode(WhileNode, TokenContext);
 		if(BlockNode.IsErrorNode()) {
@@ -109,7 +109,7 @@ public class ForeachPattern extends ZMatchFunction {
 	private ZNode MatchAndCreateBlockNode(ZNode ParentNode, ZTokenContext TokenContext) {
 		ZNode Node = new ZVarDeclNode(ParentNode);
 		this.VarNameNode.ParentNode = Node;
-		Node.Set(ZVarDeclNode.NameInfo, this.VarNameNode);
+		Node.Set(ZVarDeclNode._NameInfo, this.VarNameNode);
 		ZNode GetIndexNode = new ZGetIndexNode(Node, this.CreateNameNode(Node, TokenContext, this.VarNameNode.SourceToken, this.IndexSymbol));
 		Node.Set(ZVarDeclNode._InitValue, GetIndexNode);
 		ZNode BlockNode = TokenContext.ParsePattern(Node, "$Block$", ZTokenContext.Required);
@@ -128,7 +128,7 @@ public class ForeachPattern extends ZMatchFunction {
 
 	private ZVarDeclNode CreateVarDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZToken ContextToken, String VarName) {
 		ZVarDeclNode Node = new ZVarDeclNode(ParentNode);
-		Node.Set(ZNode.NameInfo, this.CreateNameNode(ParentNode, TokenContext, ContextToken, VarName));
+		Node.Set(ZNode._NameInfo, this.CreateNameNode(ParentNode, TokenContext, ContextToken, VarName));
 		return Node;
 	}
 
@@ -142,7 +142,7 @@ public class ForeachPattern extends ZMatchFunction {
 
 	private ZMethodCallNode CreateSizeNode(ZNode ParentNode, ZTokenContext TokenContext, ZNode RecvNode) {
 		ZMethodCallNode Node = new ZMethodCallNode(ParentNode, RecvNode);
-		Node.Set(ZNode.NameInfo, this.CreateNameNode(ParentNode, TokenContext, RecvNode.SourceToken, "Size"));
+		Node.Set(ZNode._NameInfo, this.CreateNameNode(ParentNode, TokenContext, RecvNode.SourceToken, "Size"));
 		return Node;
 	}
 }
