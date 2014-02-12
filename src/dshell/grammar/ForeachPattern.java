@@ -57,7 +57,7 @@ public class ForeachPattern extends ZMatchFunction {
 		if(BlockNode.IsErrorNode()) {
 			return BlockNode;
 		}
-		WhileNode.Set(ZWhileNode.Block, BlockNode);
+		WhileNode.Set(ZWhileNode._Block, BlockNode);
 		return Node;
 	}
 
@@ -65,7 +65,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ZVarDeclNode Node = this.CreateVarDeclNode(ParentNode, TokenContext, ContextToken, this.IndexSymbol);
 		ZSource Source = new ZSource(ContextToken.GetFileName(), ContextToken.GetLineNumber(), "0", TokenContext);
 		ZToken Token = new ZToken(Source, 0, "0".length());
-		Node.Set(ZVarDeclNode.InitValue, new ZIntNode(ParentNode, Token, 0));
+		Node.Set(ZVarDeclNode._InitValue, new ZIntNode(ParentNode, Token, 0));
 		return Node;
 	}
 
@@ -102,7 +102,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ZSource Source = new ZSource(LeftNode.SourceToken.GetFileName(), LeftNode.SourceToken.GetLineNumber(), Operator, TokenContext);
 		ZToken Token = new ZToken(Source, 0, Operator.length());
 		ZComparatorNode Node = new ZComparatorNode(ParentNode, Token, LeftNode, null);
-		Node.Set(ZBinaryNode.Right, RightNode);
+		Node.Set(ZBinaryNode._Right, RightNode);
 		return Node;
 	}
 
@@ -111,7 +111,7 @@ public class ForeachPattern extends ZMatchFunction {
 		this.VarNameNode.ParentNode = Node;
 		Node.Set(ZVarDeclNode._NameInfo, this.VarNameNode);
 		ZNode GetIndexNode = new ZGetIndexNode(Node, this.CreateNameNode(Node, TokenContext, this.VarNameNode.SourceToken, this.IndexSymbol));
-		Node.Set(ZVarDeclNode.InitValue, GetIndexNode);
+		Node.Set(ZVarDeclNode._InitValue, GetIndexNode);
 		ZNode BlockNode = TokenContext.ParsePattern(Node, "$Block$", ZTokenContext.Required);
 		if(BlockNode.IsErrorNode()) {
 			return BlockNode;
@@ -122,7 +122,7 @@ public class ForeachPattern extends ZMatchFunction {
 
 	private ZVarDeclNode CreateSizeDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZNode ExprNode) {
 		ZVarDeclNode Node = this.CreateVarDeclNode(ParentNode, TokenContext, ExprNode.SourceToken, this.SizeSymbol);
-		Node.Set(ZVarDeclNode.InitValue, this.CreateSizeNode(ParentNode, TokenContext, ExprNode));
+		Node.Set(ZVarDeclNode._InitValue, this.CreateSizeNode(ParentNode, TokenContext, ExprNode));
 		return Node;
 	}
 

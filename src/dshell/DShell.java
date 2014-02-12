@@ -10,7 +10,6 @@ import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
 import zen.deps.ZenArray;
-import zen.lang.ZSystem;
 import zen.lang.ZenEngine;
 import zen.main.ZenMain;
 import zen.parser.ZGenerator;

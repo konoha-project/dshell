@@ -16,7 +16,7 @@ public class EnvPattern extends ZMatchFunction {
 		String Name = ((ZLetNode)LetNode).Symbol;
 		String Env = System.getenv(Name);
 		Env = (Env == null) ? "" : Env;
-		LetNode.Set(ZLetNode.InitValue, new ZStringNode(ParentNode, null, Env));
+		LetNode.Set(ZLetNode._InitValue, new ZStringNode(ParentNode, null, Env));
 		return LetNode;
 	}
 
