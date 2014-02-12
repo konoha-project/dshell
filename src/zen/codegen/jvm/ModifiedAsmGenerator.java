@@ -124,7 +124,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.TryCatchLabel.push(Label); // push
 		// try block
 		this.AsmBuilder.visitLabel(Label.beginTryLabel);
-		Node.AST[DShellTryNode.Try].Accept(this);
+		Node.AST[DShellTryNode._Try].Accept(this);
 		this.AsmBuilder.visitLabel(Label.endTryLabel);
 		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 		// catch block
@@ -134,8 +134,8 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 		// finally block
 		this.AsmBuilder.visitLabel(Label.finallyLabel);
-		if(Node.AST[DShellTryNode.Finally] != null) {
-			Node.AST[DShellTryNode.Finally].Accept(this);
+		if(Node.AST[DShellTryNode._Finally] != null) {
+			Node.AST[DShellTryNode._Finally].Accept(this);
 		}
 		this.TryCatchLabel.pop();
 	}
