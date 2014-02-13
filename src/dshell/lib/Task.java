@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.NullException;
+
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
+import static dshell.lib.TaskOption.Behavior.receivable;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
@@ -25,7 +27,7 @@ public class Task implements Serializable {
 	private String stderrMessage;
 	private ArrayList<Integer> exitStatusList;
 	private String representString;
-	protected DShellException exception = new NullException("");
+	private DShellException exception = new NullException("");
 
 	public Task(TaskBuilder taskBuilder) {
 		this.taskBuilder = taskBuilder;
@@ -150,7 +152,7 @@ public class Task implements Serializable {
 		}
 		this.joinAndSetException();
 		TaskOption option = this.taskBuilder.getOption();
-		if(option.is(throwable) && !(this.exception instanceof NullException)) {
+		if(!option.is(receivable) && option.is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
 		}
 	}
@@ -282,12 +284,12 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 class ShellExceptionBuilder {
 	private TaskBuilder taskBuilder;
 	private final CauseInferencer inferencer;
-	private final ByteArrayOutputStream[] eachBuifers;
+	private final ByteArrayOutputStream[] eachBuffers;
 
-	public ShellExceptionBuilder(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuifers) {
+	public ShellExceptionBuilder(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuffers) {
 		this.taskBuilder = taskBuilder;
 		this.inferencer = new CauseInferencer_ltrace();
-		this.eachBuifers = eachBuifers;
+		this.eachBuffers = eachBuffers;
 	}
 
 	public DShellException getException() {
@@ -299,7 +301,7 @@ class ShellExceptionBuilder {
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
 		for(int i = 0; i < procs.length; i++) {
 			PseudoProcess proc = procs[i];
-			String errorMessage = this.eachBuifers[i].toString();
+			String errorMessage = this.eachBuffers[i].toString();
 			this.createAndAddException(exceptionList, proc, errorMessage);
 		}
 		int size = exceptionList.size();

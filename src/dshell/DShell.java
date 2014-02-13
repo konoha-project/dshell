@@ -3,6 +3,7 @@ package dshell;
 import java.io.PrintStream;
 
 import dshell.lang.DShellGrammar;
+import dshell.lib.RequestReceiver;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
 import dshell.util.Utils;
@@ -64,6 +65,9 @@ public class DShell {
 						LoggingContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
+				else if(optionSymbol.equals("--receive")) {	// never return
+					new RequestReceiver().invoke();
+				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
 					showHelpAndExit(1, System.err);
@@ -117,6 +121,7 @@ public class DShell {
 			if(!status) {
 				Utils.fatal(1, "abort loading: " + scriptName);
 			}
+			System.exit(0);
 		}
 	}
 
