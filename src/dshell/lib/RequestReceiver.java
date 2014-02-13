@@ -6,13 +6,16 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 import static dshell.lib.TaskOption.Behavior.background;
+
 import dshell.util.Utils;
 
 public class RequestReceiver {
 	public void invoke() {
 		try {
+			System.err.println("run dshell receiver mode");
 			ObjectInputStream receiver = new ObjectInputStream(System.in);
 			CommandRequest request = (CommandRequest) receiver.readObject();
+			System.err.println("receive command request");
 			ArrayList<ArrayList<String>> cmdsList = request.getCmdsList();
 			TaskOption option = request.getOption();
 			if(option.is(background)) {
