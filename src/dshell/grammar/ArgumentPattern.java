@@ -4,7 +4,6 @@ import dshell.lang.DShellGrammar;
 import zen.ast.ZBlockNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
-import zen.deps.LibZen;
 import zen.deps.ZMatchFunction;
 import zen.parser.ZNameSpace;
 import zen.parser.ZToken;

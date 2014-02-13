@@ -64,7 +64,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		JavaMethodTable.Import("log", ZType.VarType, Utils.class, "log");
 		
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
-		ZType DShellExceptionArrayType = ZTypePool.GetGenericType1(ZType.ArrayType, DShellExceptionType);
+		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZType.ArrayType, DShellExceptionType);
 		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
 		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
 	}

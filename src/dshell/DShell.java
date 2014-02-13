@@ -13,7 +13,6 @@ import zen.deps.ZStringArray;
 import zen.main.ZenMain;
 import zen.parser.ZGenerator;
 import zen.parser.ZScriptEngine;
-import zen.type.ZType;
 import static dshell.util.LoggingContext.AppenderType;
 
 public class DShell {
