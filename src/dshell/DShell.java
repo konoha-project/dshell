@@ -8,8 +8,8 @@ import dshell.util.LoggingContext;
 import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
+import zen.deps.ZStringArray;
 import zen.main.ZenMain;
-import zen.obsolete.ZenArray;
 import zen.parser.ZGenerator;
 import zen.parser.ZScriptEngine;
 import zen.type.ZType;
@@ -28,7 +28,7 @@ public class DShell {
 
 	private boolean interactiveMode = true;
 	private boolean debugMode = false;
-	private ZenArray<String> ARGV;
+	private ZStringArray ARGV;
 
 	private DShell(String[] args) {
 		boolean foundScriptFile = false;
@@ -72,11 +72,11 @@ public class DShell {
 			else if(!foundScriptFile) {
 				foundScriptFile = true;
 				this.interactiveMode = false;
-				this.ARGV = ZenArray.NewZenArray(ZType.StringType);
-				this.ARGV.add(optionSymbol);
+				this.ARGV = new ZStringArray();
+				this.ARGV.Add(optionSymbol);
 			}
 			else {
-				this.ARGV.add(optionSymbol);
+				this.ARGV.Add(optionSymbol);
 			}
 		}
 	}
@@ -110,7 +110,7 @@ public class DShell {
 			System.out.println("");
 		}
 		else {
-			String scriptName = this.ARGV.get(0);
+			String scriptName = this.ARGV.ArrayValues[0];
 			//engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);	//FIXME
 			boolean status = engine.Load(scriptName);
 			engine.Generator.Logger.ShowErrors();

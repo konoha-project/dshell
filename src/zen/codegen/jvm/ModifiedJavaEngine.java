@@ -3,14 +3,14 @@ package zen.codegen.jvm;
 import java.util.ArrayList;
 
 import zen.codegen.jvm.JavaEngine;
-import zen.codegen.jvm.JavaSolution;
+import zen.codegen.jvm.JavaGenerator;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.TaskBuilder;
 
 public class ModifiedJavaEngine extends JavaEngine {	//TODO: implement unsupported visit api
-	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaSolution Generator) {
+	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaGenerator Generator) {
 		super(TypeChecker, Generator);
 	}
 
