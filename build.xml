@@ -20,6 +20,7 @@
 			<classpath path="${libzen_jar}" />
 			<classpath path="ext/jna-4.0.0.jar" />
 			<classpath path="ext/log4j-1.2.17.jar" />
+			<classpath path="ext/commons-codec-1.9.jar" />
 			<include name="**/*.java" />
 			<compilerarg value="-Xlint:deprecation" />
 			<compilerarg value="-Xlint:unchecked" />
@@ -39,6 +40,7 @@
 			<zipfileset src="${libzen_jar}" />
 			<zipfileset src="ext/jna-4.0.0.jar" />
 			<zipfileset src="ext/log4j-1.2.17.jar" />
+			<zipfileset src="ext/commons-codec-1.9.jar" />
 		</jar>
 	</target>
 

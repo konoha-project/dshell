@@ -63,8 +63,8 @@ public class DShell {
 						LoggingContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
-				else if(optionSymbol.equals("--receive")) {	// never return
-					new RequestReceiver().invoke();
+				else if(optionSymbol.equals("--receive") && i + 1 < args.length) {	// never return
+					RequestReceiver.invoke(args[++i]);
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
