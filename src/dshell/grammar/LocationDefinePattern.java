@@ -7,6 +7,9 @@ import zen.ast.ZStringNode;
 import zen.deps.ZMatchFunction;
 import zen.parser.ZTokenContext;
 
+/*
+ * location www = hoge@192.168.12.3, huge@192.168.2.4:567
+ * */
 public class LocationDefinePattern extends ZMatchFunction {
 	private LocationPattern locationPattern;
 	public LocationDefinePattern() {
