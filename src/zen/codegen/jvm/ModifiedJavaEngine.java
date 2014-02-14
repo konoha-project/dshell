@@ -32,20 +32,26 @@ public class ModifiedJavaEngine extends JavaEngine {
 				values[i][j] = (String)this.Eval(currentNode.GetListAt(j));
 			}
 		}
-		if(Node.Type.IsBooleanType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandBoolTopLevel(values);
+		try {
+			if(Node.Type.IsBooleanType()) {
+				this.EvaledValue = TaskBuilder.ExecCommandBoolTopLevel(values);
+			}
+			else if(Node.Type.IsIntType()) {
+				this.EvaledValue = TaskBuilder.ExecCommandIntTopLevel(values);
+			}
+			else if(Node.Type.IsStringType()) {
+				this.EvaledValue = TaskBuilder.ExecCommandStringTopLevel(values);
+			}
+			else if(Node.Type.ShortName.equals("Task")) {
+				this.EvaledValue = TaskBuilder.ExecCommandTaskTopLevel(values);
+			}
+			else {
+				TaskBuilder.ExecCommandVoid(values);
+			}
 		}
-		else if(Node.Type.IsIntType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandIntTopLevel(values);
-		}
-		else if(Node.Type.IsStringType()) {
-			this.EvaledValue = TaskBuilder.ExecCommandStringTopLevel(values);
-		}
-		else if(Node.Type.ShortName.equals("Task")) {
-			this.EvaledValue = TaskBuilder.ExecCommandTaskTopLevel(values);
-		}
-		else {
-			TaskBuilder.ExecCommandVoid(values);
+		catch(Exception e) {
+			this.Logger.ReportError(Node.SourceToken, "invocation error: " + e);
+			this.StopVisitor();
 		}
 	}
 

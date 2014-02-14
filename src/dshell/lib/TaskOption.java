@@ -2,6 +2,7 @@ package dshell.lib;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.throwable;
+import static dshell.lib.TaskOption.Behavior.timeout;
 import static dshell.lib.TaskOption.RetType.StringType;
 import static dshell.lib.TaskOption.RetType.TaskType;
 
@@ -17,6 +18,7 @@ public class TaskOption implements Serializable {
 		throwable ,
 		background,
 		receivable,
+		timeout   ,
 	}
 
 	public static enum RetType {
@@ -29,6 +31,7 @@ public class TaskOption implements Serializable {
 
 	private final RetType retType;
 	private final EnumSet<Behavior> flagSet;
+	private long time = -1;
 
 	private TaskOption(RetType retType, EnumSet<Behavior> flagSet) {
 		this.retType = retType;
@@ -67,6 +70,15 @@ public class TaskOption implements Serializable {
 
 	public boolean supportStderrHandler() {
 		return this.is(throwable) || this.isRetType(TaskType);
+	}
+
+	public void setTimeout(String timeSymbol) {
+		this.setFlag(timeout, true);
+		this.time = Long.parseLong(timeSymbol);
+	}
+
+	public long getTimeout() {
+		return this.time;
 	}
 
 	@Override

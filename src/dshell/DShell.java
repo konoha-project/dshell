@@ -6,7 +6,6 @@ import dshell.lang.DShellGrammar;
 import dshell.lib.RequestReceiver;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
-import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
 import zen.deps.ZStringArray;
@@ -118,7 +117,8 @@ public class DShell {
 			boolean status = engine.Load(scriptName);
 			engine.Generator.Logger.ShowErrors();
 			if(!status) {
-				Utils.fatal(1, "abort loading: " + scriptName);
+				System.err.println("abort loading: " + scriptName);
+				System.exit(1);
 			}
 			System.exit(0);
 		}

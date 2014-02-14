@@ -20,6 +20,7 @@ import dshell.grammar.DShellPattern;
 import dshell.grammar.DShellTryPattern;
 import dshell.grammar.EnvPattern;
 import dshell.grammar.LocationDefinePattern;
+import dshell.grammar.PrefixOptionPattern;
 import dshell.grammar.RedirectPattern;
 import dshell.grammar.ShellStyleCommentToken;
 import dshell.grammar.SuffixOptionPattern;
@@ -67,6 +68,7 @@ public class DShellGrammar {
 		DShellPattern dshellPattern = new DShellPattern();
 		ComparatorPattern comparatorPattern = new ComparatorPattern();
 		UnaryPattern unaryPattern = new UnaryPattern();
+		PrefixOptionPattern prefixOptionPattern = new PrefixOptionPattern();
 
 		NameSpace.AppendTokenFunc("#", new ShellStyleCommentToken());
 
@@ -84,11 +86,10 @@ public class DShellGrammar {
 		NameSpace.DefineStatement("try", new DShellTryPattern());
 		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());
 		NameSpace.DefineStatement(location, new LocationDefinePattern());
-		// prefix option
-		// timeout
-		setOptionalSymbol(NameSpace, timeout, dshellPattern);
-		// trace
-		setOptionalSymbol(NameSpace, trace, dshellPattern);
+		NameSpace.DefineExpression(timeout, prefixOptionPattern);
+		NameSpace.DefineExpression(trace, prefixOptionPattern);
+		NameSpace.DefineExpression("$PrefixOption$", prefixOptionPattern);
+
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
 		for(String symbol : symbolList) {

@@ -26,7 +26,6 @@ import static dshell.lib.TaskOption.RetType.TaskType   ;
 public class TaskBuilder {
 	private TaskOption option;
 	private PseudoProcess[] Processes;
-	private long timeout = -1;
 	private StringBuilder sBuilder;
 
 	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
@@ -49,7 +48,7 @@ public class TaskBuilder {
 	}
 
 	public Object invoke() {
-		Task task = new Task(this);
+		Task task = new Task(this.Processes, this.option, this.sBuilder.toString());
 		if(this.option.is(background)) {
 			return (this.option.isRetType(TaskType) && this.option.is(returnable)) ? task : null;
 		}
@@ -79,10 +78,6 @@ public class TaskBuilder {
 		return this.option;
 	}
 
-	public long getTimeout() {
-		return this.timeout;
-	}
-
 	@Override public String toString() {
 		return this.sBuilder.toString();
 	}
@@ -99,31 +94,9 @@ public class TaskBuilder {
 		return newCmdsBuffer;
 	}
 
-	private void setTimeout(String timeSymbol) {
-		StringBuilder numBuilder = new StringBuilder();
-		StringBuilder unitBuilder = new StringBuilder();
-		int len = timeSymbol.length();
-		for(int j = 0; j < len; j++) {
-			char ch = timeSymbol.charAt(j);
-			if(Character.isDigit(ch)) {
-				numBuilder.append(ch);
-			}
-			else {
-				unitBuilder.append(ch);
-			}
-		}
-		long num = Integer.parseInt(numBuilder.toString());
-		String unit = unitBuilder.toString();
-		if(unit.equals("s")) {
-			num = num * 1000;
-		}
-		if(num >= 0) {
-			this.timeout = num;
-		}
-	}
-
 	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
+		boolean foundTraceOption = false;
 		int size = cmdsList.size();
 		for(int i = 0; i < size; i++) {
 			ArrayList<String> currentCmds = cmdsList.get(i);
@@ -167,24 +140,21 @@ public class TaskBuilder {
 				break;
 			}
 			else if(cmdSymbol.equals(DShellGrammar.trace)) {
-				int cmdSize = currentCmds.size();
-				ArrayList<String> newCmds = new ArrayList<String>();
-				for(int index = 1; index < cmdSize; index++) {
-					newCmds.add(currentCmds.get(index));
-				}
-				procBuffer.add(this.createProc(newCmds, checkTraceRequirements()));
+				foundTraceOption = true;
+				continue;
 			}
 			else if(cmdSymbol.equals(DShellGrammar.timeout)) {
-				this.setTimeout(currentCmds.get(1));
-				int cmdSize = currentCmds.size();
-				ArrayList<String> newCmds = new ArrayList<String>();
-				for(int index = 2; index < cmdSize; index++) {
-					newCmds.add(currentCmds.get(index));
-				}
-				procBuffer.add(this.createProc(newCmds, false));
+				this.option.setTimeout(currentCmds.get(1));
+				continue;
 			}
 			else {
-				procBuffer.add(this.createProc(currentCmds, false));
+				if(foundTraceOption) {
+					foundTraceOption = false;
+					procBuffer.add(this.createProc(currentCmds, checkTraceRequirements()));
+				}
+				else {
+					procBuffer.add(this.createProc(currentCmds, false));
+				}
 			}
 		}
 		int bufferSize = procBuffer.size();
