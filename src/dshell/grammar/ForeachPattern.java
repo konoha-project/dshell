@@ -9,7 +9,7 @@ import zen.ast.ZGetNameNode;
 import zen.ast.ZIntNode;
 import zen.ast.ZMethodCallNode;
 import zen.ast.ZNode;
-import zen.ast.ZVarDeclNode;
+import zen.ast.ZVarNode;
 import zen.ast.ZWhileNode;
 import zen.deps.ZMatchFunction;
 import zen.parser.ZSource;
@@ -61,11 +61,11 @@ public class ForeachPattern extends ZMatchFunction {
 		return Node;
 	}
 
-	private ZVarDeclNode CreateIndexDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZToken ContextToken) {
-		ZVarDeclNode Node = this.CreateVarDeclNode(ParentNode, TokenContext, ContextToken, this.IndexSymbol);
+	private ZVarNode CreateIndexDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZToken ContextToken) {
+		ZVarNode Node = this.CreateVarNode(ParentNode, TokenContext, ContextToken, this.IndexSymbol);
 		ZSource Source = new ZSource(ContextToken.GetFileName(), ContextToken.GetLineNumber(), "0", TokenContext);
 		ZToken Token = new ZToken(Source, 0, "0".length());
-		Node.Set(ZVarDeclNode._InitValue, new ZIntNode(ParentNode, Token, 0));
+		Node.Set(ZVarNode._InitValue, new ZIntNode(ParentNode, Token, 0));
 		return Node;
 	}
 
@@ -107,11 +107,11 @@ public class ForeachPattern extends ZMatchFunction {
 	}
 
 	private ZNode MatchAndCreateBlockNode(ZNode ParentNode, ZTokenContext TokenContext) {
-		ZNode Node = new ZVarDeclNode(ParentNode);
+		ZNode Node = new ZVarNode(ParentNode);
 		this.VarNameNode.ParentNode = Node;
-		Node.Set(ZVarDeclNode._NameInfo, this.VarNameNode);
+		Node.Set(ZVarNode._NameInfo, this.VarNameNode);
 		ZNode GetIndexNode = new ZGetIndexNode(Node, this.CreateNameNode(Node, TokenContext, this.VarNameNode.SourceToken, this.IndexSymbol));
-		Node.Set(ZVarDeclNode._InitValue, GetIndexNode);
+		Node.Set(ZVarNode._InitValue, GetIndexNode);
 		ZNode BlockNode = TokenContext.ParsePattern(Node, "$Block$", ZTokenContext.Required);
 		if(BlockNode.IsErrorNode()) {
 			return BlockNode;
@@ -120,14 +120,14 @@ public class ForeachPattern extends ZMatchFunction {
 		return null;
 	}
 
-	private ZVarDeclNode CreateSizeDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZNode ExprNode) {
-		ZVarDeclNode Node = this.CreateVarDeclNode(ParentNode, TokenContext, ExprNode.SourceToken, this.SizeSymbol);
-		Node.Set(ZVarDeclNode._InitValue, this.CreateSizeNode(ParentNode, TokenContext, ExprNode));
+	private ZVarNode CreateSizeDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZNode ExprNode) {
+		ZVarNode Node = this.CreateVarNode(ParentNode, TokenContext, ExprNode.SourceToken, this.SizeSymbol);
+		Node.Set(ZVarNode._InitValue, this.CreateSizeNode(ParentNode, TokenContext, ExprNode));
 		return Node;
 	}
 
-	private ZVarDeclNode CreateVarDeclNode(ZNode ParentNode, ZTokenContext TokenContext, ZToken ContextToken, String VarName) {
-		ZVarDeclNode Node = new ZVarDeclNode(ParentNode);
+	private ZVarNode CreateVarNode(ZNode ParentNode, ZTokenContext TokenContext, ZToken ContextToken, String VarName) {
+		ZVarNode Node = new ZVarNode(ParentNode);
 		Node.Set(ZNode._NameInfo, this.CreateNameNode(ParentNode, TokenContext, ContextToken, VarName));
 		return Node;
 	}
