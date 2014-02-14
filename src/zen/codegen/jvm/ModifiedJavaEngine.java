@@ -5,11 +5,12 @@ import java.util.ArrayList;
 import zen.codegen.jvm.JavaEngine;
 import zen.codegen.jvm.JavaGenerator;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.TaskBuilder;
 
-public class ModifiedJavaEngine extends JavaEngine {	//TODO: implement unsupported visit api
+public class ModifiedJavaEngine extends JavaEngine {
 	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaGenerator Generator) {
 		super(TypeChecker, Generator);
 	}
@@ -50,5 +51,8 @@ public class ModifiedJavaEngine extends JavaEngine {	//TODO: implement unsupport
 
 	public void VisitTryNode(DShellTryNode Node) {
 		this.Unsupported(Node, "try");
+	}
+
+	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 }
