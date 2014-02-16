@@ -19,6 +19,7 @@ import dshell.grammar.DShellImportPattern;
 import dshell.grammar.DShellPattern;
 import dshell.grammar.DShellTryPattern;
 import dshell.grammar.EnvPattern;
+import dshell.grammar.ForeachPattern;
 import dshell.grammar.LocationDefinePattern;
 import dshell.grammar.PrefixOptionPattern;
 import dshell.grammar.RedirectPattern;
@@ -89,6 +90,7 @@ public class DShellGrammar {
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
 		NameSpace.DefineExpression("$PrefixOption$", prefixOptionPattern);
+		NameSpace.DefineStatement("for", new ForeachPattern());
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
