@@ -17,7 +17,7 @@ function func() {
 
   var filewriter: FileWriter = new FileWriter(File("/tmp/file.txt"))
 
-  filewriter.write("Hello World!")
+  filewriter.write("Hello, World")
   filewriter.close()
 }
 
@@ -27,7 +27,7 @@ func()
 <pre class="toolbar:1" title="実行例">
 $ dshell FileWrite.ds
 $ cat /tmp/file.txt
-Hello World!
+Hello, World
 </pre>
 
 
@@ -44,13 +44,13 @@ import command コマンド名(スペース区切りで複数宣言可能)
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
 import command echo pwd
 
-echo "Hello, World."
+echo "Hello, World"
 pwd
 </pre>
 
 <pre class="toolbar:1" title="実行例">
 $ dshell ImportCommand.ds
-Hellom World.
+Hello, World
 /home/hogehoge
 </pre>
 
@@ -65,6 +65,7 @@ import command hoge   // hoge という名前のコマンドがないためエ�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
 import command ls
+
 function func() {
   var dir = "/dev/null"
   ls -ltr $dir
@@ -81,9 +82,10 @@ crw-rw-rw- 1 root root 1, 3 2013-05-27 10:33 /dev/null
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ImportCommand.ds" >
 import command ls
+
 function func() {
-  result: String = ls -ltr /tmp
-  log result
+  var result:String = ls -ltr /dev/null
+  log ${result}
 }
 func()
 </pre>
@@ -151,8 +153,8 @@ log HOME    // 環境変数 HOME の値が表示される(/home/hogehoge など)
 import env HOME               // 定義済み環境変数
 import env HOGE               // 未定義の環境変数 => 値が""(空文字)の定数 HOGE が定義される
 
-log HOME  // 環境変数 HOME の値が出力される(/home/hogehoge など)
-log HOGE  // ""(空文字) が出力される
+log ${HOME}  // 環境変数 HOME の値が出力される(/home/hogehoge など)
+log ${HOGE}  // ""(空文字) が出力される
 </pre>
 
 <pre class="toolbar:1" title="実行例">

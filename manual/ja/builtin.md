@@ -47,13 +47,18 @@ $ echo $?
 ログの出力先は、シェル起動時のオプションで指定します。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Logger.ds" >
-function f() {
+function func() {
   log "logging test"
 }
-f()
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
+$ dshell --logging:./test.log Logger.ds
+logging test
+$ cat ./test.log
+Feb  3 15:39:27 WARN - logging test
+
 $ dshell --logging:stdout Logger.ds
 logging test
 
@@ -77,7 +82,7 @@ assert はデバッグ目的にのみ使用するべきです。
 与えられた論理式が偽の場合、メッセージを出力し、終了コード1を戻り値としてシェルを終了します。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Assert.ds" >
-function f() {
+function func() {
   var num = 5
 
   assert(num == 5)
@@ -89,7 +94,7 @@ function f() {
   assert(num > 10)
   log "assert check 3"
 }
-f()
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">

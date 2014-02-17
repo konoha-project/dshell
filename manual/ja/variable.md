@@ -18,15 +18,17 @@ function func() {
   var age: int = 17
   var name = "uzumaki naruto"
 
-  log age
-  log name
+  log ${age}
+  log ${name}
+
+  return
 }
 
 func()
 
 # 関数外では age, name は参照できない
-# log age 未定義の変数の参照(エラー)
-# log name 未定義の変数の参照(エラー)
+# log ${age} 未定義の変数の参照(エラー)
+# log ${name} 未定義の変数の参照(エラー)
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -67,17 +69,24 @@ function func() {
   var b: float = 2.0
   var c: String = "45.67"
 
+  // int -> float
   var d = (float)a
-  var e = (int)b
-  var f = (String)c
 
-  assert(d instanceof (float))
-  assert(e instanceof (int))
-  assert(f instanceof (String))
+  // String -> int
+  var e = (int)c
 
-  log d
-  log e
-  log f
+  // float -> String
+  var f = (String)b
+
+  assert(d instanceof float)
+  assert(e instanceof int)
+  assert(f instanceof String)
+
+  log ${d}
+  log ${e}
+  log ${f}
+
+  return
 }
 
 func()
@@ -86,8 +95,8 @@ func()
 <pre class="toolbar:1" title="実行例">
 $ dshell TypeCast.ds
 123.0
-2
 45.67
+2.0
 </pre>
 
 # 定数
@@ -105,9 +114,10 @@ let 定数名 = 設定値
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Constant.ds" >
 let color ="red"
 
-void func() {
+function func() {
   let color = "green"
   log "local color: ${color}"
+  return
 }
 
 func()
@@ -120,4 +130,3 @@ $ dshell Constant.ds
 local color: green
 top color: red
 </pre>
-

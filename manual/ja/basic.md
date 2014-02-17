@@ -20,7 +20,7 @@ D-Shellでは、スクリプトを実行するときに、コマンドライン�
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Commandline.ds" >
 function func() {
   for(arg in ARGV) {
-    log arg
+    log ${arg}
   }
 }
 
@@ -29,7 +29,7 @@ func()
 
 <pre class="toolbar:1" title="実行例">
 $ dshell Commandline.ds p1 p2
-argv.ds
+Commandline.ds
 p1
 p2
 </pre>
@@ -65,8 +65,11 @@ D-Shell にビルトインコマンドとして組み込まれている log コ�
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputLog.ds" >
 function func() {
-  log "Hello, World."
-  log 123
+  var str = "Hello, World"
+  var num = 123
+  log ${str}
+  log ${num}
+  return
 }
 
 func()
@@ -74,7 +77,7 @@ func()
 
 <pre class="toolbar:1" title="実行例">
 $ dshell OutputLog.ds
-Hello, World.
+Hello, World
 123
 </pre>
 
@@ -83,9 +86,13 @@ Hello, World.
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputEcho.ds" >
 import command echo
+
 function func() {
-  echo "Hello, World."
-  echo 123
+  var str = "Hello, World"
+  var num = 123
+  echo ${str}
+  echo ${num}
+  return
 }
 
 func()
@@ -93,7 +100,7 @@ func()
 
 <pre class="toolbar:1" title="実行例">
 $ dshell OutputEcho.ds
-Hello, World.
+Hello, World
 123
 </pre>
 
@@ -102,9 +109,12 @@ Java の println 関数を D-Shell にインポートして利用する例です
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputPrintln.ds" >
 import java.lang.System
+
 function func() {
-  System.out.println("Hello, World.")
-  System.out.println(123)
+  var str = "Hello, World"
+  var num = 123
+  System.out.println(str)
+  System.out.println(num)
 }
 
 func()
@@ -112,7 +122,7 @@ func()
 
 <pre class="toolbar:1" title="実行例">
 $ dshell OutputPrintln.ds
-Hello, World.
+Hello, World
 123
 </pre>
 
