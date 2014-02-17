@@ -18,6 +18,7 @@ import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
+import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.ClassListLoader;
 import dshell.lib.DShellExceptionArray;
@@ -28,6 +29,8 @@ import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
+import zen.deps.LibZen;
+import zen.parser.ZNameSpace;
 import zen.parser.ZScriptEngine;
 import zen.type.ZType;
 import zen.type.ZTypePool;
@@ -72,6 +75,11 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 
 	@Override public ZScriptEngine GetEngine() {
 		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
+	}
+
+	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {
+		super.ImportLocalGrammar(NameSpace);
+		LibZen.ImportGrammar(NameSpace, DShellGrammar.class.getName());
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {

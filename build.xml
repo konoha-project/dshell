@@ -21,6 +21,9 @@
 			<classpath path="ext/jna-4.0.0.jar" />
 			<classpath path="ext/log4j-1.2.17.jar" />
 			<classpath path="ext/commons-codec-1.9.jar" />
+			<classpath path="ext/httpclient-4.3.1.jar" />
+			<classpath path="ext/httpcore-4.3.jar" />
+			<classpath path="ext/commons-logging-1.1.3.jar" />
 			<include name="**/*.java" />
 			<compilerarg value="-Xlint:deprecation" />
 			<compilerarg value="-Xlint:unchecked" />
@@ -41,6 +44,9 @@
 			<zipfileset src="ext/jna-4.0.0.jar" />
 			<zipfileset src="ext/log4j-1.2.17.jar" />
 			<zipfileset src="ext/commons-codec-1.9.jar" />
+			<zipfileset src="ext/httpclient-4.3.1.jar" />
+			<zipfileset src="ext/httpcore-4.3.jar" />
+			<zipfileset src="ext/commons-logging-1.1.3.jar" />
 		</jar>
 	</target>
 

@@ -1,10 +1,12 @@
-package dshell.lib;
+package dshell.remote;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 
+import dshell.lib.PseudoProcess;
+import dshell.lib.Task;
 import dshell.util.Utils;
 
 public class RequestSender extends PseudoProcess {

@@ -2,15 +2,15 @@ package dshell;
 
 import java.io.PrintStream;
 
-import dshell.lang.DShellGrammar;
-import dshell.lib.RequestReceiver;
+import dshell.rec.RECWriter;
+import dshell.remote.RequestReceiver;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
 import zen.codegen.jvm.ModifiedAsmGenerator;
+import zen.deps.KonohaGrammar;
 import zen.deps.LibZen;
 import zen.deps.ZStringArray;
 import zen.main.ZenMain;
-import zen.parser.ZGenerator;
 import zen.parser.ZScriptEngine;
 import static dshell.util.LoggingContext.AppenderType;
 
@@ -26,9 +26,11 @@ public class DShell {
 	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ")";
 
 	private boolean interactiveMode = true;
+	private boolean recSupport = false;
+	private String recURL = null;
 	private ZStringArray ARGV;
 
-	private DShell(String[] args) {
+	private DShell(String[] args) {	//TODO: improve parse argument
 		boolean foundScriptFile = false;
 		for(int i = 0; i < args.length; i++) {
 			String optionSymbol = args[i];
@@ -62,6 +64,10 @@ public class DShell {
 						LoggingContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
+				else if(optionSymbol.equals("--rec") && i + 1 < args.length) { // never return 
+					this.recSupport = true;
+					this.recURL = args[++i];
+				}
 				else if(optionSymbol.equals("--receive") && i + 1 < args.length) {	// never return
 					RequestReceiver.invoke(args[++i]);
 				}
@@ -83,7 +89,7 @@ public class DShell {
 	}
 
 	private void execute() {
-		ZScriptEngine engine = loadDShellEngine();
+		ZScriptEngine engine = LibZen.LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
@@ -109,6 +115,9 @@ public class DShell {
 				linenum++;
 			}
 			System.out.println("");
+		}
+		else if(this.recSupport) {
+			RECWriter.invoke(this.recURL, this.ARGV);
 		}
 		else {
 			String scriptName = this.ARGV.ArrayValues[0];
@@ -138,14 +147,9 @@ public class DShell {
 		stream.println("    --logging:stdout");
 		stream.println("    --logging:stderr");
 		stream.println("    --logging:syslog [host address]");
+		stream.println("    --rec [rec URL]");
 		stream.println("    --version");
 		System.exit(status);
-	}
-
-	private final static ZScriptEngine loadDShellEngine() {
-		ZGenerator generator = new ModifiedAsmGenerator();
-		LibZen.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
-		return generator.GetEngine();
 	}
 
 	public static void main(String[] args) {

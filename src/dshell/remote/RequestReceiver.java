@@ -1,4 +1,4 @@
-package dshell.lib;
+package dshell.remote;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -6,6 +6,9 @@ import java.util.ArrayList;
 
 import static dshell.lib.TaskOption.Behavior.background;
 
+import dshell.lib.Task;
+import dshell.lib.TaskBuilder;
+import dshell.lib.TaskOption;
 import dshell.util.Utils;
 
 public class RequestReceiver {

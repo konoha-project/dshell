@@ -1,4 +1,4 @@
-package dshell.lib;
+package dshell.remote;
 
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.Behavior.printable;
@@ -18,6 +18,7 @@ import java.util.ArrayList;
 
 import org.apache.commons.codec.binary.Base64;
 
+import dshell.lib.TaskOption;
 import dshell.util.Utils;
 
 public class CommandRequest implements Serializable {

@@ -6,8 +6,6 @@ import libzen.grammar.ComparatorPattern;
 import libzen.grammar.UnaryPattern;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
-import zen.deps.KonohaGrammar;
-import zen.deps.LibZen;
 import zen.lang.ZenPrecedence;
 import zen.parser.ZNameSpace;
 import zen.parser.ZToken;
@@ -63,8 +61,6 @@ public class DShellGrammar {
 	}
 
 	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
-		LibZen.ImportGrammar(NameSpace, KonohaGrammar.class.getName());
-
 		CommandPattern commandPattern = new CommandPattern();
 		DShellPattern dshellPattern = new DShellPattern();
 		ComparatorPattern comparatorPattern = new ComparatorPattern();
