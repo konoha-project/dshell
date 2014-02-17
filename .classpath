@@ -7,5 +7,6 @@
 	<classpathentry combineaccessrules="false" kind="src" path="/libzen"/>
 	<classpathentry kind="lib" path="ext/libzen/ext/asm-all-4.0.jar"/>
 	<classpathentry kind="lib" path="ext/libzen/ext/jline-1.0.jar"/>
+	<classpathentry kind="lib" path="ext/commons-codec-1.9.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

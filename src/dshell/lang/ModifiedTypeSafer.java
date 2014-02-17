@@ -9,6 +9,7 @@ import zen.parser.ZGenerator;
 import zen.type.ZType;
 import zen.type.ZVarType;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.lib.Task;
 
@@ -59,5 +60,9 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		}
 		Node.AST[ZCatchNode._Block] = this.CheckType(BlockNode, ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);
+	}
+
+	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
+		this.Return(Node);
 	}
 }

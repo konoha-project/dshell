@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
@@ -138,6 +139,9 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			Node.AST[DShellTryNode._Finally].Accept(this);
 		}
 		this.TryCatchLabel.pop();
+	}
+
+	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast

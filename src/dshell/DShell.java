@@ -6,7 +6,6 @@ import dshell.lang.DShellGrammar;
 import dshell.lib.RequestReceiver;
 import dshell.util.DShellConsole;
 import dshell.util.LoggingContext;
-import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
 import zen.deps.ZStringArray;
@@ -27,7 +26,6 @@ public class DShell {
 	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ")";
 
 	private boolean interactiveMode = true;
-	private boolean debugMode = false;
 	private ZStringArray ARGV;
 
 	private DShell(String[] args) {
@@ -40,7 +38,7 @@ public class DShell {
 					System.exit(0);
 				}
 				else if(optionSymbol.equals("--debug")) {
-					this.debugMode = true;
+					LibZen.DebugMode = true;
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
@@ -64,8 +62,8 @@ public class DShell {
 						LoggingContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
-				else if(optionSymbol.equals("--receive")) {	// never return
-					new RequestReceiver().invoke();
+				else if(optionSymbol.equals("--receive") && i + 1 < args.length) {	// never return
+					RequestReceiver.invoke(args[++i]);
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
@@ -99,7 +97,7 @@ public class DShell {
 				try {
 					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
 					engine.Generator.Logger.ShowErrors();
-					if (this.debugMode && evaledValue != null) {
+					if (LibZen.DebugMode && evaledValue != null) {
 						System.out.print(" (" + /*ZSystem.GuessType(evaledValue)*/ ":");
 						System.out.print(LibZen.GetClassName(evaledValue)+ ") ");
 						System.out.println(LibZen._Stringify(evaledValue));
@@ -118,7 +116,8 @@ public class DShell {
 			boolean status = engine.Load(scriptName);
 			engine.Generator.Logger.ShowErrors();
 			if(!status) {
-				Utils.fatal(1, "abort loading: " + scriptName);
+				System.err.println("abort loading: " + scriptName);
+				System.exit(1);
 			}
 			System.exit(0);
 		}

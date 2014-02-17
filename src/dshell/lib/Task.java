@@ -14,31 +14,32 @@ import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.Behavior.receivable;
+import static dshell.lib.TaskOption.Behavior.timeout;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
 	transient private Thread stateMonitor;
-	transient private TaskBuilder taskBuilder;
+	transient private final PseudoProcess[] procs;
+	transient private final TaskOption option;
 	transient private MessageStreamHandler stdoutHandler;
 	transient private MessageStreamHandler stderrHandler;
 	private boolean terminated = false;
-	private final boolean isAsyncTask;
 	private String stdoutMessage;
 	private String stderrMessage;
 	private ArrayList<Integer> exitStatusList;
-	private String representString;
+	private final String representString;
 	private DShellException exception = new NullException("");
 
-	public Task(TaskBuilder taskBuilder) {
-		this.taskBuilder = taskBuilder;
+	public Task(PseudoProcess[] procs, TaskOption option, String represent) {
+		this.option = option;
+		this.procs = procs;
+		this.representString = represent;
 		// start task
-		TaskOption option = this.taskBuilder.getOption();
-		PseudoProcess[] Processes = this.taskBuilder.getProcesses();
-		int ProcessSize = Processes.length;
-		Processes[0].start();
+		int ProcessSize = this.procs.length;
+		this.procs[0].start();
 		for(int i = 1; i < ProcessSize; i++) {
-			Processes[i].start();
-			Processes[i].pipe(Processes[i - 1]);
+			this.procs[i].start();
+			this.procs[i].pipe(this.procs[i - 1]);
 		}
 		// Start Message Handler
 		// stdout
@@ -47,20 +48,8 @@ public class Task implements Serializable {
 		// stderr
 		this.stderrHandler = this.createStderrHandler();
 		this.stderrHandler.startHandler();
-		// start monitor
-		this.isAsyncTask = option.is(background);
-		StringBuilder sBuilder;
-		sBuilder = new StringBuilder();
-		if(this.isAsyncTask) {
-			sBuilder.append("#AsyncTask");
-		}
-		else {
-			sBuilder.append("#SyncTask");
-		}
-		sBuilder.append("\n");
-		sBuilder.append(this.taskBuilder.toString());
-		this.representString = sBuilder.toString();
-		if(this.isAsyncTask) {
+		// start state monitor
+		if(option.is(background)) {
 			this.stateMonitor = new Thread() {
 				@Override public void run() {
 					if(timeoutIfEnable()) {
@@ -88,14 +77,12 @@ public class Task implements Serializable {
 	}
 
 	private MessageStreamHandler createStdoutHandler() {
-		TaskOption option = this.taskBuilder.getOption();
-		if(option.supportStdoutHandler()) {
+		if(this.option.supportStdoutHandler()) {
 			OutputStream stdoutStream = null;
-			if(option.is(printable)) {
+			if(this.option.is(printable)) {
 				stdoutStream = System.out;
 			}
-			PseudoProcess[] procs = this.taskBuilder.getProcesses();
-			PseudoProcess lastProc = procs[procs.length - 1];
+			PseudoProcess lastProc = this.procs[this.procs.length - 1];
 			InputStream[] srcOutStreams = new InputStream[1];
 			srcOutStreams[0] = lastProc.accessOutStream();
 			return new MessageStreamHandler(srcOutStreams, stdoutStream);
@@ -104,13 +91,11 @@ public class Task implements Serializable {
 	}
 
 	private MessageStreamHandler createStderrHandler() {
-		TaskOption option = this.taskBuilder.getOption();
-		if(option.supportStderrHandler()) {
-			PseudoProcess[] procs = this.taskBuilder.getProcesses();
-			int size = procs.length;
+		if(this.option.supportStderrHandler()) {
+			int size = this.procs.length;
 			InputStream[] srcErrorStreams = new InputStream[size];
 			for(int i = 0; i < size; i++) {
-				srcErrorStreams[i] = procs[i].accessErrorStream();
+				srcErrorStreams[i] = this.procs[i].accessErrorStream();
 			}
 			return new MessageStreamHandler(srcErrorStreams, System.err);
 		}
@@ -123,7 +108,7 @@ public class Task implements Serializable {
 
 	private void joinAndSetException() {
 		this.terminated = true;
-		if(!this.isAsyncTask) {
+		if(!option.is(background)) {
 			if(!this.timeoutIfEnable()) {
 				this.waitTermination();
 			}
@@ -139,11 +124,11 @@ public class Task implements Serializable {
 		this.stdoutMessage = this.stdoutHandler.waitTermination();
 		this.stderrMessage = this.stderrHandler.waitTermination();
 		this.exitStatusList = new ArrayList<Integer>();
-		for(PseudoProcess proc : this.taskBuilder.getProcesses()) {
+		for(PseudoProcess proc : this.procs) {
 			this.exitStatusList.add(proc.getRet());
 		}
 		// exception raising
-		this.exception = new ShellExceptionBuilder(this.taskBuilder, this.stderrHandler.getEachBuffers()).getException();
+		this.exception = ShellExceptionBuilder.getException(this.procs, this.option, this.stderrHandler.getEachBuffers());
 	}
 
 	public void join() {
@@ -151,8 +136,7 @@ public class Task implements Serializable {
 			return;
 		}
 		this.joinAndSetException();
-		TaskOption option = this.taskBuilder.getOption();
-		if(!option.is(receivable) && option.is(throwable) && !(this.exception instanceof NullException)) {
+		if(!this.option.is(receivable) && this.option.is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
 		}
 	}
@@ -177,7 +161,7 @@ public class Task implements Serializable {
 	}
 
 	private boolean timeoutIfEnable() {
-		long timeout = this.taskBuilder.getTimeout();
+		long timeout = this.option.getTimeout();
 		if(timeout > 0) { // timeout
 			try {
 				Thread.sleep(timeout);	// ms
@@ -196,23 +180,20 @@ public class Task implements Serializable {
 	}
 
 	private void kill() {
-		PseudoProcess[] procs = this.taskBuilder.getProcesses();
-		for(int i = 0; i < procs.length; i++) {
-			procs[i].kill();
+		for(PseudoProcess proc : this.procs) {
+			proc.kill();
 		}
 	}
 
 	private void waitTermination() {
-		PseudoProcess[] procs = this.taskBuilder.getProcesses();
-		for(int i = 0; i < procs.length; i++) {
-			procs[i].waitTermination();
+		for(PseudoProcess proc : this.procs) {
+			proc.waitTermination();
 		}
 	}
 
 	private boolean checkTermination() {
-		PseudoProcess[] procs = this.taskBuilder.getProcesses();
-		for(int i = 0; i < procs.length; i++) {
-			if(!procs[i].checkTermination()) {
+		for(PseudoProcess proc : this.procs) {
+			if(proc.checkTermination()) {
 				return false;
 			}
 		}
@@ -249,9 +230,9 @@ class MessageStreamHandler {
 	}
 
 	public String waitTermination() {
-		for(int i = 0; i < srcStreams.length; i++) {
+		for(PipeStreamHandler streamHandler : this.streamHandlers) {
 			try {
-				this.streamHandlers[i].join();
+				streamHandler.join();
 			}
 			catch(InterruptedException e) {
 				throw new RuntimeException(e);
@@ -282,27 +263,15 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 }
 
 class ShellExceptionBuilder {
-	private TaskBuilder taskBuilder;
-	private final CauseInferencer inferencer;
-	private final ByteArrayOutputStream[] eachBuffers;
-
-	public ShellExceptionBuilder(TaskBuilder taskBuilder, ByteArrayOutputStream[] eachBuffers) {
-		this.taskBuilder = taskBuilder;
-		this.inferencer = new CauseInferencer_ltrace();
-		this.eachBuffers = eachBuffers;
-	}
-
-	public DShellException getException() {
-		PseudoProcess[] procs = taskBuilder.getProcesses();
-		boolean enableException = this.taskBuilder.getOption().is(throwable);
-		if(!enableException || taskBuilder.getTimeout() > 0) {
+	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
+		if(!option.is(throwable) || option.is(timeout)) {
 			return new NullException("");
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
 		for(int i = 0; i < procs.length; i++) {
 			PseudoProcess proc = procs[i];
-			String errorMessage = this.eachBuffers[i].toString();
-			this.createAndAddException(exceptionList, proc, errorMessage);
+			String errorMessage = eachBuffers[i].toString();
+			createAndAddException(exceptionList, proc, errorMessage);
 		}
 		int size = exceptionList.size();
 		if(size == 1) {
@@ -324,12 +293,13 @@ class ShellExceptionBuilder {
 		return new NullException("");
 	}
 
-	private void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
+	private static void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
+		CauseInferencer inferencer = CauseInferencer_ltrace.getInferencer();
 		String message = proc.getCmdName();
 		if(proc.isTraced() || proc.getRet() != 0) {
 			DShellException exception;
 			if(proc.isTraced()) {
-				ArrayList<String> infoList = this.inferencer.doInference((SubProc)proc);
+				ArrayList<String> infoList = inferencer.doInference((SubProc)proc);
 				exception = ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()]));
 			}
 			else {

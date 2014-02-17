@@ -39,6 +39,9 @@ class CauseInferencer_ltrace implements CauseInferencer {
 		}
 	}
 
+	private CauseInferencer_ltrace() {	// do nothing
+	}
+
 	public ArrayList<String> doInference(SubProc proc) {
 		String logFilePath = proc.getLogFilePath();
 		ArrayList<String[]> lineList = new ArrayList<String[]>();
@@ -235,6 +238,13 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			}
 		}
 		return false;
+	}
+
+	private static class Holder {
+		private static final CauseInferencer inferencer = new CauseInferencer_ltrace();
+	}
+	public static CauseInferencer getInferencer() {
+		return Holder.inferencer;
 	}
 }
 
