@@ -2,17 +2,16 @@ package dshell;
 
 import java.io.PrintStream;
 
+import dshell.lib.RuntimeContext;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import dshell.util.DShellConsole;
-import dshell.util.LoggingContext;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.KonohaGrammar;
 import zen.deps.LibZen;
-import zen.deps.ZStringArray;
 import zen.main.ZenMain;
 import zen.parser.ZScriptEngine;
-import static dshell.util.LoggingContext.AppenderType;
+import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {
 	public final static String progName  = "D-Shell";
@@ -28,47 +27,46 @@ public class DShell {
 	private boolean interactiveMode = true;
 	private boolean recSupport = false;
 	private String recURL = null;
-	private ZStringArray ARGV;
+	private String[] scriptArgs;
 
-	private DShell(String[] args) {	//TODO: improve parse argument
-		boolean foundScriptFile = false;
+	private DShell(String[] args) {
 		for(int i = 0; i < args.length; i++) {
 			String optionSymbol = args[i];
-			if(!foundScriptFile && optionSymbol.startsWith("--")) {
+			if(optionSymbol.startsWith("--")) {
 				if(optionSymbol.equals("--version")) {
 					showVersionInfo();
 					System.exit(0);
 				}
 				else if(optionSymbol.equals("--debug")) {
-					LibZen.DebugMode = true;
+					RuntimeContext.getContext().setDebugMode(true);
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
 				}
 				else if(optionSymbol.equals("--logging:file") && i + 1 < args.length) {
-					LoggingContext.getContext().changeAppender(AppenderType.file, args[++i]);
+					RuntimeContext.getContext().changeAppender(AppenderType.file, args[++i]);
 				}
 				else if(optionSymbol.equals("--logging:stdout")) {
-					LoggingContext.getContext().changeAppender(AppenderType.stdout);
+					RuntimeContext.getContext().changeAppender(AppenderType.stdout);
 				}
 				else if(optionSymbol.equals("--logging:stderr")) {
-					LoggingContext.getContext().changeAppender(AppenderType.stderr);
+					RuntimeContext.getContext().changeAppender(AppenderType.stderr);
 				}
 				else if(optionSymbol.equals("--logging:syslog")) {
 					int nextIndex = i + 1;
-					if(nextIndex < args.length && !args[nextIndex].startsWith("-")) {
-						LoggingContext.getContext().changeAppender(AppenderType.syslog, args[nextIndex]);
+					if(nextIndex < args.length && !args[nextIndex].startsWith("--")) {
+						RuntimeContext.getContext().changeAppender(AppenderType.syslog, args[nextIndex]);
 						i++;
 					}
 					else {
-						LoggingContext.getContext().changeAppender(AppenderType.syslog);
+						RuntimeContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
-				else if(optionSymbol.equals("--rec") && i + 1 < args.length) { // never return 
+				else if(optionSymbol.equals("--rec") && i + 1 < args.length) {
 					this.recSupport = true;
 					this.recURL = args[++i];
 				}
-				else if(optionSymbol.equals("--receive") && i + 1 < args.length) {	// never return
+				else if(optionSymbol.equals("--receive") && i + 1 < args.length && args.length == 2) {	// never return
 					RequestReceiver.invoke(args[++i]);
 				}
 				else {
@@ -76,19 +74,25 @@ public class DShell {
 					showHelpAndExit(1, System.err);
 				}
 			}
-			else if(!foundScriptFile) {
-				foundScriptFile = true;
-				this.interactiveMode = false;
-				this.ARGV = new ZStringArray();
-				this.ARGV.Add(optionSymbol);
-			}
 			else {
-				this.ARGV.Add(optionSymbol);
+				this.interactiveMode = false;
+				int size = args.length - i;
+				this.scriptArgs = new String[size];
+				System.arraycopy(args, i, this.scriptArgs, 0, size);
+				break;
 			}
 		}
 	}
 
 	private void execute() {
+		if(this.recSupport) {
+			if(this.interactiveMode) {
+				System.err.println("dshell: need script file");
+				showHelpAndExit(1, System.err);
+			}
+			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
+		}
+
 		ZScriptEngine engine = LibZen.LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
@@ -116,12 +120,22 @@ public class DShell {
 			}
 			System.out.println("");
 		}
-		else if(this.recSupport) {
-			RECWriter.invoke(this.recURL, this.ARGV);
-		}
 		else {
-			String scriptName = this.ARGV.ArrayValues[0];
-			//engine.Generator.RootNameSpace.SetSymbol("ARGV", this.ARGV, null);	//FIXME
+			String scriptName = this.scriptArgs[0];
+			// load script arguments
+			StringBuilder ARGVBuilder = new StringBuilder();
+			ARGVBuilder.append("let ARGV = [");
+			for(int i = 0; i < this.scriptArgs.length; i++) {
+				if(i != 0) {
+					ARGVBuilder.append(", ");
+				}
+				ARGVBuilder.append("\"");
+				ARGVBuilder.append(this.scriptArgs[i]);
+				ARGVBuilder.append("\"");
+			}
+			ARGVBuilder.append("]");
+			engine.Eval(ARGVBuilder.toString(), scriptName, 0, false);
+			// load script file
 			boolean status = engine.Load(scriptName);
 			engine.Generator.Logger.ShowErrors();
 			if(!status) {

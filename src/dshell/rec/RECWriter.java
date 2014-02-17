@@ -11,7 +11,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import zen.deps.LibZen;
-import zen.deps.ZStringArray;
 
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
@@ -43,9 +42,9 @@ public class RECWriter {
 	public final static int compileError   = 2;
 	public final static int fileNotFound   = 3;
 	public final static int assertNotFound = 4;
-	
-	public static void invoke(String RECServerURL, ZStringArray ARGV) {
-		String type = ZStringArray.GetIndex(ARGV, 0);
+
+	public static void invoke(String RECServerURL, String[] scriptArgs) {
+		String type = scriptArgs[0];
 		String localtion = "";
 		String authid = "xyx@gmail.com";
 		try {
@@ -59,9 +58,8 @@ public class RECWriter {
 		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
 		ArrayList<String> cmdList = new ArrayList<String>();
 		cmdList.add("dshell");
-		int size = (int) ARGV.Size();
-		for(int i = 0; i < size; i++) {
-			cmdList.add(ZStringArray.GetIndex(ARGV, i));
+		for(int i = 0; i < scriptArgs.length; i++) {
+			cmdList.add(scriptArgs[i]);
 		}
 		cmdsList.add(cmdList);
 		TaskOption option = TaskOption.of(TaskType, returnable, printable);
@@ -76,6 +74,7 @@ public class RECWriter {
 			int data = resolveData(task.getExitStatus(), type);
 			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, createContext("", type));
 		}
+		System.exit(0);
 	}
 
 	private static String[] parseErrorMessage(String errorMessage) {	// status, failpoint

@@ -2,6 +2,7 @@ package dshell.util;
 
 import java.io.IOException;
 
+import dshell.lib.RuntimeContext;
 import jline.ANSIBuffer.ANSICodes;
 import zen.main.ZenMain;
 
@@ -59,7 +60,7 @@ public class DShellConsole {
 	private String[] getPrompts() {
 		String homeDir = System.getenv("HOME");
 		String[] prompts = new String[2];
-		String currentDir = Utils.getWorkingDirectory();
+		String currentDir = RuntimeContext.getContext().getWorkingDirectory();
 		if(currentDir.startsWith(homeDir)) {
 			int index = homeDir.length();
 			currentDir = "~" + currentDir.substring(index);

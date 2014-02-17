@@ -34,7 +34,13 @@ public class RequestSender extends PseudoProcess {
 	@Override
 	public void start() {
 		if(this.commandList.size() == 2) {
-			ProcessBuilder prcoBuilder  = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+			ProcessBuilder prcoBuilder;
+			if(this.commandList.get(1).equals("localhost")) {
+				prcoBuilder = new ProcessBuilder("dshell", "--receive", this.requestString);
+			}
+			else {
+				prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+			}
 			prcoBuilder.redirectError(Redirect.INHERIT);
 			try {
 				this.proc = prcoBuilder.start();
