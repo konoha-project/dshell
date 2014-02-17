@@ -15,11 +15,13 @@ function func() {
   var a: boolean = true
   var b = false
 
-  log a
-  log b
+  log ${a}
+  log ${b}
 
   assert(a instanceof boolean)
   assert(b instanceof boolean)
+
+  return
 }
 
 func()
@@ -42,19 +44,20 @@ int は整数のデータ型です。
 (キャストは、単純に小数点以下が切り捨てになります。)  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Int.ds" >
-function func(): boolean {
+function func() {
 
   var a = 10
   var b = -1
   var c:int = 9223372036854775807
 
-  log a
+  log ${a}
   assert(a instanceof int)
-  log b
+  log ${b}
   assert(b instanceof int)
-  log c
+  log ${c}
   assert(c instanceof int)
-  return true
+
+  return
 }
 
 func()
@@ -73,16 +76,17 @@ float は浮動小数点数 を扱うデータ型です。精度は 64 ビット
 浮動小数点のリテラルは実数、または常用対数eによる表現の2通りの方法で記述することができます。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Float.ds" >
-function func(): boolean {
+function func() {
 
   var a = 3.14
   var b: float = 0.5e3
 
-  log a
+  log ${a}
   assert(a instanceof float)
-  log b
+  log ${b}
   assert(b instanceof float)
-  return true
+
+  return
 }
 
 func()
@@ -91,9 +95,7 @@ func()
 <pre class="toolbar:1" title="実行例">
 $ dshell Float.ds
 3.14
-true
 500.0
-true
 </pre>
 
 # String 型
@@ -105,9 +107,11 @@ String は、連結された文字列を扱うデータ型です。
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: String.ds" >
 function func() {
 
-  var str: String = "うずまきナルト"
-  log str
+  var str = "うずまきナルト"
+  log ${str}
   assert(str instanceof String)
+
+  return
 }
 
 func()
@@ -116,7 +120,6 @@ func()
 <pre class="toolbar:1" title="実行例">
 $ dshell String.ds
 うずまきナルト
-true
 </pre>
 
 String 型に格納できる文字数は使えるメモリ (heap memory) のサイズに依存します。  
@@ -142,7 +145,8 @@ function func() {
 
   log "うずまき\nナルト"
   log 'うずまき\nナルト'
-  log str
+
+  return
 }
 
 func()
@@ -177,9 +181,11 @@ String 型は、Java のパッケージである java.lang.String のメソッ�
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ReplaceAll.ds" >
 function func() {
 
-  var str: String = "はるのサクラ"
+  var str:String = "はるのサクラ"
   str.replaceAll("はるの", "うずまき")
-  log str
+  log ${str}
+
+  return
 }
 
 func()
@@ -197,9 +203,9 @@ $ dshell ReplaceAll.ds
 戻り値に void が使用されている場合は、その関数が戻り値を返却しないことを表します。  
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Void.ds" >
-function func(void): void {
+function func():void {
 
-  log "function call!"
+  log "function call"
   return
 }
 
@@ -208,7 +214,7 @@ func()
 
 <pre class="toolbar:1" title="実行例">
 $ dshell Void.ds
-function call!
+function call
 </pre>
 
 # Array 型(T[]型)
@@ -227,12 +233,14 @@ function func() {
   assert(b instanceof String[])
 
   for(x in a) {
-    log x
+    log ${x}
   }
 
   for(y in b) {
-    log y
+    log ${y}
   }
+
+  return
 }
 
 func()
@@ -257,8 +265,12 @@ Map 型は、キーと値のペアを持ち、キーを使いそれとペアと�
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: HashMap.ds" >
 function func() {
   var map: Map<int> = { "hoge": 3, "piyo": 5, "fuga": 7 }
-  for(key in map) { log map[key] }
+  for(key in map) {
+    log "${key} => ${map[key]}"
+  }
   assert(map instanceof Map<int>)
+
+  return
 }
 
 func()
@@ -269,7 +281,6 @@ $ dshell HashMap.ds
 3
 5
 7
-true
 </pre>
 
 # Func<T, U, V, ...> 型
@@ -290,9 +301,14 @@ function func(x: int): int {
   return x * 2
 }
 
-var func: Func<int, int> = func
-log func(3)
-assert(func instanceof Func<int, int>)
+function main() {
+  var sub: Func<int, int> = func
+  log ${sub(3)}
+  assert(sub instanceof Func<int, int>)
+  return
+}
+
+main()
 </pre>
 
 <pre class="toolbar:1" title="実行例">

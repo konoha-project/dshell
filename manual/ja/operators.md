@@ -14,21 +14,21 @@ A / B|除算
 A % B|剰余
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル:  AlgebraicOp.ds" >
-function func():boolean {
+function func() {
   var a = 4
   var b = 2
 
-  log -a
-  log a + b
-  log a - b
-  log a * b
-  log a / b
-  log a % b
-  return true
+  log ${-a}
+  log ${a + b}
+  log ${a - b}
+  log ${a * b}
+  log ${a / b}
+  log ${a % b}
+
+  return
 }
 
 func()
-
 </pre>
 
 <pre class="toolbar:1" title="実行例">
@@ -56,18 +56,18 @@ A <= B|より少ないか等しい
 A >= B|より多いか等しい
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル:  RelationalOp.ds" >
-function func():boolean {
+function func() {
   var a = 4
   var b = 2
   var c = 2
 
-  log a == c
-  log a != b
-  log b < a
-  log a > b
-  log a <= b
-  log b >= c
-  return true
+  log ${a == c}
+  log ${a != b}
+  log ${b < a}
+  log ${a > b}
+  log ${a <= b}
+  log ${b >= c}
+  return
 }
 
 func()
@@ -100,9 +100,9 @@ function func():boolean {
   var a = 4
   var b = 2
 
-  log !(a == b)
-  log (a > b) && (a >= b)
-  log (a > b) || (a == b)
+  log ${!(a == b)}
+  log ${(a > b) && (a >= b)}
+  log ${(a > b) || (a == b)}
   return true
 }
 </pre>
@@ -122,7 +122,7 @@ true
 A =~ B|正規表現|文字列 A が 正規表現パターン B を満たす場合に true
 
 <pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Regex.ds" >
-function f() {
+function func() {
   var str = "abc"
   if (str =~ "^a") {
     log "match!"
@@ -137,7 +137,8 @@ function f() {
     log "not match!"
   }
 }
-f()
+
+func()
 </pre>
 
 <pre class="toolbar:1" title="実行例">
