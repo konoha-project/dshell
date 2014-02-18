@@ -13,7 +13,7 @@ A * B|乗算
 A / B|除算
 A % B|剰余
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル:  AlgebraicOp.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル:  AlgebraicOp.ds" >
 function func() {
   var a = 4
   var b = 2
@@ -31,7 +31,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell AlgebraicOp.ds
 -4
 6
@@ -55,7 +55,7 @@ A > B|より多い
 A <= B|より少ないか等しい
 A >= B|より多いか等しい
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル:  RelationalOp.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル:  RelationalOp.ds" >
 function func() {
   var a = 4
   var b = 2
@@ -73,7 +73,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell RelationalOp.ds
 true
 true
@@ -95,7 +95,7 @@ true
 A && B|論理積|A および B が共に true の場合に true
 A || B|論理和|A または B のどちらかが true の場合に ture
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: LogicalOp.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: LogicalOp.ds" >
 function func():boolean {
   var a = 4
   var b = 2
@@ -107,7 +107,7 @@ function func():boolean {
 }
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell LogicalOp.ds
 true
 true
@@ -121,7 +121,7 @@ true
 --|--
 A =~ B|正規表現|文字列 A が 正規表現パターン B を満たす場合に true
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Regex.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Regex.ds" >
 function func() {
   var str = "abc"
   if (str =~ "^a") {
@@ -141,7 +141,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Regex.ds
 match!
 not match!

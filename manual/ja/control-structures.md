@@ -8,7 +8,7 @@
 if 構文は最も単純な条件分岐です。  
 if 構文の論理式が true の場合、ステートメントブロックに記述された命令を実行します。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: If.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: If.ds" >
 function func(num) {
   if (num == 2) {
     log "if block: ${num()}"
@@ -21,7 +21,7 @@ func(2)
 func(3)
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell If.ds
 if block: 2
 </pre>
@@ -30,7 +30,7 @@ if block: 2
 
 if 構文に続く論理式が false の場合、else ステートメントブロックに記述された命令を実行します。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Else.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Else.ds" >
 function func(num) {
   if (num > 2) {
     log "if block: ${num()}"
@@ -46,7 +46,7 @@ func(2)
 func(3)
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Else.ds
 else block: 1
 else block: 2
@@ -58,7 +58,7 @@ if block: 3
 if 構文の論理式が false かつ、else if 構文の論理式が true の場合、ステートメントブロックに記述された命令を実行します。  
 else if 構文では単独の条件分岐だけではなく複数の条件分岐を使ってステートメントブロックを追加することができます。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ElseIf.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: ElseIf.ds" >
 function func(num) {
   if(num == 1) {
     log "if block: ${num()}"
@@ -77,7 +77,7 @@ func(2)
 func(3)
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell ElseIf.ds
 if block: 1
 else if block: 2
@@ -89,7 +89,7 @@ else block: 3
 while ループは、while 構文に続く論理式が true の間、ステートメントブロックに記述された命令を繰り返します。  
 C/C++ の while ループと同様の動作をします。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: While.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: While.ds" >
 function func() {
   var num = 1
   while (num < 3) {
@@ -102,7 +102,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell While.ds
 while block: 1
 while block: 2
@@ -113,7 +113,7 @@ while block: 2
 for ループは、配列や連想配列のデータ構造の各要素に対して、ステートメントブロックに記述された命令を繰り返します。  
 対象となるオブジェクトが配列の場合は変数に値を代入し、連想配列の場合は変数にキーが代入されます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Foreach.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Foreach.ds" >
 function func() {
   var arr: int[] = [1, 2, 3, 5, 7]
   var map: Map<int> = {"a": 1, "b": 2, "c": 3 }
@@ -132,7 +132,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Foreach.ds
 1
 2
@@ -149,7 +149,7 @@ c => 3
 break は、現在実行中の while 構造の実行を終了します。  
 break 文を使うと、現在繰り返しているループ構造のステートメントブロックから抜け出すことができます。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Break.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Break.ds" >
 function func() {
   var num = 1
   while (true) {
@@ -165,7 +165,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Break.ds
 1
 2
@@ -176,7 +176,7 @@ $ dshell Break.ds
 return 構文は実行中の関数を終了し、制御をその呼び出し元に返すために使用されます。  
 return の後に値を指定すると戻り値として返却することができます。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Return.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Return.ds" >
 function sub() {
   return "sub call"
 }
@@ -184,7 +184,7 @@ function sub() {
 log ${sub()}
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Return.ds
 sub call
 </pre>
@@ -197,7 +197,7 @@ sub call
 また、catch ブロックの後に finally ブロックも指定できます。  
 finally ブロックに書いたコードは、try および catch ブロックの後で常に実行されます。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Exception.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Exception.ds" >
 function raise(num) {
   if(num == 1) {
     log "throw: DShellException"
@@ -234,7 +234,7 @@ func(2)
 func(3)
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Exception.ds
 func call
 try
