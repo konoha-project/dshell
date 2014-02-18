@@ -17,7 +17,7 @@ public class RequestSender extends PseudoProcess {
 	private Task result;
 
 	public RequestSender(ArrayList<ArrayList<String>> cmdsList, boolean isBackground) {
-		this.requestString =CommandRequest.encodeToString(new CommandRequest(cmdsList, isBackground));
+		this.requestString = CommandRequest.encodeToString(new CommandRequest(cmdsList, isBackground));
 		this.isBackground = isBackground;
 	}
 
@@ -39,7 +39,17 @@ public class RequestSender extends PseudoProcess {
 				prcoBuilder = new ProcessBuilder("dshell", "--receive", this.requestString);
 			}
 			else {
-				prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+				String[] splittedString = this.commandList.get(1).split(":");
+				if(splittedString.length == 1) {
+					prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+				}
+				else if(splittedString.length == 2) {
+					prcoBuilder = new ProcessBuilder("ssh", splittedString[0], "-p", splittedString[1], "dshell", "--receive", this.requestString);
+				}
+				else {
+					Utils.fatal(1, "invalid argument: " + this.commandList.get(1));
+					return;
+				}
 			}
 			prcoBuilder.redirectError(Redirect.INHERIT);
 			try {

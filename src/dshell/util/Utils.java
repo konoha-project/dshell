@@ -41,22 +41,6 @@ public class Utils {
 		return new File(Path).canExecute();
 	}
 
-	//flag operator
-	public final static boolean is(int option, int flag) {
-		option &= flag;
-		return option == flag;
-	}
-
-	public final static int setFlag(int option, int flag, boolean set) {
-		if(set && !is(option, flag)) {
-			return option | flag;
-		}
-		else if(!set && is(option, flag)) {
-			return option & ~flag;
-		}
-		return option;
-	}
-
 	public final static void fatal(int status, String message) {
 		StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 		System.err.println("fatal: " + message);
@@ -81,7 +65,7 @@ public class Utils {
 		return !matchRegex(target, regex);
 	}
 
-	public static void log(Object value) {
+	public static void log(String value) {
 		System.out.println(value);
 		RuntimeContext.getContext().getLogger().warn(value);
 	}

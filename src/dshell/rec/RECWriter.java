@@ -29,7 +29,7 @@ import static dshell.lib.TaskOption.RetType.TaskType   ;
  *   data: 1,                       // 0: assert error, 1: assert success, 2: compile error, 3: file not found, 4: assert not found
  *   authid: xxx@gmail.com,         // mail address
  *   context: {
- *     failpoint: StringTest.ds:12,         // if data is 2, 3 or 4, this is empty string
+ *     assertpoint: StringTest.ds:12,       // if data is 2, 3 or 4, this is empty string
  *     content: content of StringTest.ds    // if data is 3, this is empty string
  *   }
  * }
@@ -101,12 +101,12 @@ public class RECWriter {
 		return null;
 	}
 
-	private static String createContext(String failPoint, String fileName) {
+	private static String createContext(String assertPoint, String fileName) {
 		String fileContent = LibZen.LoadTextFile(fileName);
 		if(fileContent == null) {
 			fileContent = "";
 		}
-		String json = "{" + RecAPI.quote("failpoint") + ": " + RecAPI.quote(failPoint) + ", "
+		String json = "{" + RecAPI.quote("assertpoint") + ": " + RecAPI.quote(assertPoint) + ", "
 						  + RecAPI.quote("content") + ": " + RecAPI.quote(fileContent) +
 					  "}";
 		return json;
