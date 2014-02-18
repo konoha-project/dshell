@@ -47,7 +47,7 @@ public class PrefixOptionPattern extends ZMatchFunction {
 			if(((ZPatternToken)NumToken).PresetPattern.EqualsName("$IntegerLiteral$")) {
 				long Num = LibZen._ParseInt(NumToken.GetText());
 				if(Num > 0) {
-					if(DShellGrammar.IsNextWhiteSpace(NumToken)) {
+					if(NumToken.IsNextWhiteSpace()) {
 						return new ZStringNode(ParentNode, NumToken, Long.toString(Num));
 					}
 					ZToken UnitToken = TokenContext.GetToken(ZTokenContext.MoveNext);

@@ -43,7 +43,7 @@ public class CommandPattern extends ZMatchFunction {
 				break;
 			}
 			Command += ParsedText;
-			if(DShellGrammar.IsNextWhiteSpace(Token)) {
+			if(Token.IsNextWhiteSpace()) {
 				AppendCommand(ParentNode, Command, KeySymbol);
 				Command = "";
 				foundSlash = true;

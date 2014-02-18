@@ -37,14 +37,6 @@ public class DShellGrammar {
 		return "__$" + Symbol;
 	}
 
-	public final static boolean IsNextWhiteSpace(ZToken Token) {
-		char ch = Token.Source.SourceAt(Token.EndIndex);
-		if(ch == ' ' || ch == '\t' || ch == '\n') {
-			return true;
-		}
-		return false;
-	}
-
 	public static boolean MatchStopToken(ZTokenContext TokenContext) { // ;,)]}&&||
 		ZToken Token = TokenContext.GetToken();
 		if(!TokenContext.HasNext()) {

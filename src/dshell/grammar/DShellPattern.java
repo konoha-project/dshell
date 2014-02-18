@@ -69,7 +69,7 @@ public class DShellPattern extends ZMatchFunction {
 		ZToken Token = TokenContext.GetToken();
 		String CommandSymbol = Token.GetText();
 		TokenContext.MoveNext();
-		while(!DShellGrammar.IsNextWhiteSpace(Token)) {
+		while(!Token.IsNextWhiteSpace()) {
 			if(DShellGrammar.MatchStopToken(TokenContext)) {
 				break;
 			}
