@@ -1,6 +1,6 @@
-dshell	トップ
+dshell/home	ホーム
 
-dshell/docs	ドキュメントトップ
+dshell/docs/top	ドキュメントトップ
 
 dshell/doscs/preface	序文(D-Shellとは)
 
@@ -28,9 +28,11 @@ dshell/doscs/manual/builtin	ビルトインコマンド
 
 dshell/doscs/manual/external	外部コマンド
 
+dshell/doscs/manual/multiple	分散シェル処理機能
+
 dshell/doscs/appendices	付録
 
 dshell/downloads	ダウンロード
 
-dshell/support	ヘルプ
+dshell/support	サポート
 

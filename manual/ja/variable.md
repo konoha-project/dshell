@@ -13,7 +13,7 @@ var 変数名: データ型 = 初期値
 * データ型指定と型推量
 変数宣言時にデータ型を指定しない場合、初期値のデータ型によって変数のデータ型が自動的に決まります。(型推量)  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Variable.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Variable.ds" >
 function func() {
   var age: int = 17
   var name = "uzumaki naruto"
@@ -26,12 +26,12 @@ function func() {
 
 func()
 
-# 関数外では age, name は参照できない
-# log ${age} 未定義の変数の参照(エラー)
-# log ${name} 未定義の変数の参照(エラー)
+// 関数外では age, name は参照できない
+// log ${age} 未定義の変数の参照(エラー)
+// log ${name} 未定義の変数の参照(エラー)
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Variable.ds
 17
 uzumaki naruto
@@ -63,7 +63,7 @@ instanceof 演算子は、次のような構文で利用します。
 
 変数のデータ型が指定したデータ型と一致した場合、true が返却されます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: TypeCast.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: TypeCast.ds" >
 function func() {
   var a: int = 123
   var b: float = 2.0
@@ -92,7 +92,7 @@ function func() {
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell TypeCast.ds
 123.0
 45.67
@@ -111,7 +111,7 @@ let 定数名 = 設定値
 * 定数宣言と有効範囲
 定数は関数内で宣言を行うとローカルなブロックスコープを持ち、関数外で宣言を行うとグローバルなスコープを持つようになります。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Constant.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Constant.ds" >
 let color ="red"
 
 function func() {
@@ -125,7 +125,7 @@ func()
 log "top color: ${color}"
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Constant.ds
 local color: green
 top color: red
