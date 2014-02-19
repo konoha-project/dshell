@@ -5,10 +5,15 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import net.arnx.jsonic.JSON;
+
+import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
 
 import zen.deps.LibZen;
 
@@ -68,11 +73,11 @@ public class RECWriter {
 		String[] parsedData = parseErrorMessage(task.getErrorMessage());
 		if(parsedData != null) {
 			int data = Integer.parseInt(parsedData[0]);
-			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, createContext(parsedData[1], type));
+			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext(parsedData[1], type));
 		}
 		else {
 			int data = resolveData(task.getExitStatus(), type);
-			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, createContext("", type));
+			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext("", type));
 		}
 		System.exit(0);
 	}
@@ -101,17 +106,6 @@ public class RECWriter {
 		return null;
 	}
 
-	private static String createContext(String assertPoint, String fileName) {
-		String fileContent = LibZen.LoadTextFile(fileName);
-		if(fileContent == null) {
-			fileContent = "";
-		}
-		String json = "{" + RecAPI.quote("assertpoint") + ": " + RecAPI.quote(assertPoint) + ", "
-						  + RecAPI.quote("content") + ": " + RecAPI.quote(fileContent) +
-					  "}";
-		return json;
-	}
-
 	private static int resolveData(int exitStatus, String fileName) {
 		if(exitStatus == 0) {
 			return assertNotFound;
@@ -125,15 +119,8 @@ public class RECWriter {
 
 class RecAPI {
 	/* TODO: return result of rpc */ 
-	private static void remoteProcedureCall(String RECServerURL, String Method, String Params) throws IOException {
-		double JsonRPCVersion = 2.0;
-		int Id = 0;
-		String Json = "{" + quote("jsonrpc") + ": " + quote(Double.toString(JsonRPCVersion)) + ", "
-						  + quote("method") + ": " + quote(Method) + ", "
-						  + quote("id") + ": " + Integer.toString(Id) + ", "
-						  + quote("params") + ": " + Params + 
-					  "}";
-
+	private static void remoteProcedureCall(String RECServerURL, RecRequest Params) throws IOException {
+		String Json = JSON.encode(new JSONRPC(Params));
 		StringEntity Body = new StringEntity(Json);
 
 		HttpClient Client = HttpClientBuilder.create().build();
@@ -141,22 +128,17 @@ class RecAPI {
 		Request.addHeader("Content-type", "application/json");
 		Request.setEntity(Body);
 		try {
-			Client.execute(Request);   // TODO: check response
+			HttpResponse response = Client.execute(Request);
+			System.out.println(EntityUtils.toString(response.getEntity()));
 		}
 		catch(Exception e) {
 			Utils.fatal(1, "cannot send to REC due to " + e.getMessage());
 		}
 	}
 
-	public static void pushRawData(String RECServerURL, String Type, String Location, int Data, String AuthId, String Context) {
-		String Params = "{" + quote("type") + ": " + quote(Type) + ", "
-						    + quote("localtion") + ": " + quote(Location) + ", "
-						    + quote("data") + ": " + Integer.toString(Data) + ", "
-						    + quote("authid") + ": " + quote(AuthId) + ", "
-						    + quote("context") + ": " + Context +
-						"}";
+	public static void pushRawData(String RECServerURL, String type, String location, int data, String authid, RecContext context) {
 		try {
-			remoteProcedureCall(RECServerURL, "pushRawData", Params);
+			remoteProcedureCall(RECServerURL, new RecRequest(type, location, data, authid, context));
 		}
 		catch(IOException e) {
 			e.printStackTrace();
@@ -164,7 +146,50 @@ class RecAPI {
 		}
 	}
 
-	public static String quote(String str) {
-		return "\"" + str + "\"";
+	public static class JSONRPC {
+		public String jsonrpc;
+		public String method;
+		public int id;
+		public RecRequest params;
+
+		private static double JsonRPCVersion = 2.0;
+		private static int Id = 0;
+
+		public JSONRPC(RecRequest recRequest) {
+			this.jsonrpc = Double.toString(JsonRPCVersion);
+			this.method = "pushRawData";
+			this.id = Id;
+			this.params = recRequest;
+		}
+	}
+
+	public static class RecRequest {
+		public String type;
+		public String location;
+		public int data;
+		public String authid;
+		public RecContext context;
+
+		public RecRequest(String type, String location, int data, String authid, RecContext context) {
+			this.type = type;
+			this.location = location;
+			this.data = data;
+			this.authid = authid;
+			this.context = context;
+		}
+	}
+
+	public static class RecContext {
+		public String assertpoint;
+		public String content;
+
+		public RecContext(String assertpoint, String fileName) {
+			String fileContent = LibZen.LoadTextFile(fileName);
+			if(fileContent == null) {
+				fileContent = "";
+			}
+			this.assertpoint = assertpoint;
+			this.content = fileContent;
+		}
 	}
 }
