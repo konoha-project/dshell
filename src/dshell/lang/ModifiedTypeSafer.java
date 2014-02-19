@@ -49,7 +49,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ZType.VoidType);
 	}
 
-	@Override public void VisitCatchNode(ZCatchNode Node) {	//FIXME
+	public void VisitCatchNode(ZCatchNode Node) {	//FIXME
 		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode._Block];
 		if(BlockNode.GetListSize() == 0) {
 			this.Logger.ReportWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);

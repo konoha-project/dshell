@@ -2,7 +2,6 @@ package dshell;
 
 import java.io.PrintStream;
 
-import dshell.lang.DShellGrammar;
 import dshell.lib.RuntimeContext;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
@@ -11,7 +10,6 @@ import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.KonohaGrammar;
 import zen.deps.LibZen;
 import zen.main.ZenMain;
-import zen.parser.ZGenerator;
 import zen.parser.ZSourceEngine;
 import static dshell.lib.RuntimeContext.AppenderType;
 
@@ -87,7 +85,6 @@ public class DShell {
 	}
 
 	private void execute() {
-		ZSourceEngine engine = loadDShellEngine();
 		if(this.recSupport) {
 			if(this.interactiveMode) {
 				System.err.println("dshell: need script file");
@@ -95,6 +92,8 @@ public class DShell {
 			}
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
+
+		ZSourceEngine engine = LibZen.LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
@@ -165,12 +164,6 @@ public class DShell {
 		stream.println("    --rec [rec URL]");
 		stream.println("    --version");
 		System.exit(status);
-	}
-
-	private final static ZSourceEngine loadDShellEngine() {
-		ZGenerator generator = new ModifiedAsmGenerator();
-		LibZen.ImportGrammar(generator.RootNameSpace, DShellGrammar.class.getName());
-		return generator.GetEngine();
 	}
 
 	public static void main(String[] args) {
