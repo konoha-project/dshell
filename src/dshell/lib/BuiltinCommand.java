@@ -84,10 +84,7 @@ class Command_cd extends BuiltinCommand {
 		if(size > 1) {
 			path = this.commandList.get(1);
 		}
-		this.retValue = Utils.changeDirectory(path);
-		if(this.retValue == -1) {
-			Utils.perror("-dshell: cd");
-		}
+		this.retValue = RuntimeContext.getContext().changeDirectory(path);
 	}
 }
 

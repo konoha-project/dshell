@@ -1,10 +1,12 @@
-package dshell.lib;
+package dshell.remote;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 
+import dshell.lib.PseudoProcess;
+import dshell.lib.Task;
 import dshell.util.Utils;
 
 public class RequestSender extends PseudoProcess {
@@ -15,7 +17,7 @@ public class RequestSender extends PseudoProcess {
 	private Task result;
 
 	public RequestSender(ArrayList<ArrayList<String>> cmdsList, boolean isBackground) {
-		this.requestString =CommandRequest.encodeToString(new CommandRequest(cmdsList, isBackground));
+		this.requestString = CommandRequest.encodeToString(new CommandRequest(cmdsList, isBackground));
 		this.isBackground = isBackground;
 	}
 
@@ -32,7 +34,23 @@ public class RequestSender extends PseudoProcess {
 	@Override
 	public void start() {
 		if(this.commandList.size() == 2) {
-			ProcessBuilder prcoBuilder  = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+			ProcessBuilder prcoBuilder;
+			if(this.commandList.get(1).equals("localhost")) {
+				prcoBuilder = new ProcessBuilder("dshell", "--receive", this.requestString);
+			}
+			else {
+				String[] splittedString = this.commandList.get(1).split(":");
+				if(splittedString.length == 1) {
+					prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+				}
+				else if(splittedString.length == 2) {
+					prcoBuilder = new ProcessBuilder("ssh", splittedString[0], "-p", splittedString[1], "dshell", "--receive", this.requestString);
+				}
+				else {
+					Utils.fatal(1, "invalid argument: " + this.commandList.get(1));
+					return;
+				}
+			}
 			prcoBuilder.redirectError(Redirect.INHERIT);
 			try {
 				this.proc = prcoBuilder.start();

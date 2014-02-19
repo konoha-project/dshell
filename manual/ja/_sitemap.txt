@@ -1,30 +1,38 @@
-dshell	トップ
+dshell/home	ホーム
 
-dshell/docs	ドキュメントトップ
+dshell/docs/top	ドキュメントトップ
 
-dshell/doscs/preface	序文
-
-dshell/doscs/install	インストールと設定
+dshell/doscs/preface	序文(D-Shellとは)
 
 dshell/doscs/getting-startd	はじめに(入門)
 
-dshell/doscs/langref	言語リファレンス
+dshell/doscs/manual/install	インストールと設定
 
-dshell/doscs/langref/basic	基本的な構文
+dshell/doscs/manual/usage	実行方法
 
-dshell/doscs/langref/types	データ型
+dshell/doscs/manual/basic	基本的な構文
 
-dshell/doscs/langref/variable	変数と定数
+dshell/doscs/manual/types	データ型
 
-dshell/doscs/langref/operators	演算子
+dshell/doscs/manual/variable	変数と定数
 
-dshell/doscs/langref/control-structures	制御構造
+dshell/doscs/manual/operators	演算子
 
-dshell/doscs/langref/functions	関数
+dshell/doscs/manual/control-structures	制御構造
 
-dshell/doscs/langref/external	外部
+dshell/doscs/manual/functions	関数
+
+dshell/doscs/manual/classes	クラス
+
+dshell/doscs/manual/builtin	ビルトインコマンド
+
+dshell/doscs/manual/external	外部コマンド
+
+dshell/doscs/manual/multiple	分散シェル処理機能
+
+dshell/doscs/appendices	付録
 
 dshell/downloads	ダウンロード
 
-dshell/support	ヘルプ
+dshell/support	サポート
 

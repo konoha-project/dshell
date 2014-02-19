@@ -9,7 +9,7 @@ D-Shell はコマンドプロンプトから利用します。
 
 正常に起動すると、下のように表示されます。  
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell
 D-Shell, version 0.1 (Java JVM-1.7.0_45)
 Copyright (c) 2013-2014, Konoha project authors
@@ -27,7 +27,7 @@ func()
 
 正しく実行されれば、画面上に "Hello, World" と表示されるはずです。  
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 hogehoge:~> function func() {
               log "Hello, World"
             }
@@ -41,14 +41,14 @@ D-Shell は対話モードによるプロンプトからのプログラム入力
 
 "Hello, World" を出力するプログラムをファイル "hello.ds" に保存してスクリプトファイルを作成し、"dshell" コマンドのパラメータに指定します。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: hello.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: hello.ds" >
 function func() {
   log "Hello, World"
 }
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell hello.ds
 Hello, World
 $ 

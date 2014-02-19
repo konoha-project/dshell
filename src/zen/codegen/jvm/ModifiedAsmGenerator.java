@@ -18,6 +18,7 @@ import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
+import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.ClassListLoader;
 import dshell.lib.DShellExceptionArray;
@@ -29,6 +30,9 @@ import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.parser.ZSourceEngine;
+import zen.deps.LibZen;
+import zen.parser.ZNameSpace;
+import zen.type.ZFunc;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
@@ -62,8 +66,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
-		JavaMethodTable.Import("log", ZType.VarType, Utils.class, "log");
-		
+
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
 		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZType.ArrayType, DShellExceptionType);
 		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
@@ -72,6 +75,11 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 
 	@Override public ZSourceEngine GetEngine() {
 		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
+	}
+
+	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {
+		super.ImportLocalGrammar(NameSpace);
+		LibZen.ImportGrammar(NameSpace, DShellGrammar.class.getName());
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
@@ -157,6 +165,16 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	private void importJavaClassList(ArrayList<Class<?>> classObjList) {
 		for(Class<?> classObj : classObjList) {
 			this.importJavaClass(classObj);
+		}
+	}
+
+	private void loadJavaStaticMethod(Class<?> holderClass, String name, Class<?>... paramClasses) {
+		try {
+			ZFunc func = JavaCommonApi.ConvertToNativeFunc(holderClass.getMethod(name, paramClasses));
+			this.SetDefinedFunc(func);
+		}
+		catch(Exception e) {
+			Utils.fatal(1, "load static method faild: " + e.getMessage());
 		}
 	}
 }

@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import dshell.lib.RuntimeContext;
+
 public class Utils {
 	public final static boolean isUnixCommand(String cmd) {
 		String[] paths = System.getenv("PATH").split(":");
@@ -39,22 +41,6 @@ public class Utils {
 		return new File(Path).canExecute();
 	}
 
-	//flag operator
-	public final static boolean is(int option, int flag) {
-		option &= flag;
-		return option == flag;
-	}
-
-	public final static int setFlag(int option, int flag, boolean set) {
-		if(set && !is(option, flag)) {
-			return option | flag;
-		}
-		else if(!set && is(option, flag)) {
-			return option & ~flag;
-		}
-		return option;
-	}
-
 	public final static void fatal(int status, String message) {
 		StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 		System.err.println("fatal: " + message);
@@ -79,46 +65,8 @@ public class Utils {
 		return !matchRegex(target, regex);
 	}
 
-	public static void log(Object value) {
+	public static void log(String value) {
 		System.out.println(value);
-		LoggingContext.getContext().getLogger().warn(value);
+		RuntimeContext.getContext().getLogger().warn(value);
 	}
-
-	public static int changeDirectory(String path) {
-		String targetPath = path;
-		if(path.equals("")) {
-			targetPath = System.getenv("HOME");
-		}
-		return CLibraryWrapper.INSTANCE.chdir(targetPath);
-	}
-
-	public static String getWorkingDirectory() {
-		int size = 256;
-		byte[] buffers = new byte[size];
-		CLibraryWrapper.INSTANCE.getcwd(buffers, size);
-		int actualSize = 0;
-		for(byte buf : buffers) {
-			if(buf == 0) {
-				break;
-			}
-			actualSize++;
-		}
-		byte[] newBuffers = new byte[actualSize];
-		for(int i = 0; i < actualSize; i++) {
-			newBuffers[i] = buffers[i];
-		}
-		return new String(newBuffers);
-	}
-
-	public static void perror(String message) {
-		CLibraryWrapper.INSTANCE.perror(message);
-	}
-}
-
-interface CLibraryWrapper extends com.sun.jna.Library {
-	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
-	
-	int chdir(String path);
-	String getcwd(byte[] buf, int size);
-	void perror(String s); 
 }

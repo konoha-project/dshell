@@ -9,24 +9,26 @@ D-Shellでは、次のようなデータ型が準備されています。
 リテラルは「真 = true」と「偽 = false」の値のどちらかになります。  
 C/C++ と異なり、1 や 0 のような整数値は、論理値の代わりには取り扱うことができません。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Boolean.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Boolean.ds" >
 function func() {
 
   var a: boolean = true
   var b = false
 
-  log a
-  log b
+  log ${a}
+  log ${b}
 
   assert(a instanceof boolean)
   assert(b instanceof boolean)
+
+  return
 }
 
 func()
 </pre>
 
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Boolean.ds
 true
 false
@@ -41,26 +43,27 @@ int は整数のデータ型です。
 浮動小数点数から整数に変換するときはキャスト演算子を使います。  
 (キャストは、単純に小数点以下が切り捨てになります。)  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Int.ds" >
-function func(): boolean {
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Int.ds" >
+function func() {
 
   var a = 10
   var b = -1
   var c:int = 9223372036854775807
 
-  log a
+  log ${a}
   assert(a instanceof int)
-  log b
+  log ${b}
   assert(b instanceof int)
-  log c
+  log ${c}
   assert(c instanceof int)
-  return true
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Int.ds
 10
 -1
@@ -72,28 +75,27 @@ $ dshell Int.ds
 float は浮動小数点数 を扱うデータ型です。精度は 64 ビット(倍精度)です。  
 浮動小数点のリテラルは実数、または常用対数eによる表現の2通りの方法で記述することができます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Float.ds" >
-function func(): boolean {
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Float.ds" >
+function func() {
 
   var a = 3.14
   var b: float = 0.5e3
 
-  log a
+  log ${a}
   assert(a instanceof float)
-  log b
+  log ${b}
   assert(b instanceof float)
-  return true
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Float.ds
 3.14
-true
 500.0
-true
 </pre>
 
 # String 型
@@ -102,21 +104,22 @@ String は、連結された文字列を扱うデータ型です。
 1文字1文字が連なって格納されてるため、文字の検索や置換、文字列の切り出しといった操作が簡単にできます。  
 文字列長は、文字コードのバイト数に関わらず、文字数でカウントします。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: String.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: String.ds" >
 function func() {
 
-  var str: String = "うずまきナルト"
-  log str
+  var str = "うずまきナルト"
+  log ${str}
   assert(str instanceof String)
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell String.ds
 うずまきナルト
-true
 </pre>
 
 String 型に格納できる文字数は使えるメモリ (heap memory) のサイズに依存します。  
@@ -137,18 +140,19 @@ String 型に格納できる文字数は使えるメモリ (heap memory) のサ�
 
 シングルクォート(')で囲まれた文字列では、エスケープシーケンスを書いても特別な効果は得られず、書いたままの文字列で出力されます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: EscSeq.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: EscSeq.ds" >
 function func() {
 
   log "うずまき\nナルト"
   log 'うずまき\nナルト'
-  log str
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell EscSeq.ds
 うずまき
 ナルト
@@ -159,12 +163,12 @@ $ dshell EscSeq.ds
 ダブルクオーテーションで囲まれた文字列(それに相当する文字列)の中には${式}という形式で式の内容(を文字列化したもの)を埋め込むことができます。  
 明示的に式展開を止めるには$の前にバックスラッシュを置きます。 
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Interpolation.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Interpolation.ds" >
 log "西暦${1900 + 114}年"
 log "西暦\${1900 + 114}年"
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Interpolation.ds
 西暦2014年
 西暦${1900 + 114}年
@@ -174,18 +178,20 @@ $ dshell Interpolation.ds
 ## 文字列操作
 String 型は、Java のパッケージである java.lang.String のメソッドを同じように呼び出し、文字列を操作することができます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: ReplaceAll.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: ReplaceAll.ds" >
 function func() {
 
-  var str: String = "はるのサクラ"
+  var str:String = "はるのサクラ"
   str.replaceAll("はるの", "うずまき")
-  log str
+  log ${str}
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell ReplaceAll.ds
 うずまきサクラ
 </pre>
@@ -196,19 +202,19 @@ $ dshell ReplaceAll.ds
 関数定義のパラメータで void が使用されている場合は、 その関数がパラメータを受け付けないことを表します。  
 戻り値に void が使用されている場合は、その関数が戻り値を返却しないことを表します。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Void.ds" >
-function func(void): void {
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Void.ds" >
+function func():void {
 
-  log "function call!"
+  log "function call"
   return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Void.ds
-function call!
+function call
 </pre>
 
 # Array 型(T[]型)
@@ -217,7 +223,7 @@ Array 型は、複数個のオブジェクトをコレクションとして扱�
 配列クラスを使用すると、配列にアクセスして操作することができます。  
 配列インデックスは 0 から始まります。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Array.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Array.ds" >
 function func() {
 
   var a: int[] = [12, 34, 56, 78, 90]
@@ -227,18 +233,20 @@ function func() {
   assert(b instanceof String[])
 
   for(x in a) {
-    log x
+    log ${x}
   }
 
   for(y in b) {
-    log y
+    log ${y}
   }
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Array.ds
 12
 34
@@ -254,30 +262,33 @@ fuga
 ***
 Map 型は、キーと値のペアを持ち、キーを使いそれとペアとなっている値を扱うことができるデータ構造です。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: HashMap.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: HashMap.ds" >
 function func() {
   var map: Map<int> = { "hoge": 3, "piyo": 5, "fuga": 7 }
-  for(key in map) { log map[key] }
+  for(key in map) {
+    log "${key} => ${map[key]}"
+  }
   assert(map instanceof Map<int>)
+
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell HashMap.ds
 3
 5
 7
-true
 </pre>
 
 # Func<T, U, V, ...> 型
 ***
-Func 型は、定義済み関数を関数オブジェクトとして格納するデータ型です。
-データ型 T を戻り値のデータ型, U以降を引数のデータ型とする関数をオブジェクト化します。
+Func 型は、定義済み関数を関数オブジェクトとして格納するデータ型です。  
+データ型 T を戻り値のデータ型, U以降を引数のデータ型とする関数をオブジェクト化します。  
 
-<pre>
+<pre class="toolbar:0 highlight:0">
 Func<関数の戻り値のデータ型, 関数の第１引数のデータ型, 関数の第２引数のデータ型, ...>
 
 Func<int>               // function func(): int {} の関数オブジェクト
@@ -285,17 +296,22 @@ Func<boolean, int>      // function func(a: int): boolean {} の関数オブジ�
 Func<int, int, String>  // function func(a: int, b: String): int {} の関数オブジェクト
 </pre>
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Func.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Func.ds" >
 function func(x: int): int {
   return x * 2
 }
 
-var func: Func<int, int> = func
-log func(3)
-assert(func instanceof Func<int, int>)
+function main() {
+  var sub: Func<int, int> = func
+  log ${sub(3)}
+  assert(sub instanceof Func<int, int>)
+  return
+}
+
+main()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Func.ds
 6
 true

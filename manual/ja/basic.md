@@ -17,19 +17,19 @@ D-Shellでは、命令の区切りは改行です。
 D-Shellでは、スクリプトを実行するときに、コマンドラインからプログラムにコマンドラインオプションの値を渡すことができます。  
 コマンドラインオプションは、プログラムでは ARGV: Array&lt;String&gt; というグローバル変数に代入されます。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Commandline.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: Commandline.ds" >
 function func() {
   for(arg in ARGV) {
-    log arg
+    log ${arg}
   }
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Commandline.ds p1 p2
-argv.ds
+Commandline.ds
 p1
 p2
 </pre>
@@ -40,13 +40,13 @@ p2
 単一行コメントと複数行コメントの２種類があります。  
 
 * 単一行コメント  
-<pre>
+<pre class="toolbar:0 highlight:0">
 # BashやPythonライクな一行コメントです
 // C++やJavaライクな一行コメントです
 </pre>
 
 * 複数行コメント  
-<pre>
+<pre class="toolbar:0 highlight:0">
 /*
   C言語ライクな複数行コメントです
 */
@@ -63,56 +63,66 @@ p2
 * 内部コマンドの利用( log コマンド)
 D-Shell にビルトインコマンドとして組み込まれている log コマンドを利用する例です。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputLog.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputLog.ds" >
 function func() {
-  log "Hello, World."
-  log 123
+  var str = "Hello, World"
+  var num = 123
+  log ${str}
+  log ${num}
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell OutputLog.ds
-Hello, World.
+Hello, World
 123
 </pre>
 
 * 外部コマンドの利用( echo コマンド)
 外部コマンドの echo を D-Shell にインポートして利用する例です。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputEcho.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputEcho.ds" >
 import command echo
+
 function func() {
-  echo "Hello, World."
-  echo 123
+  var str = "Hello, World"
+  var num = 123
+  echo ${str}
+  echo ${num}
+  return
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell OutputEcho.ds
-Hello, World.
+Hello, World
 123
 </pre>
 
 * Javaメソッドの利用( println 関数)
 Java の println 関数を D-Shell にインポートして利用する例です。
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: OutputPrintln.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputPrintln.ds" >
 import java.lang.System
+
 function func() {
-  System.out.println("Hello, World.")
-  System.out.println(123)
+  var str = "Hello, World"
+  var num = 123
+  System.out.println(str)
+  System.out.println(num)
 }
 
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell OutputPrintln.ds
-Hello, World.
+Hello, World
 123
 </pre>
 

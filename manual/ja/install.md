@@ -16,28 +16,30 @@ JRE(Java Runtime Environment) 7
 ***
 ### Debian系システム
 D-Shell サイトよりターゲットとするシステムのパッケージをダウンロードします。  
-<pre class="lang:vim decode:true " >
-$ wget xxx greentea-0.1-1.x86_64.deb
+
+<pre class="toolbar:0 highlight:0">
+$ wget xxx dshell-0.1-1.x86_64.deb
 </pre>
 
 dpkg コマンドでパッケージをインストールします。  
 
-<pre>
-$ sudo dpkg -i ./greentea-0.1-1.x86_64.deb
+<pre class="toolbar:0 highlight:0">
+$ sudo dpkg -i ./dshell-0.1-1.x86_64.deb
 $ dshell
 </pre>
 
 
 ### Redhat系システム
 D-Shell サイトよりターゲットとするシステムのパッケージをダウンロードします。  
-<pre>
-$ wget xxx greentea-0.1-1.x86_64.rpm
+
+<pre class="toolbar:0 highlight:0">
+$ wget xxx dshell-0.1-1.x86_64.rpm
 </pre>
 
 rpm コマンドでパッケージをインストールします。   
 
-<pre>
-$ sudo rpm -ivh greentea-0.1-1.x86_64.rpm
+<pre class="toolbar:0 highlight:0">
+$ sudo rpm -ivh dshell-0.1-1.x86_64.rpm
 $ dshell
 </pre>
 
@@ -46,15 +48,17 @@ $ dshell
 ## ソースからインストールする場合
 ***
 D-Shell の Git リポジトリを取得取得します。  
-<pre>
-$ git clone https://github.com/GreenTeaScript/GreenTeaScript
+
+<pre class="toolbar:0 highlight:0">
+$ git clone https://github.com/konoha-project/dshell
 </pre>
+
 make、ant コマンドを使用し、D-Shell を make します。  
 INSTALL_PREFIX にはインストール先のディレクトリを指定してください。  
 指定をしなければ、ホームディレクトリへインストールされます。  
 
-<pre>
-$ cd GreenTeaScript
+<pre class="toolbar:0 highlight:0">
+$ cd dshell
 $ make
 $ make install INSTALL_PREFIX=/usr/local
 $ dshell
