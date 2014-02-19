@@ -63,8 +63,8 @@ public class ExceptionClassMap {
 
 	public static DShellException createException(String message, String[] causeInfo) {
 		// syscall: syscallName: 0, param: 1, errno: 2
-		Class<?>[] types = {String.class, String.class, String[].class};
-		Object[] args = {message, message, causeInfo};
+		Class<?>[] types = {String.class};
+		Object[] args = {message};
 		String errnoString = causeInfo[2];
 		if(Errno.SUCCESS.match(errnoString)) {
 			return new NullException(message);
@@ -75,7 +75,9 @@ public class ExceptionClassMap {
 		Class<?> exceptionClass = getExceptionClass(errnoString);
 		try {
 			Constructor<?> constructor = exceptionClass.getConstructor(types);
-			return (RelatedSyscallException) constructor.newInstance(args);
+			RelatedSyscallException exception = (RelatedSyscallException) constructor.newInstance(args);
+			exception.setSyscallInfo(causeInfo);
+			return exception;
 		}
 		catch (NoSuchMethodException e) {
 			e.printStackTrace();

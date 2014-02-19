@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EHOSTUNREACH)
 public class UnreachableHostException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1597304418977336685L;
 
-	public UnreachableHostException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public UnreachableHostException(String message) {
+		super(message);
 	}
 }

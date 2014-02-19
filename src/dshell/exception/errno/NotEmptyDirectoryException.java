@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOTEMPTY)
 public class NotEmptyDirectoryException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -8881686779135583683L;
 
-	public NotEmptyDirectoryException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NotEmptyDirectoryException(String message) {
+		super(message);
 	}
 }

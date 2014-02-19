@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EIO)
 public class IOException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -2925711332327816255L;
 
-	public IOException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public IOException(String message) {
+		super(message);
 	}
 }

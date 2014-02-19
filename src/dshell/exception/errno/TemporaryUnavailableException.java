@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EAGAIN)
 public class TemporaryUnavailableException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -260611456289777692L;
 
-	public TemporaryUnavailableException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public TemporaryUnavailableException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EBADMSG)
 public class BadMessageException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -844920617505654673L;
 
-	public BadMessageException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public BadMessageException(String message) {
+		super(message);
 	}
 }

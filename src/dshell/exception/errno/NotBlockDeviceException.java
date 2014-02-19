@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOTBLK)
 public class NotBlockDeviceException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1664763329262707450L;
 
-	public NotBlockDeviceException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NotBlockDeviceException(String message) {
+		super(message);
 	}
 }

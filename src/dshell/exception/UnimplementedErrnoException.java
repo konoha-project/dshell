@@ -1,10 +1,10 @@
 package dshell.exception;
 
 public class UnimplementedErrnoException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 3957045480645559921L;
 
-	public UnimplementedErrnoException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public UnimplementedErrnoException(String message) {
+		super(message);
 	}
 	
 	@Override

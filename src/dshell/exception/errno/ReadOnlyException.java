@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EROFS)
 public class ReadOnlyException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 8332949929528954627L;
 
-	public ReadOnlyException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public ReadOnlyException(String message) {
+		super(message);
 	}
 }

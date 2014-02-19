@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENODEV)
 public class DeviceNotFoundException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -2089536947016513934L;
 
-	public DeviceNotFoundException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public DeviceNotFoundException(String message) {
+		super(message);
 	}
 }

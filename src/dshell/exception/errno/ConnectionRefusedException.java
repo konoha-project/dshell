@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ECONNREFUSED)
 public class ConnectionRefusedException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -5631944596016935849L;
 
-	public ConnectionRefusedException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public ConnectionRefusedException(String message) {
+		super(message);
 	}
 }

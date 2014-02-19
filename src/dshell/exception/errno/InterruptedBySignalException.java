@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EINTR)
 public class InterruptedBySignalException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -2966050458509865009L;
 
-	public InterruptedBySignalException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public InterruptedBySignalException(String message) {
+		super(message);
 	}
 }

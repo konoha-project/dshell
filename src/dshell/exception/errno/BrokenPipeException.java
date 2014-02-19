@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EPIPE)
 public class BrokenPipeException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -5163673987337012958L;
 
-	public BrokenPipeException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public BrokenPipeException(String message) {
+		super(message);
 	}
 }

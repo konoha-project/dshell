@@ -305,6 +305,7 @@ class ShellExceptionBuilder {
 			else {
 				exception = new DShellException(message);
 			}
+			exception.setCommand(message);
 			exception.setErrorMessage(errorMessage);
 			exceptionList.add(exception);
 		}

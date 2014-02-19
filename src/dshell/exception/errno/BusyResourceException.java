@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EBUSY)
 public class BusyResourceException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -398174827082926739L;
 
-	public BusyResourceException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public BusyResourceException(String message) {
+		super(message);
 	}
 }

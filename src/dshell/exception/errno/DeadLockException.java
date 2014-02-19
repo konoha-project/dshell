@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EDEADLK)
 public class DeadLockException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -2664225849449332494L;
 
-	public DeadLockException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public DeadLockException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENETUNREACH)
 public class UnreachableNetworkException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 7582354315727320975L;
 
-	public UnreachableNetworkException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public UnreachableNetworkException(String message) {
+		super(message);
 	}
 }

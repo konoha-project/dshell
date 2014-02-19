@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EEXIST)
 public class FileExistException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -1147889522086285307L;
 
-	public FileExistException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public FileExistException(String message) {
+		super(message);
 	}
 }

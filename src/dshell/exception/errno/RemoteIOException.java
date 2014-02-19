@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EREMOTEIO)
 public class RemoteIOException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -539582706711746246L;
 
-	public RemoteIOException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public RemoteIOException(String message) {
+		super(message);
 	}
 }

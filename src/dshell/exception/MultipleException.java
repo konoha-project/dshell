@@ -5,7 +5,7 @@ import zen.codegen.jvm.JavaTypeTable;
 import zen.type.ZType;
 
 public class MultipleException extends DShellException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 164898266354483402L;
 	private DShellException[] exceptions;
 
 	public MultipleException(String message, DShellException[] exceptions) {

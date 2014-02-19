@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ESPIPE)
 public class IllegalSeekException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -5170190658505999982L;
 
-	public IllegalSeekException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public IllegalSeekException(String message) {
+		super(message);
 	}
 }

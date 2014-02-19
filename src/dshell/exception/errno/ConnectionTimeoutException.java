@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ETIMEDOUT)
 public class ConnectionTimeoutException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -783718463247817643L;
 
-	public ConnectionTimeoutException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public ConnectionTimeoutException(String message) {
+		super(message);
 	}
 }

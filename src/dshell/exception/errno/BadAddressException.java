@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EFAULT)
 public class BadAddressException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 5757398124745842354L;
 
-	public BadAddressException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public BadAddressException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ECHILD)
 public class NoChildException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 7148181168710617339L;
 
-	public NoChildException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NoChildException(String message) {
+		super(message);
 	}
 }

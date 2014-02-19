@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EUSERS)
 public class TooManyUsersException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -3444647688137490451L;
 
-	public TooManyUsersException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public TooManyUsersException(String message) {
+		super(message);
 	}
 }

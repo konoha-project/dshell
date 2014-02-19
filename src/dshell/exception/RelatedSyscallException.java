@@ -1,33 +1,42 @@
 package dshell.exception;
 
+import java.lang.annotation.Annotation;
+
+import dshell.lib.DerivedFromErrno;
+
 public class RelatedSyscallException extends DShellException {
-	private static final long serialVersionUID = 1L;
-	
-	private String commandName;
+	private static final long serialVersionUID = -2322285443658141171L;
+
 	private String syscallName;
-	private String[] params;
+	private String param;
 	private String errno;
-	
-	public RelatedSyscallException(String message, String commandName, String[] syscalls) {
+
+	public RelatedSyscallException(String message) {
 		super(message);
-		this.commandName = commandName;
-		this.syscallName = syscalls[0];
-		this.errno = syscalls[2];
+		this.syscallName = "";
+		this.param = "";
+		this.errno = "";
 	}
-	
-	public String getCommandName() {
-		return this.commandName;
-	}
-	
+
 	public String getSyscallName() {
 		return this.syscallName;
 	}
-	
-	public String[] getParams() {
-		return this.params;
+
+	public String getParam() {
+		return this.param;
 	}
-	
+
 	public String getErrno() {
+		Annotation[] anos = this.getClass().getDeclaredAnnotations();
+		if(anos.length == 1 && anos[0] instanceof DerivedFromErrno) {
+			return ((DerivedFromErrno)anos[0]).value().name();
+		}
 		return this.errno;
+	}
+
+	public void setSyscallInfo(String[] syscalls) {
+		this.syscallName = syscalls[0];
+		this.param = syscalls[1];
+		this.errno = syscalls[2];
 	}
 }

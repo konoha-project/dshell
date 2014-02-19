@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOTSOCK)
 public class NotSocketException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -3934984088546370161L;
 
-	public NotSocketException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NotSocketException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOLCK)
 public class UnavailableLockException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 8589971637706803734L;
 
-	public UnavailableLockException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public UnavailableLockException(String message) {
+		super(message);
 	}
 }

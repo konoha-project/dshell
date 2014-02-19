@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENXIO)
 public class NotExistIOException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1645567429022447252L;
 
-	public NotExistIOException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NotExistIOException(String message) {
+		super(message);
 	}
 }

@@ -123,12 +123,12 @@ public class TaskBuilder {
 				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {
-				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
 				prevProc.mergeErrorToOut();
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
 			}
 			else if(cmdSymbol.equals("&>>")) {
-				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 				prevProc.mergeErrorToOut();
+				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 			}
 			else if(cmdSymbol.equals(DShellGrammar.location)) {
 				ArrayList<ArrayList<String>> sendingCmdsList = new ArrayList<ArrayList<String>>();
@@ -347,7 +347,7 @@ class SubProc extends PseudoProcess {
 	@Override
 	public void mergeErrorToOut() {
 		this.procBuilder.redirectErrorStream(true);
-		this.sBuilder.append("mergeErrorToOut");
+		this.sBuilder.append("&");
 		this.stderrIsDirty = true;
 	}
 

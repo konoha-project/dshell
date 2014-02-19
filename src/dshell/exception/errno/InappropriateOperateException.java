@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOTTY)
 public class InappropriateOperateException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = -9048472347245941031L;
 
-	public InappropriateOperateException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public InappropriateOperateException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.ENOSPC)
 public class NoFreeSpaceException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 8768541609625410569L;
 
-	public NoFreeSpaceException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public NoFreeSpaceException(String message) {
+		super(message);
 	}
 }

@@ -6,9 +6,9 @@ import dshell.lib.Errno;
 
 @DerivedFromErrno(value = Errno.EISDIR)
 public class IsDirectoryException extends RelatedSyscallException {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 162687839416126743L;
 
-	public IsDirectoryException(String message, String commandName, String[] syscalls) {
-		super(message, commandName, syscalls);
+	public IsDirectoryException(String message) {
+		super(message);
 	}
 }
