@@ -28,7 +28,7 @@ import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
-import zen.parser.ZScriptEngine;
+import zen.parser.ZSourceEngine;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
@@ -70,7 +70,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
 	}
 
-	@Override public ZScriptEngine GetEngine() {
+	@Override public ZSourceEngine GetEngine() {
 		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
 	}
 

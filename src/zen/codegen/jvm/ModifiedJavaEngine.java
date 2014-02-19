@@ -56,7 +56,7 @@ public class ModifiedJavaEngine extends JavaEngine {
 	}
 
 	public void VisitTryNode(DShellTryNode Node) {
-		this.Unsupported(Node, "try");
+		this.Unsupported(Node);
 	}
 
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
