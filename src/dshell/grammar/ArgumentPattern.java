@@ -33,7 +33,7 @@ public class ArgumentPattern extends ZMatchFunction {
 			if(Token.IsNextWhiteSpace()) {
 				break;
 			}
-		} while(TokenContext.HasNext());
+		} while(!DShellGrammar.MatchStopToken(TokenContext));
 		return this.CreateJoinedArgNode(ParentNode, TokenContext, TokenList);
 	}
 

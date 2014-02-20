@@ -4,9 +4,11 @@ import java.util.Random;
 
 import zen.ast.ZBinaryNode;
 import zen.ast.ZBlockNode;
+import zen.ast.ZBooleanNode;
 import zen.ast.ZComparatorNode;
 import zen.ast.ZGetIndexNode;
 import zen.ast.ZGetNameNode;
+import zen.ast.ZIfNode;
 import zen.ast.ZIntNode;
 import zen.ast.ZMethodCallNode;
 import zen.ast.ZNode;
@@ -23,13 +25,15 @@ import zen.parser.ZTokenContext;
  *     $Block$
  * }
  * ==>
- * var index = 0
- * var valueList = $Expression$
- * var size = valueList.Size()
- * while(index < size) {
- *     var value = valueList[index]
- *     $Block$
- *     index = index + 1
+ * if(true) {
+ *     var index = 0
+ *     var valueList = $Expression$
+ *     var size = valueList.Size()
+ *     while(index < size) {
+ *         var value = valueList[index]
+ *         $Block$
+ *         index = index + 1
+ *     }
  * }
  * */
 public class ForeachPattern extends ZMatchFunction {
@@ -53,11 +57,17 @@ public class ForeachPattern extends ZMatchFunction {
 		this.FileName = ContextToken.GetFileName();
 		this.LineNum = ContextToken.GetLineNumber();
 
+		ZNode Node = new ZIfNode(ParentNode);
+		ZSource trueSource = new ZSource(this.FileName, this.LineNum, "true", TokenContext);
+		Node.Set(ZIfNode._Cond, new ZBooleanNode(Node, new ZToken(trueSource, 0, "true".length()), true));
+		ZBlockNode ThenBlockNode = new ZBlockNode(Node, 0);
+		Node.Set(ZIfNode._Then, ThenBlockNode);
+
 		// var index = 0
-		ZNode Node = this.CreateIndexDeclNode(ParentNode, TokenContext);
+		ZNode IndexDeclNode = this.CreateIndexDeclNode(ThenBlockNode, TokenContext);
 
 		// var valueList = $Expression$
-		ZNode ValueListDeclNode = this.MatchAndCreateValueListDeclNode(Node, TokenContext);
+		ZNode ValueListDeclNode = this.MatchAndCreateValueListDeclNode(IndexDeclNode, TokenContext);
 		if(ValueListDeclNode.IsErrorNode()) {
 			return ValueListDeclNode;
 		}
@@ -66,7 +76,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ZNode SizeDeclNode = this.CreateSizeDeclNode(ValueListDeclNode, TokenContext);
 
 		// var index = 0 { var valueList = $Expression$ }
-		Node.Set(ZNode._AppendIndex, ValueListDeclNode);
+		IndexDeclNode.Set(ZNode._AppendIndex, ValueListDeclNode);
 
 		// var valueList = $Expression$ { var size = valueList.Size() }
 		ValueListDeclNode.Set(ZNode._AppendIndex, SizeDeclNode);
@@ -86,6 +96,8 @@ public class ForeachPattern extends ZMatchFunction {
 
 		// while(index < size) { $WhileBlock$ }
 		WhileNode.Set(ZWhileNode._Block, BlockNode);
+
+		ThenBlockNode.Append(IndexDeclNode);
 		return Node;
 	}
 
