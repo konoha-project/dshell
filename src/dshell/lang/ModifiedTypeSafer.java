@@ -8,6 +8,7 @@ import zen.lang.ZenTypeSafer;
 import zen.parser.ZGenerator;
 import zen.type.ZType;
 import zen.type.ZVarType;
+import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
@@ -49,7 +50,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ZType.VoidType);
 	}
 
-	public void VisitCatchNode(ZCatchNode Node) {	//FIXME
+	public void VisitCatchNode(DShellCatchNode Node) {	//FIXME
 		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode._Block];
 		if(BlockNode.GetListSize() == 0) {
 			this.Logger.ReportWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);

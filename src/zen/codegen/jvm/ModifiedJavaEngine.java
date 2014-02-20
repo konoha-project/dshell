@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import zen.codegen.jvm.JavaEngine;
 import zen.codegen.jvm.JavaGenerator;
+import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
@@ -56,6 +57,10 @@ public class ModifiedJavaEngine extends JavaEngine {
 	}
 
 	public void VisitTryNode(DShellTryNode Node) {
+		this.Unsupported(Node);
+	}
+
+	public void VisitCatchNode(DShellCatchNode Node) {
 		this.Unsupported(Node);
 	}
 

@@ -9,8 +9,11 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
+import org.objectweb.asm.Label;
+import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
+import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
@@ -25,6 +28,7 @@ import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
+import zen.ast.ZCatchNode;
 import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
@@ -147,6 +151,25 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			Node.AST[DShellTryNode._Finally].Accept(this);
 		}
 		this.TryCatchLabel.pop();
+	}
+
+	public void VisitCatchNode(DShellCatchNode Node) {
+		Label catchLabel = new Label();
+		TryCatchLabel Label = this.TryCatchLabel.peek();
+
+		// prepare
+		//TODO: add exception class name
+		String throwType = this.AsmType(Node.ExceptionType).getInternalName();
+		this.AsmBuilder.visitTryCatchBlock(Label.beginTryLabel, Label.endTryLabel, catchLabel, throwType);
+
+		// catch block
+		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
+		this.AsmBuilder.visitLabel(catchLabel);
+		this.AsmBuilder.StoreLocal(Node.ExceptionName);
+		Node.AST[ZCatchNode._Block].Accept(this);
+		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
+
+		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
 	}
 
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
