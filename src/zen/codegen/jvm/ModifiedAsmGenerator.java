@@ -6,6 +6,7 @@ import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
+import static org.objectweb.asm.Opcodes.INSTANCEOF;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -28,6 +29,7 @@ import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZCatchNode;
+import zen.ast.ZInstanceOfNode;
 import zen.ast.ZThrowNode;
 import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
@@ -178,6 +180,12 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	@Override public void VisitThrowNode(ZThrowNode Node) {
 		Node.AST[ZThrowNode._Expr].Accept(this);
 		this.AsmBuilder.visitInsn(ATHROW);
+	}
+
+	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
+		Node.AST[ZInstanceOfNode._Left].Accept(this);
+		Class<?> JavaClass = this.GetJavaClass(Node.TargetType);
+		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
