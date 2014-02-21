@@ -26,4 +26,16 @@ public class DShellException extends RuntimeException {
 	public String getErrorMessage() {
 		return this.errorMessage;
 	}
+
+	public static class NullException extends DShellException {
+		private static final long serialVersionUID = -8950050196748138954L;
+
+		private NullException(String message) {
+			super(message);
+		}
+	}
+
+	public static NullException createNullException(String message) {
+		return new NullException(message);
+	}
 }

@@ -3,6 +3,7 @@ package dshell.lang;
 import zen.ast.ZBlockNode;
 import zen.ast.ZCatchNode;
 import zen.ast.ZNode;
+import zen.ast.ZThrowNode;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.lang.ZenTypeSafer;
 import zen.parser.ZGenerator;
@@ -65,5 +66,10 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 		this.Return(Node);
+	}
+
+	@Override public void VisitThrowNode(ZThrowNode Node) {
+		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
+		this.TypedNode(Node, ZType.VoidType);
 	}
 }

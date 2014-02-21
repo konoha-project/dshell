@@ -5,12 +5,12 @@ import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.GOTO;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
+import static org.objectweb.asm.Opcodes.ATHROW;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import org.objectweb.asm.Label;
-import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
@@ -19,7 +19,6 @@ import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
-import dshell.exception.NullException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
@@ -29,6 +28,7 @@ import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
 import zen.ast.ZCatchNode;
+import zen.ast.ZThrowNode;
 import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
@@ -53,7 +53,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.importJavaClass(DShellException.class);
 		this.importJavaClass(MultipleException.class);
 		this.importJavaClass(UnimplementedErrnoException.class);
-		this.importJavaClass(NullException.class);
+		this.importJavaClass(DShellException.NullException.class);
 		this.importJavaClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
 
 		try {
@@ -173,6 +173,11 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	}
 
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
+	}
+
+	@Override public void VisitThrowNode(ZThrowNode Node) {
+		Node.AST[ZThrowNode._Expr].Accept(this);
+		this.AsmBuilder.visitInsn(ATHROW);
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast

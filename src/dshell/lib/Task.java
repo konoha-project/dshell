@@ -8,7 +8,6 @@ import java.util.ArrayList;
 
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
-import dshell.exception.NullException;
 import dshell.remote.RequestSender;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -30,7 +29,7 @@ public class Task implements Serializable {
 	private String stderrMessage;
 	private ArrayList<Integer> exitStatusList;
 	private final String representString;
-	private DShellException exception = new NullException("");
+	private DShellException exception = DShellException.createNullException("");
 
 	public Task(PseudoProcess[] procs, TaskOption option, String represent) {
 		this.option = option;
@@ -140,7 +139,7 @@ public class Task implements Serializable {
 			return;
 		}
 		this.joinAndSetException();
-		if(!this.option.is(receiver) && this.option.is(throwable) && !(this.exception instanceof NullException)) {
+		if(!this.option.is(receiver) && this.option.is(throwable) && !(this.exception instanceof DShellException.NullException)) {
 			throw this.exception;
 		}
 	}
@@ -285,7 +284,7 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 class ShellExceptionBuilder {
 	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
 		if(option.is(sender) || !option.is(throwable) || option.is(timeout)) {
-			return new NullException("");
+			return DShellException.createNullException("");
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
 		for(int i = 0; i < procs.length; i++) {
@@ -295,14 +294,14 @@ class ShellExceptionBuilder {
 		}
 		int size = exceptionList.size();
 		if(size == 1) {
-			if(!(exceptionList.get(0) instanceof NullException)) {
+			if(!(exceptionList.get(0) instanceof DShellException.NullException)) {
 				return exceptionList.get(0);
 			}
 		}
 		else if(size > 1) {
 			int count = 0;
 			for(DShellException exception : exceptionList) {
-				if(!(exception instanceof NullException)) {
+				if(!(exception instanceof DShellException.NullException)) {
 					count++;
 				}
 			}
@@ -310,7 +309,7 @@ class ShellExceptionBuilder {
 				return new MultipleException("", exceptionList.toArray(new DShellException[size]));
 			}
 		}
-		return new NullException("");
+		return DShellException.createNullException("");
 	}
 
 	private static void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
@@ -330,7 +329,7 @@ class ShellExceptionBuilder {
 			exceptionList.add(exception);
 		}
 		else {
-			exceptionList.add(new NullException(message));
+			exceptionList.add(DShellException.createNullException(message));
 		}
 		if(proc instanceof SubProc) {
 			((SubProc)proc).deleteLogFile();
