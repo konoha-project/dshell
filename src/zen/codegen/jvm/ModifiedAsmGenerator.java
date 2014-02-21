@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
+import test.zen.NoExitSecurityManager;
+
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
@@ -28,8 +30,10 @@ import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
+import zen.ast.ZCastNode;
 import zen.ast.ZCatchNode;
 import zen.ast.ZInstanceOfNode;
+import zen.ast.ZNode;
 import zen.ast.ZThrowNode;
 import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
@@ -183,9 +187,42 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	}
 
 	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
-		Node.AST[ZInstanceOfNode._Left].Accept(this);
 		Class<?> JavaClass = this.GetJavaClass(Node.TargetType);
+		if(Node.TargetType.IsIntType()) {
+			JavaClass = Long.class;
+		}
+		else if(Node.TargetType.IsFloatType()) {
+			JavaClass = Double.class;
+		}
+		else if(Node.TargetType.IsBooleanType()) {
+			JavaClass = Boolean.class;
+		}
+
+		ZNode TargetNode = Node.AST[ZInstanceOfNode._Left];
+		if(TargetNode.Type.IsIntType() || TargetNode.Type.IsFloatType() || TargetNode.Type.IsBooleanType()) {
+			this.invokeBoxingMethod(TargetNode);
+		}
+		else {
+			TargetNode.Accept(this);
+		}
 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+	}
+
+	private void invokeBoxingMethod(ZNode TargetNode) {
+		Class<?> TargetClass = Object.class;
+		if(TargetNode.Type.IsIntType()) {
+			TargetClass = Long.class;
+		}
+		else if(TargetNode.Type.IsFloatType()) {
+			TargetClass = Double.class;
+		}
+		else if(TargetNode.Type.IsBooleanType()) {
+			TargetClass = Boolean.class;
+		}
+		Class<?> SourceClass = this.GetJavaClass(TargetNode.Type);
+		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
+		TargetNode.Accept(this);
+		this.invokeStaticMethod(ZType.BooleanType, sMethod);
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
