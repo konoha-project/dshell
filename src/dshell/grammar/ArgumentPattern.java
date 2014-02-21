@@ -22,7 +22,8 @@ public class ArgumentPattern extends ZMatchFunction {
 		ZToken Token;
 		do {
 			Token = TokenContext.GetToken();
-			if(Token.EqualsText("$")) {
+			int ListSize = TokenList.size();
+			if(Token.EqualsText("$") && (ListSize == 0 || !TokenList.get(ListSize - 1).EqualsText("\\"))) {
 				Token = this.MatchStringInterpolation(TokenContext);
 				if(Token == null) {
 					return null;
@@ -66,7 +67,11 @@ public class ArgumentPattern extends ZMatchFunction {
 		for(ZToken Token : TokenList) {
 			String TokenText = Token.GetText();
 			if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.EqualsName("$StringLiteral$")) {
-				Symbol += this.ResolveStringInterpolation(LibZen._UnquoteString(TokenText));
+				String ResolvedValue = this.ResolveStringInterpolation(TokenText.substring(1, TokenText.length() - 1));
+				if(ResolvedValue == null) {
+					return null;
+				}
+				Symbol += ResolvedValue;
 			}
 			else if(Token.EqualsText("~")) {
 				Symbol += System.getenv("HOME");
@@ -86,7 +91,40 @@ public class ArgumentPattern extends ZMatchFunction {
 		return LocalContext.ParsePattern(ParentNode, "$Statement$", ZTokenContext.Required);
 	}
 
-	private String ResolveStringInterpolation(String Value) {	//TODO;
-		return Value;
+	private String ResolveStringInterpolation(String Value) {	//TODO
+		StringBuilder sBuilder = new StringBuilder();
+		boolean foundDollar = false;
+		boolean foundBrace = false;
+		int size = Value.length();
+		for(int i = 0; i < size; i++) {
+			char ch = Value.charAt(i);
+			if(!LibZen._IsSymbol(ch) && !LibZen._IsDigit(ch) && foundDollar) {
+				foundDollar = false;
+				sBuilder.append(" + \"");
+			}
+			if(ch == '$' && i + 1 < size && Value.charAt(i + 1) != '{' && (i == 0 || Value.charAt(i - 1) != '\\')) {
+				foundDollar = true;
+				sBuilder.append("\" + ");
+			}
+			else if(ch == '$' && i + 3 < size && Value.charAt(i + 1) == '{' && (i == 0 || Value.charAt(i - 1) != '\\')) {
+				foundBrace = true;
+				sBuilder.append("\" + ");
+				i++;
+			}
+			else if(ch == '}' && foundBrace) {
+				foundBrace = false;
+				sBuilder.append(" + \"");
+			}
+			else {
+				sBuilder.append(ch);
+			}
+		}
+		if(foundDollar) {
+			sBuilder.append(" + \"");
+		}
+		if(foundBrace) {
+			return null;
+		}
+		return sBuilder.toString();
 	}
 }
