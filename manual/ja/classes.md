@@ -40,9 +40,8 @@ class Person {
 function isChild(x: Person, a: int) : boolean {
   if (a < 5) {
     return true
-  } else {
-    return false
   }
+  return false
 }
 </pre>
 
@@ -86,9 +85,8 @@ class Person {
 function isChild(x: Person, a: int) : boolean {
   if (a < 5) {
     return true
-  } else {
-    return false
   }
+  return false
 }
 
 function func() {

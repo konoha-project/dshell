@@ -10,12 +10,12 @@
 移動したいディレクトリパスを指定します。 
 省略した場合、ホームディレクトリに移動します。  
 
-<pre>
+<pre class="toolbar:0 highlight:0">
 > pwd
 hoge:/home/hogehoge/working/dshell
 > cd
 > pwd
-hoge:/home/hogehoge/
+hoge:/home/hogehoge
 </pre>
 
 # exit
@@ -28,7 +28,7 @@ hoge:/home/hogehoge/
 シェル終了時の終了コードを指定します。
 省略した場合、終了コード0を戻り値としてシェルを終了します。
 
-<pre>
+<pre class="toolbar:0 highlight:0">
 > exit
 $ echo $?
 0
@@ -46,14 +46,14 @@ $ echo $?
 文字列をログに出力します。  
 ログの出力先は、シェル起動時のオプションで指定します。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Logger.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Logger.ds" >
 function func() {
   log "logging test"
 }
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell --logging:./test.log Logger.ds
 logging test
 $ cat ./test.log
@@ -81,7 +81,7 @@ assert はデバッグ目的にのみ使用するべきです。
 * 条件式
 与えられた論理式が偽の場合、メッセージを出力し、終了コード1を戻り値としてシェルを終了します。  
 
-<pre class="nums:true toolbar:1 plain:true lang:scala highlight:0 decode:true " title="サンプル: Assert.ds" >
+<pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Assert.ds" >
 function func() {
   var num = 5
 
@@ -91,13 +91,13 @@ function func() {
   assert(num instanceof int)
   log "assert check 2"
 
-  assert(num > 10)
+  assert(num > 2)
   log "assert check 3"
 }
 func()
 </pre>
 
-<pre class="toolbar:1" title="実行例">
+<pre class="toolbar:1 highlight:0" title="実行例">
 $ dshell Assert.ds
 assert check 1
 assert check 2
