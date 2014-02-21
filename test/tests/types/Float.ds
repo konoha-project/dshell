@@ -1,0 +1,14 @@
+function func() {
+
+  var a = 3.14
+  var b: float = 0.5e3
+
+  log ${a}
+  assert(a instanceof float)
+  log ${b}
+  assert(b instanceof float)
+
+  return
+}
+
+func()

@@ -1,0 +1,9 @@
+function func() {
+  var str = "Hello, World"
+  var num = 123
+  log ${str}
+  log ${num}
+  return
+}
+
+func()

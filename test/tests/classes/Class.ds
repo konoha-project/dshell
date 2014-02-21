@@ -1,0 +1,29 @@
+// クラス定義
+class Person {
+  var name: String = "naruto"
+  var age: int = 17
+  var isChild: Func<boolean, Person, int>
+}
+
+// メンバ関数定義
+function isChild(x: Person, a: int) : boolean {
+  if (a < 5) {
+    return true
+  } else {
+    return false
+  }
+}
+
+function func() {
+  var obj1 = new Person()
+  var obj2 = Person { name: "sakura", age: 16 }
+
+  // クラスオブジェクトの後に「ドット」付けてメンバ関数を指定
+  log ${obj1.isChild(1)}
+  // メンバ関数のパラメータにクラスオブジェクトを指定
+  log ${isChild(ob2, 6)}
+
+  return
+}
+
+func()

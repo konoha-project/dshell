@@ -1,0 +1,12 @@
+function func(x: int): int {
+  return x * 2
+}
+
+function main() {
+  var sub: Func<int, int> = func
+  log ${sub(3)}
+  assert(sub instanceof Func<int, int>)
+  return
+}
+
+main()

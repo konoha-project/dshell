@@ -1,0 +1,5 @@
+import command cat grep echo
+
+echo "hoge" > hoge.txt
+cat hoge.txt | grep hoge
+

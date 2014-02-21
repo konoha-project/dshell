@@ -1,0 +1,16 @@
+function func(num) {
+  if(num == 1) {
+    log "if block: ${num()}"
+  }
+  else if(num == 2) {
+    log "else if block: ${num()}"
+  }
+  else {
+    log "else block: ${num()}"
+  }
+  return
+}
+
+func(1)
+func(2)
+func(3)

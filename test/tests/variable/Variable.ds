@@ -1,0 +1,15 @@
+function func() {
+  var age: int = 17
+  var name = "uzumaki naruto"
+
+  log ${age}
+  log ${name}
+
+  return
+}
+
+func()
+
+// 関数外では age, name は参照できない
+// log ${age} 未定義の変数の参照(エラー)
+// log ${name} 未定義の変数の参照(エラー)

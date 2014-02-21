@@ -1,0 +1,10 @@
+import java.lang.System
+
+function func() {
+  var str = "Hello, World"
+  var num = 123
+  System.out.println(str)
+  System.out.println(num)
+}
+
+func()

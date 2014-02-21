@@ -1,0 +1,11 @@
+import command echo
+
+function func() {
+  var str = "Hello, World"
+  var num = 123
+  echo ${str}
+  echo ${num}
+  return
+}
+
+func()

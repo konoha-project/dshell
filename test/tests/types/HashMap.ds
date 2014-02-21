@@ -1,0 +1,11 @@
+function func() {
+  var map: Map<int> = { "hoge": 3, "piyo": 5, "fuga": 7 }
+  for(key in map) {
+    log "${key} => ${map[key]}"
+  }
+  assert(map instanceof Map<int>)
+
+  return
+}
+
+func()

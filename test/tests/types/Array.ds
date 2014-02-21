@@ -1,0 +1,20 @@
+function func() {
+
+  var a: int[] = [12, 34, 56, 78, 90]
+  var b = ["hoge", "piyo", "fuga"]
+
+  assert(a instanceof int[])
+  assert(b instanceof String[])
+
+  for(x in a) {
+    log ${x}
+  }
+
+  for(y in b) {
+    log ${y}
+  }
+
+  return
+}
+
+func()

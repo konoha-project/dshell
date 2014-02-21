@@ -1,0 +1,10 @@
+function func() {
+
+  var str:String = "はるのサクラ"
+  str.replaceAll("はるの", "うずまき")
+  log ${str}
+
+  return
+}
+
+func()
