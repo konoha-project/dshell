@@ -1,0 +1,17 @@
+function func() {
+
+  var a = 10
+  var b = -1
+  var c:int = 9223372036854775807
+
+  log ${a}
+  assert(a instanceof int)
+  log ${b}
+  assert(b instanceof int)
+  log ${c}
+  assert(c instanceof int)
+
+  return
+}
+
+func()

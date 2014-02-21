@@ -1,0 +1,5 @@
+function sub() {
+  return "sub call"
+}
+
+log ${sub()}

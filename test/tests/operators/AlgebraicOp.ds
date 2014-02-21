@@ -1,0 +1,15 @@
+function func() {
+  var a = 4
+  var b = 2
+
+  log ${-a}
+  log ${a + b}
+  log ${a - b}
+  log ${a * b}
+  log ${a / b}
+  log ${a % b}
+
+  return
+}
+
+func()

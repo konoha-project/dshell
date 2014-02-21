@@ -1,0 +1,11 @@
+let color ="red"
+
+function func() {
+  let color = "green"
+  log "local color: ${color}"
+  return
+}
+
+func()
+
+log "top color: ${color}"

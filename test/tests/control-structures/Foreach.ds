@@ -1,0 +1,16 @@
+function func() {
+  var arr: int[] = [1, 2, 3, 5, 7]
+  var map: Map<int> = {"a": 1, "b": 2, "c": 3 }
+
+  # 配列の場合
+  for(val in arr) {
+    log ${val}
+  }
+  # 連想配列の場合
+  for(key in map) {
+    log "${key} => ${map[key]}"
+  }
+  return
+}
+
+func()

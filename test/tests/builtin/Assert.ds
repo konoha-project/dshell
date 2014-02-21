@@ -1,0 +1,13 @@
+function func() {
+  var num = 5
+
+  assert(num == 5)
+  log "assert check 1"
+
+  assert(num instanceof int)
+  log "assert check 2"
+
+  assert(num > 10)
+  log "assert check 3"
+}
+func()

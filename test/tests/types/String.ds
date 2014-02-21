@@ -1,0 +1,10 @@
+function func() {
+
+  var str = "うずまきナルト"
+  log ${str}
+  assert(str instanceof String)
+
+  return
+}
+
+func()

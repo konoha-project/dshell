@@ -1,0 +1,6 @@
+function func(a, b) {
+  return a + b
+}
+
+log ${func(1, 2)}
+log ${func(3, 4)}

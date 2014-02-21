@@ -18,4 +18,10 @@ install:
 	cp -f $(BIN_NAME) $(INSTALL_PREFIX)/bin/
 	install -m 775 $(SCRIPT_NAME) $(INSTALL_PREFIX)/bin/
 
-.PHONY: all build clean install
+test:
+	TEST_DIR=./test ./test/test_all.sh
+
+test-rec:
+	#USAGE: make test-rec URL=http://www.ubicg.ynu.ac.jp/Rec/api/3.0
+	TEST_DIR=./test ./test/test_all.sh $(URL)
+.PHONY: all build clean install test

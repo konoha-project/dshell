@@ -1,0 +1,7 @@
+function func():void {
+
+  log "function call"
+  return
+}
+
+func()

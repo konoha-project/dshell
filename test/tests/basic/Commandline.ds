@@ -1,0 +1,7 @@
+function func() {
+  for(arg in ARGV) {
+    log ${arg}
+  }
+}
+
+func()

@@ -1,0 +1,9 @@
+function func() {
+
+  log "うずまき\nナルト"
+  log 'うずまき\nナルト'
+
+  return
+}
+
+func()
