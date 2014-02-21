@@ -46,6 +46,9 @@ public class DShellCompletor implements Completor {
 				path = System.getenv("HOME") + path.substring(1);
 			}
 			File[] files = new File(path).listFiles();
+			if(files == null) {
+				continue;
+			}
 			for(File file : files) {
 				if(file.canExecute()) {
 					commandSet.add(file.getName());

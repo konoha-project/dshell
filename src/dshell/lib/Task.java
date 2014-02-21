@@ -9,11 +9,13 @@ import java.util.ArrayList;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.NullException;
+import dshell.remote.RequestSender;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
-import static dshell.lib.TaskOption.Behavior.receivable;
+import static dshell.lib.TaskOption.Behavior.sender;
+import static dshell.lib.TaskOption.Behavior.receiver;
 import static dshell.lib.TaskOption.Behavior.timeout;
 
 public class Task implements Serializable {
@@ -129,6 +131,8 @@ public class Task implements Serializable {
 		}
 		// exception raising
 		this.exception = ShellExceptionBuilder.getException(this.procs, this.option, this.stderrHandler.getEachBuffers());
+		// get remote task result if supported
+		this.getRemoteTaskResult();
 	}
 
 	public void join() {
@@ -136,7 +140,7 @@ public class Task implements Serializable {
 			return;
 		}
 		this.joinAndSetException();
-		if(!this.option.is(receivable) && this.option.is(throwable) && !(this.exception instanceof NullException)) {
+		if(!this.option.is(receiver) && this.option.is(throwable) && !(this.exception instanceof NullException)) {
 			throw this.exception;
 		}
 	}
@@ -198,6 +202,22 @@ public class Task implements Serializable {
 			}
 		}
 		return true;
+	}
+
+	private void getRemoteTaskResult() {
+		if(!this.option.is(sender) && !(this.procs[this.procs.length - 1] instanceof RequestSender)) {
+			return;
+		}
+		RequestSender sender = (RequestSender) this.procs[this.procs.length - 1];
+		Task remoteTask = sender.getRemoteTask();
+		if(remoteTask != null) {
+			this.stdoutMessage = remoteTask.getOutMessage();
+			this.stderrMessage = remoteTask.getErrorMessage();
+			this.exception = remoteTask.exception;
+			if(this.option.is(printable)) {
+				System.out.println(this.stdoutMessage);
+			}
+		}
 	}
 }
 
@@ -264,7 +284,7 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 
 class ShellExceptionBuilder {
 	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
-		if(!option.is(throwable) || option.is(timeout)) {
+		if(option.is(sender) || !option.is(throwable) || option.is(timeout)) {
 			return new NullException("");
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();

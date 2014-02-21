@@ -138,6 +138,7 @@ public class TaskBuilder {
 				PseudoProcess proc = new RequestSender(sendingCmdsList, this.option.is(background));
 				proc.setArgumentList(currentCmds);
 				procBuffer.add(proc);
+				this.option.setFlag(background, false);
 				break;
 			}
 			else if(cmdSymbol.equals(DShellGrammar.trace)) {

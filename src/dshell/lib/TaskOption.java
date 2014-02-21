@@ -2,6 +2,7 @@ package dshell.lib;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.throwable;
+import static dshell.lib.TaskOption.Behavior.sender;
 import static dshell.lib.TaskOption.Behavior.timeout;
 import static dshell.lib.TaskOption.RetType.StringType;
 import static dshell.lib.TaskOption.RetType.TaskType;
@@ -17,7 +18,8 @@ public class TaskOption implements Serializable {
 		printable ,
 		throwable ,
 		background,
-		receivable,
+		sender,
+		receiver,
 		timeout   ,
 	}
 
@@ -65,11 +67,11 @@ public class TaskOption implements Serializable {
 	}
 
 	public boolean supportStdoutHandler() {
-		return this.is(returnable) && (this.isRetType(StringType) || this.isRetType(TaskType));
+		return !this.is(sender) && this.is(returnable) && (this.isRetType(StringType) || this.isRetType(TaskType));
 	}
 
 	public boolean supportStderrHandler() {
-		return this.is(throwable) || this.isRetType(TaskType);
+		return !this.is(sender) && this.is(throwable) || this.isRetType(TaskType);
 	}
 
 	public void setTimeout(String timeSymbol) {

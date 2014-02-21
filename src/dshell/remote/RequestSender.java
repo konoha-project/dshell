@@ -94,12 +94,15 @@ public class RequestSender extends PseudoProcess {
 			catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			System.out.println(this.result.getOutMessage());
 		}
 	}
 
 	@Override
 	public boolean checkTermination() {
 		return false;
+	}
+
+	public Task getRemoteTask() {
+		return this.result;
 	}
 }

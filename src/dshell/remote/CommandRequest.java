@@ -2,7 +2,7 @@ package dshell.remote;
 
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.Behavior.printable;
-import static dshell.lib.TaskOption.Behavior.receivable;
+import static dshell.lib.TaskOption.Behavior.receiver;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.throwable;
 import static dshell.lib.TaskOption.RetType.TaskType;
@@ -32,10 +32,10 @@ public class CommandRequest implements Serializable {
 		this.context = RuntimeContext.getContext();
 		this.cmdsList = cmdsList;
 		if(isBackground) {
-			this.option = TaskOption.of(VoidType, background, printable, receivable);
+			this.option = TaskOption.of(VoidType, background, printable, receiver);
 		}
 		else {
-			this.option = TaskOption.of(TaskType, returnable, throwable, receivable);
+			this.option = TaskOption.of(TaskType, returnable, throwable, receiver);
 		}
 	}
 
