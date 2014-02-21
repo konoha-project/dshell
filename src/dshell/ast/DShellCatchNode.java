@@ -4,7 +4,6 @@ import dshell.lang.ModifiedTypeSafer;
 import zen.ast.ZNode;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.codegen.jvm.ModifiedJavaEngine;
-import zen.deps.Field;
 import zen.parser.ZToken;
 import zen.parser.ZVisitor;
 import zen.type.ZType;
@@ -12,8 +11,10 @@ import zen.type.ZType;
 public class DShellCatchNode extends ZNode {
 	public final static int _Block = 0;
 
-	@Field public ZType   ExceptionType = ZType.VarType;
-	@Field public String  ExceptionName = null;
+	public ZType   ExceptionType = ZType.VarType;
+	public String  ExceptionName = null;
+
+	public ZToken NameToken = null;
 
 	public DShellCatchNode(ZNode ParentNode) {
 		super(ParentNode, null, 1);
@@ -24,6 +25,7 @@ public class DShellCatchNode extends ZNode {
 	}
 	@Override public void SetNameInfo(ZToken NameToken, String Name) {
 		this.ExceptionName = Name;
+		this.NameToken = NameToken;
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {

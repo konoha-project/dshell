@@ -11,7 +11,7 @@ import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
 public class CommandPattern extends ZMatchFunction {
-	private DShellPattern dshellPattern;
+	private final DShellPattern dshellPattern;
 	public CommandPattern() {
 		this.dshellPattern = new DShellPattern();
 	}
