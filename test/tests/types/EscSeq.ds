@@ -1,9 +1,11 @@
+##FIXME
+
 function func() {
 
   log "うずまき\nナルト"
   log 'うずまき\nナルト'
 
-  return
+  assert(true)
 }
 
 func()

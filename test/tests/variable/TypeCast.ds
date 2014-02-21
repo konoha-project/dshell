@@ -16,11 +16,6 @@ function func() {
   assert(e instanceof int)
   assert(f instanceof String)
 
-  log ${d}
-  log ${e}
-  log ${f}
-
-  return
 }
 
 func()

@@ -1,14 +1,13 @@
 function raise(num) {
   if(num == 1) {
-    log "throw: DShellException"
-    throw new DShellException("1")
+    log "throw: NotPermittedException"
+    throw new NotPermittedException("1")
   } else if(num == 2) {
-    log "throw: NullException"
-    throw new NullException("2")
+    log "throw: FileNotFoundException"
+    throw new FileNotFoundException("2")
   } else {
-    log "other"
+    throw new ProcessNotFoundException("other")
   }
-  return
 }
 
 function func(num) {
@@ -17,16 +16,17 @@ function func(num) {
     log "try"
     raise(num)
 
-  } catch(e: DShellException) {
-    log "catch: DShellException"
-    log "error message: ${e.getErrorMessage()}"
-  } catch(e: NullException) {
-    log "catch: NullException"
-    log "error message: ${e.getErrorMessage()}"
+  } catch(e: NotPermittedException) {
+    assert(e instanceof NotPermittedException)
+  } catch(e: FileNotFoundException) {
+	assert(e instanceof FileNotFoundException)  
+  } catch(e : ProcessNotFoundException) {
+	assert(e instanceof ProcessNotFoundException)
+  } catch(e : DShellException) {
+	assert(false)
   } finally {
-    log "finaly"
+    assert(true)
   }
-  return
 }
 
 func(1)

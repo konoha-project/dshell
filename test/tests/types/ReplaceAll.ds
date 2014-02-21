@@ -1,10 +1,8 @@
 function func() {
 
   var str:String = "はるのサクラ"
-  str.replaceAll("はるの", "うずまき")
-  log ${str}
-
-  return
+  str = str.replaceAll("はるの", "うずまき")
+  assert(str == "うずまきサクラ")
 }
 
 func()

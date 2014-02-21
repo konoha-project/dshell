@@ -1,10 +1,9 @@
 function func() {
   var num = 1
   while (num < 3) {
-    log "while block: ${num}"
     num = num + 1
   }
-  return
+  return num
 }
 
-func()
+assert(func() == 3)

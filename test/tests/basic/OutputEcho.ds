@@ -1,3 +1,5 @@
+## FIXME
+
 import command echo
 
 function func() {
@@ -5,7 +7,7 @@ function func() {
   var num = 123
   echo ${str}
   echo ${num}
-  return
+  assert(true)
 }
 
 func()

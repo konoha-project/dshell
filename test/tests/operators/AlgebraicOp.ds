@@ -2,14 +2,12 @@ function func() {
   var a = 4
   var b = 2
 
-  log ${-a}
-  log ${a + b}
-  log ${a - b}
-  log ${a * b}
-  log ${a / b}
-  log ${a % b}
-
-  return
+  assert(-a == -4)
+  assert(a + b == 6)
+  assert(a - b == 2)
+  assert(a * b == 8)
+  assert(a / b == 2)
+  assert(a % b == 0)
 }
 
 func()

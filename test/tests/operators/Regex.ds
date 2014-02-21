@@ -1,17 +1,7 @@
 function func() {
   var str = "abc"
-  if (str =~ "^a") {
-    log "match!"
-  }
-  else {
-    log "not match!"
-  }
-  if (str =~ "^b") {
-    log "match!"
-  }
-  else {
-    log "not match!"
-  }
+  assert(str =~ "^a")
+  assert(str !~ "^b")
 }
 
 func()

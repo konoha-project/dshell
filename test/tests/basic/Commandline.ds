@@ -1,7 +1,10 @@
+##FIXME
+
 function func() {
   for(arg in ARGV) {
     log ${arg}
   }
+  assert(true)
 }
 
 func()

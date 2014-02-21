@@ -4,8 +4,6 @@ function func() {
     log "${key} => ${map[key]}"
   }
   assert(map instanceof Map<int>)
-
-  return
 }
 
 func()

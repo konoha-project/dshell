@@ -1,5 +1,7 @@
+##FIXME
+
 import env HOME               // 定義済み環境変数
 import env HOGE               // 未定義の環境変数 => 値が""(空文字)の定数 HOGE が定義される
 
-log ${HOME}  // 環境変数 HOME の値が出力される(/home/hogehoge など)
+log ${HOME}
 log ${HOGE}  // ""(空文字) が出力される

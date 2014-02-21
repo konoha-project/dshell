@@ -3,9 +3,9 @@ import command ls
 function func() {
   try {
     // ls コマンド失敗
-    ls /hoge
-  } catch(e) {
-    log "catch!"
+    ls /fhuirkdsl
+  } catch(e : DShellException) {
+    assert(true)
   }
 }
 func()

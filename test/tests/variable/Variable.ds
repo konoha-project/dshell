@@ -1,3 +1,5 @@
+##FIXME
+
 function func() {
   var age: int = 17
   var name = "uzumaki naruto"
@@ -5,7 +7,7 @@ function func() {
   log ${age}
   log ${name}
 
-  return
+  assert(true)
 }
 
 func()

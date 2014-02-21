@@ -1,4 +1,7 @@
+##FIXME
+
 function func() {
   log "Hello, World"
+  assert(true)
 }
 func()

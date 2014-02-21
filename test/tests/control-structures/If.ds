@@ -1,10 +1,10 @@
 function func(num) {
   if (num == 2) {
-    log "if block: ${num()}"
+    return true
   }
-  return
+  return false
 }
 
-func(1)
-func(2)
-func(3)
+assert(!func(1))
+assert(func(2))
+assert(!func(3))

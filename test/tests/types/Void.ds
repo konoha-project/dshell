@@ -1,6 +1,9 @@
+##FIXME
+
 function func():void {
 
   log "function call"
+  assert(true)
   return
 }
 

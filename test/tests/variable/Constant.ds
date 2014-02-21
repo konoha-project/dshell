@@ -2,10 +2,7 @@ let color ="red"
 
 function func() {
   let color = "green"
-  log "local color: ${color}"
-  return
+  return color
 }
 
-func()
-
-log "top color: ${color}"
+assert(func() == "green")

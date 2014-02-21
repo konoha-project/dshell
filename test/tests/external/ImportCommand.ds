@@ -1,5 +1,6 @@
 import command cat grep echo
 
-echo "hoge" > hoge.txt
-cat hoge.txt | grep hoge
+let str : String = echo "hoge" | grep hoge
+assert(str == "hoge\n")
+
 

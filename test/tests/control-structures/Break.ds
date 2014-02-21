@@ -1,13 +1,12 @@
 function func() {
   var num = 1
   while (true) {
-    log ${num()}
     num = num + 1
     if(num == 3) {
       break
     }
   }
-  return
+  assert(num == 3)
 }
 
 func()

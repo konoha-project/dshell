@@ -2,8 +2,11 @@ function func():boolean {
   var a = 4
   var b = 2
 
-  log ${!(a == b)}
-  log ${(a > b) && (a >= b)}
-  log ${(a > b) || (a == b)}
+  assert(!(a == b))
+  assert((a > b) && (a >= b))
+  assert((a > b) || (a == b))
+
   return true
 }
+
+func()

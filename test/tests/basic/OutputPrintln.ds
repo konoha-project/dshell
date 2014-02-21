@@ -1,3 +1,5 @@
+##FIXME
+
 import java.lang.System
 
 function func() {
@@ -5,6 +7,7 @@ function func() {
   var num = 123
   System.out.println(str)
   System.out.println(num)
+  assert(true)
 }
 
 func()

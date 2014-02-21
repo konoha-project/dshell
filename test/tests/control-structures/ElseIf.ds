@@ -1,16 +1,15 @@
 function func(num) {
   if(num == 1) {
-    log "if block: ${num()}"
+    return num * 10
   }
   else if(num == 2) {
-    log "else if block: ${num()}"
+    return num * 100
   }
   else {
-    log "else block: ${num()}"
+    return num * 1000
   }
-  return
 }
 
-func(1)
-func(2)
-func(3)
+assert(func(1) == 10)
+assert(func(2) == 2 * 100)
+assert(func(3) == 3 * 1000)

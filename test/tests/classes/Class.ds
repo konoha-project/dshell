@@ -19,9 +19,9 @@ function func() {
   var obj2 = Person { name: "sakura", age: 16 }
 
   // クラスオブジェクトの後に「ドット」付けてメンバ関数を指定
-  log ${obj1.isChild(1)}
+  assert(obj1.isChild(1))
   // メンバ関数のパラメータにクラスオブジェクトを指定
-  log ${isChild(ob2, 6)}
+  assert(isChild(ob2, 6))
 
   return
 }

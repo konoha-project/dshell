@@ -3,12 +3,10 @@ function func() {
   var a = 3.14
   var b: float = 0.5e3
 
-  log ${a}
+  assert(a == 3.14)
   assert(a instanceof float)
-  log ${b}
+  assert(b == 0.5e3)
   assert(b instanceof float)
-
-  return
 }
 
 func()

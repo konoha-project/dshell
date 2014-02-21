@@ -3,13 +3,11 @@ function func() {
   var a: boolean = true
   var b = false
 
-  log ${a}
-  log ${b}
+  assert(a)
+  assert(!b)
 
   assert(a instanceof boolean)
   assert(b instanceof boolean)
-
-  return
 }
 
 func()

@@ -2,4 +2,4 @@ function sub() {
   return "sub call"
 }
 
-log ${sub()}
+assert(sub() == "sub call")
