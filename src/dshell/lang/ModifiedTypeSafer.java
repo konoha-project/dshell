@@ -7,6 +7,7 @@ import zen.ast.ZThrowNode;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.lang.ZenTypeSafer;
 import zen.parser.ZGenerator;
+import zen.parser.ZLogger;
 import zen.type.ZType;
 import zen.type.ZVarType;
 import dshell.ast.DShellCatchNode;
@@ -54,7 +55,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 	public void VisitCatchNode(DShellCatchNode Node) {	//FIXME
 		ZBlockNode BlockNode = (ZBlockNode)Node.AST[ZCatchNode._Block];
 		if(BlockNode.GetListSize() == 0) {
-			this.Logger.ReportWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
+			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
 		}
 		if(!(Node.ExceptionType instanceof ZVarType)) {
 			Node.ExceptionType = this.VarScope.NewVarType(Node.ExceptionType, Node.ExceptionName, Node.SourceToken);

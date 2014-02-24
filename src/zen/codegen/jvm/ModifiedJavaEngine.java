@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import zen.codegen.jvm.JavaEngine;
 import zen.codegen.jvm.JavaGenerator;
+import zen.parser.ZLogger;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
@@ -51,7 +52,7 @@ public class ModifiedJavaEngine extends JavaEngine {
 			}
 		}
 		catch(Exception e) {
-			this.Logger.ReportError(Node.SourceToken, "invocation error: " + e);
+			ZLogger._LogError(Node.SourceToken, "invocation error: " + e);
 			this.StopVisitor();
 		}
 	}

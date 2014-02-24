@@ -1,6 +1,5 @@
 package dshell.lib;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -109,6 +108,24 @@ public class RuntimeContext implements Serializable {
 		return this.workingDir;
 	}
 
+	public String getNewWorkingDirectory() {
+		int size = 256;
+		byte[] buffers = new byte[size];
+		CLibraryWrapper.INSTANCE.getcwd(buffers, size);
+		int actualSize = 0;
+		for(byte buf : buffers) {
+			if(buf == 0) {
+				break;
+			}
+			actualSize++;
+		}
+		byte[] newBuffers = new byte[actualSize];
+		for(int i = 0; i < actualSize; i++) {
+			newBuffers[i] = buffers[i];
+		}
+		return new String(newBuffers);
+	}
+
 	public int changeDirectory(String path) {
 		String targetPath = path;
 		if(path.equals("")) {
@@ -119,7 +136,7 @@ public class RuntimeContext implements Serializable {
 			this.perror("-dshell: cd");
 		}
 		else {
-			this.workingDir = new File(targetPath).getAbsolutePath();
+			this.workingDir = this.getNewWorkingDirectory();
 		}
 		return status;
 	}
@@ -146,5 +163,6 @@ interface CLibraryWrapper extends com.sun.jna.Library {
 	CLibraryWrapper INSTANCE = (CLibraryWrapper) com.sun.jna.Native.loadLibrary("c", CLibraryWrapper.class);
 
 	int chdir(String path);
+	String getcwd(byte[] buf, int size);
 	void perror(String s); 
 }
