@@ -7,7 +7,7 @@ function func() {
   assert(num instanceof int)
   log "assert check 2"
 
-  assert(num > 10)
+  assert(num < 10)
   log "assert check 3"
 }
 func()

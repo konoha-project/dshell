@@ -1,12 +1,10 @@
-function func():boolean {
+function func() {
   var a = 4
   var b = 2
 
   assert(!(a == b))
   assert((a > b) && (a >= b))
-  assert((a > b) || (a == b))
-
-  return true
+  assert((a < b) || (a >= b))
 }
 
 func()

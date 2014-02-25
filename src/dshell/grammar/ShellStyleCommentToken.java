@@ -7,7 +7,7 @@ public class ShellStyleCommentToken extends ZTokenFunction {
 	@Override
 	public boolean Invoke(ZSourceContext SourceContext) {
 		while(SourceContext.HasChar()) {
-			char ch = SourceContext.ParseChar();
+			char ch = SourceContext.GetCurrentChar();
 			if(ch == '\n') {
 				break;
 			}

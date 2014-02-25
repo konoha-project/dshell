@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
-import test.zen.NoExitSecurityManager;
-
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
@@ -30,7 +28,6 @@ import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
-import zen.ast.ZCastNode;
 import zen.ast.ZCatchNode;
 import zen.ast.ZInstanceOfNode;
 import zen.ast.ZNode;
