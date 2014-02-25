@@ -11,7 +11,7 @@ if 構文の論理式が true の場合、ステートメントブロックに�
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: If.ds" >
 function func(num) {
   if (num == 2) {
-    log "if block: ${num()}"
+    log "if block: ${num}"
   }
   return
 }
@@ -33,10 +33,10 @@ if 構文に続く論理式が false の場合、else ステートメントブ�
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Else.ds" >
 function func(num) {
   if (num > 2) {
-    log "if block: ${num()}"
+    log "if block: ${num}"
   }
   else {
-    log "else block: ${num()}"
+    log "else block: ${num}"
   }
   return
 }
@@ -61,13 +61,13 @@ else if 構文では単独の条件分岐だけではなく複数の条件分岐
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: ElseIf.ds" >
 function func(num) {
   if(num == 1) {
-    log "if block: ${num()}"
+    log "if block: ${num}"
   }
   else if(num == 2) {
-    log "else if block: ${num()}"
+    log "else if block: ${num}"
   }
   else {
-    log "else block: ${num()}"
+    log "else block: ${num}"
   }
   return
 }
@@ -153,7 +153,7 @@ break 文を使うと、現在繰り返しているループ構造のステー�
 function func() {
   var num = 1
   while (true) {
-    log ${num()}
+    log ${num}
     num = num + 1
     if(num == 3) {
       break

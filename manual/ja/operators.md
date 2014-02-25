@@ -96,15 +96,17 @@ A && B|論理積|A および B が共に true の場合に true
 A || B|論理和|A または B のどちらかが true の場合に ture
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: LogicalOp.ds" >
-function func():boolean {
+function func() {
   var a = 4
   var b = 2
 
   log ${!(a == b)}
   log ${(a > b) && (a >= b)}
   log ${(a > b) || (a == b)}
-  return true
+  return
 }
+
+func()
 </pre>
 
 <pre class="toolbar:1 highlight:0" title="実行例">
@@ -136,6 +138,7 @@ function func() {
   else {
     log "not match!"
   }
+  return
 }
 
 func()
