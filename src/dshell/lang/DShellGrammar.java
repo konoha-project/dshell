@@ -2,7 +2,7 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
-import zen.grammar.ComparatorPattern;
+import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
 import zen.lang.ZenPrecedence;
@@ -51,10 +51,10 @@ public class DShellGrammar {
 		return false;
 	}
 
-	public static void ImportGrammar(ZNameSpace NameSpace, Class<?> Grammar) {
+	public static void ImportGrammar(ZNameSpace NameSpace) {
 		CommandPattern commandPattern = new CommandPattern();
 		DShellPattern dshellPattern = new DShellPattern();
-		ComparatorPattern comparatorPattern = new ComparatorPattern();
+		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		PrefixOptionPattern prefixOptionPattern = new PrefixOptionPattern();
 
 		NameSpace.AppendTokenFunc("#", new ShellStyleCommentToken());
@@ -67,8 +67,8 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("$Redirect$", new RedirectPattern());
 		NameSpace.DefineExpression("$SuffixOption$", new SuffixOptionPattern());
 		NameSpace.DefineExpression("$DShell$", dshellPattern);
-		NameSpace.DefineRightExpression("=~", ZenPrecedence.CStyleEquals, comparatorPattern);
-		NameSpace.DefineRightExpression("!~", ZenPrecedence.CStyleEquals, comparatorPattern);
+		NameSpace.DefineRightExpression("=~", ZenPrecedence._CStyleEquals, comparatorPattern);
+		NameSpace.DefineRightExpression("!~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		NameSpace.DefineStatement("try", new DShellTryPattern());
 		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());
 		NameSpace.DefineStatement(location, new LocationDefinePattern());

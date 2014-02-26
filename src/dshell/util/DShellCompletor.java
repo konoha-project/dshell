@@ -1,6 +1,5 @@
 package dshell.util;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
@@ -16,7 +15,7 @@ public class DShellCompletor implements Completor {
 
 	public DShellCompletor() {
 		this.commandCompletor = new jline.SimpleCompletor("dummy");
-		commandCompletor.setCandidates(getCommandListFromPath());
+		commandCompletor.setCandidates(getCommandSet());
 		this.fileNameCompletor = new DShellFileNameCompletor();
 		this.delimiter = new jline.ArgumentCompletor.WhitespaceArgumentDelimiter();
 	}
@@ -38,23 +37,8 @@ public class DShellCompletor implements Completor {
 		return ret + argList.getBufferPosition() - argPos;
 	}
 
-	private TreeSet<String> getCommandListFromPath() {
-		TreeSet<String> commandSet = new TreeSet<String>();
-		String[] paths = System.getenv("PATH").split(":");
-		for(String path : paths) {
-			if(path.startsWith("~")) {
-				path = System.getenv("HOME") + path.substring(1);
-			}
-			File[] files = new File(path).listFiles();
-			if(files == null) {
-				continue;
-			}
-			for(File file : files) {
-				if(file.canExecute()) {
-					commandSet.add(file.getName());
-				}
-			}
-		}
+	private static TreeSet<String> getCommandSet() {
+		TreeSet<String> commandSet = Utils.getCommandSetFromPath();
 		// add builtin command
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
 		for(String symbol : symbolList) {

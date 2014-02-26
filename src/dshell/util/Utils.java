@@ -1,6 +1,7 @@
 package dshell.util;
 
 import java.io.File;
+import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -39,6 +40,26 @@ public class Utils {
 
 	public final static boolean isFileExecutable(String Path) {
 		return new File(Path).canExecute();
+	}
+
+	public final static TreeSet<String> getCommandSetFromPath() {
+		TreeSet<String> commandSet = new TreeSet<String>();
+		String[] paths = System.getenv("PATH").split(":");
+		for(String path : paths) {
+			if(path.startsWith("~")) {
+				path = System.getenv("HOME") + path.substring(1);
+			}
+			File[] files = new File(path).listFiles();
+			if(files == null) {
+				continue;
+			}
+			for(File file : files) {
+				if(file.canExecute()) {
+					commandSet.add(file.getName());
+				}
+			}
+		}
+		return commandSet;
 	}
 
 	public final static void fatal(int status, String message) {

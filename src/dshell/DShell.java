@@ -1,14 +1,16 @@
 package dshell;
 
 import java.io.PrintStream;
+import java.util.TreeSet;
 
 import dshell.lib.RuntimeContext;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import dshell.util.DShellConsole;
+import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
-import zen.deps.KonohaGrammar;
 import zen.deps.LibZen;
+import zen.lang.ZenGrammar;
 import zen.main.ZenMain;
 import zen.parser.ZSourceEngine;
 import static dshell.lib.RuntimeContext.AppenderType;
@@ -19,12 +21,13 @@ public class DShell {
 	public final static int majorVersion = 0;
 	public final static int minerVersion = 1;
 	public final static int patchLevel   = 0;
-	public final static String version = "0.1";
+	public final static String version = "0.2";
 	public final static String copyright = "Copyright (c) 2013-2014, Konoha project authors";
 	public final static String license = "BSD-Style Open Source";
 	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ")";
 
 	private boolean interactiveMode = true;
+	private boolean autoImportCommand = true;
 	private boolean recSupport = false;
 	private String recURL = null;
 	private String[] scriptArgs;
@@ -39,6 +42,9 @@ public class DShell {
 				}
 				else if(optionSymbol.equals("--debug")) {
 					RuntimeContext.getContext().setDebugMode(true);
+				}
+				else if(optionSymbol.equals("--disable-auto-import")) {
+					this.autoImportCommand = false;
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
@@ -93,13 +99,26 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
+		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), ZenGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
-			engine.Generator.Logger.ShowErrors();
 			int linenum = 1;
 			String line = null;
+			if(this.autoImportCommand) {
+				StringBuilder importBuilder = new StringBuilder();
+				importBuilder.append("command ");
+				TreeSet<String> commandSet = Utils.getCommandSetFromPath();
+				int size = commandSet.size();
+				for(int i = 0; i < size; i++) {
+					if(i != 0) {
+						importBuilder.append(", ");
+					}
+					importBuilder.append(commandSet.pollFirst());
+				}
+				engine.Eval(importBuilder.toString(), "(stdin)", 0, false);
+			}
+			engine.Generator.Logger.ShowErrors();
 			while ((line = console.readLine()) != null) {
 				if(line.trim().equals("")) {
 					continue;
@@ -156,6 +175,7 @@ public class DShell {
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
 		stream.println("Options:");
 		stream.println("    --debug");
+		stream.println("    --disable-auto-import");
 		stream.println("    --help");
 		stream.println("    --logging:file [file path (appendable)]");
 		stream.println("    --logging:stdout");

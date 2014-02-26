@@ -6,7 +6,10 @@ import dshell.util.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.deps.ZMatchFunction;
+import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
+import zen.parser.ZSource;
+import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
@@ -78,10 +81,12 @@ public class CommandPattern extends ZMatchFunction {
 				return;
 			}
 		}
-		NameSpace.DefineExpression(Command, this.dshellPattern);
-		if(!CommandPrefix.equals(CommandPath)) {	//FIXME: check duplication
-			NameSpace.DefineExpression(CommandPrefix, this.dshellPattern);
+		ZSyntax Syntax = NameSpace.GetSyntaxPattern(CommandPrefix);
+		if(Syntax != null && !(Syntax.MatchFunc instanceof DShellPattern)) {
+			//System.err.println("found duplicated syntax pattern: " + Syntax);
+			return;
 		}
+		NameSpace.DefineExpression(CommandPrefix, this.dshellPattern);
 		NameSpace.SetLocalSymbol(DShellGrammar.CommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 }
