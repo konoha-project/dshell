@@ -5,7 +5,7 @@ import java.io.FileWriter
 
 function func() {
 
-  var filewriter: FileWriter = new FileWriter(File("/tmp/file.txt"))
+  var filewriter: FileWriter = new FileWriter(new File("/tmp/file.txt"))
 
   filewriter.write("Hello, World")
   filewriter.close()
