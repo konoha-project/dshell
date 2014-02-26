@@ -30,7 +30,7 @@ public class ArgumentPattern extends ZMatchFunction {
 				}
 			}
 			TokenList.add(Token);
-			Token = TokenContext.GetToken(ZTokenContext.MoveNext);
+			Token = TokenContext.GetToken(ZTokenContext._MoveNext);
 			if(Token.IsNextWhiteSpace()) {
 				break;
 			}
@@ -39,7 +39,7 @@ public class ArgumentPattern extends ZMatchFunction {
 	}
 
 	private ZToken MatchStringInterpolation(ZTokenContext TokenContext) {
-		ZToken KeyToken = TokenContext.GetToken(ZTokenContext.MoveNext);
+		ZToken KeyToken = TokenContext.GetToken(ZTokenContext._MoveNext);
 		String Symbol = KeyToken.GetText();
 		ZToken Token = TokenContext.GetToken();
 		if(Token.EqualsText("{")) {
@@ -66,7 +66,7 @@ public class ArgumentPattern extends ZMatchFunction {
 		String Symbol = "";
 		for(ZToken Token : TokenList) {
 			String TokenText = Token.GetText();
-			if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.EqualsName("$StringLiteral$")) {
+			if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.PatternName.equals(("$StringLiteral$"))) {
 				String ResolvedValue = this.ResolveStringInterpolation(TokenText.substring(1, TokenText.length() - 1));
 				if(ResolvedValue == null) {
 					return null;
@@ -88,7 +88,7 @@ public class ArgumentPattern extends ZMatchFunction {
 		Symbol = "\"" + Symbol + "\"";
 		ZNameSpace NameSpace = ParentNode.GetNameSpace();
 		ZTokenContext LocalContext = new ZTokenContext(TokenContext.Generator, NameSpace, FileName, LineNum, Symbol);
-		return LocalContext.ParsePattern(ParentNode, "$Statement$", ZTokenContext.Required);
+		return LocalContext.ParsePattern(ParentNode, "$Statement$", ZTokenContext._Required);
 	}
 
 	private String ResolveStringInterpolation(String Value) {	//TODO

@@ -27,25 +27,25 @@ public class DShellPattern extends ZMatchFunction {
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
 				// Match Prefix Option
-				ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, CommandNode, "$PrefixOption$", ZTokenContext.Optional);
+				ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, CommandNode, "$PrefixOption$", ZTokenContext._Optional);
 				if(PrefixOptionNode != null) {
 					return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)PrefixOptionNode);
 				}
 				// Match DShell
-				ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
+				ZNode PipedNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext._Required);
 				if(PipedNode.IsErrorNode()) {
 					return PipedNode;
 				}
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)PipedNode);
 			}
 			// Match Redirect
-			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, "$Redirect$", ZTokenContext.Optional);
+			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, "$Redirect$", ZTokenContext._Optional);
 			if(RedirectNode != null) {
 				((DShellCommandNode)CommandNode).AppendOptionNode((DShellCommandNode)RedirectNode);
 				continue;
 			}
 			// Match Suffix Option
-			ZNode SuffixOptionNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext.Optional);
+			ZNode SuffixOptionNode = TokenContext.ParsePattern(ParentNode, "$SuffixOption$", ZTokenContext._Optional);
 			if(SuffixOptionNode != null) {
 				if(SuffixOptionNode instanceof ZErrorNode) {
 					return SuffixOptionNode;
@@ -53,7 +53,7 @@ public class DShellPattern extends ZMatchFunction {
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)SuffixOptionNode);
 			}
 			// Match Argument
-			ZNode ArgNode = TokenContext.ParsePattern(ParentNode, "$CommandArg$", ZTokenContext.Optional);
+			ZNode ArgNode = TokenContext.ParsePattern(ParentNode, "$CommandArg$", ZTokenContext._Optional);
 			if(ArgNode == null) {
 				break;
 			}

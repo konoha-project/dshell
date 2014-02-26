@@ -113,27 +113,27 @@ public class ForeachPattern extends ZMatchFunction {
 		ZNode Node = this.CreateVarNode(ParentNode, TokenContext, this.ContextStack.peek().ValueListName);
 
 		ZNode DummyNode = new ZWhileNode(ParentNode);	// dummy
-		DummyNode = TokenContext.MatchToken(DummyNode, "for", ZTokenContext.Required);
-		DummyNode = TokenContext.MatchToken(DummyNode, "(", ZTokenContext.Required);
+		DummyNode = TokenContext.MatchToken(DummyNode, "for", ZTokenContext._Required);
+		DummyNode = TokenContext.MatchToken(DummyNode, "(", ZTokenContext._Required);
 		if(DummyNode.IsErrorNode()) {
 			return DummyNode;
 		}
-		ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$Name$", ZTokenContext.Required);
+		ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$Name$", ZTokenContext._Required);
 		if(ValueNode.IsErrorNode()) {
 			return ValueNode;
 		}
 		this.ContextStack.peek().ValueName = ((ZGetNameNode)ValueNode).VarName;	// set value name
-		DummyNode = TokenContext.MatchToken(DummyNode, "in", ZTokenContext.Required);
+		DummyNode = TokenContext.MatchToken(DummyNode, "in", ZTokenContext._Required);
 		if(DummyNode.IsErrorNode()) {
 			return DummyNode;
 		}
 
 		// $Expression$
-		ZNode ExprNode = TokenContext.ParsePattern(Node, "$Expression$", ZTokenContext.Required);
+		ZNode ExprNode = TokenContext.ParsePattern(Node, "$Expression$", ZTokenContext._Required);
 		if(ExprNode.IsErrorNode()) {
 			return ExprNode;
 		}
-		DummyNode = TokenContext.MatchToken(DummyNode, ")", ZTokenContext.Required);
+		DummyNode = TokenContext.MatchToken(DummyNode, ")", ZTokenContext._Required);
 		if(DummyNode.IsErrorNode()) {
 			return DummyNode;
 		}
@@ -188,7 +188,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ValueDeclNode.Set(ZVarNode._InitValue, GetIndexNode);
 
 		// $Block$
-		ZNode BlockNode = TokenContext.ParsePattern(ValueDeclNode, "$Block$", ZTokenContext.Required);
+		ZNode BlockNode = TokenContext.ParsePattern(ValueDeclNode, "$Block$", ZTokenContext._Required);
 		if(BlockNode.IsErrorNode()) {
 			return BlockNode;
 		}

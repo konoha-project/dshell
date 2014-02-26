@@ -1,6 +1,9 @@
 ##FIXME
 
-log "西暦${1900 + 114}年"
-log "西暦\${1900 + 114}年"
+import command echo
 
-assert(false)
+let a : String = echo "西暦${1900 + 114}年"
+let b : String = echo "西暦\${1900 + 114}年"
+
+assert(a.trim() == "西暦2014年")
+assert(b.trim() == "西暦${1900 + 114}年")

@@ -93,7 +93,7 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ZSourceEngine engine = LibZen.LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
+		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), KonohaGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			showVersionInfo();
@@ -109,7 +109,7 @@ public class DShell {
 					engine.Generator.Logger.ShowErrors();
 					if (LibZen.DebugMode && evaledValue != null) {
 						System.out.print(" (" + /*ZSystem.GuessType(evaledValue)*/ ":");
-						System.out.print(LibZen.GetClassName(evaledValue)+ ") ");
+						System.out.print(LibZen._GetClassName(evaledValue)+ ") ");
 						System.out.println(LibZen._Stringify(evaledValue));
 					}
 				}

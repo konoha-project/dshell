@@ -2,8 +2,8 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
-import libzen.grammar.ComparatorPattern;
-import libzen.grammar.UnaryPattern;
+import zen.grammar.ComparatorPattern;
+import zen.grammar.UnaryPattern;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
 import zen.lang.ZenPrecedence;

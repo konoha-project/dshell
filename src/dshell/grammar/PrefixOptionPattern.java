@@ -13,10 +13,10 @@ import zen.parser.ZTokenContext;
 public class PrefixOptionPattern extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZToken Token = TokenContext.GetToken(ZTokenContext.MoveNext);
+		ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
 		String Symbol = Token.GetText();
 		if(Symbol.equals(DShellGrammar.trace)) {
-			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
+			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
@@ -29,7 +29,7 @@ public class PrefixOptionPattern extends ZMatchFunction {
 			if(TimeNode.IsErrorNode()) {
 				return TimeNode;
 			}
-			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext.Required);
+			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
@@ -42,15 +42,15 @@ public class PrefixOptionPattern extends ZMatchFunction {
 	}
 
 	public ZNode ParseTimeout(ZNode ParentNode, ZTokenContext TokenContext) {
-		ZToken NumToken = TokenContext.GetToken(ZTokenContext.MoveNext);
+		ZToken NumToken = TokenContext.GetToken(ZTokenContext._MoveNext);
 		if((NumToken instanceof ZPatternToken)) {
-			if(((ZPatternToken)NumToken).PresetPattern.EqualsName("$IntegerLiteral$")) {
+			if(((ZPatternToken)NumToken).PresetPattern.PatternName.equals(("$IntegerLiteral$"))) {
 				long Num = LibZen._ParseInt(NumToken.GetText());
 				if(Num > 0) {
 					if(NumToken.IsNextWhiteSpace()) {
 						return new ZStringNode(ParentNode, NumToken, Long.toString(Num));
 					}
-					ZToken UnitToken = TokenContext.GetToken(ZTokenContext.MoveNext);
+					ZToken UnitToken = TokenContext.GetToken(ZTokenContext._MoveNext);
 					String UnitSymbol = UnitToken.GetText();
 					if(UnitSymbol.equals("ms")) {
 						return new ZStringNode(ParentNode, NumToken, Long.toString(Num));

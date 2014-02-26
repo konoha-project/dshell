@@ -51,7 +51,7 @@ public class RedirectPattern extends ZMatchFunction {
 		ZNode Node = new DShellCommandNode(ParentNode, null);
 		Node.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, null, RedirectSymbol));
 		if(existTarget) {
-			Node = TokenContext.MatchPattern(Node, ZNode._AppendIndex, "$CommandArg$", ZTokenContext.Required);
+			Node = TokenContext.MatchPattern(Node, ZNode._AppendIndex, "$CommandArg$", ZTokenContext._Required);
 		}
 		return Node;
 	}

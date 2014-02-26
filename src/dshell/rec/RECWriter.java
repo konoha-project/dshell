@@ -184,7 +184,7 @@ class RecAPI {
 		public String content;
 
 		public RecContext(String assertpoint, String fileName) {
-			String fileContent = LibZen.LoadTextFile(fileName);
+			String fileContent = LibZen._LoadTextFile(fileName);
 			if(fileContent == null) {
 				fileContent = "";
 			}

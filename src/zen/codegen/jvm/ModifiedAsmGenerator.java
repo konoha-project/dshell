@@ -40,6 +40,7 @@ import zen.parser.ZSourceEngine;
 import zen.deps.LibZen;
 import zen.parser.ZNameSpace;
 import zen.type.ZFunc;
+import zen.type.ZGenericType;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
@@ -75,7 +76,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
 
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
-		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZType.ArrayType, DShellExceptionType);
+		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, DShellExceptionType);
 		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
 		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
 	}
@@ -86,7 +87,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 
 	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {
 		super.ImportLocalGrammar(NameSpace);
-		LibZen.ImportGrammar(NameSpace, DShellGrammar.class.getName());
+		LibZen._ImportGrammar(NameSpace, DShellGrammar.class.getName());
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {
