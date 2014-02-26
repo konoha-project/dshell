@@ -36,6 +36,7 @@ import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
+import zen.parser.ZLogger;
 import zen.parser.ZSourceEngine;
 import zen.deps.LibZen;
 import zen.parser.ZNameSpace;
@@ -88,6 +89,16 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {
 		super.ImportLocalGrammar(NameSpace);
 		LibZen._ImportGrammar(NameSpace, DShellGrammar.class.getName());
+	}
+
+	@Override public boolean StartCodeGeneration(ZNode Node,  boolean IsInteractive) {
+		if(IsInteractive) {
+			ZLogger._LogError(Node.SourceToken, "unsupported at top level");
+			this.StopVisitor();
+			return false;
+		}
+		Node.Accept(this);
+		return true;
 	}
 
 	public void VisitCommandNode(DShellCommandNode Node) {

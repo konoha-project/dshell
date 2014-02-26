@@ -64,6 +64,9 @@ public class ArgumentPattern extends ZMatchFunction {
 					return new ZToken(Source, 0, Symbol.length());
 				}
 				Symbol += BodyToken.GetText();
+				if(BodyToken.IsNextWhiteSpace()) {
+					Symbol += " ";
+				}
 				TokenContext.MoveNext();
 			}
 		}

@@ -2,6 +2,8 @@ package zen.codegen.jvm;
 
 import java.util.ArrayList;
 
+import zen.ast.ZInstanceOfNode;
+import zen.ast.ZNode;
 import zen.codegen.jvm.JavaEngine;
 import zen.codegen.jvm.JavaGenerator;
 import zen.parser.ZLogger;
@@ -66,5 +68,31 @@ public class ModifiedJavaEngine extends JavaEngine {
 	}
 
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
+	}
+
+	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
+		Class<?> JavaClass = this.Solution.GetJavaClass(Node.TargetType);
+		if(Node.TargetType.IsIntType()) {
+			JavaClass = Long.class;
+		}
+		else if(Node.TargetType.IsFloatType()) {
+			JavaClass = Double.class;
+		}
+		else if(Node.TargetType.IsBooleanType()) {
+			JavaClass = Boolean.class;
+		}
+
+		ZNode TargetNode = Node.AST[ZInstanceOfNode._Left];
+		Object Value = this.Eval(TargetNode);
+		if(TargetNode.Type.IsIntType()) {
+			Value = new Long((Long) Value);
+		}
+		else if(TargetNode.Type.IsFloatType()) {
+			Value = new Double((Double) Value);
+		}
+		else if(TargetNode.Type.IsBooleanType()) {
+			Value = new Boolean((Boolean) Value);
+		}
+		this.EvaledValue = Value.getClass().equals(JavaClass);
 	}
 }
