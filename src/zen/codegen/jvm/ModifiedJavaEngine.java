@@ -11,7 +11,9 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
+import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
+import dshell.remote.TaskArray;
 
 public class ModifiedJavaEngine extends JavaEngine {
 	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaGenerator Generator) {
@@ -37,16 +39,19 @@ public class ModifiedJavaEngine extends JavaEngine {
 		}
 		try {
 			if(Node.Type.IsBooleanType()) {
-				this.EvaledValue = TaskBuilder.ExecCommandBoolTopLevel(values);
+				this.EvaledValue = TaskBuilder.ExecCommandBool(values);
 			}
 			else if(Node.Type.IsIntType()) {
-				this.EvaledValue = TaskBuilder.ExecCommandIntTopLevel(values);
+				this.EvaledValue = TaskBuilder.ExecCommandInt(values);
 			}
 			else if(Node.Type.IsStringType()) {
-				this.EvaledValue = TaskBuilder.ExecCommandStringTopLevel(values);
+				this.EvaledValue = TaskBuilder.ExecCommandString(values);
 			}
-			else if(Node.Type.ShortName.equals("Task")) {
-				this.EvaledValue = TaskBuilder.ExecCommandTaskTopLevel(values);
+			else if(this.Solution.GetJavaClass(Node.Type).equals(Task.class)) {
+				this.EvaledValue = TaskBuilder.ExecCommandTask(values);
+			}
+			else if(this.Solution.GetJavaClass(Node.Type).equals(TaskArray.class)) {
+				this.EvaledValue = TaskBuilder.ExecCommandTaskArray(values);
 			}
 			else {
 				TaskBuilder.ExecCommandVoid(values);

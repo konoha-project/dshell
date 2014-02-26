@@ -6,9 +6,13 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import zen.codegen.jvm.JavaTypeTable;
+import zen.type.ZType;
+
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.remote.RequestSender;
+import dshell.remote.TaskArray;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;
@@ -24,6 +28,7 @@ public class Task implements Serializable {
 	transient private final TaskOption option;
 	transient private MessageStreamHandler stdoutHandler;
 	transient private MessageStreamHandler stderrHandler;
+	transient private ArrayList<Task> taskList;
 	private boolean terminated = false;
 	private String stdoutMessage;
 	private String stderrMessage;
@@ -217,6 +222,15 @@ public class Task implements Serializable {
 				System.out.println(this.stdoutMessage);
 			}
 		}
+	}
+
+	public static TaskArray getTaskArray(Task task) {
+		ZType nativeType = JavaTypeTable.GetZenType(Task.class);
+		Task[] values = new Task[task.taskList.size()];
+		for(int i = 0; i < values.length; i++) {
+			values[i] = task.taskList.get(i);
+		}
+		return new TaskArray(nativeType.TypeId, values);
 	}
 }
 

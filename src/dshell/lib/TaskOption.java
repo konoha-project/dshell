@@ -29,6 +29,7 @@ public class TaskOption implements Serializable {
 		BooleanType,
 		StringType ,
 		TaskType   ,
+		TaskArrayType,
 	}
 
 	private final RetType retType;

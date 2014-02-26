@@ -11,6 +11,7 @@ import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
 import dshell.remote.RequestSender;
+import dshell.remote.TaskArray;
 import dshell.util.Utils;
 
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -23,6 +24,7 @@ import static dshell.lib.TaskOption.RetType.IntType    ;
 import static dshell.lib.TaskOption.RetType.BooleanType;
 import static dshell.lib.TaskOption.RetType.StringType ;
 import static dshell.lib.TaskOption.RetType.TaskType   ;
+import static dshell.lib.TaskOption.RetType.TaskArrayType;
 
 public class TaskBuilder {
 	private TaskOption option;
@@ -66,6 +68,9 @@ public class TaskBuilder {
 			}
 			else if(this.option.isRetType(TaskType)) {
 				return task;
+			}
+			else if(this.option.isRetType(TaskArrayType)) {
+				return Task.getTaskArray(task);
 			}
 		}
 		return null;
@@ -175,32 +180,7 @@ public class TaskBuilder {
 		return proc;
 	}
 
-	// called by ModifiedReflectionEngine#VisitCommandNode
-	public static void ExecCommandVoidTopLevel(String[][] cmds) {
-		TaskOption option = TaskOption.of(VoidType, printable);
-		new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-
-	public static int ExecCommandIntTopLevel(String[][] cmds) {
-		TaskOption option = TaskOption.of(IntType, printable, returnable);
-		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
-	}
-
-	public static boolean ExecCommandBoolTopLevel(String[][] cmds) {
-		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
-		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option).invoke()).booleanValue();
-	}
-
-	public static String ExecCommandStringTopLevel(String[][] cmds) {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-
-	public static Task ExecCommandTaskTopLevel(String[][] cmds) {
-		TaskOption option = TaskOption.of(TaskType, printable, returnable);
-		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-	// called by ModifiedJavaByteCodeGenerator#VisitCommandNode
+	// called by ModifiedAsmGenerator#VisitCommandNode
 	public static void ExecCommandVoid(String[][] cmds) {
 		TaskOption option = TaskOption.of(VoidType, printable, throwable);
 		new TaskBuilder(toCmdsList(cmds), option).invoke();
@@ -224,6 +204,11 @@ public class TaskBuilder {
 	public static Task ExecCommandTask(String[][] cmds) {
 		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
 		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
+	}
+
+	public static TaskArray ExecCommandTaskArray(String[][] cmds) {
+		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
+		return (TaskArray)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {

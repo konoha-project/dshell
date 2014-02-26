@@ -26,6 +26,7 @@ import dshell.lib.DShellExceptionArray;
 import dshell.lib.ExceptionClassMap;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
+import dshell.remote.TaskArray;
 import dshell.util.Utils;
 import zen.ast.ZCatchNode;
 import zen.ast.ZInstanceOfNode;
@@ -50,6 +51,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 	private Method ExecCommandInt;
 	private Method ExecCommandString;
 	private Method ExecCommandTask;
+	private Method ExecCommandTaskArray;
 
 	public ModifiedAsmGenerator() {
 		super();
@@ -66,6 +68,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", String[][].class);
 			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", String[][].class);
 			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", String[][].class);
+			ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", String[][].class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -75,10 +78,20 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
 
+		// load exception array
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
 		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, DShellExceptionType);
 		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
+
 		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
+
+		// load task array
+		ZType TaskType = JavaTypeTable.GetZenType(Task.class);
+		ZType TaskArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, TaskType);
+		JavaTypeTable.SetTypeTable(TaskArrayType, TaskArray.class);
+
+		JavaMethodTable.Import(TaskArrayType, "[]", ZType.IntType, TaskArray.class, "GetIndex");
+		JavaMethodTable.Import(TaskArrayType, "[]=", ZType.IntType, TaskArray.class, "SetIndex", Task.class);
 	}
 
 	@Override public ZSourceEngine GetEngine() {
@@ -138,8 +151,11 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		else if(Node.Type.IsStringType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandString);
 		}
-		else if(Node.Type.ShortName.equals("Task")) {
+		else if(this.GetJavaClass(Node.Type).equals(Task.class)) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTask);
+		}
+		else if(this.GetJavaClass(Node.Type).equals(TaskArray.class)) {
+			this.invokeStaticMethod(Node.Type, ExecCommandTaskArray);
 		}
 		else {
 			this.invokeStaticMethod(Node.Type, ExecCommandVoid);
