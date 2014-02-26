@@ -3,7 +3,6 @@ package dshell.lang;
 import java.util.ArrayList;
 
 import zen.grammar.ComparatorPattern;
-import zen.grammar.UnaryPattern;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
 import zen.lang.ZenPrecedence;
@@ -56,7 +55,6 @@ public class DShellGrammar {
 		CommandPattern commandPattern = new CommandPattern();
 		DShellPattern dshellPattern = new DShellPattern();
 		ComparatorPattern comparatorPattern = new ComparatorPattern();
-		UnaryPattern unaryPattern = new UnaryPattern();
 		PrefixOptionPattern prefixOptionPattern = new PrefixOptionPattern();
 
 		NameSpace.AppendTokenFunc("#", new ShellStyleCommentToken());
@@ -71,7 +69,6 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("$DShell$", dshellPattern);
 		NameSpace.DefineRightExpression("=~", ZenPrecedence.CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence.CStyleEquals, comparatorPattern);
-		NameSpace.DefineExpression("log", unaryPattern);
 		NameSpace.DefineStatement("try", new DShellTryPattern());
 		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());
 		NameSpace.DefineStatement(location, new LocationDefinePattern());

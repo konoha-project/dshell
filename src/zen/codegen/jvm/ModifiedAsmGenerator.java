@@ -16,15 +16,14 @@ import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
-import dshell.lib.ClassListLoader;
 import dshell.lib.DShellExceptionArray;
+import dshell.lib.ExceptionClassMap;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.util.Utils;
@@ -59,7 +58,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.importJavaClass(MultipleException.class);
 		this.importJavaClass(UnimplementedErrnoException.class);
 		this.importJavaClass(DShellException.NullException.class);
-		this.importJavaClassList(new ClassListLoader("dshell.exception.errno").loadClassList());
+		this.importJavaClassList(ExceptionClassMap.getExceptionClassList());
 
 		try {
 			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);
@@ -185,9 +184,6 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
-	}
-
-	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {

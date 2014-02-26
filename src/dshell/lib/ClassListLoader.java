@@ -12,20 +12,13 @@ import java.util.jar.JarFile;
 import dshell.util.Utils;
 
 public class ClassListLoader {
-	private final String packageName;
-	private final ClassLoader classLoader;
-
-	public ClassListLoader(String packageName) {
-		this.packageName = packageName;
-		this.classLoader = Thread.currentThread().getContextClassLoader();
-	}
-
-	public ArrayList<Class<?>> loadClassList() {
+	public static ArrayList<Class<?>> loadClassList(String packageName) {
+		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
-		String path = this.packageName.replace(".", "/");
+		String path = packageName.replace(".", "/");
 		ArrayList<URL> resourceList = new ArrayList<URL>();
 		try {
-			Enumeration<URL> resources = this.classLoader.getResources(path);
+			Enumeration<URL> resources = classLoader.getResources(path);
 			while(resources.hasMoreElements()) {
 				URL url = resources.nextElement();
 				resourceList.add(url);
@@ -33,10 +26,10 @@ public class ClassListLoader {
 			for(URL url : resourceList) {
 				String protocol = url.getProtocol();
 				if(protocol.equals("file")) {
-					classList.addAll(this.loadFromDir(this.packageName, new File(url.getFile())));
+					classList.addAll(loadFromDir(classLoader, packageName, new File(url.getFile())));
 				}
 				else if(protocol.equals("jar")) {
-					classList.addAll(this.loadFromJarFile(this.packageName, url));
+					classList.addAll(loadFromJarFile(classLoader, packageName, url));
 				}
 			}
 		}
@@ -46,15 +39,15 @@ public class ClassListLoader {
 		return classList;
 	}
 
-	private boolean isClassFile(String fileName) {
+	private static boolean isClassFile(String fileName) {
 		return fileName.endsWith(".class");
 	}
 
-	private String removeClassSuffix(String fileName) {
+	private static String removeClassSuffix(String fileName) {
 		return fileName.substring(0, fileName.length() - ".class".length());
 	}
 
-	private ArrayList<Class<?>> loadFromDir(String packageName, File dir) {
+	private static ArrayList<Class<?>> loadFromDir(ClassLoader classLoader, String packageName, File dir) {
 		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
 		if(!dir.exists()) {
 			return classList;
@@ -64,12 +57,12 @@ public class ClassListLoader {
 		for(File file : files) {
 			String fileName = file.getName();
 			if(file.isDirectory()) {
-				classList.addAll(this.loadFromDir(packageName + "." + fileName, file));
+				classList.addAll(loadFromDir(classLoader, packageName + "." + fileName, file));
 			}
-			else if(this.isClassFile(file.getName())) {
-				String className = packageName + "." + this.removeClassSuffix(fileName);
+			else if(isClassFile(file.getName())) {
+				String className = packageName + "." + removeClassSuffix(fileName);
 				try {
-					classList.add(this.classLoader.loadClass(className));
+					classList.add(classLoader.loadClass(className));
 				}
 				catch (ClassNotFoundException e) {
 					Utils.fatal(1, "loading class failed: " + className);
@@ -79,7 +72,7 @@ public class ClassListLoader {
 		return classList;
 	}
 
-	private ArrayList<Class<?>> loadFromJarFile(String packageName, URL jarFileUrl) {
+	private static ArrayList<Class<?>> loadFromJarFile(ClassLoader classLoader, String packageName, URL jarFileUrl) {
 		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
 		String path = packageName.replace(".", "/");
 		try {
@@ -89,10 +82,10 @@ public class ClassListLoader {
 			while(entries.hasMoreElements()) {
 				JarEntry entry = entries.nextElement();
 				String entryName = entry.getName();
-				if(entryName.startsWith(path) && this.isClassFile(entryName)) {
-					String className = this.removeClassSuffix(entryName.replace("/", "."));
+				if(entryName.startsWith(path) && isClassFile(entryName)) {
+					String className = removeClassSuffix(entryName.replace("/", "."));
 					try {
-						classList.add(this.classLoader.loadClass(className));
+						classList.add(classLoader.loadClass(className));
 					}
 					catch (ClassNotFoundException e) {
 						Utils.fatal(1, "loading class failed: " + className);

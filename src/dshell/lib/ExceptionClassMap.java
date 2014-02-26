@@ -5,6 +5,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.Map;
 
 import dshell.exception.DShellException;
 import dshell.exception.RelatedSyscallException;
@@ -15,7 +16,7 @@ public class ExceptionClassMap {
 	private final static EnumMap<Errno, Class<?>> exceptMap = new EnumMap<Errno, Class<?>>(Errno.class);
 
 	static {
-		verifyAndSetExceptionClass(new ClassListLoader("dshell.exception.errno").loadClassList());
+		verifyAndSetExceptionClass(ClassListLoader.loadClassList("dshell.exception.errno"));
 	}
 
 	private static void verifyAndSetExceptionClass(ArrayList<Class<?>> exceptionClassList) {
@@ -112,6 +113,14 @@ public class ExceptionClassMap {
 			}
 		}
 		return errnoList;
+	}
+
+	public static ArrayList<Class<?>> getExceptionClassList() {
+		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
+		for(Map.Entry<Errno, Class<?>> entry : exceptMap.entrySet()) {
+			classList.add(entry.getValue());
+		}
+		return classList;
 	}
 
 	public static void main(String[] args) {

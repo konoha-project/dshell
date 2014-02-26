@@ -9,7 +9,6 @@ import zen.codegen.jvm.JavaGenerator;
 import zen.parser.ZLogger;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.TaskBuilder;
@@ -65,9 +64,6 @@ public class ModifiedJavaEngine extends JavaEngine {
 
 	public void VisitCatchNode(DShellCatchNode Node) {
 		this.Unsupported(Node);
-	}
-
-	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 
 	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
