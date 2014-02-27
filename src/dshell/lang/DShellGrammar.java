@@ -2,13 +2,16 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
+import zen.deps.ZMatchFunction;
 import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
 import zen.lang.ZenPrecedence;
 import zen.parser.ZNameSpace;
+import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
+import dshell.DShell;
 import dshell.grammar.ArgumentPattern;
 import dshell.grammar.CommandPattern;
 import dshell.grammar.DShellCatchPattern;
@@ -69,8 +72,8 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("$DShell$", dshellPattern);
 		NameSpace.DefineRightExpression("=~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence._CStyleEquals, comparatorPattern);
-		NameSpace.DefineStatement("try", new DShellTryPattern());
-		NameSpace.DefineExpression("$Catch$", new DShellCatchPattern());
+		overrideSyntaxPattern(NameSpace, "try", new DShellTryPattern(), true);
+		overrideSyntaxPattern(NameSpace, "$Catch$", new DShellCatchPattern(), true);
 		NameSpace.DefineStatement(location, new LocationDefinePattern());
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
@@ -82,11 +85,17 @@ public class DShellGrammar {
 		for(String symbol : symbolList) {
 			setOptionalSymbol(NameSpace, symbol, dshellPattern);
 		}
-		NameSpace.Generator.AppendGrammarInfo("dshell0.1");
+		NameSpace.Generator.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
 	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, DShellPattern dShellPattern) {
 		NameSpace.DefineExpression(symbol, dShellPattern);
 		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
+	}
+
+	private static void overrideSyntaxPattern(ZNameSpace NameSpace, String PatternName, ZMatchFunction MatchFunc, boolean isStatement) {
+		ZSyntax Pattern = new ZSyntax(NameSpace, PatternName, MatchFunc);
+		Pattern.IsStatement = isStatement;
+		NameSpace.SetSyntaxPattern(PatternName, Pattern);
 	}
 }

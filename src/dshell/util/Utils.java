@@ -54,7 +54,7 @@ public class Utils {
 				continue;
 			}
 			for(File file : files) {
-				if(file.canExecute()) {
+				if(!file.isDirectory() && file.canExecute()) {
 					commandSet.add(file.getName());
 				}
 			}
