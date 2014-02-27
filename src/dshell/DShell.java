@@ -28,6 +28,7 @@ public class DShell {
 
 	private boolean interactiveMode = true;
 	private boolean autoImportCommand = true;
+	private boolean disableWelcomeMessage = false;
 	private boolean recSupport = false;
 	private String recURL = null;
 	private String[] scriptArgs;
@@ -45,6 +46,9 @@ public class DShell {
 				}
 				else if(optionSymbol.equals("--disable-auto-import")) {
 					this.autoImportCommand = false;
+				}
+				else if(optionSymbol.equals("--disable-welcome")) {
+					this.disableWelcomeMessage = true;
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
@@ -102,9 +106,12 @@ public class DShell {
 		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), ZenGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
-			showVersionInfo();
 			int linenum = 1;
 			String line = null;
+			if(!this.disableWelcomeMessage) {
+				System.out.println(DShellConsole.welcomeMessage);
+			}
+			DShell.showVersionInfo();
 			if(this.autoImportCommand) {
 				StringBuilder importBuilder = new StringBuilder();
 				importBuilder.append("command ");
@@ -176,6 +183,7 @@ public class DShell {
 		stream.println("Options:");
 		stream.println("    --debug");
 		stream.println("    --disable-auto-import");
+		stream.println("    --disable-welcome");
 		stream.println("    --help");
 		stream.println("    --logging:file [file path (appendable)]");
 		stream.println("    --logging:stdout");

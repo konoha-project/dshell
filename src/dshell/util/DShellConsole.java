@@ -9,8 +9,17 @@ import zen.main.ZenMain;
 public class DShellConsole {
 	private jline.ConsoleReader consoleReader = null;
 	private String userName = System.getProperty("user.name");
-	
+
+	public final static String welcomeMessage = "oooooooooo.            .oooooo..o oooo                  oooo  oooo  \n" +
+                                                "`888'   `Y8b          d8P'    `Y8 `888                  `888  `888  \n" +
+                                                " 888      888         Y88bo.       888 .oo.    .ooooo.   888   888  \n" +
+                                                " 888      888          `\"Y8888o.   888P\"Y88b  d88' `88b  888   888  \n" +
+                                                " 888      888 8888888      `\"Y88b  888   888  888ooo888  888   888  \n" +
+                                                " 888     d88'         oo     .d8P  888   888  888    .o  888   888  \n" +
+                                                "o888bood8P'           8\"\"88888P'  o888o o888o `Y8bod8P' o888o o888o \n\n" +
+                                                "Welcome to D-Shell <https://github.com/konoha-project/dshell>\n";
 	public DShellConsole() {
+		System.out.print(ANSICodes.attrib(36));
 		Runtime.getRuntime().addShutdownHook(new ShutdownOp());
 		try {
 			this.consoleReader = new jline.ConsoleReader();
