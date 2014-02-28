@@ -12,13 +12,14 @@ import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.DShell;
-import dshell.grammar.ArgumentPattern;
-import dshell.grammar.CommandPattern;
+import dshell.grammar.CommandArgPattern;
+import dshell.grammar.CommandSymbolToken;
+import dshell.grammar.ImportCommandPattern;
 import dshell.grammar.DShellCatchPattern;
 import dshell.grammar.DShellImportPattern;
-import dshell.grammar.DShellPattern;
+import dshell.grammar.CommandSymbolPattern;
 import dshell.grammar.DShellTryPattern;
-import dshell.grammar.EnvPattern;
+import dshell.grammar.ImportEnvPattern;
 import dshell.grammar.ForeachPattern;
 import dshell.grammar.LocationDefinePattern;
 import dshell.grammar.PrefixOptionPattern;
@@ -55,21 +56,24 @@ public class DShellGrammar {
 	}
 
 	public static void ImportGrammar(ZNameSpace NameSpace) {
-		CommandPattern commandPattern = new CommandPattern();
-		DShellPattern dshellPattern = new DShellPattern();
+		CommandSymbolToken commandSymbolToken = new CommandSymbolToken();
+		ImportCommandPattern importCommandPattern = new ImportCommandPattern();
+		CommandSymbolPattern commandSymbolPattern = new CommandSymbolPattern();
 		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		PrefixOptionPattern prefixOptionPattern = new PrefixOptionPattern();
 
 		NameSpace.AppendTokenFunc("#", new ShellStyleCommentToken());
+		NameSpace.AppendTokenFunc("Aa_", commandSymbolToken);
+		NameSpace.AppendTokenFunc("1", commandSymbolToken);
 
 		NameSpace.DefineStatement("import", new DShellImportPattern());
-		NameSpace.DefineExpression("$Env$", new EnvPattern());
-		NameSpace.DefineStatement("command", commandPattern);
-		NameSpace.DefineExpression("$Command$", commandPattern);
-		NameSpace.DefineExpression("$CommandArg$", new ArgumentPattern());
-		NameSpace.DefineExpression("$Redirect$", new RedirectPattern());
-		NameSpace.DefineExpression("$SuffixOption$", new SuffixOptionPattern());
-		NameSpace.DefineExpression("$DShell$", dshellPattern);
+		NameSpace.DefineExpression(ImportEnvPattern.PatternName, new ImportEnvPattern());
+		NameSpace.DefineStatement("command", importCommandPattern);
+		NameSpace.DefineExpression(ImportCommandPattern.PatternName, importCommandPattern);
+		NameSpace.DefineExpression(CommandArgPattern.PatternName, new CommandArgPattern());
+		NameSpace.DefineExpression(RedirectPattern.PatternName, new RedirectPattern());
+		NameSpace.DefineExpression(SuffixOptionPattern.PatternName, new SuffixOptionPattern());
+		NameSpace.DefineExpression(CommandSymbolPattern.PatternName, commandSymbolPattern);
 		NameSpace.DefineRightExpression("=~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		overrideSyntaxPattern(NameSpace, "try", new DShellTryPattern(), true);
@@ -77,19 +81,19 @@ public class DShellGrammar {
 		NameSpace.DefineStatement(location, new LocationDefinePattern());
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
-		NameSpace.DefineExpression("$PrefixOption$", prefixOptionPattern);
+		NameSpace.DefineExpression(PrefixOptionPattern.PatternName, prefixOptionPattern);
 		NameSpace.DefineStatement("for", new ForeachPattern());
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
 		for(String symbol : symbolList) {
-			setOptionalSymbol(NameSpace, symbol, dshellPattern);
+			setOptionalSymbol(NameSpace, symbol, commandSymbolPattern);
 		}
 		NameSpace.Generator.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
-	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, DShellPattern dShellPattern) {
-		NameSpace.DefineExpression(symbol, dShellPattern);
+	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, CommandSymbolPattern dShellPattern) {
+		//NameSpace.DefineExpression(symbol, dShellPattern);
 		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
 	}
 

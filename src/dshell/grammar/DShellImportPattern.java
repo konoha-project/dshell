@@ -11,10 +11,10 @@ public class DShellImportPattern extends ZMatchFunction {
 		TokenContext.MoveNext();
 		ZToken Token = TokenContext.GetToken();
 		if(Token.EqualsText("command")) {
-			return TokenContext.ParsePattern(ParentNode, "$Command$", ZTokenContext._Required);
+			return TokenContext.ParsePattern(ParentNode, ImportCommandPattern.PatternName, ZTokenContext._Required);
 		}
 		if(Token.EqualsText("env")) {
-			return TokenContext.ParsePattern(ParentNode, "$Env$", ZTokenContext._Required);
+			return TokenContext.ParsePattern(ParentNode, ImportEnvPattern.PatternName, ZTokenContext._Required);
 		}
 		return null;
 	}

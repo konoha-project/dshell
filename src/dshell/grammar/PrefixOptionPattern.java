@@ -11,12 +11,13 @@ import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
 public class PrefixOptionPattern extends ZMatchFunction {
+	public final static String PatternName = "$PrefixOption$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
 		String Symbol = Token.GetText();
 		if(Symbol.equals(DShellGrammar.trace)) {
-			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext._Required);
+			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPattern.PatternName, ZTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
@@ -29,7 +30,7 @@ public class PrefixOptionPattern extends ZMatchFunction {
 			if(TimeNode.IsErrorNode()) {
 				return TimeNode;
 			}
-			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, "$DShell$", ZTokenContext._Required);
+			ZNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPattern.PatternName, ZTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}

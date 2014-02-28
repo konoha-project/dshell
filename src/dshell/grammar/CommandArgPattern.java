@@ -14,7 +14,8 @@ import zen.parser.ZSource;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class ArgumentPattern extends ZMatchFunction {
+public class CommandArgPattern extends ZMatchFunction {
+	public final static String PatternName = "$CommandArg$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		if(DShellGrammar.MatchStopToken(TokenContext)) {

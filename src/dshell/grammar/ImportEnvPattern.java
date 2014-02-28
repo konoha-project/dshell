@@ -6,7 +6,8 @@ import zen.ast.ZStringNode;
 import zen.deps.ZMatchFunction;
 import zen.parser.ZTokenContext;
 
-public class EnvPattern extends ZMatchFunction {
+public class ImportEnvPattern extends ZMatchFunction {
+	public final static String PatternName = "$ImportEnv$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode LetNode = new ZLetNode(ParentNode);

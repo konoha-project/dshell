@@ -6,60 +6,44 @@ import dshell.util.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.deps.ZMatchFunction;
-import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
-import zen.parser.ZSource;
 import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class CommandPattern extends ZMatchFunction {
-	private final DShellPattern dshellPattern;
-	public CommandPattern() {
-		this.dshellPattern = new DShellPattern();
-	}
-
+public class ImportCommandPattern extends ZMatchFunction {
+	public final static String PatternName = "$ImportCommand$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		String Command = "";
-		boolean foundSlash = true;
-		String KeySymbol = null;
 		String ParsedText = null;
 		TokenContext.MoveNext();
 		while(TokenContext.HasNext()) {
 			ZToken Token = TokenContext.GetToken();
 			ParsedText = Token.GetText();
-			if(foundSlash && !Token.EqualsText("/")) {
-				foundSlash = false;
-				KeySymbol = ParsedText;
-			}
 			if(Token.EqualsText(",")) {
 				ParsedText = "";
 			}
 			if(Token.EqualsText("~")) {
 				ParsedText = System.getenv("HOME");
 			}
-			if(Token.EqualsText("/")) {
-				foundSlash = true;
-			}
 			if(Token.EqualsText(";") || Token.IsIndent()) {
 				break;
 			}
 			Command += ParsedText;
 			if(Token.IsNextWhiteSpace()) {
-				AppendCommand(ParentNode, Command, KeySymbol);
+				AppendCommand(ParentNode, Command);
 				Command = "";
-				foundSlash = true;
 			}
 			TokenContext.MoveNext();
 		}
 		if(!Command.equals("")) {
-			AppendCommand(ParentNode, Command, KeySymbol);
+			AppendCommand(ParentNode, Command);
 		}
 		return new DShellDummyNode(ParentNode);
 	}
 
-	private void AppendCommand(ZNode ParentNode, String CommandPath, String CommandPrefix) {
+	private void AppendCommand(ZNode ParentNode, String CommandPath) {
 		if(CommandPath.length() == 0) {
 			return;
 		}
@@ -81,12 +65,11 @@ public class CommandPattern extends ZMatchFunction {
 				return;
 			}
 		}
-		ZSyntax Syntax = NameSpace.GetSyntaxPattern(CommandPrefix);
-		if(Syntax != null && !(Syntax.MatchFunc instanceof DShellPattern)) {
+		ZSyntax Syntax = NameSpace.GetSyntaxPattern(Command);
+		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPattern)) {
 			//System.err.println("found duplicated syntax pattern: " + Syntax);
 			return;
 		}
-		NameSpace.DefineExpression(CommandPrefix, this.dshellPattern);
 		NameSpace.SetLocalSymbol(DShellGrammar.CommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 }
