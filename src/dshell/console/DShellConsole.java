@@ -1,14 +1,22 @@
 package dshell.console;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import dshell.lib.RuntimeContext;
+import dshell.lib.TaskBuilder;
+import dshell.lib.TaskOption;
+
 import jline.ANSIBuffer.ANSICodes;
 import zen.main.ZenMain;
+import static dshell.lib.TaskOption.Behavior.returnable;
+import static dshell.lib.TaskOption.RetType.StringType;
 
 public class DShellConsole {
 	private jline.ConsoleReader consoleReader = null;
 	private String userName = System.getProperty("user.name");
+	private final String originalTTYConfig;
+	private final String jlineTTYConfig;
 
 	public final static String welcomeMessage = "oooooooooo.            .oooooo..o oooo                  oooo  oooo  \n" +
                                                 "`888'   `Y8b          d8P'    `Y8 `888                  `888  `888  \n" +
@@ -19,11 +27,14 @@ public class DShellConsole {
                                                 "o888bood8P'           8\"\"88888P'  o888o o888o `Y8bod8P' o888o o888o \n\n" +
                                                 "Welcome to D-Shell <https://github.com/konoha-project/dshell>\n";
 	public DShellConsole() {
+		this.originalTTYConfig = this.saveTTYConfig();
 		System.out.print(ANSICodes.attrib(36));
 		Runtime.getRuntime().addShutdownHook(new ShutdownOp());
 		try {
 			this.consoleReader = new jline.ConsoleReader();
 			this.consoleReader.addCompletor(new DShellCompletor());
+			// save jline tty config
+			this.jlineTTYConfig = this.saveTTYConfig();
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
@@ -37,6 +48,7 @@ public class DShellConsole {
 		String line;
 		try {
 			System.out.print(ANSICodes.attrib(36));
+			this.loadTTYConfig(this.jlineTTYConfig);
 			line = this.consoleReader.readLine(prompt);
 		}
 		catch (IOException e) {
@@ -63,6 +75,7 @@ public class DShellConsole {
 			}
 		}
 		this.consoleReader.getHistory().addToHistory(line);
+		this.loadTTYConfig(this.originalTTYConfig);
 		return line;
 	}
 
@@ -83,6 +96,26 @@ public class DShellConsole {
 		prompts[0] = prompt;
 		prompts[1] = promptBuilder.toString();
 		return prompts;
+	}
+
+	private String saveTTYConfig() {
+		TaskOption option = TaskOption.of(StringType, returnable);
+		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
+		ArrayList<String> cmdList = new ArrayList<String>();
+		cmdList.add("stty");
+		cmdList.add("-g");
+		cmdsList.add(cmdList);
+		return ((String) new TaskBuilder(cmdsList, option).invoke()).trim();
+	}
+
+	private void loadTTYConfig(String ttyConfig) {
+		TaskOption option = TaskOption.of(StringType, returnable);
+		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
+		ArrayList<String> cmdList = new ArrayList<String>();
+		cmdList.add("stty");
+		cmdList.add(ttyConfig);
+		cmdsList.add(cmdList);
+		new TaskBuilder(cmdsList, option).invoke();
 	}
 }
 
