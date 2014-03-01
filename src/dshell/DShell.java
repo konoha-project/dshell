@@ -3,11 +3,11 @@ package dshell;
 import java.io.PrintStream;
 import java.util.TreeSet;
 
+import dshell.console.DShellConsole;
 import dshell.lib.RuntimeContext;
+import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
-import dshell.util.DShellConsole;
-import dshell.util.Utils;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.deps.LibZen;
 import zen.lang.ZenGrammar;

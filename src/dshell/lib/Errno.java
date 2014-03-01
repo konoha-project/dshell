@@ -1,6 +1,5 @@
 package dshell.lib;
 
-import dshell.util.Utils;
 
 public enum Errno {
 	SUCCESS			,

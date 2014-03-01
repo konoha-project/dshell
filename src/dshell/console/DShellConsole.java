@@ -1,4 +1,4 @@
-package dshell.util;
+package dshell.console;
 
 import java.io.IOException;
 

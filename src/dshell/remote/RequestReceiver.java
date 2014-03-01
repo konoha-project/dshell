@@ -9,7 +9,7 @@ import dshell.lib.RuntimeContext;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;
-import dshell.util.Utils;
+import dshell.lib.Utils;
 
 public class RequestReceiver {
 	public static void invoke(String requestString) {

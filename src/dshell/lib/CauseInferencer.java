@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import dshell.util.Utils;
-
 public interface CauseInferencer {
 	public ArrayList<String> doInference(SubProc proc);
 }

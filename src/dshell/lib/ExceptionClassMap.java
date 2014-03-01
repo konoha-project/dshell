@@ -10,7 +10,6 @@ import java.util.Map;
 import dshell.exception.DShellException;
 import dshell.exception.RelatedSyscallException;
 import dshell.exception.UnimplementedErrnoException;
-import dshell.util.Utils;
 
 public class ExceptionClassMap {
 	private final static EnumMap<Errno, Class<?>> exceptMap = new EnumMap<Errno, Class<?>>(Errno.class);

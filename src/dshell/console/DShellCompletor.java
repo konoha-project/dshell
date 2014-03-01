@@ -1,4 +1,4 @@
-package dshell.util;
+package dshell.console;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,16 +6,23 @@ import java.util.TreeSet;
 
 import dshell.lang.DShellGrammar;
 import dshell.lib.BuiltinCommand;
+import dshell.lib.RuntimeContext;
+import dshell.lib.Utils;
 import jline.Completor;
 
 public class DShellCompletor implements Completor {
 	private jline.SimpleCompletor commandCompletor;
+	private jline.SimpleCompletor envCompletor;
+	private jline.SimpleCompletor importCompletor;
 	private DShellFileNameCompletor fileNameCompletor;
 	private jline.ArgumentCompletor.ArgumentDelimiter delimiter;
 
 	public DShellCompletor() {
 		this.commandCompletor = new jline.SimpleCompletor("dummy");
-		commandCompletor.setCandidates(getCommandSet());
+		this.commandCompletor.setCandidates(getCommandSet());
+		this.envCompletor = new jline.SimpleCompletor("dummy");
+		this.envCompletor.setCandidates(RuntimeContext.getContext().getEnvSet());
+		this.importCompletor = new jline.SimpleCompletor(new String[]{"command", "env"});
 		this.fileNameCompletor = new DShellFileNameCompletor();
 		this.delimiter = new jline.ArgumentCompletor.WhitespaceArgumentDelimiter();
 	}
@@ -48,17 +55,31 @@ public class DShellCompletor implements Completor {
 	}
 
 	private jline.Completor selectCompletor(int argIndex, String[] args) {
-		if(argIndex == 0) {
+		if(this.isCommandRequired(argIndex, args)) {
 			return this.commandCompletor;
 		}
 		String prevArg = args[argIndex - 1];
-		if(prevArg.equals(DShellGrammar.timeout) || prevArg.equals(DShellGrammar.trace) 
-				|| prevArg.equals("command") || prevArg.equals("import")) {
-			return this.commandCompletor;
+		if(prevArg.equals("env") && argIndex - 2 > -1 && args[argIndex - 2].equals("import")) {
+			return this.envCompletor;
 		}
-		if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
-			return this.commandCompletor;
+		if(prevArg.equals("import")) {
+			return this.importCompletor;
 		}
 		return this.fileNameCompletor;
+	}
+
+	private boolean isCommandRequired(int argIndex, String[] args) {
+		if(argIndex == 0) {
+			return true;
+		}
+		String prevArg = args[argIndex - 1];
+		if(prevArg.equals(DShellGrammar.timeout) || prevArg.equals(DShellGrammar.trace) 
+				|| prevArg.equals("command")) {
+			return true;
+		}
+		if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
+			return true;
+		}
+		return false;
 	}
 }

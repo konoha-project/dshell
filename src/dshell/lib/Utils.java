@@ -1,11 +1,9 @@
-package dshell.util;
+package dshell.lib;
 
 import java.io.File;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
-import dshell.lib.RuntimeContext;
 
 public class Utils {
 	public final static boolean isUnixCommand(String cmd) {

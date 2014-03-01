@@ -14,17 +14,13 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-
 import zen.deps.LibZen;
-
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;
-import dshell.util.Utils;
-
+import dshell.lib.Utils;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
-
 import static dshell.lib.TaskOption.RetType.TaskType   ;
 
 /*

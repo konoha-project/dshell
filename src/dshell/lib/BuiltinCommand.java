@@ -2,8 +2,6 @@ package dshell.lib;
 
 import java.util.ArrayList;
 
-import dshell.util.Utils;
-
 public abstract class BuiltinCommand extends PseudoProcess {
 	@Override
 	public void mergeErrorToOut() {

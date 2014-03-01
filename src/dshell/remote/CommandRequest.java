@@ -20,7 +20,7 @@ import org.apache.commons.codec.binary.Base64;
 
 import dshell.lib.RuntimeContext;
 import dshell.lib.TaskOption;
-import dshell.util.Utils;
+import dshell.lib.Utils;
 
 public class CommandRequest implements Serializable {
 	private static final long serialVersionUID = 2907070450718884160L;

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 
 import dshell.lib.PseudoProcess;
 import dshell.lib.Task;
-import dshell.util.Utils;
+import dshell.lib.Utils;
 
 public class RequestSender extends PseudoProcess {
 	private final String requestString;

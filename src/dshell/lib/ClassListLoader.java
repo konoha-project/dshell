@@ -9,8 +9,6 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import dshell.util.Utils;
-
 public class ClassListLoader {
 	public static ArrayList<Class<?>> loadClassList(String packageName) {
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

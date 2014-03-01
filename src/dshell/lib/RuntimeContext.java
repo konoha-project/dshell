@@ -2,6 +2,10 @@ package dshell.lib;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
@@ -14,7 +18,6 @@ import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.varia.NullAppender;
 
 import zen.deps.LibZen;
-import dshell.util.Utils;
 
 public class RuntimeContext implements Serializable {
 	private static final long serialVersionUID = -2807505115721639912L;
@@ -39,6 +42,9 @@ public class RuntimeContext implements Serializable {
 	// working directory
 	transient private String workingDir;
 
+	// environmental variable
+	transient private final TreeSet<String> envSet;
+
 	private RuntimeContext(){
 		// init logger
 		this.defaultLayout = new PatternLayout(defaultPattern);
@@ -48,6 +54,11 @@ public class RuntimeContext implements Serializable {
 		BasicConfigurator.configure(new NullAppender());
 		// get working dir
 		this.workingDir = System.getProperty("user.dir");
+		this.envSet = new TreeSet<String>();
+		Map<String, String> envMap = System.getenv();
+		for(Map.Entry<String, String> entry : envMap.entrySet()) {
+			this.envSet.add(entry.getKey());
+		}
 	}
 
 	public Logger getLogger() {
@@ -139,6 +150,11 @@ public class RuntimeContext implements Serializable {
 			this.workingDir = this.getNewWorkingDirectory();
 		}
 		return status;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public SortedSet getEnvSet() {
+		return Collections.unmodifiableSortedSet(this.envSet);
 	}
 
 	private void perror(String message) {

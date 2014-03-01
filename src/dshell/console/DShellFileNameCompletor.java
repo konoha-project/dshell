@@ -1,4 +1,4 @@
-package dshell.util;
+package dshell.console;
 
 import java.io.File;
 import java.util.List;
@@ -13,10 +13,10 @@ public class DShellFileNameCompletor extends FileNameCompletor {
 		String buffer = (buf == null) ? "" : buf;
 		String translated = buffer;
 		if(translated.startsWith("~" + File.separator)) {
-			translated = System.getProperty("user.home") + translated.substring(1);
+			translated = System.getenv("HOME") + translated.substring(1);
 		}
 		else if(translated.startsWith("~")) {
-			translated = new File(System.getProperty("user.home")).getParentFile().getAbsolutePath();
+			translated = new File(System.getenv("HOME")).getParentFile().getAbsolutePath();
 		}
 		else if(!translated.startsWith(File.separator)) {
 			String workingDir = RuntimeContext.getContext().getWorkingDirectory();
