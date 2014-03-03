@@ -1,7 +1,7 @@
 package dshell.grammar;
 
 import zen.ast.ZNode;
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 

@@ -9,7 +9,7 @@ import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import zen.codegen.jvm.ModifiedAsmGenerator;
-import zen.deps.LibZen;
+import zen.util.LibZen;
 import zen.lang.ZenGrammar;
 import zen.main.ZenMain;
 import zen.parser.ZSourceEngine;

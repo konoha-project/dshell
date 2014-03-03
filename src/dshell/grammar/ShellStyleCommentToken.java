@@ -1,6 +1,6 @@
 package dshell.grammar;
 
-import zen.deps.ZTokenFunction;
+import zen.util.ZTokenFunction;
 import zen.parser.ZSourceContext;
 
 public class ShellStyleCommentToken extends ZTokenFunction {

@@ -16,7 +16,7 @@ import zen.ast.ZNode;
 import zen.ast.ZSetNameNode;
 import zen.ast.ZVarNode;
 import zen.ast.ZWhileNode;
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.parser.ZSource;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;

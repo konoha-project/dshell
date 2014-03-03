@@ -14,7 +14,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-import zen.deps.LibZen;
+import zen.util.LibZen;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;

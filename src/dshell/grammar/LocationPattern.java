@@ -4,7 +4,7 @@ import dshell.ast.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 

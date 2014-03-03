@@ -3,7 +3,7 @@ package dshell.grammar;
 import dshell.ast.DShellTryNode;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.parser.ZTokenContext;
 
 public class DShellTryPattern extends ZMatchFunction {

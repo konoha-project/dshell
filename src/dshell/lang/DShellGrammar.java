@@ -2,7 +2,7 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
@@ -93,7 +93,6 @@ public class DShellGrammar {
 	}
 
 	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, CommandSymbolPattern dShellPattern) {
-		//NameSpace.DefineExpression(symbol, dShellPattern);
 		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
 	}
 

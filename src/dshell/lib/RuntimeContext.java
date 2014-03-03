@@ -17,7 +17,7 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.varia.NullAppender;
 
-import zen.deps.LibZen;
+import zen.util.LibZen;
 
 public class RuntimeContext implements Serializable {
 	private static final long serialVersionUID = -2807505115721639912L;

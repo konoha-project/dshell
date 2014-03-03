@@ -3,8 +3,8 @@ package dshell.remote;
 import java.io.Serializable;
 
 import dshell.lib.Task;
-import zen.deps.ZObject;
-import zen.deps.ZObjectArray;
+import zen.util.ZObject;
+import zen.util.ZObjectArray;
 
 public class TaskArray extends ZObject implements Serializable {
 	private static final long serialVersionUID = -64642177189609802L;

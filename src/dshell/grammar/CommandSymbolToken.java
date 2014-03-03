@@ -1,7 +1,7 @@
 package dshell.grammar;
 
 import dshell.lang.DShellGrammar;
-import zen.deps.ZTokenFunction;
+import zen.util.ZTokenFunction;
 import zen.parser.ZSourceContext;
 
 public class CommandSymbolToken extends ZTokenFunction {

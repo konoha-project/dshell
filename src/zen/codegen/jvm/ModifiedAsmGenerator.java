@@ -38,7 +38,7 @@ import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.parser.ZLogger;
 import zen.parser.ZSourceEngine;
-import zen.deps.LibZen;
+import zen.util.LibZen;
 import zen.parser.ZNameSpace;
 import zen.type.ZFunc;
 import zen.type.ZGenericType;

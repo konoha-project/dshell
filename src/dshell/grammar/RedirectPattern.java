@@ -3,7 +3,7 @@ package dshell.grammar;
 import dshell.ast.DShellCommandNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
-import zen.deps.ZMatchFunction;
+import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
