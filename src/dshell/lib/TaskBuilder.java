@@ -2,8 +2,6 @@ package dshell.lib;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -442,74 +440,3 @@ class SubProc extends PseudoProcess {
 		return this.enableTrace;
 	}
 }
-
-// copied from http://blog.art-of-coding.eu/piping-between-processes/
-class PipeStreamHandler extends Thread {
-	public final static int defaultBufferSize = 512;
-	private InputStream input;
-	private OutputStream[] outputs;
-	private boolean closeInput;
-	private boolean[] closeOutputs;
-
-	public PipeStreamHandler(InputStream input, OutputStream output, boolean closeStream) {
-		this.input = input;
-		this.outputs = new OutputStream[1];
-		this.outputs[0] = output;
-		if(output == null) {
-			this.outputs[0] = new NullStream();
-		}
-		this.closeInput = closeStream;
-		this.closeOutputs = new boolean[1];
-		this.closeOutputs[0] = closeStream;
-	}
-
-	public PipeStreamHandler(InputStream input, OutputStream[] outputs, boolean closeInput, boolean[] closeOutputs) {
-		this.input = input;
-		this.outputs = new OutputStream[outputs.length];
-		this.closeInput = closeInput;
-		this.closeOutputs = closeOutputs;
-		for(int i = 0; i < this.outputs.length; i++) {
-			this.outputs[i] = (outputs[i] == null) ? new NullStream() : outputs[i];
-		}
-	}
-
-	@Override
-	public void run() {
-		if(this.input == null) {
-			return;
-		}
-		try {
-			byte[] buffer = new byte[defaultBufferSize];
-			int read = 0;
-			while(read > -1) {
-				read = this.input.read(buffer, 0, buffer.length);
-				if(read > -1) {
-					for(int i = 0; i < this.outputs.length; i++) {
-						this.outputs[i].write(buffer, 0, read);
-					}
-				}
-			}
-			if(this.closeInput) {
-				this.input.close();
-			}
-			for(int i = 0; i < this.outputs.length; i++) {
-				if(this.closeOutputs[i]) {
-					this.outputs[i].close();
-				}
-			}
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	class NullStream extends OutputStream {
-		@Override
-		public void write(int b) throws IOException {	// do nothing
-		}
-		@Override
-		public void close() {	//do nothing
-		}
-	}
-}
-

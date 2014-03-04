@@ -17,16 +17,11 @@ public class DShellCommandNode extends ZListNode {
 	}
 
 	public ZNode AppendPipedNextNode(DShellCommandNode Node) {
-		this.PipedNextNode = this.SetChild(Node);
-		return this;
-	}
-
-	public ZNode AppendOptionNode(DShellCommandNode Node) {
 		DShellCommandNode CurrentNode = this;
 		while(CurrentNode.PipedNextNode != null) {
 			CurrentNode = (DShellCommandNode) CurrentNode.PipedNextNode;
 		}
-		CurrentNode.AppendPipedNextNode(Node);
+		CurrentNode.PipedNextNode = CurrentNode.SetChild(Node);
 		return this;
 	}
 

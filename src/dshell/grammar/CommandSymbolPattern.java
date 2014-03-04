@@ -38,7 +38,7 @@ public class CommandSymbolPattern extends ZMatchFunction {
 			// Match Redirect
 			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, RedirectPattern.PatternName, ZTokenContext._Optional);
 			if(RedirectNode != null) {
-				((DShellCommandNode)CommandNode).AppendOptionNode((DShellCommandNode)RedirectNode);
+				((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
 				continue;
 			}
 			// Match Suffix Option

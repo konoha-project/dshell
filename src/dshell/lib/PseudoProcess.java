@@ -1,5 +1,6 @@
 package dshell.lib;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public abstract class PseudoProcess {
 			this.stdinIsDirty = true;
 			return this.stdin;
 		}
-		return null;
+		return new PipeStreamHandler.NullOutputStream();
 	}
 
 	public InputStream accessOutStream() {
@@ -74,7 +75,7 @@ public abstract class PseudoProcess {
 			this.stdoutIsDirty = true;
 			return this.stdout;
 		}
-		return null;
+		return new PipeStreamHandler.NullInputStream();
 	}
 
 	public InputStream accessErrorStream() {
@@ -82,7 +83,7 @@ public abstract class PseudoProcess {
 			this.stderrIsDirty = true;
 			return this.stderr;
 		}
-		return null;
+		return new PipeStreamHandler.NullInputStream();
 	}
 
 	public int getRet() {
@@ -99,5 +100,74 @@ public abstract class PseudoProcess {
 
 	@Override public String toString() {
 		return this.sBuilder.toString();
+	}
+}
+
+//copied from http://blog.art-of-coding.eu/piping-between-processes/
+class PipeStreamHandler extends Thread {
+	public final static int defaultBufferSize = 512;
+	private final InputStream input;
+	private final OutputStream[] outputs;
+	private final boolean closeInput;
+	private final boolean[] closeOutputs;
+
+	public PipeStreamHandler(InputStream input, OutputStream output, boolean closeStream) {
+		this(input, new OutputStream[] {output}, closeStream, new boolean[]{closeStream});
+	}
+
+	public PipeStreamHandler(InputStream input, OutputStream[] outputs, boolean closeInput, boolean[] closeOutputs) {
+		this.input = (input == null) ? new NullInputStream() : input;
+		this.outputs = new OutputStream[outputs.length];
+		this.closeInput = closeInput;
+		this.closeOutputs = closeOutputs;
+		for(int i = 0; i < this.outputs.length; i++) {
+			this.outputs[i] = (outputs[i] == null) ? new NullOutputStream() : outputs[i];
+		}
+	}
+
+	@Override
+	public void run() {
+		try {
+			byte[] buffer = new byte[defaultBufferSize];
+			int read = 0;
+			while(read > -1) {
+				read = this.input.read(buffer, 0, buffer.length);
+				if(read > -1) {
+					for(int i = 0; i < this.outputs.length; i++) {
+						this.outputs[i].write(buffer, 0, read);
+					}
+				}
+			}
+			if(this.closeInput) {
+				this.input.close();
+			}
+			for(int i = 0; i < this.outputs.length; i++) {
+				if(this.closeOutputs[i]) {
+					this.outputs[i].close();
+				}
+			}
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static class NullInputStream extends InputStream {
+		@Override
+		public int read() throws IOException {
+			return -1;
+		}
+		@Override
+		public void close() {	//do nothing
+		}
+	}
+
+	public static class NullOutputStream extends OutputStream {
+		@Override
+		public void write(int b) throws IOException {	// do nothing
+		}
+		@Override
+		public void close() {	//do nothing
+		}
 	}
 }

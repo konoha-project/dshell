@@ -7,6 +7,7 @@ import zen.type.ZType;
 public class MultipleException extends DShellException {
 	private static final long serialVersionUID = 164898266354483402L;
 	private DShellException[] exceptions;
+	transient private DShellExceptionArray exceptionArray;
 
 	public MultipleException(String message, DShellException[] exceptions) {
 		super(message);
@@ -18,12 +19,15 @@ public class MultipleException extends DShellException {
 	}
 
 	public DShellExceptionArray getExceptions() {
-		ZType nativeType = JavaTypeTable.GetZenType(DShellException.class);
-		return new DShellExceptionArray(nativeType.TypeId, this.exceptions);
+		if(exceptionArray == null) {
+			ZType nativeType = JavaTypeTable.GetZenType(DShellException.class);
+			this.exceptionArray = new DShellExceptionArray(nativeType.TypeId, this.exceptions);
+		}
+		return this.exceptionArray;
 	}
 
 	@Override
 	public String toString() {
-		return this.getClass().getCanonicalName() + ": " + this.exceptions.toString();
+		return this.getClass().getCanonicalName() + ": " + this.getExceptions().toString();
 	}
 }
