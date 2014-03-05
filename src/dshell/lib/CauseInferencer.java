@@ -15,8 +15,8 @@ public interface CauseInferencer {
 class CauseInferencer_ltrace implements CauseInferencer {
 	private final String mainName = "__libc_start_main";
 	private final String unfinished = "<unfinished ...>";
-	private final Pattern linePattern = Pattern.compile("(^[1-9][0-9]*)( +)([0-9]+:[0-9]+:[0-9]+)( +)(.+)");
 	private final Pattern syscallPattern = Pattern.compile("(SYS_)(.+)(\\(.*\\))( +)(=)( +)(.+)");
+	private final Pattern noreturnSyscallPattern = Pattern.compile("(SYS_)(.+)(\\()(.+)( +)(<no return+)");
 	private final Pattern unfinishedFuncPattern = Pattern.compile("(.+)(\\(.*)( +)(" + unfinished + ")");
 	private final Pattern funcPattern = Pattern.compile("(.+)(\\(.*\\))( +)(=)( +)(.+)");
 	private final Pattern resumedPattern = Pattern.compile("(<.+)( +)(.+)( +)(resumed>.+\\))( +)(=)( +)(.+)");
@@ -48,13 +48,10 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			String line;
 			boolean foundMain = false;
 			while((line = br.readLine()) != null) {
-				Matcher m = linePattern.matcher(line);
-				if(!m.find()) {
-					Utils.fatal(1, "not match: " + line);
-				}
-				if(foundMain || m.group(5).startsWith(mainName)) {
+				String[] splittedLine = this.splitLine(line);
+				if(foundMain || splittedLine[1].startsWith(mainName)) {
 					foundMain = true;
-					lineList.add(new String[] {m.group(1), m.group(3), m.group(5)});
+					lineList.add(splittedLine);
 				}
 			}
 			br.close();
@@ -72,13 +69,34 @@ class CauseInferencer_ltrace implements CauseInferencer {
 		return this.findCauseInfo(topLevelContext);
 	}
 
+	private String[] splitLine(String line) {
+		StringBuilder pidBuilder = new StringBuilder();
+		int startIndex = 0;
+		int size = line.length();
+		for(int i = 0; i < size; i++) {
+			char ch = line.charAt(i);
+			if(Character.isDigit(ch)) {
+				startIndex++;
+				pidBuilder.append(ch);
+			}
+			else if(ch == ' ') {
+				startIndex++;
+				break;
+			}
+			else {
+				Utils.fatal(1, "invalid line: " + line);
+			}
+		}
+		return new String[] {pidBuilder.toString(), line.substring(startIndex, size)};
+	}
+
 	private FunctionContext createTopLevelFuncContext(final ArrayList<String[]> lineList) {
 		if(lineList.size() == 0) {
 			Utils.fatal(1, "empty lineList");
 		}
 		String[] parsedInfo = lineList.get(0);
 		int pid = Integer.parseInt(parsedInfo[0]);
-		FunctionContext context = new FunctionContext(mainName, pid, parsedInfo[1], null);
+		FunctionContext context = new FunctionContext(mainName, pid, null);
 		int index = 1;
 		do {
 			index = this.createFuncContext(lineList, context, index);
@@ -91,8 +109,16 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			Utils.fatal(1, "index = " + index + ", size = " + lineList.size());
 		}
 		String[] parsedInfo = lineList.get(index);
-		String calledFunc = parsedInfo[2];
+		String calledFunc = parsedInfo[1];
 		if(calledFunc.startsWith("SYS_")) {
+			if(this.isExitSyscall(calledFunc)) {
+				SyscallContext exitContext = this.matchNoReturnSyscall(parsedInfo);
+				if(parentContext.funcName.equals(mainName)) {
+					parentContext.setRetValue(exitContext.param);
+					return index;
+				}
+				Utils.fatal(1, "invalid funcname: " + parentContext.funcName + ", " + calledFunc);
+			}
 			parentContext.appendFuncContext(this.matchSyscall(parsedInfo));
 			return index + 1;
 		}
@@ -145,43 +171,52 @@ class CauseInferencer_ltrace implements CauseInferencer {
 
 	private SyscallContext matchSyscall(String[] parsedInfo) {
 		int pid = Integer.parseInt(parsedInfo[0]);
-		String time = parsedInfo[1];
-		Matcher matcher = syscallPattern.matcher(parsedInfo[2]);
+		Matcher matcher = syscallPattern.matcher(parsedInfo[1]);
 		if(!matcher.find()) {
-			Utils.fatal(1, "not match: " + parsedInfo[2]);
+			Utils.fatal(1, "not match: " + parsedInfo[1]);
 		}
 		String syscallName = matcher.group(2);
 		String param = matcher.group(3);
 		String actualParam = param.substring(1, param.length() - 1);
-		SyscallContext context = new SyscallContext(syscallName, pid, time, actualParam);
+		SyscallContext context = new SyscallContext(syscallName, pid, actualParam);
 		context.setRetValue(matcher.group(7));
+		return context;
+	}
+
+	private SyscallContext matchNoReturnSyscall(String[] parsedInfo) {
+		int pid = Integer.parseInt(parsedInfo[0]);
+		Matcher matcher = noreturnSyscallPattern.matcher(parsedInfo[1]);
+		if(!matcher.find()) {
+			Utils.fatal(1, "not match: " + parsedInfo[1]);
+		}
+		String syscallName = matcher.group(2);
+		String param = matcher.group(4);
+		SyscallContext context = new SyscallContext(syscallName, pid, param);
 		return context;
 	}
 
 	private FunctionContext matchUnfinishedFunc(String[] parsedInfo) {
 		int pid = Integer.parseInt(parsedInfo[0]);
-		String time = parsedInfo[1];
-		Matcher matcher = unfinishedFuncPattern.matcher(parsedInfo[2]);
+		Matcher matcher = unfinishedFuncPattern.matcher(parsedInfo[1]);
 		if(!matcher.find()) {
-			Utils.fatal(1, "not match: " + parsedInfo[2]);
+			Utils.fatal(1, "not match: " + parsedInfo[1]);
 		}
 		String funcName = matcher.group(1);
 		String param = matcher.group(2).substring(1);
-		return new FunctionContext(funcName, pid, time, param);
+		return new FunctionContext(funcName, pid, param);
 	}
 
 	private FunctionContext matchFunc(String[] parsedInfo) {
 		int pid = Integer.parseInt(parsedInfo[0]);
-		String time = parsedInfo[1];
-		Matcher matcher = funcPattern.matcher(parsedInfo[2]);
+		Matcher matcher = funcPattern.matcher(parsedInfo[1]);
 		if(!matcher.find()) {
-			Utils.fatal(1, "not match: " + parsedInfo[2]);
+			Utils.fatal(1, "not match: " + parsedInfo[1]);
 		}
 		String funcName = matcher.group(1);
 		String param = matcher.group(2);
 		String actualParam = param.substring(1, param.length() - 1);
 		String ret = matcher.group(6);
-		FunctionContext context = new FunctionContext(funcName, pid, time, actualParam);
+		FunctionContext context = new FunctionContext(funcName, pid, actualParam);
 		context.setRetValue(ret);
 		return context;
 	}
@@ -238,6 +273,13 @@ class CauseInferencer_ltrace implements CauseInferencer {
 		return false;
 	}
 
+	private boolean isExitSyscall(String calledFunc) {
+		if(calledFunc.startsWith("SYS_exit_group")) {
+			return true;
+		}
+		return false;
+	}
+
 	private static class Holder {
 		private static final CauseInferencer inferencer = new CauseInferencer_ltrace();
 	}
@@ -249,15 +291,13 @@ class CauseInferencer_ltrace implements CauseInferencer {
 class FuncContextStub {
 	public final String funcName;
 	public final int pid;
-	public final String calledTime;
 	public final String param;
 	private String retValue = null;
 	public boolean failed = false;
 
-	public FuncContextStub(String funcName, int pid, String calledTime, String param) {
+	public FuncContextStub(String funcName, int pid, String param) {
 		this.funcName = funcName;
 		this.pid = pid;
-		this.calledTime = calledTime;
 		this.param = param;
 	}
 
@@ -278,8 +318,8 @@ class FuncContextStub {
 class FunctionContext extends FuncContextStub {
 	private final ArrayList<FuncContextStub> funcContextList;
 	
-	public FunctionContext(String funcName, int pid, String calledTime, String param) {
-		super(funcName, pid, calledTime, param);
+	public FunctionContext(String funcName, int pid, String param) {
+		super(funcName, pid, param);
 		this.funcContextList = new ArrayList<FuncContextStub>();
 	}
 
@@ -300,8 +340,8 @@ class FunctionContext extends FuncContextStub {
 }
 
 class SyscallContext extends FuncContextStub {
-	public SyscallContext(String funcName, int pid, String calledTime, String param) {
-		super(funcName, pid, calledTime, param);
+	public SyscallContext(String funcName, int pid, String param) {
+		super(funcName, pid, param);
 	}
 
 	@Override

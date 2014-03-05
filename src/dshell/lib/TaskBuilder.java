@@ -268,7 +268,7 @@ class SubProc extends PseudoProcess {
 			new File(logdirPath).mkdir();
 			String[] traceCmd;
 			if(traceBackendType == traceBackend_ltrace) {
-				String[] backend_strace = {"ltrace", "-t", "-f", "-S", "-o", logFilePath};
+				String[] backend_strace = {"ltrace", "-f", "-S", "-o", logFilePath};
 				traceCmd = backend_strace;
 			}
 			else {
