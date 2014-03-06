@@ -18,12 +18,11 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
+import dshell.exception.Errno;
 import dshell.exception.MultipleException;
-import dshell.exception.UnimplementedErrnoException;
 import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.DShellExceptionArray;
-import dshell.lib.ExceptionClassMap;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -58,9 +57,9 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.importJavaClass(Task.class);
 		this.importJavaClass(DShellException.class);
 		this.importJavaClass(MultipleException.class);
-		this.importJavaClass(UnimplementedErrnoException.class);
+		this.importJavaClass(Errno.UnimplementedErrnoException.class);
 		this.importJavaClass(DShellException.NullException.class);
-		this.importJavaClassList(ExceptionClassMap.getExceptionClassList());
+		this.importJavaClassList(Errno.getExceptionClassList());
 
 		try {
 			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);

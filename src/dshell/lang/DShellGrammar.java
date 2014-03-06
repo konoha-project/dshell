@@ -77,7 +77,7 @@ public class DShellGrammar {
 		NameSpace.DefineRightExpression("=~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		overrideSyntaxPattern(NameSpace, "try", new DShellTryPattern(), true);
-		overrideSyntaxPattern(NameSpace, "$Catch$", new DShellCatchPattern(), true);
+		overrideSyntaxPattern(NameSpace, DShellTryPattern.CatchPatternName, new DShellCatchPattern(), true);
 		NameSpace.DefineStatement(location, new LocationDefinePattern());
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);

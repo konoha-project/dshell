@@ -7,6 +7,7 @@ import zen.util.ZMatchFunction;
 import zen.parser.ZTokenContext;
 
 public class DShellTryPattern extends ZMatchFunction {
+	public final static String CatchPatternName = "$Catch$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode TryNode = new DShellTryNode(ParentNode);
@@ -15,7 +16,7 @@ public class DShellTryPattern extends ZMatchFunction {
 		boolean foundCatchBlock = false;
 		while(true) {
 			if(TokenContext.IsNewLineToken("catch")) {
-				TryNode = TokenContext.MatchPattern(TryNode, ZNode._AppendIndex, "$Catch$", ZTokenContext._Required);
+				TryNode = TokenContext.MatchPattern(TryNode, ZNode._AppendIndex, DShellTryPattern.CatchPatternName, ZTokenContext._Required);
 				foundCatchBlock = true;
 				continue;
 			}

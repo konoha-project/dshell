@@ -202,7 +202,7 @@ public class TaskBuilder {
 	}
 
 	public static TaskArray ExecCommandTaskArray(String[][] cmds) {
-		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
+		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
 		return (TaskArray)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
