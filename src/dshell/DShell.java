@@ -24,7 +24,7 @@ public class DShell {
 	public final static String version = "0.2";
 	public final static String copyright = "Copyright (c) 2013-2014, Konoha project authors";
 	public final static String license = "BSD-Style Open Source";
-	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ")";
+	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ") powered by LibZen";
 
 	private boolean interactiveMode = true;
 	private boolean autoImportCommand = true;
@@ -95,6 +95,8 @@ public class DShell {
 	}
 
 	private void execute() {
+		// init context
+		RuntimeContext.getContext();
 		if(this.recSupport) {
 			if(this.interactiveMode) {
 				System.err.println("dshell: need script file");

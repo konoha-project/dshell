@@ -16,6 +16,7 @@ import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellExportEnvNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
@@ -91,6 +92,10 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 
 		JavaMethodTable.Import(TaskArrayType, "[]", ZType.IntType, TaskArray.class, "GetIndex");
 		JavaMethodTable.Import(TaskArrayType, "[]=", ZType.IntType, TaskArray.class, "SetIndex", Task.class);
+
+		// load static method
+		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
+		this.loadJavaStaticMethod(Utils.class, "setEnv", String.class, String.class);
 	}
 
 	@Override public ZSourceEngine GetEngine() {
@@ -226,6 +231,11 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			TargetNode.Accept(this);
 		}
 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+	}
+
+	public void VisitExportEnvNode(DShellExportEnvNode Node) {
+		Node.AST[DShellExportEnvNode._EXPORT].Accept(this);
+		Node.AST[DShellExportEnvNode._LET].Accept(this);
 	}
 
 	private void invokeBoxingMethod(ZNode TargetNode) {

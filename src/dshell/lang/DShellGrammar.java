@@ -14,6 +14,7 @@ import zen.parser.ZTokenContext;
 import dshell.DShell;
 import dshell.grammar.CommandArgPattern;
 import dshell.grammar.CommandSymbolToken;
+import dshell.grammar.ExportEnvPattern;
 import dshell.grammar.ImportCommandPattern;
 import dshell.grammar.DShellCatchPattern;
 import dshell.grammar.DShellImportPattern;
@@ -83,6 +84,7 @@ public class DShellGrammar {
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
 		NameSpace.DefineExpression(PrefixOptionPattern.PatternName, prefixOptionPattern);
 		NameSpace.DefineStatement("for", new ForeachPattern());
+		NameSpace.DefineStatement(ExportEnvPattern.PatternName, new ExportEnvPattern());
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

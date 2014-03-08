@@ -1,13 +1,17 @@
 package dshell.console;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import dshell.lib.RuntimeContext;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;
+import dshell.lib.Utils;
 
+import jline.Terminal;
 import jline.ANSIBuffer.ANSICodes;
+import jline.UnixTerminal;
 import zen.main.ZenMain;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.RetType.StringType;
@@ -15,8 +19,7 @@ import static dshell.lib.TaskOption.RetType.StringType;
 public class DShellConsole {
 	private jline.ConsoleReader consoleReader = null;
 	private String userName = System.getProperty("user.name");
-	private final String originalTTYConfig;
-	private final String jlineTTYConfig;
+	private final TTYConfigurator ttyConfig;
 
 	public final static String welcomeMessage = "oooooooooo.            .oooooo..o oooo                  oooo  oooo  \n" +
                                                 "`888'   `Y8b          d8P'    `Y8 `888                  `888  `888  \n" +
@@ -27,14 +30,11 @@ public class DShellConsole {
                                                 "o888bood8P'           8\"\"88888P'  o888o o888o `Y8bod8P' o888o o888o \n\n" +
                                                 "Welcome to D-Shell <https://github.com/konoha-project/dshell>\n";
 	public DShellConsole() {
-		this.originalTTYConfig = this.saveTTYConfig();
-		System.out.print(ANSICodes.attrib(36));
-		Runtime.getRuntime().addShutdownHook(new ShutdownOp());
 		try {
 			this.consoleReader = new jline.ConsoleReader();
 			this.consoleReader.addCompletor(new DShellCompletor());
 			// save jline tty config
-			this.jlineTTYConfig = this.saveTTYConfig();
+			this.ttyConfig = TTYConfigurator.initConfigurator(this.consoleReader.getTerminal());
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
@@ -47,8 +47,7 @@ public class DShellConsole {
 		String prompt2 = prompts[1];
 		String line;
 		try {
-			System.out.print(ANSICodes.attrib(36));
-			this.loadTTYConfig(this.jlineTTYConfig);
+			this.ttyConfig.loadJlineConfig();
 			line = this.consoleReader.readLine(prompt);
 		}
 		catch (IOException e) {
@@ -75,12 +74,12 @@ public class DShellConsole {
 			}
 		}
 		this.consoleReader.getHistory().addToHistory(line);
-		this.loadTTYConfig(this.originalTTYConfig);
+		this.ttyConfig.loadOriginalConfig();
 		return line;
 	}
 
 	private String[] getPrompts() {
-		String homeDir = System.getenv("HOME");
+		String homeDir = Utils.getEnv("HOME");
 		String[] prompts = new String[2];
 		String currentDir = RuntimeContext.getContext().getWorkingDirectory();
 		if(currentDir.startsWith(homeDir)) {
@@ -97,8 +96,43 @@ public class DShellConsole {
 		prompts[1] = promptBuilder.toString();
 		return prompts;
 	}
+}
 
-	private String saveTTYConfig() {
+class ShutdownOp extends Thread {
+	@Override public void run() {
+		System.out.print(ANSICodes.attrib(0));
+	}
+}
+
+class TTYConfigurator {
+	private final String originalTTYConfig;
+	private final String jlineTTYConfig;
+
+	private TTYConfigurator(String originalTTYConfig, String jlineTTYConfig) {
+		this.originalTTYConfig = originalTTYConfig;
+		this.jlineTTYConfig = jlineTTYConfig;
+	}
+
+	public void loadOriginalConfig() {
+		loadTTYConfig(this.originalTTYConfig);
+	}
+
+	public void loadJlineConfig() {
+		System.out.print(ANSICodes.attrib(36));
+		loadTTYConfig(this.jlineTTYConfig);
+	}
+
+	private static void loadTTYConfig(String ttyConfig) {
+		TaskOption option = TaskOption.of(StringType, returnable);
+		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
+		ArrayList<String> cmdList = new ArrayList<String>();
+		cmdList.add("stty");
+		cmdList.add(ttyConfig);
+		cmdsList.add(cmdList);
+		new TaskBuilder(cmdsList, option).invoke();
+	}
+
+	private static String saveTTYConfig() {
 		TaskOption option = TaskOption.of(StringType, returnable);
 		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
 		ArrayList<String> cmdList = new ArrayList<String>();
@@ -108,19 +142,37 @@ public class DShellConsole {
 		return ((String) new TaskBuilder(cmdsList, option).invoke()).trim();
 	}
 
-	private void loadTTYConfig(String ttyConfig) {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
-		ArrayList<String> cmdList = new ArrayList<String>();
-		cmdList.add("stty");
-		cmdList.add(ttyConfig);
-		cmdsList.add(cmdList);
-		new TaskBuilder(cmdsList, option).invoke();
-	}
-}
+	public static TTYConfigurator initConfigurator(Terminal term) {
+		if(term instanceof UnixTerminal && System.console() != null) {
+			UnixTerminal unixTerm = (UnixTerminal)term;
+			Field field;
+			try {
+				field = unixTerm.getClass().getDeclaredField("ttyConfig");
+				field.setAccessible(true);
+				String originalTTYConfig = (String) field.get(unixTerm);
+				String jlineTTYConfig = saveTTYConfig();
 
-class ShutdownOp extends Thread {
-	@Override public void run() {
-		System.out.print(ANSICodes.attrib(0));
+				System.out.print(ANSICodes.attrib(36));
+				Runtime.getRuntime().addShutdownHook(new ShutdownOp());
+				return new TTYConfigurator(originalTTYConfig, jlineTTYConfig);
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				Utils.fatal(1, "field access failed: ttyConfig");
+			}
+		}
+		return new NullConfigurator();
+	}
+
+	public static class NullConfigurator extends TTYConfigurator {
+		private NullConfigurator() {
+			super(null, null);
+		}
+		@Override
+		public void loadOriginalConfig() {	// do nothing
+		}
+		@Override
+		public void loadJlineConfig() {	// do nothing
+		}
 	}
 }

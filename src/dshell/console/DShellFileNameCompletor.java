@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import dshell.lib.RuntimeContext;
+import dshell.lib.Utils;
 import jline.FileNameCompletor;
 
 public class DShellFileNameCompletor extends FileNameCompletor {
@@ -13,10 +14,10 @@ public class DShellFileNameCompletor extends FileNameCompletor {
 		String buffer = (buf == null) ? "" : buf;
 		String translated = buffer;
 		if(translated.startsWith("~" + File.separator)) {
-			translated = System.getenv("HOME") + translated.substring(1);
+			translated = Utils.getEnv("HOME") + translated.substring(1);
 		}
 		else if(translated.startsWith("~")) {
-			translated = new File(System.getenv("HOME")).getParentFile().getAbsolutePath();
+			translated = new File(Utils.getEnv("HOME")).getParentFile().getAbsolutePath();
 		}
 		else if(!translated.startsWith(File.separator)) {
 			String workingDir = RuntimeContext.getContext().getWorkingDirectory();

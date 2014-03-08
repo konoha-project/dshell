@@ -3,6 +3,7 @@ package dshell.grammar;
 import java.util.ArrayList;
 
 import dshell.lang.DShellGrammar;
+import dshell.lib.Utils;
 import zen.ast.ZBinaryNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -140,7 +141,7 @@ public class CommandArgPattern extends ZMatchFunction {
 					this.tokenTextBuffer = new StringBuilder();
 				}
 				if(tokenText.equals("~")) {
-					tokenText = System.getenv("HOME");
+					tokenText = Utils.getEnv("HOME");
 				}
 				this.tokenTextBuffer.append(tokenText);
 			}

@@ -13,6 +13,7 @@ import zen.type.ZVarType;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
+import dshell.ast.DShellExportEnvNode;
 import dshell.ast.DShellTryNode;
 import dshell.lib.Task;
 
@@ -71,6 +72,12 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
 		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
+		this.TypedNode(Node, ZType.VoidType);
+	}
+
+	public void VisitExportEnvNode(DShellExportEnvNode Node) {
+		this.CheckTypeAt(Node, DShellExportEnvNode._EXPORT, ZType.VarType);
+		this.CheckTypeAt(Node, DShellExportEnvNode._LET, ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);
 	}
 }

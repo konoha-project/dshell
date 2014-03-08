@@ -25,7 +25,7 @@ public class ImportCommandPattern extends ZMatchFunction {
 				ParsedText = "";
 			}
 			if(Token.EqualsText("~")) {
-				ParsedText = System.getenv("HOME");
+				ParsedText = Utils.getEnv("HOME");
 			}
 			if(Token.EqualsText(";") || Token.IsIndent()) {
 				break;

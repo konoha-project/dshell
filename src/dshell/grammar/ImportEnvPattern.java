@@ -1,5 +1,7 @@
 package dshell.grammar;
 
+import zen.ast.ZFuncCallNode;
+import zen.ast.ZGetNameNode;
 import zen.ast.ZLetNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -15,10 +17,9 @@ public class ImportEnvPattern extends ZMatchFunction {
 		LetNode = TokenContext.MatchPattern(LetNode, ZNode._NameInfo, "$Name$", ZTokenContext._Required);
 		LetNode.Set(ZNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
 		String Name = ((ZLetNode)LetNode).Symbol;
-		String Env = System.getenv(Name);
-		Env = (Env == null) ? "" : Env;
-		LetNode.Set(ZLetNode._InitValue, new ZStringNode(ParentNode, null, Env));
+		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
+		FuncCallNode.Set(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, Name));
+		LetNode.Set(ZLetNode._InitValue, FuncCallNode);
 		return LetNode;
 	}
-
 }

@@ -46,6 +46,9 @@ public class RuntimeContext implements Serializable {
 	transient private final TreeSet<String> envSet;
 
 	private RuntimeContext(){
+		if(System.getProperty("os.name").startsWith("Windows")) {
+			Utils.fatal(1, "Windows is Not Supported");
+		}
 		// init logger
 		this.defaultLayout = new PatternLayout(defaultPattern);
 		this.appenderType = AppenderType.empty;
@@ -78,7 +81,7 @@ public class RuntimeContext implements Serializable {
 		case file:
 			String fileName = this.appenderOptions[0];
 			if(fileName.startsWith("~")) {
-				fileName = System.getenv("HOME") + fileName.substring(1); 
+				fileName = Utils.getEnv("HOME") + fileName.substring(1); 
 			}
 			try {
 				appender = new FileAppender(this.defaultLayout, fileName, true);
@@ -140,7 +143,7 @@ public class RuntimeContext implements Serializable {
 	public int changeDirectory(String path) {
 		String targetPath = path;
 		if(path.equals("")) {
-			targetPath = System.getenv("HOME");
+			targetPath = Utils.getEnv("HOME");
 		}
 		int status = CLibraryWrapper.INSTANCE.chdir(targetPath);
 		if(status == -1) {
@@ -159,6 +162,18 @@ public class RuntimeContext implements Serializable {
 
 	private void perror(String message) {
 		CLibraryWrapper.INSTANCE.perror(message);
+	}
+
+	public int setenv(String key, String env, boolean override) {
+		int ret = CLibraryWrapper.INSTANCE.setenv(key, env, override ? 0 : 1);
+		if(ret == 0) {
+			this.envSet.add(key);
+		}
+		return ret;
+	}
+
+	public String getenv(String key) {
+		return CLibraryWrapper.INSTANCE.getenv(key);
 	}
 
 	private static class ContextHolder {
@@ -180,5 +195,7 @@ interface CLibraryWrapper extends com.sun.jna.Library {
 
 	int chdir(String path);
 	String getcwd(byte[] buf, int size);
-	void perror(String s); 
+	void perror(String s);
+	int setenv(String key, String env, int override);
+	String getenv(String key);
 }

@@ -9,6 +9,7 @@ import zen.codegen.jvm.JavaGenerator;
 import zen.parser.ZLogger;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellExportEnvNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.Task;
@@ -95,5 +96,10 @@ public class ModifiedJavaEngine extends JavaEngine {
 			Value = new Boolean((Boolean) Value);
 		}
 		this.EvaledValue = Value.getClass().equals(JavaClass);
+	}
+
+	public void VisitExportEnvNode(DShellExportEnvNode Node) {
+		Node.AST[DShellExportEnvNode._EXPORT].Accept(this);
+		Node.AST[DShellExportEnvNode._LET].Accept(this);
 	}
 }

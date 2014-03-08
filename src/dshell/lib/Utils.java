@@ -7,7 +7,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class Utils {
 	public final static boolean isUnixCommand(String cmd) {
-		String[] paths = System.getenv("PATH").split(":");
+		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
 			if(isFileExecutable(path + "/" + cmd)) {
 				return true;
@@ -42,10 +42,10 @@ public class Utils {
 
 	public final static TreeSet<String> getCommandSetFromPath() {
 		TreeSet<String> commandSet = new TreeSet<String>();
-		String[] paths = System.getenv("PATH").split(":");
+		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
 			if(path.startsWith("~")) {
-				path = System.getenv("HOME") + path.substring(1);
+				path = getEnv("HOME") + path.substring(1);
 			}
 			File[] files = new File(path).listFiles();
 			if(files == null) {
@@ -87,5 +87,15 @@ public class Utils {
 	public static void log(String value) {
 		System.out.println(value);
 		RuntimeContext.getContext().getLogger().warn(value);
+	}
+
+	public static String getEnv(String key) {
+		String env = RuntimeContext.getContext().getenv(key);
+		return env == null ? "" : env;
+	}
+
+	public static boolean setEnv(String key, String env) {
+		int ret = RuntimeContext.getContext().setenv(key, env, true);
+		return ret == 0;
 	}
 }
