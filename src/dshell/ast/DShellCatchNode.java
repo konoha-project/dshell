@@ -1,6 +1,8 @@
 package dshell.ast;
 
 import dshell.lang.ModifiedTypeSafer;
+import dshell.lib.Utils;
+import zen.ast.ZBlockNode;
 import zen.ast.ZNode;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.codegen.jvm.ModifiedJavaEngine;
@@ -26,6 +28,15 @@ public class DShellCatchNode extends ZNode {
 	@Override public void SetNameInfo(ZToken NameToken, String Name) {
 		this.ExceptionName = Name;
 		this.NameToken = NameToken;
+	}
+
+	public final ZBlockNode CatchBlockNode() {
+		ZNode BlockNode = this.AST[_Block];
+		if(BlockNode instanceof ZBlockNode) {
+			return (ZBlockNode) BlockNode;
+		}
+		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		return null;
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {

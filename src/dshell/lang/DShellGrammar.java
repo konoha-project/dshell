@@ -6,7 +6,10 @@ import zen.util.ZMatchFunction;
 import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
-import zen.lang.ZenPrecedence;
+import zen.codegen.jvm.JavaClassPathPattern;
+import zen.codegen.jvm.JavaImportPattern;
+import zen.lang.zen.ZenPrecedence;
+import zen.lang.zen.ZenGrammar;
 import zen.parser.ZNameSpace;
 import zen.parser.ZSyntax;
 import zen.parser.ZToken;
@@ -57,6 +60,12 @@ public class DShellGrammar {
 	}
 
 	public static void ImportGrammar(ZNameSpace NameSpace) {
+		// import ZenGrammer
+		ZenGrammar.ImportGrammar(NameSpace);
+		NameSpace.DefineStatement("import", new JavaImportPattern());
+		NameSpace.DefineExpression("$JavaClassPath$", new JavaClassPathPattern());
+
+		// import DShell Specific Grammar
 		CommandSymbolToken commandSymbolToken = new CommandSymbolToken();
 		ImportCommandPattern importCommandPattern = new ImportCommandPattern();
 		CommandSymbolPattern commandSymbolPattern = new CommandSymbolPattern();

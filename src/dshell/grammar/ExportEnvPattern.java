@@ -14,10 +14,7 @@ public class ExportEnvPattern extends ZMatchFunction {
 		Node = TokenContext.MatchToken(Node, "env", ZTokenContext._Required);
 		Node = TokenContext.MatchPattern(Node, ZNode._NameInfo, "$Name$", ZTokenContext._Required);
 		Node = TokenContext.MatchToken(Node, "=", ZTokenContext._Required);
-		if(Node.IsErrorNode()) {
-			return Node;
-		}
-		ZNode ExprNode = TokenContext.ParsePattern(Node, "$Expression$", ZTokenContext._Required);
-		return ((DShellExportEnvNode)Node).SetEnvValue(ExprNode);
+		Node = TokenContext.MatchPattern(Node, DShellExportEnvNode._EXPR, "$Expression$", ZTokenContext._Required);
+		return Node;
 	}
 }

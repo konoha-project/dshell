@@ -5,11 +5,9 @@ import java.util.ArrayList;
 import zen.ast.ZInstanceOfNode;
 import zen.ast.ZNode;
 import zen.codegen.jvm.JavaEngine;
-import zen.codegen.jvm.JavaGenerator;
 import zen.parser.ZLogger;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellExportEnvNode;
 import dshell.ast.DShellTryNode;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.Task;
@@ -17,7 +15,7 @@ import dshell.lib.TaskBuilder;
 import dshell.remote.TaskArray;
 
 public class ModifiedJavaEngine extends JavaEngine {
-	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, JavaGenerator Generator) {
+	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, ModifiedAsmGenerator Generator) {
 		super(TypeChecker, Generator);
 	}
 
@@ -84,7 +82,7 @@ public class ModifiedJavaEngine extends JavaEngine {
 			JavaClass = Boolean.class;
 		}
 
-		ZNode TargetNode = Node.AST[ZInstanceOfNode._Left];
+		ZNode TargetNode = Node.LeftNode();
 		Object Value = this.Eval(TargetNode);
 		if(TargetNode.Type.IsIntType()) {
 			Value = new Long((Long) Value);
@@ -96,10 +94,5 @@ public class ModifiedJavaEngine extends JavaEngine {
 			Value = new Boolean((Boolean) Value);
 		}
 		this.EvaledValue = Value.getClass().equals(JavaClass);
-	}
-
-	public void VisitExportEnvNode(DShellExportEnvNode Node) {
-		Node.AST[DShellExportEnvNode._EXPORT].Accept(this);
-		Node.AST[DShellExportEnvNode._LET].Accept(this);
 	}
 }

@@ -16,19 +16,16 @@ import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellExportEnvNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
-import dshell.lang.DShellGrammar;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
 import dshell.remote.TaskArray;
-import zen.ast.ZCatchNode;
 import zen.ast.ZInstanceOfNode;
 import zen.ast.ZNode;
 import zen.ast.ZThrowNode;
@@ -38,9 +35,9 @@ import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.parser.ZLogger;
 import zen.parser.ZSourceEngine;
-import zen.util.LibZen;
+import zen.util.ZArray;
 import zen.parser.ZNameSpace;
-import zen.type.ZFunc;
+import zen.type.ZFuncType;
 import zen.type.ZGenericType;
 import zen.type.ZType;
 import zen.type.ZTypePool;
@@ -102,9 +99,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
 	}
 
-	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {
-		super.ImportLocalGrammar(NameSpace);
-		LibZen._ImportGrammar(NameSpace, DShellGrammar.class.getName());
+	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {	// do nothing
 	}
 
 	@Override public boolean StartCodeGeneration(ZNode Node,  boolean IsInteractive) {
@@ -171,7 +166,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.TryCatchLabel.push(Label); // push
 		// try block
 		this.AsmBuilder.visitLabel(Label.beginTryLabel);
-		Node.AST[DShellTryNode._Try].Accept(this);
+		Node.TryBlockNode().Accept(this);
 		this.AsmBuilder.visitLabel(Label.endTryLabel);
 		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 		// catch block
@@ -181,8 +176,8 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 		// finally block
 		this.AsmBuilder.visitLabel(Label.finallyLabel);
-		if(Node.AST[DShellTryNode._Finally] != null) {
-			Node.AST[DShellTryNode._Finally].Accept(this);
+		if(Node.HasFinallyBlockNode()) {
+			Node.FinallyBlockNode().Accept(this);
 		}
 		this.TryCatchLabel.pop();
 	}
@@ -192,7 +187,6 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		TryCatchLabel Label = this.TryCatchLabel.peek();
 
 		// prepare
-		//TODO: add exception class name
 		String throwType = this.AsmType(Node.ExceptionType).getInternalName();
 		this.AsmBuilder.visitTryCatchBlock(Label.beginTryLabel, Label.endTryLabel, catchLabel, throwType);
 
@@ -200,14 +194,14 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
 		this.AsmBuilder.visitLabel(catchLabel);
 		this.AsmBuilder.StoreLocal(Node.ExceptionName);
-		Node.AST[ZCatchNode._Block].Accept(this);
+		Node.CatchBlockNode().Accept(this);
 		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
 	}
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
-		Node.AST[ZThrowNode._Expr].Accept(this);
+		Node.ExprNode().Accept(this);
 		this.AsmBuilder.visitInsn(ATHROW);
 	}
 
@@ -223,7 +217,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			JavaClass = Boolean.class;
 		}
 
-		ZNode TargetNode = Node.AST[ZInstanceOfNode._Left];
+		ZNode TargetNode = Node.LeftNode();
 		if(TargetNode.Type.IsIntType() || TargetNode.Type.IsFloatType() || TargetNode.Type.IsBooleanType()) {
 			this.invokeBoxingMethod(TargetNode);
 		}
@@ -231,11 +225,6 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			TargetNode.Accept(this);
 		}
 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
-	}
-
-	public void VisitExportEnvNode(DShellExportEnvNode Node) {
-		Node.AST[DShellExportEnvNode._EXPORT].Accept(this);
-		Node.AST[DShellExportEnvNode._LET].Accept(this);
 	}
 
 	private void invokeBoxingMethod(ZNode TargetNode) {
@@ -271,10 +260,28 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 	}
 
-	private void loadJavaStaticMethod(Class<?> holderClass, String name, Class<?>... paramClasses) {
+	private void loadJavaStaticMethod(Class<?> holderClass, String internalName, Class<?>... paramClasses) {
+		this.loadJavaStaticMethod(holderClass, internalName, internalName, paramClasses);
+	}
+
+	private void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
+		String macroSymbol = name;
+		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
+		ZArray<ZType> typeList = new ZArray<ZType>(new ZType[4]);
+		StringBuilder macroBuilder = new StringBuilder();
+		macroBuilder.append(holderClassPath + "." + internalName + "(");
+		for(int i = 0; i < paramClasses.length; i++) {
+			if(i != 0) {
+				macroBuilder.append(",");
+			}
+			macroBuilder.append("$[" + i + "]");
+			typeList.add(JavaTypeTable.GetZenType(paramClasses[i]));
+		}
+		macroBuilder.append(")");
 		try {
-			ZFunc func = JavaCommonApi.ConvertToNativeFunc(holderClass.getMethod(name, paramClasses));
-			this.SetDefinedFunc(func);
+			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
+			ZFuncType macroType = (ZFuncType) ZTypePool._GetGenericType(ZFuncType._FuncType, typeList, true);
+			this.SetAsmMacro(this.RootNameSpace, macroSymbol, macroType, macroBuilder.toString());
 		}
 		catch(Exception e) {
 			Utils.fatal(1, "load static method faild: " + e.getMessage());

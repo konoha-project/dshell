@@ -26,7 +26,16 @@ class CauseInferencer_ltrace implements CauseInferencer {
 	private static enum IgnoreFunction {
 		setlocale,
 		dcgettext,
-		error;
+		error,
+		error_at_line,
+		warn,
+		vwarn,
+		warnx,
+		vwarnx,
+		err,
+		verr,
+		errx,
+		verrx;
 
 		public static boolean match(String funcName) {
 			IgnoreFunction[] values = IgnoreFunction.values();
@@ -269,6 +278,31 @@ class CauseInferencer_ltrace implements CauseInferencer {
 		}
 		else if(calledFunc.startsWith("error")) {
 			if(!calledFunc.startsWith("error(0")) {
+				return true;
+			}
+		}
+		else if(calledFunc.startsWith("error_at_line")) {
+			if(!calledFunc.startsWith("error_at_line(0")) {
+				return true;
+			}
+		}
+		else if(calledFunc.startsWith("err")) {
+			if(!calledFunc.startsWith("err(0")) {
+				return true;
+			}
+		}
+		else if(calledFunc.startsWith("verr")) {
+			if(!calledFunc.startsWith("verr(0")) {
+				return true;
+			}
+		}
+		else if(calledFunc.startsWith("errx")) {
+			if(!calledFunc.startsWith("errx(0")) {
+				return true;
+			}
+		}
+		else if(calledFunc.startsWith("verrx")) {
+			if(!calledFunc.startsWith("verrx(0")) {
 				return true;
 			}
 		}

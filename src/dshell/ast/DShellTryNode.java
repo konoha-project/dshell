@@ -1,6 +1,8 @@
 package dshell.ast;
 
 import dshell.lang.ModifiedTypeSafer;
+import dshell.lib.Utils;
+import zen.ast.ZBlockNode;
 import zen.ast.ZListNode;
 import zen.ast.ZNode;
 import zen.codegen.jvm.ModifiedAsmGenerator;
@@ -13,6 +15,28 @@ public class DShellTryNode extends ZListNode {
 
 	public DShellTryNode(ZNode ParentNode) {
 		super(ParentNode, null, 2);
+	}
+
+	public final ZBlockNode TryBlockNode() {
+		ZNode BlockNode = this.AST[_Try];
+		if(BlockNode instanceof ZBlockNode) {
+			return (ZBlockNode) BlockNode;
+		}
+		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		return null;
+	}
+
+	public final boolean HasFinallyBlockNode() {
+		return this.AST[_Finally] != null;
+	}
+
+	public final ZBlockNode FinallyBlockNode() {
+		ZNode BlockNode = this.AST[_Finally];
+		if(BlockNode instanceof ZBlockNode) {
+			return (ZBlockNode) BlockNode;
+		}
+		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		return null;
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {

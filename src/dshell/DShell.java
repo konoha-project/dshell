@@ -4,13 +4,13 @@ import java.io.PrintStream;
 import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
+import dshell.lang.DShellGrammar;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.util.LibZen;
-import zen.lang.ZenGrammar;
 import zen.main.ZenMain;
 import zen.parser.ZSourceEngine;
 import static dshell.lib.RuntimeContext.AppenderType;
@@ -105,7 +105,7 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), ZenGrammar.class.getName());
+		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			int linenum = 1;
@@ -127,14 +127,14 @@ public class DShell {
 				}
 				engine.Eval(importBuilder.toString(), "(stdin)", 0, false);
 			}
-			engine.Generator.Logger.ShowErrors();
+			engine.Generator.Logger.OutputErrorsToStdErr();
 			while ((line = console.readLine()) != null) {
 				if(line.trim().equals("")) {
 					continue;
 				}
 				try {
 					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
-					engine.Generator.Logger.ShowErrors();
+					engine.Generator.Logger.OutputErrorsToStdErr();
 					if (LibZen.DebugMode && evaledValue != null) {
 						System.out.print(" (" + /*ZSystem.GuessType(evaledValue)*/ ":");
 						System.out.print(LibZen._GetClassName(evaledValue)+ ") ");
@@ -165,7 +165,7 @@ public class DShell {
 			engine.Eval(ARGVBuilder.toString(), scriptName, 0, false);
 			// load script file
 			boolean status = engine.Load(scriptName);
-			engine.Generator.Logger.ShowErrors();
+			engine.Generator.Logger.OutputErrorsToStdErr();
 			if(!status) {
 				System.err.println("abort loading: " + scriptName);
 				System.exit(1);

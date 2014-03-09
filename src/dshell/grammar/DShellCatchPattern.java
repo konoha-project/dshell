@@ -1,7 +1,6 @@
 package dshell.grammar;
 
 import dshell.ast.DShellCatchNode;
-import zen.ast.ZCatchNode;
 import zen.ast.ZNode;
 import zen.util.ZMatchFunction;
 import zen.parser.ZTokenContext;
@@ -15,7 +14,7 @@ public class DShellCatchPattern extends ZMatchFunction {
 		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode._NameInfo, "$Name$", ZTokenContext._Required);
 		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode._TypeInfo, "$TypeAnnotation$", ZTokenContext._Required);
 		CatchNode = TokenContext.MatchToken(CatchNode, ")", ZTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, ZCatchNode._Block, "$Block$", ZTokenContext._Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._Block, "$Block$", ZTokenContext._Required);
 		return CatchNode;
 	}
 
