@@ -14,12 +14,12 @@ public class ImportEnvPattern extends ZMatchFunction {
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode LetNode = new ZLetNode(ParentNode);
 		LetNode = TokenContext.MatchToken(LetNode, "env", ZTokenContext._Required);
-		LetNode = TokenContext.MatchPattern(LetNode, ZNode._NameInfo, "$Name$", ZTokenContext._Required);
-		LetNode.Set(ZNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
-		String Name = ((ZLetNode)LetNode).Symbol;
+		LetNode = TokenContext.MatchPattern(LetNode, ZLetNode._NameInfo, "$Name$", ZTokenContext._Required);
+		LetNode.SetNode(ZLetNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
+		String Name = ((ZLetNode)LetNode).GetName();
 		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
-		FuncCallNode.Set(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, Name));
-		LetNode.Set(ZLetNode._InitValue, FuncCallNode);
+		FuncCallNode.SetNode(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, Name));
+		LetNode.SetNode(ZLetNode._InitValue, FuncCallNode);
 		return LetNode;
 	}
 }

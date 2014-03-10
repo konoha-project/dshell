@@ -57,9 +57,9 @@ public class ForeachPattern extends ZMatchFunction {
 
 		ZNode Node = new ZIfNode(ParentNode);
 		ZSource trueSource = new ZSource(this.ContextStack.peek().FileName, this.ContextStack.peek().LineNum, "true", TokenContext);
-		Node.Set(ZIfNode._Cond, new ZBooleanNode(Node, new ZToken(trueSource, 0, "true".length()), true));
-		ZBlockNode ThenBlockNode = new ZBlockNode(Node, 0);
-		Node.Set(ZIfNode._Then, ThenBlockNode);
+		Node.SetNode(ZIfNode._Cond, new ZBooleanNode(Node, new ZToken(trueSource, 0, "true".length()), true));
+		ZBlockNode ThenBlockNode = new ZBlockNode(ParentNode, null);
+		Node.SetNode(ZIfNode._Then, ThenBlockNode);
 
 		// var index = 0
 		ZNode IndexDeclNode = this.CreateIndexDeclNode(ThenBlockNode, TokenContext);
@@ -74,17 +74,17 @@ public class ForeachPattern extends ZMatchFunction {
 		ZNode SizeDeclNode = this.CreateSizeDeclNode(ValueListDeclNode, TokenContext);
 
 		// var index = 0 { var valueList = $Expression$ }
-		IndexDeclNode.Set(ZNode._AppendIndex, ValueListDeclNode);
+		IndexDeclNode.SetNode(ZNode._AppendIndex, ValueListDeclNode);
 
 		// var valueList = $Expression$ { var size = valueList.Size() }
-		ValueListDeclNode.Set(ZNode._AppendIndex, SizeDeclNode);
+		ValueListDeclNode.SetNode(ZNode._AppendIndex, SizeDeclNode);
 
 		// while(index < size)
 		ZNode WhileNode = new ZWhileNode(SizeDeclNode);
-		WhileNode.Set(ZWhileNode._Cond, this.CreateCondNode(WhileNode, TokenContext));
+		WhileNode.SetNode(ZWhileNode._Cond, this.CreateCondNode(WhileNode, TokenContext));
 
 		// var size = valueList.Size() { while(index < size) }
-		SizeDeclNode.Set(ZNode._AppendIndex, WhileNode);
+		SizeDeclNode.SetNode(ZNode._AppendIndex, WhileNode);
 
 		// { $WhileBlock$}
 		ZNode BlockNode = this.MatchAndCreateBlockNode(WhileNode, TokenContext);
@@ -93,7 +93,7 @@ public class ForeachPattern extends ZMatchFunction {
 		}
 
 		// while(index < size) { $WhileBlock$ }
-		WhileNode.Set(ZWhileNode._Block, BlockNode);
+		WhileNode.SetNode(ZWhileNode._Block, BlockNode);
 
 		ThenBlockNode.Append(IndexDeclNode);
 		this.ContextStack.pop();
@@ -104,7 +104,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ZVarNode Node = this.CreateVarNode(ParentNode, TokenContext, this.ContextStack.peek().IndexName);
 		ZSource Source = new ZSource(this.ContextStack.peek().FileName, this.ContextStack.peek().LineNum, "0", TokenContext);
 		ZToken Token = new ZToken(Source, 0, "0".length());
-		Node.Set(ZVarNode._InitValue, new ZIntNode(Node, Token, 0));
+		Node.SetNode(ZVarNode._InitValue, new ZIntNode(Node, Token, 0));
 		return Node;
 	}
 
@@ -139,7 +139,7 @@ public class ForeachPattern extends ZMatchFunction {
 		}
 
 		// var valueList = $Expression$
-		Node.Set(ZVarNode._InitValue, ExprNode);
+		Node.SetNode(ZVarNode._InitValue, ExprNode);
 		return Node;
 	}
 
@@ -149,10 +149,10 @@ public class ForeachPattern extends ZMatchFunction {
 
 		// valueList.Size()
 		ZMethodCallNode SizeNode = new ZMethodCallNode(Node, this.CreateNameNode(ParentNode, TokenContext, this.ContextStack.peek().ValueListName));
-		SizeNode.Set(ZNode._NameInfo, this.CreateNameNode(SizeNode, TokenContext, "Size"));
+		SizeNode.SetNode(ZMethodCallNode._NameInfo, this.CreateNameNode(SizeNode, TokenContext, "Size"));
 
 		// var size = valueList.Size()
-		Node.Set(ZVarNode._InitValue, SizeNode);
+		Node.SetNode(ZVarNode._InitValue, SizeNode);
 		return Node;
 	}
 
@@ -163,7 +163,7 @@ public class ForeachPattern extends ZMatchFunction {
 		ZSource Source = new ZSource(LeftNode.SourceToken.GetFileName(), LeftNode.SourceToken.GetLineNumber(), Operator, TokenContext);
 		ZToken Token = new ZToken(Source, 0, Operator.length());
 		ZComparatorNode Node = new ZComparatorNode(ParentNode, Token, LeftNode, null);
-		Node.Set(ZBinaryNode._Right, RightNode);
+		Node.SetNode(ZBinaryNode._Right, RightNode);
 		return Node;
 	}
 
@@ -175,17 +175,17 @@ public class ForeachPattern extends ZMatchFunction {
 	 * }
 	 * */
 	private ZNode MatchAndCreateBlockNode(ZNode ParentNode, ZTokenContext TokenContext) {
-		ZNode Node = new ZBlockNode(ParentNode, 0);
+		ZNode Node = new ZBlockNode(ParentNode, null);
 		// var value
 		ZNode ValueDeclNode = this.CreateVarNode(Node, TokenContext, this.ContextStack.peek().ValueName);
-		Node.Set(ZNode._AppendIndex, ValueDeclNode);
+		Node.SetNode(ZNode._AppendIndex, ValueDeclNode);
 
 		// valueList[index]
 		ZNode GetIndexNode = new ZGetIndexNode(ValueDeclNode, this.CreateNameNode(ValueDeclNode, TokenContext, this.ContextStack.peek().ValueListName));
-		GetIndexNode.Set(ZGetIndexNode._Index, this.CreateNameNode(GetIndexNode, TokenContext, this.ContextStack.peek().IndexName));
+		GetIndexNode.SetNode(ZGetIndexNode._Index, this.CreateNameNode(GetIndexNode, TokenContext, this.ContextStack.peek().IndexName));
 
 		// var value = valueList[index]
-		ValueDeclNode.Set(ZVarNode._InitValue, GetIndexNode);
+		ValueDeclNode.SetNode(ZVarNode._InitValue, GetIndexNode);
 
 		// $Block$
 		ZNode BlockNode = TokenContext.ParsePattern(ValueDeclNode, "$Block$", ZTokenContext._Required);
@@ -194,7 +194,7 @@ public class ForeachPattern extends ZMatchFunction {
 		}
 
 		// var value = valueList[index] { $Block$ }
-		ValueDeclNode.Set(ZNode._AppendIndex, BlockNode);
+		ValueDeclNode.SetNode(ZNode._AppendIndex, BlockNode);
 
 		// $Block$ ... { index = index + 1 }
 		ZBlockNode BottomBlockNode = this.FindBottomBlockNode((ZBlockNode) BlockNode);
@@ -221,16 +221,16 @@ public class ForeachPattern extends ZMatchFunction {
 		ZSource AddOpSource = new ZSource(this.ContextStack.peek().FileName, this.ContextStack.peek().LineNum, "+", TokenContext);
 		ZToken OpToken = new ZToken(AddOpSource, 0, "+".length());
 		ZNode BinaryNode = new ZBinaryNode(Node, OpToken, this.CreateNameNode(Node, TokenContext, this.ContextStack.peek().IndexName), null);
-		BinaryNode.Set(ZBinaryNode._Right, new ZIntNode(Node, null, 1));
+		BinaryNode.SetNode(ZBinaryNode._Right, new ZIntNode(Node, null, 1));
 
 		// index = index + 1
-		Node.Set(ZSetNameNode._Expr, BinaryNode);
+		Node.SetNode(ZSetNameNode._Expr, BinaryNode);
 		return Node;
 	}
 
 	private ZVarNode CreateVarNode(ZNode ParentNode, ZTokenContext TokenContext, String VarName) {
 		ZVarNode Node = new ZVarNode(ParentNode);
-		Node.Set(ZNode._NameInfo, this.CreateNameNode(Node, TokenContext, VarName));
+		Node.SetNode(ZVarNode._NameInfo, this.CreateNameNode(Node, TokenContext, VarName));
 		return Node;
 	}
 

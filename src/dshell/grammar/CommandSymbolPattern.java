@@ -20,7 +20,7 @@ public class CommandSymbolPattern extends ZMatchFunction {
 		}
 		String Command = ((ZStringNode)SymbolNode).StringValue;
 		ZNode CommandNode = new DShellCommandNode(ParentNode, CommandToken);
-		CommandNode.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
+		CommandNode.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
 				// Match Prefix Option
@@ -54,7 +54,7 @@ public class CommandSymbolPattern extends ZMatchFunction {
 			if(ArgNode == null) {
 				break;
 			}
-			CommandNode.Set(ZNode._AppendIndex, ArgNode);
+			CommandNode.SetNode(ZNode._AppendIndex, ArgNode);
 		}
 		return CommandNode;
 	}

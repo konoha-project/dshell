@@ -11,8 +11,8 @@ public class DShellCatchPattern extends ZMatchFunction {
 		ZNode CatchNode = new DShellCatchNode(ParentNode);
 		CatchNode = TokenContext.MatchToken(CatchNode, "catch", ZTokenContext._Required);
 		CatchNode = TokenContext.MatchToken(CatchNode, "(", ZTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode._NameInfo, "$Name$", ZTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, ZNode._TypeInfo, "$TypeAnnotation$", ZTokenContext._Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._NameInfo, "$Name$", ZTokenContext._Required);
+		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._TypeInfo, "$TypeAnnotation$", ZTokenContext._Required);
 		CatchNode = TokenContext.MatchToken(CatchNode, ")", ZTokenContext._Required);
 		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._Block, "$Block$", ZTokenContext._Required);
 		return CatchNode;

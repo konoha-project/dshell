@@ -15,7 +15,7 @@ public class LocationPattern extends ZMatchFunction {
 		TokenContext.MoveNext();
 		ZStringNode KeyNode = new ZStringNode(ParentNode, null, DShellGrammar.location);
 		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token);
-		Node.Set(ZNode._AppendIndex, KeyNode);
+		Node.SetNode(ZNode._AppendIndex, KeyNode);
 		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));
 		// Match Prefix Option
 		ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPattern.PatternName, ZTokenContext._Optional);

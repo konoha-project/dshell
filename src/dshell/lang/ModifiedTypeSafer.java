@@ -55,13 +55,13 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 
 	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
-		ZBlockNode BlockNode = Node.CatchBlockNode();
+		ZBlockNode BlockNode = Node.BlockNode();
 		if(BlockNode.GetListSize() == 0) {
-			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
+			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
 		}
-		if(!(Node.ExceptionType instanceof ZVarType)) {
-			Node.ExceptionType = this.VarScope.NewVarType(Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
-			BlockNode.GetNameSpace().SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType, Node.ExceptionName, Node.SourceToken);
+		if(!(Node.ExceptionType() instanceof ZVarType)) {
+			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
+			BlockNode.GetBlockNameSpace().SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken);
 		}
 		this.CheckTypeAt(Node, DShellCatchNode._Block, ZType.VoidType);
 		this.TypedNode(Node, ZType.VoidType);

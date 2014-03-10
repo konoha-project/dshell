@@ -8,35 +8,28 @@ import zen.ast.ZStringNode;
 import zen.ast.sugar.ZDesugarNode;
 import zen.ast.sugar.ZSyntaxSugarNode;
 import zen.parser.ZGenerator;
-import zen.parser.ZToken;
 
 public class DShellExportEnvNode extends ZSyntaxSugarNode {
-	public final static int _EXPR = 0;
-
-	private String envName;
-	private ZToken envNameToken;
+	public final static int _NameInfo = 0;
+	public final static int _EXPR = 1;
 
 	public DShellExportEnvNode(ZNode ParentNode) {
-		super(ParentNode, null, 1);
-	}
-
-	@Override public void SetNameInfo(ZToken NameToken, String Name) {
-		this.envNameToken = NameToken;
-		this.envName = Name;
+		super(ParentNode, null, 2);
 	}
 
 	@Override
 	public ZDesugarNode DeSugar(ZGenerator Generator) {
+		String envName = this.AST[_NameInfo].SourceToken.GetText();
 		ZNode SetEnvNode = new ZFuncCallNode(this, new ZGetNameNode(this, null, "setEnv"));
-		SetEnvNode.Set(ZNode._AppendIndex, new ZStringNode(SetEnvNode, null, this.envName));
-		SetEnvNode.Set(ZNode._AppendIndex, this.AST[DShellExportEnvNode._EXPR]);
+		SetEnvNode.SetNode(ZNode._AppendIndex, new ZStringNode(SetEnvNode, null, envName));
+		SetEnvNode.SetNode(ZNode._AppendIndex, this.AST[DShellExportEnvNode._EXPR]);
 
 		ZNode LetNode = new ZLetNode(this);
-		LetNode.SetNameInfo(this.envNameToken, this.envName);
-		LetNode.Set(ZNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
+		LetNode.SetNode(ZLetNode._NameInfo, this.AST[_NameInfo]);
+		LetNode.SetNode(ZLetNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
 		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
-		FuncCallNode.Set(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, this.envName));
-		LetNode.Set(ZLetNode._InitValue, FuncCallNode);
+		FuncCallNode.SetNode(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, envName));
+		LetNode.SetNode(ZLetNode._InitValue, FuncCallNode);
 		return new ZDesugarNode(this, new ZNode[]{SetEnvNode, LetNode});
 	}
 }

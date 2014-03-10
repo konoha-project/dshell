@@ -6,7 +6,6 @@ import zen.util.ZMatchFunction;
 import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
-import zen.codegen.jvm.JavaClassPathPattern;
 import zen.codegen.jvm.JavaImportPattern;
 import zen.lang.zen.ZenPrecedence;
 import zen.lang.zen.ZenGrammar;
@@ -66,8 +65,7 @@ public class DShellGrammar {
 	public static void ImportGrammar(ZNameSpace NameSpace) {
 		// import ZenGrammer
 		ZenGrammar.ImportGrammar(NameSpace);
-		NameSpace.DefineStatement("import", new JavaImportPattern());
-		NameSpace.DefineExpression("$JavaClassPath$", new JavaClassPathPattern());
+		overrideSyntaxPattern(NameSpace, "import", new JavaImportPattern(), true);
 
 		// import DShell Specific Grammar
 		CommandSymbolToken commandSymbolToken = new CommandSymbolToken();
@@ -102,13 +100,13 @@ public class DShellGrammar {
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
 		for(String symbol : symbolList) {
-			setOptionalSymbol(NameSpace, symbol, commandSymbolPattern);
+			setOptionalSymbol(NameSpace, symbol);
 		}
-		NameSpace.Generator.AppendGrammarInfo("dshell" + DShell.version);
+		NameSpace.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
-	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, CommandSymbolPattern dShellPattern) {
-		NameSpace.SetGlobalSymbol(DShellGrammar.toCommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
+	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol) { // FIXME: null
+		NameSpace.SetGlobalSymbol(DShellGrammar.toCommandSymbol(symbol), new ZStringNode(new ZBlockNode(null, NameSpace), null, symbol));
 	}
 
 	private static void overrideSyntaxPattern(ZNameSpace NameSpace, String PatternName, ZMatchFunction MatchFunc, boolean isStatement) {

@@ -222,7 +222,7 @@ public class CommandArgPattern extends ZMatchFunction {
 			ZNode node = new ZStringNode(ParentNode, token, "");
 			for(Pair pair : this.pairList) {
 				ZBinaryNode binaryNode = new ZBinaryNode(ParentNode, plusToken, node, null);
-				binaryNode.Set(ZBinaryNode._Right, pair.toNode());
+				binaryNode.SetNode(ZBinaryNode._Right, pair.toNode());
 				node = binaryNode;
 			}
 			return node;

@@ -1,6 +1,7 @@
 package dshell.grammar;
 
 import dshell.ast.DShellDummyNode;
+import dshell.ast.DShellImportCommandNode;
 import dshell.lang.DShellGrammar;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
@@ -15,6 +16,7 @@ public class ImportCommandPattern extends ZMatchFunction {
 	public final static String PatternName = "$ImportCommand$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
+		DShellImportCommandNode Node = new DShellImportCommandNode(ParentNode);
 		String Command = "";
 		String ParsedText = null;
 		TokenContext.MoveNext();
@@ -32,15 +34,18 @@ public class ImportCommandPattern extends ZMatchFunction {
 			}
 			Command += ParsedText;
 			if(Token.IsNextWhiteSpace()) {
-				this.AppendCommand(ParentNode, Command);
+				//this.AppendCommand(ParentNode, Command);
+				Node.AppendCommand(Command);
 				Command = "";
 			}
 			TokenContext.MoveNext();
 		}
 		if(!Command.equals("")) {
-			this.AppendCommand(ParentNode, Command);
+			//this.AppendCommand(ParentNode, Command);
+			Node.AppendCommand(Command);
 		}
-		return new DShellDummyNode(ParentNode);
+		//return new DShellDummyNode(ParentNode);
+		return Node;
 	}
 
 	private void AppendCommand(ZNode ParentNode, String CommandPath) {

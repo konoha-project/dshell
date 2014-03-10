@@ -22,7 +22,7 @@ public class PrefixOptionPattern extends ZMatchFunction {
 				return CommandNode;
 			}
 			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
+			Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
 			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
 		if(Symbol.equals(DShellGrammar.timeout) && LeftNode == null) {
@@ -35,8 +35,8 @@ public class PrefixOptionPattern extends ZMatchFunction {
 				return CommandNode;
 			}
 			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.Set(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
-			Node.Set(ZNode._AppendIndex, TimeNode);
+			Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
+			Node.SetNode(ZNode._AppendIndex, TimeNode);
 			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
 		return null;

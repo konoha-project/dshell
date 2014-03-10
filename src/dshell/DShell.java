@@ -5,14 +5,17 @@ import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
 import dshell.lang.DShellGrammar;
+import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.util.LibZen;
+import zen.util.Nullable;
+import zen.util.Var;
 import zen.main.ZenMain;
-import zen.parser.ZSourceEngine;
+import zen.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {
@@ -105,7 +108,7 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ZSourceEngine engine = LibZen._LoadEngine(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
+		ZGenerator generator = this.initGenerator(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			int linenum = 1;
@@ -125,20 +128,16 @@ public class DShell {
 					}
 					importBuilder.append(commandSet.pollFirst());
 				}
-				engine.Eval(importBuilder.toString(), "(stdin)", 0, false);
+				generator.LoadScript(importBuilder.toString(), "(stdin)", 0, false);
 			}
-			engine.Generator.Logger.OutputErrorsToStdErr();
+			generator.Logger.OutputErrorsToStdErr();
 			while ((line = console.readLine()) != null) {
 				if(line.trim().equals("")) {
 					continue;
 				}
 				try {
-					Object evaledValue = engine.Eval(line, "(stdin)", linenum, this.interactiveMode);
-					engine.Generator.Logger.OutputErrorsToStdErr();
-					if (LibZen.DebugMode && evaledValue != null) {
-						System.out.print(" (" + /*ZSystem.GuessType(evaledValue)*/ ":");
-						System.out.print(LibZen._GetClassName(evaledValue)+ ") ");
-						System.out.println(LibZen._Stringify(evaledValue));
+					if (generator.LoadScript(line, "(stdin)", linenum, true) && LibZen.DebugMode) {
+						generator.Perform();
 					}
 				}
 				catch (Exception e) {
@@ -162,14 +161,14 @@ public class DShell {
 				ARGVBuilder.append("\"");
 			}
 			ARGVBuilder.append("]");
-			engine.Eval(ARGVBuilder.toString(), scriptName, 0, false);
+			//generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
 			// load script file
-			boolean status = engine.Load(scriptName);
-			engine.Generator.Logger.OutputErrorsToStdErr();
+			boolean status = generator.LoadFile(scriptName, null);
 			if(!status) {
 				System.err.println("abort loading: " + scriptName);
 				System.exit(1);
 			}
+			generator.ExecMain();
 			System.exit(0);
 		}
 	}
@@ -194,6 +193,14 @@ public class DShell {
 		stream.println("    --rec [rec URL]");
 		stream.println("    --version");
 		System.exit(status);
+	}
+
+	public final ZGenerator initGenerator(@Nullable String ClassName, String GrammarClass) {
+		@Var ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
+		LibZen._ImportGrammar(Generator.RootNameSpace, GrammarClass);
+		Generator.SetTypeChecker(new ModifiedTypeSafer((ModifiedAsmGenerator) Generator));
+		Generator.RequireLibrary("common", null);
+		return Generator;
 	}
 
 	public static void main(String[] args) {

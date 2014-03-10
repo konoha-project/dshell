@@ -8,6 +8,7 @@ import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.INSTANCEOF;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
@@ -22,29 +23,32 @@ import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
 import dshell.lang.DShellVisitor;
-import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
 import dshell.remote.TaskArray;
+import zen.ast.ZClassNode;
+import zen.ast.ZFunctionNode;
 import zen.ast.ZInstanceOfNode;
 import zen.ast.ZNode;
 import zen.ast.ZThrowNode;
+import zen.ast.sugar.ZTopLevelNode;
 import zen.codegen.jvm.JavaAsmGenerator;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.parser.ZLogger;
-import zen.parser.ZSourceEngine;
 import zen.util.ZArray;
-import zen.parser.ZNameSpace;
 import zen.type.ZFuncType;
 import zen.type.ZGenericType;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
 public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisitor {
+	private final InteractiveEvaluator evaluator;
+	private ZFunctionNode untypedMainNode = null;
+	
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
 	private Method ExecCommandInt;
@@ -54,6 +58,8 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisi
 
 	public ModifiedAsmGenerator() {
 		super();
+		this.LangInfo.AllowTopLevelScript = true;
+		this.evaluator = new InteractiveEvaluator(this);
 		this.importJavaClass(Task.class);
 		this.importJavaClass(DShellException.class);
 		this.importJavaClass(MultipleException.class);
@@ -95,13 +101,6 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisi
 		// load static method
 		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
 		this.loadJavaStaticMethod(Utils.class, "setEnv", String.class, String.class);
-	}
-
-	@Override public ZSourceEngine GetEngine() {
-		return new ModifiedJavaEngine(new ModifiedTypeSafer(this), this);
-	}
-
-	@Override public void ImportLocalGrammar(ZNameSpace NameSpace) {	// do nothing
 	}
 
 	@Override public boolean StartCodeGeneration(ZNode Node,  boolean IsInteractive) {
@@ -192,17 +191,17 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisi
 		TryCatchLabel Label = this.TryCatchLabel.peek();
 
 		// prepare
-		String throwType = this.AsmType(Node.ExceptionType).getInternalName();
+		String throwType = this.AsmType(Node.ExceptionType()).getInternalName();
 		this.AsmBuilder.visitTryCatchBlock(Label.beginTryLabel, Label.endTryLabel, catchLabel, throwType);
 
 		// catch block
-		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
+		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 		this.AsmBuilder.visitLabel(catchLabel);
-		this.AsmBuilder.StoreLocal(Node.ExceptionName);
-		Node.CatchBlockNode().Accept(this);
+		this.AsmBuilder.StoreLocal(Node.ExceptionName());
+		Node.BlockNode().Accept(this);
 		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
 
-		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType), Node.ExceptionName);
+		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 	}
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
@@ -211,14 +210,14 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisi
 	}
 
 	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
-		Class<?> JavaClass = this.GetJavaClass(Node.TargetType);
-		if(Node.TargetType.IsIntType()) {
+		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
+		if(Node.TargetType().IsIntType()) {
 			JavaClass = Long.class;
 		}
-		else if(Node.TargetType.IsFloatType()) {
+		else if(Node.TargetType().IsFloatType()) {
 			JavaClass = Double.class;
 		}
-		else if(Node.TargetType.IsBooleanType()) {
+		else if(Node.TargetType().IsBooleanType()) {
 			JavaClass = Boolean.class;
 		}
 
@@ -294,6 +293,57 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisi
 		}
 		catch(Exception e) {
 			Utils.fatal(1, "load static method faild: " + e.getMessage());
+		}
+	}
+
+	@Override
+	protected boolean ExecStatement(ZNode Node, boolean IsInteractive) {
+		this.EnableVisitor();
+		this.TopLevelSymbol = null;
+		if(Node instanceof ZTopLevelNode) {
+			((ZTopLevelNode)Node).Perform(this.RootNameSpace);
+		}
+		else {
+			if(this.IsVisitable()) {
+				if(IsInteractive) {
+					Node = this.TypeChecker.CheckType(Node, ZType.VoidType);
+					this.TopLevelSymbol = this.evaluator.Eval(Node).toString();
+					return this.IsVisitable();
+				}
+				if(Node instanceof ZFunctionNode || Node instanceof ZClassNode) {
+					Node = this.TypeChecker.CheckType(Node, ZType.VoidType);
+					Node.Type = ZType.VoidType;
+					this.GenerateStatement(Node);
+				}
+				else {
+					if(this.untypedMainNode == null) {
+						this.untypedMainNode = this.TypeChecker.CreateFunctionNode(Node.ParentNode, "main", new DShellDummyNode(Node.ParentNode));
+					}
+					this.untypedMainNode.BlockNode().Append(Node);
+				}
+			}
+		}
+		return this.IsVisitable();
+	}
+
+	@Override
+	public void ExecMain() {
+		ZFunctionNode Node  = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
+		Node.IsExport = true;
+		Node.Accept(this);
+		this.Logger.OutputErrorsToStdErr();
+		if(this.MainFuncNode != null) {
+			JavaStaticFieldNode MainFunc = this.MainFuncNode;
+			try {
+				Method Method = MainFunc.StaticClass.getMethod("f");
+				Method.invoke(null);
+			}
+			catch(InvocationTargetException e) {
+				e.getCause().printStackTrace();
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 }
