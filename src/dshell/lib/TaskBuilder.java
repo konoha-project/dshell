@@ -266,16 +266,16 @@ class SubProc extends PseudoProcess {
 		if(this.enableTrace) {
 			logFilePath = new String(logdirPath + "/" + createLogNameHeader() + ".log");
 			new File(logdirPath).mkdir();
-			String[] traceCmd;
+			String[] traceCmds;
 			if(traceBackendType == traceBackend_ltrace) {
-				String[] backend_strace = {"ltrace", "-f", "-S", "-o", logFilePath};
-				traceCmd = backend_strace;
+				traceCmds = new String[] {"ltrace", "-f", "-S", "-o", logFilePath};
 			}
 			else {
-				throw new RuntimeException("invalid trace backend type");
+				Utils.fatal(1, "invalid trace backend type");
+				return;
 			}
-			for(int i = 0; i < traceCmd.length; i++) {
-				this.commandList.add(traceCmd[i]);
+			for(String traceCmd : traceCmds) {
+				this.commandList.add(traceCmd);
 			}
 		}
 	}
@@ -409,10 +409,10 @@ class SubProc extends PseudoProcess {
 			Process procKiller = new ProcessBuilder(cmds).start();
 			procKiller.waitFor();
 			this.isKilled = true;
-			//LibGreenTea.print("[killed]: " + this.getCmdName());
 		}
 		catch(Exception e) {
-			throw new RuntimeException(e);
+			e.printStackTrace();
+			Utils.fatal(1, "killing process problem");
 		}
 	}
 

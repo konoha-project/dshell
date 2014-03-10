@@ -1,6 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellExportEnvNode;
+import dshell.ast.sugar.DShellExportEnvNode;
 import zen.ast.ZNode;
 import zen.parser.ZTokenContext;
 import zen.util.ZMatchFunction;

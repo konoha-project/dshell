@@ -32,13 +32,13 @@ public class ImportCommandPattern extends ZMatchFunction {
 			}
 			Command += ParsedText;
 			if(Token.IsNextWhiteSpace()) {
-				AppendCommand(ParentNode, Command);
+				this.AppendCommand(ParentNode, Command);
 				Command = "";
 			}
 			TokenContext.MoveNext();
 		}
 		if(!Command.equals("")) {
-			AppendCommand(ParentNode, Command);
+			this.AppendCommand(ParentNode, Command);
 		}
 		return new DShellDummyNode(ParentNode);
 	}
@@ -70,6 +70,6 @@ public class ImportCommandPattern extends ZMatchFunction {
 			//System.err.println("found duplicated syntax pattern: " + Syntax);
 			return;
 		}
-		NameSpace.SetLocalSymbol(DShellGrammar.CommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
+		NameSpace.SetLocalSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 }

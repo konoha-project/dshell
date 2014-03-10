@@ -15,11 +15,12 @@ import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.lib.Task;
 
-public class ModifiedTypeSafer extends ZenTypeSafer {
+public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	public ModifiedTypeSafer(ModifiedAsmGenerator Generator) {
 		super(Generator);
 	}
 
+	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {
 		ZType ContextType = this.GetContextType();
 		if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
@@ -37,6 +38,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ContextType);
 	}
 
+	@Override
 	public void VisitTryNode(DShellTryNode Node) {
 		this.CheckTypeAt(Node, DShellTryNode._Try, ZType.VoidType);
 		int size = Node.GetListSize();
@@ -51,7 +53,8 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ZType.VoidType);
 	}
 
-	public void VisitCatchNode(DShellCatchNode Node) {	//FIXME
+	@Override
+	public void VisitCatchNode(DShellCatchNode Node) {
 		ZBlockNode BlockNode = Node.CatchBlockNode();
 		if(BlockNode.GetListSize() == 0) {
 			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName);
@@ -64,6 +67,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer {
 		this.TypedNode(Node, ZType.VoidType);
 	}
 
+	@Override
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 		this.Return(Node);
 	}

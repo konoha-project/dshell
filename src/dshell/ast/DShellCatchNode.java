@@ -1,11 +1,9 @@
 package dshell.ast;
 
-import dshell.lang.ModifiedTypeSafer;
+import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import zen.ast.ZBlockNode;
 import zen.ast.ZNode;
-import zen.codegen.jvm.ModifiedAsmGenerator;
-import zen.codegen.jvm.ModifiedJavaEngine;
 import zen.parser.ZToken;
 import zen.parser.ZVisitor;
 import zen.type.ZType;
@@ -40,17 +38,11 @@ public class DShellCatchNode extends ZNode {
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {
-		if(Visitor instanceof ModifiedTypeSafer) {
-			((ModifiedTypeSafer)Visitor).VisitCatchNode(this);
-		}
-		else if(Visitor instanceof ModifiedAsmGenerator) {
-			((ModifiedAsmGenerator)Visitor).VisitCatchNode(this);
-		}
-		else if(Visitor instanceof ModifiedJavaEngine) {
-			((ModifiedJavaEngine)Visitor).VisitCatchNode(this);
+		if(Visitor instanceof DShellVisitor) {
+			((DShellVisitor)Visitor).VisitCatchNode(this);
 		}
 		else {
-			throw new RuntimeException(Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

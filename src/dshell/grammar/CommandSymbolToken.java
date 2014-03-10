@@ -17,7 +17,7 @@ public class CommandSymbolToken extends ZTokenFunction {
 			symbolBuilder.append(ch);
 			SourceContext.MoveNext();
 		}
-		if(SourceContext.TokenContext.NameSpace.GetSymbolNode(DShellGrammar.CommandSymbol(symbolBuilder.toString())) != null) {
+		if(SourceContext.TokenContext.NameSpace.GetSymbolNode(DShellGrammar.toCommandSymbol(symbolBuilder.toString())) != null) {
 			SourceContext.Tokenize(CommandSymbolPattern.PatternName, startIndex, SourceContext.GetPosition());
 			return true;
 		}

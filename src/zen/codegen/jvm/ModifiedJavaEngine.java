@@ -8,17 +8,20 @@ import zen.codegen.jvm.JavaEngine;
 import zen.parser.ZLogger;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
+import dshell.lang.DShellVisitor;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.remote.TaskArray;
 
-public class ModifiedJavaEngine extends JavaEngine {
+public class ModifiedJavaEngine extends JavaEngine implements DShellVisitor {
 	public ModifiedJavaEngine(ModifiedTypeSafer TypeChecker, ModifiedAsmGenerator Generator) {
 		super(TypeChecker, Generator);
 	}
 
+	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {
 		ArrayList<DShellCommandNode> nodeList = new ArrayList<DShellCommandNode>();
 		DShellCommandNode node = Node;
@@ -62,10 +65,12 @@ public class ModifiedJavaEngine extends JavaEngine {
 		}
 	}
 
+	@Override
 	public void VisitTryNode(DShellTryNode Node) {
 		this.Unsupported(Node);
 	}
 
+	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
 		this.Unsupported(Node);
 	}
@@ -94,5 +99,9 @@ public class ModifiedJavaEngine extends JavaEngine {
 			Value = new Boolean((Boolean) Value);
 		}
 		this.EvaledValue = Value.getClass().equals(JavaClass);
+	}
+
+	@Override
+	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 }

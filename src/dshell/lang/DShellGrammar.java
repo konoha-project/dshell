@@ -40,8 +40,12 @@ public class DShellGrammar {
 	public final static String trace = "trace";
 	public final static String location = "location";
 
-	public static String CommandSymbol(String Symbol) {
+	public static String toCommandSymbol(String Symbol) {
 		return "__$" + Symbol;
+	}
+
+	public static String toLocationSymbol(String Symbol) {
+		return "__@$" + Symbol;
 	}
 
 	public static boolean MatchStopToken(ZTokenContext TokenContext) { // ;,)]}&&||
@@ -104,7 +108,7 @@ public class DShellGrammar {
 	}
 
 	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol, CommandSymbolPattern dShellPattern) {
-		NameSpace.SetGlobalSymbol(CommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
+		NameSpace.SetGlobalSymbol(DShellGrammar.toCommandSymbol(symbol), new ZStringNode(new ZBlockNode(NameSpace), null, symbol));
 	}
 
 	private static void overrideSyntaxPattern(ZNameSpace NameSpace, String PatternName, ZMatchFunction MatchFunc, boolean isStatement) {

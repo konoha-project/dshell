@@ -1,4 +1,4 @@
-package dshell.ast;
+package dshell.ast.sugar;
 
 import zen.ast.ZFuncCallNode;
 import zen.ast.ZGetNameNode;

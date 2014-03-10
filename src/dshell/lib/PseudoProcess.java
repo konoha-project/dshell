@@ -133,8 +133,8 @@ class PipeStreamHandler extends Thread {
 			while(read > -1) {
 				read = this.input.read(buffer, 0, buffer.length);
 				if(read > -1) {
-					for(int i = 0; i < this.outputs.length; i++) {
-						this.outputs[i].write(buffer, 0, read);
+					for(OutputStream output : this.outputs) {
+						output.write(buffer, 0, read);
 					}
 				}
 			}
@@ -148,7 +148,8 @@ class PipeStreamHandler extends Thread {
 			}
 		}
 		catch (IOException e) {
-			throw new RuntimeException(e);
+			e.printStackTrace();
+			Utils.fatal(1, "IO problem");
 		}
 	}
 

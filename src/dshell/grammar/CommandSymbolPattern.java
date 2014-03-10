@@ -14,8 +14,8 @@ public class CommandSymbolPattern extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken CommandToken = TokenContext.GetToken(ZTokenContext._MoveNext);
-		ZNode SymbolNode = ParentNode.GetNameSpace().GetSymbolNode(DShellGrammar.CommandSymbol(CommandToken.GetText()));
-		if(SymbolNode == null) {
+		ZNode SymbolNode = ParentNode.GetNameSpace().GetSymbolNode(DShellGrammar.toCommandSymbol(CommandToken.GetText()));
+		if(SymbolNode == null || !(SymbolNode instanceof ZStringNode)) {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}
 		String Command = ((ZStringNode)SymbolNode).StringValue;
@@ -44,7 +44,7 @@ public class CommandSymbolPattern extends ZMatchFunction {
 			// Match Suffix Option
 			ZNode SuffixOptionNode = TokenContext.ParsePattern(ParentNode, SuffixOptionPattern.PatternName, ZTokenContext._Optional);
 			if(SuffixOptionNode != null) {
-				if(SuffixOptionNode instanceof ZErrorNode) {
+				if(SuffixOptionNode.IsErrorNode()) {
 					return SuffixOptionNode;
 				}
 				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)SuffixOptionNode);

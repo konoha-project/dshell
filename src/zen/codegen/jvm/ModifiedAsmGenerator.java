@@ -16,10 +16,12 @@ import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
+import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
+import dshell.lang.DShellVisitor;
 import dshell.lang.ModifiedTypeSafer;
 import dshell.lib.DShellExceptionArray;
 import dshell.lib.Task;
@@ -42,7 +44,7 @@ import zen.type.ZGenericType;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 
-public class ModifiedAsmGenerator extends JavaAsmGenerator {
+public class ModifiedAsmGenerator extends JavaAsmGenerator implements DShellVisitor {
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
 	private Method ExecCommandInt;
@@ -112,6 +114,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		return true;
 	}
 
+	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {
 		this.AsmBuilder.SetLineNumber(Node);
 		ArrayList<DShellCommandNode> nodeList = new ArrayList<DShellCommandNode>();
@@ -161,6 +164,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		}
 	}
 
+	@Override
 	public void VisitTryNode(DShellTryNode Node) {
 		TryCatchLabel Label = new TryCatchLabel();
 		this.TryCatchLabel.push(Label); // push
@@ -182,6 +186,7 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 		this.TryCatchLabel.pop();
 	}
 
+	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
 		Label catchLabel = new Label();
 		TryCatchLabel Label = this.TryCatchLabel.peek();
@@ -225,6 +230,10 @@ public class ModifiedAsmGenerator extends JavaAsmGenerator {
 			TargetNode.Accept(this);
 		}
 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+	}
+
+	@Override
+	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 
 	private void invokeBoxingMethod(ZNode TargetNode) {

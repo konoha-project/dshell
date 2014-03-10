@@ -73,7 +73,8 @@ public class Task implements Serializable {
 							Thread.sleep(100); // sleep thread
 						}
 						catch (InterruptedException e) {
-							throw new RuntimeException(e);
+							e.printStackTrace();
+							Utils.fatal(1, "interrupt problem");
 						}
 					}
 				}
@@ -181,7 +182,8 @@ public class Task implements Serializable {
 				return true;
 			} 
 			catch (InterruptedException e) {
-				throw new RuntimeException(e);
+				e.printStackTrace();
+				Utils.fatal(1, "interrupt problem");
 			}
 		}
 		return false;
@@ -268,7 +270,8 @@ class MessageStreamHandler {
 				streamHandler.join();
 			}
 			catch(InterruptedException e) {
-				throw new RuntimeException(e);
+				e.printStackTrace();
+				Utils.fatal(1, "interrupt problem");
 			}
 		}
 		return this.messageBuffer.toString();
