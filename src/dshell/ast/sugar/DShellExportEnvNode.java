@@ -5,8 +5,8 @@ import zen.ast.ZGetNameNode;
 import zen.ast.ZLetNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
-import zen.ast.sugar.ZDesugarNode;
-import zen.ast.sugar.ZSyntaxSugarNode;
+import zen.ast.ZDesugarNode;
+import zen.ast.ZSyntaxSugarNode;
 import zen.parser.ZGenerator;
 
 public class DShellExportEnvNode extends ZSyntaxSugarNode {

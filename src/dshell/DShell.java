@@ -108,7 +108,7 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ZGenerator generator = this.initGenerator(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
+		ModifiedAsmGenerator generator = this.initGenerator(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			int linenum = 1;
@@ -128,7 +128,7 @@ public class DShell {
 					}
 					importBuilder.append(commandSet.pollFirst());
 				}
-				generator.LoadScript(importBuilder.toString(), "(stdin)", 0, false);
+				generator.LoadScript(importBuilder.toString(), "(stdin)", 0, true);
 			}
 			generator.Logger.OutputErrorsToStdErr();
 			while ((line = console.readLine()) != null) {
@@ -136,8 +136,8 @@ public class DShell {
 					continue;
 				}
 				try {
-					if (generator.LoadScript(line, "(stdin)", linenum, true) && LibZen.DebugMode) {
-						generator.Perform();
+					if(generator.LoadScript(line, "(stdin)", linenum, true)) {
+						generator.EvalAndPrint();
 					}
 				}
 				catch (Exception e) {
@@ -168,7 +168,7 @@ public class DShell {
 				System.err.println("abort loading: " + scriptName);
 				System.exit(1);
 			}
-			generator.ExecMain();
+			generator.InvokeMain();
 			System.exit(0);
 		}
 	}
@@ -195,12 +195,12 @@ public class DShell {
 		System.exit(status);
 	}
 
-	public final ZGenerator initGenerator(@Nullable String ClassName, String GrammarClass) {
+	public final ModifiedAsmGenerator initGenerator(@Nullable String ClassName, String GrammarClass) {
 		@Var ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
 		LibZen._ImportGrammar(Generator.RootNameSpace, GrammarClass);
 		Generator.SetTypeChecker(new ModifiedTypeSafer((ModifiedAsmGenerator) Generator));
 		Generator.RequireLibrary("common", null);
-		return Generator;
+		return (ModifiedAsmGenerator) Generator;
 	}
 
 	public static void main(String[] args) {

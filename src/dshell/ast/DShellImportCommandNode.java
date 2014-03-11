@@ -7,7 +7,7 @@ import dshell.lang.DShellGrammar;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
-import zen.ast.sugar.ZTopLevelNode;
+import zen.ast.ZTopLevelNode;
 import zen.parser.ZNameSpace;
 import zen.parser.ZSyntax;
 
