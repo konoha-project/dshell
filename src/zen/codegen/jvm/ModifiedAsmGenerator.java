@@ -31,10 +31,12 @@ import dshell.lib.Utils;
 import dshell.remote.TaskArray;
 import zen.ast.ZBlockNode;
 import zen.ast.ZClassNode;
+import zen.ast.ZErrorNode;
 import zen.ast.ZFunctionNode;
 import zen.ast.ZInstanceOfNode;
 import zen.ast.ZLetNode;
 import zen.ast.ZNode;
+import zen.ast.ZReturnNode;
 import zen.ast.ZThrowNode;
 import zen.ast.ZTopLevelNode;
 import zen.ast.ZVarNode;
@@ -42,8 +44,8 @@ import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.TryCatchLabel;
 import zen.util.LibZen;
-import zen.util.Var;
 import zen.util.ZArray;
+import zen.parser.ZLogger;
 import zen.type.ZFuncType;
 import zen.type.ZGenericType;
 import zen.type.ZType;
@@ -228,6 +230,11 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
 
+	@Override public void VisitErrorNode(ZErrorNode Node) {
+		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
+		throw new FoundErrorNodeException();
+	}
+
 	private void invokeBoxingMethod(ZNode TargetNode) {
 		Class<?> TargetClass = Object.class;
 		if(TargetNode.Type.IsIntType()) {
@@ -290,77 +297,72 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	}
 
 	@Override
+	public void GenerateStatement(ZNode Node) {
+		try {
+			Node.Accept(this);
+		}
+		catch(FoundErrorNodeException e) {
+			this.StopVisitor();
+		}
+	}
+
+	@Override
 	protected boolean ExecStatement(ZNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
 		if(Node instanceof ZTopLevelNode) {
 			((ZTopLevelNode)Node).Perform(this.RootNameSpace);
+			return this.IsVisitable();
+		}
+		Node = this.checkTopLevelSupport(Node);
+		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetNode) {
+			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
+			Node.Type = ZType.VoidType;
+			this.GenerateStatement(Node);
+		}
+		else if(IsInteractive) {
+			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
+			String FuncName = this.NameUniqueSymbol("Main");
+			Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
+			this.topLevelSymbolList.add(FuncName);
+			this.GenerateStatement(Node);
 		}
 		else {
-			if(this.IsVisitable()) {
-				if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetNode) {
-					Node = this.TypeChecker.CheckType(Node, ZType.VarType);
-					Node.Type = ZType.VoidType;
-					this.GenerateStatement(Node);
-				}
-				else if(Node instanceof ZVarNode) {
-					System.err.println("unsupprt top level var decl");
-					this.StopVisitor();
-				}
-				else {
-					if(IsInteractive) {
-						Node = this.TypeChecker.CheckType(Node, ZType.VarType);
-						if(!this.LangInfo.AllowTopLevelScript) {
-							@Var String FuncName = this.NameUniqueSymbol("Main");
-							Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
-							this.topLevelSymbolList.add(FuncName);
-						}
-						this.GenerateStatement(Node);
-					}
-					else {
-						if(this.untypedMainNode == null) {
-							this.untypedMainNode = new ZFunctionNode(Node.ParentNode);
-							this.untypedMainNode.GivenName = "main";
-							this.untypedMainNode.SetNode(ZFunctionNode._Block, new ZBlockNode(this.untypedMainNode, null));
-						}
-						this.untypedMainNode.BlockNode().Append(Node);
-					}
-				}
+			if(this.untypedMainNode == null) {
+				this.untypedMainNode = new ZFunctionNode(Node.ParentNode);
+				this.untypedMainNode.GivenName = "main";
+				this.untypedMainNode.SetNode(ZFunctionNode._Block, new ZBlockNode(this.untypedMainNode, null));
 			}
+			this.untypedMainNode.BlockNode().Append(Node);
 		}
 		return this.IsVisitable();
 	}
 
-	@Override public void Perform() {
-		if(this.TopLevelSymbol != null) {
-			Class<?> FuncClass = this.GetDefinedFunctionClass(this.TopLevelSymbol, ZType.VoidType, 0);
-			try {
-				Method Method = FuncClass.getMethod("f");
-				Object Value = Method.invoke(null);
-				if(Method.getReturnType() != void.class) {
-					System.out.println(" (" + Method.getReturnType().getSimpleName() + ") " + Value);
-				}
+	private boolean EvalAndPrintEachNode(String Symbol) {
+		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, ZType.VoidType, 0);
+		try {
+			Method Method = FuncClass.getMethod("f");
+			Object Value = Method.invoke(null);
+			if(Method.getReturnType() != void.class) {
+				System.out.println(" (" + Method.getReturnType().getSimpleName() + ") " + Value);
 			}
-			catch(InvocationTargetException e) {
-				System.err.println("invocation error: " + e.getCause());
-				if(LibZen.DebugMode) {
-					e.getCause().printStackTrace();
-				}
-			}
-			catch(Exception e) {
-				System.err.println("invocation error: " + e);
-				if(LibZen.DebugMode) {
-					e.printStackTrace();
-				}
-			}
+			return true;
 		}
+		catch(InvocationTargetException e) {
+			this.printException(e);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			Utils.fatal(1, "invocation problem");
+		}
+		return false;
 	}
 
 	public void EvalAndPrint() {
-		this.TopLevelSymbol = null;
 		while(!this.topLevelSymbolList.isEmpty()) {
-			this.TopLevelSymbol = this.topLevelSymbolList.remove();
-			this.Perform();
-			this.TopLevelSymbol = null;
+			String Symbol = this.topLevelSymbolList.remove();
+			if(!this.EvalAndPrintEachNode(Symbol)) {
+				this.topLevelSymbolList.clear();
+			}
 		}
 	}
 
@@ -371,8 +373,14 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
 		Node.IsExport = true;
-		Node.Accept(this);
-		this.Logger.OutputErrorsToStdErr();
+		try {
+			Node.Accept(this);
+			this.Logger.OutputErrorsToStdErr();
+		}
+		catch(FoundErrorNodeException e) {
+			this.Logger.OutputErrorsToStdErr();
+			return;
+		}
 		if(this.MainFuncNode != null) {
 			JavaStaticFieldNode MainFunc = this.MainFuncNode;
 			try {
@@ -380,17 +388,58 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 				Method.invoke(null);
 			}
 			catch(InvocationTargetException e) {
-				System.err.println("invocation error: " + e.getCause());
-				if(LibZen.DebugMode) {
-					e.getCause().printStackTrace();
-				}
+				this.printException(e);
 			}
 			catch(Exception e) {
-				System.err.println("invocation error: " + e);
-				if(LibZen.DebugMode) {
-					e.printStackTrace();
-				}
+				e.printStackTrace();
+				Utils.fatal(1, "invocation problem");
 			}
 		}
+	}
+
+	private ZNode checkTopLevelSupport(ZNode Node) {
+		if(Node instanceof ZVarNode || Node instanceof ZReturnNode) {
+			Node = new ZErrorNode(Node, "only available inside function");
+		}
+		return Node;
+	}
+
+	private StackTraceElement[] createStackTraceElements(StackTraceElement[] originalElements) {
+		LinkedList<StackTraceElement> elementStack = new LinkedList<StackTraceElement>();
+		boolean foundNativeMethod = false;
+		for(int i = originalElements.length - 1; i > -1; i--) {
+			StackTraceElement element = originalElements[i];
+			if(!foundNativeMethod && element.isNativeMethod()) {
+				foundNativeMethod = true;
+				continue;
+			}
+			if(foundNativeMethod) {
+				elementStack.add(element);
+			}
+		}
+		int size = elementStack.size();
+		StackTraceElement[] elements = new StackTraceElement[size];
+		for(int i = 0; i < size; i++) {
+			elements[i] = elementStack.pollLast();
+		}
+		return elements;
+	}
+
+	private void printException(InvocationTargetException e) {
+		Throwable cause = e.getCause();
+		if(cause instanceof DShellException) {
+			((DShellException) cause).setStackTrace(this.createStackTraceElements(cause.getStackTrace()));
+			cause.printStackTrace();
+		}
+		else {
+			System.err.println(e.getCause());
+			if(LibZen.DebugMode) {
+				e.getCause().printStackTrace();
+			}
+		}
+	}
+
+	private static class FoundErrorNodeException extends RuntimeException {
+		private static final long serialVersionUID = -2465006344250569543L;
 	}
 }

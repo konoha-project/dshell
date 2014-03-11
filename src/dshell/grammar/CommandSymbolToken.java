@@ -11,7 +11,7 @@ public class CommandSymbolToken extends ZTokenFunction {
 		StringBuilder symbolBuilder = new StringBuilder();
 		while(SourceContext.HasChar()) {
 			char ch = SourceContext.GetCurrentChar();
-			if(ch == ' ' || ch == '\t' || ch == '\n' || ch == ';') {
+			if(!Character.isLetterOrDigit(ch) && ch != '-' && ch != '+' && ch != '_') {
 				break;
 			}
 			symbolBuilder.append(ch);

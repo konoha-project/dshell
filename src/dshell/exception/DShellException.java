@@ -27,6 +27,30 @@ public class DShellException extends RuntimeException {
 		return this.errorMessage;
 	}
 
+	@Override
+	public String toString() {
+		String name = this.getClass().getSimpleName();
+		return name + ": " + this.getMessage();
+	}
+
+	@Override
+	public void printStackTrace() {
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append(this.toString() + "\n");
+		for(StackTraceElement element : this.getStackTrace()) {
+			sBuilder.append("\tfrom ");
+			sBuilder.append(element.getFileName());
+			sBuilder.append(":");
+			sBuilder.append(element.getLineNumber());
+			sBuilder.append(" '");
+			sBuilder.append(element.getClassName());
+			sBuilder.append(".");
+			sBuilder.append(element.getMethodName());
+			sBuilder.append("'\n");
+		}
+		System.err.print(sBuilder.toString());
+	}
+
 	public static class NullException extends DShellException {
 		private static final long serialVersionUID = -8950050196748138954L;
 

@@ -14,7 +14,6 @@ import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.util.LibZen;
 import zen.util.Nullable;
 import zen.util.Var;
-import zen.main.ZenMain;
 import zen.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
@@ -135,13 +134,8 @@ public class DShell {
 				if(line.trim().equals("")) {
 					continue;
 				}
-				try {
-					if(generator.LoadScript(line, "(stdin)", linenum, true)) {
-						generator.EvalAndPrint();
-					}
-				}
-				catch (Exception e) {
-					ZenMain.PrintStackTrace(e, linenum);
+				if(generator.LoadScript(line, "(stdin)", linenum, true)) {
+					generator.EvalAndPrint();
 				}
 				linenum++;
 			}
