@@ -43,12 +43,22 @@ public class DShellException extends RuntimeException {
 			sBuilder.append(":");
 			sBuilder.append(element.getLineNumber());
 			sBuilder.append(" '");
-			sBuilder.append(element.getClassName());
-			sBuilder.append(".");
-			sBuilder.append(element.getMethodName());
+			sBuilder.append(this.formateMethodName(element.getClassName(), element.getMethodName()));
 			sBuilder.append("'\n");
 		}
 		System.err.print(sBuilder.toString());
+	}
+
+	private String formateMethodName(String className, String methodName) {
+		if(!methodName.equals("f")) {
+			return className + "." + methodName;
+		}
+		String[] splitStrings = className.split("__");
+		String name = splitStrings[0].substring(1);
+		if(name.startsWith("Main") || name.equals("main")) {
+			return "TopLevel";
+		}
+		return "function " + name + "()";
 	}
 
 	public static class NullException extends DShellException {

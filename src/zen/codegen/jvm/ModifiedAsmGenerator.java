@@ -46,6 +46,7 @@ import zen.codegen.jvm.TryCatchLabel;
 import zen.util.LibZen;
 import zen.util.ZArray;
 import zen.parser.ZLogger;
+import zen.parser.ZToken;
 import zen.type.ZFuncType;
 import zen.type.ZGenericType;
 import zen.type.ZType;
@@ -320,9 +321,11 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			this.GenerateStatement(Node);
 		}
 		else if(IsInteractive) {
+			ZToken SourceToken = Node.SourceToken;
 			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
 			String FuncName = this.NameUniqueSymbol("Main");
 			Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
+			Node.SourceToken = SourceToken;
 			this.topLevelSymbolList.add(FuncName);
 			this.GenerateStatement(Node);
 		}
@@ -330,6 +333,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			if(this.untypedMainNode == null) {
 				this.untypedMainNode = new ZFunctionNode(Node.ParentNode);
 				this.untypedMainNode.GivenName = "main";
+				this.untypedMainNode.SourceToken = Node.SourceToken;
 				this.untypedMainNode.SetNode(ZFunctionNode._Block, new ZBlockNode(this.untypedMainNode, null));
 			}
 			this.untypedMainNode.BlockNode().Append(Node);
@@ -371,7 +375,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			System.err.println("not found main");
 			return;
 		}
-		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
+		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VoidType);
 		Node.IsExport = true;
 		try {
 			Node.Accept(this);
