@@ -122,7 +122,7 @@ public class ForeachPattern extends ZMatchFunction {
 		if(ValueNode.IsErrorNode()) {
 			return ValueNode;
 		}
-		this.ContextStack.peek().ValueName = ((ZGetNameNode)ValueNode).VarName;	// set value name
+		this.ContextStack.peek().ValueName = ((ZGetNameNode)ValueNode).GetName();	// set value name
 		DummyNode = TokenContext.MatchToken(DummyNode, "in", ZTokenContext._Required);
 		if(DummyNode.IsErrorNode()) {
 			return DummyNode;

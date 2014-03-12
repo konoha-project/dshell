@@ -12,8 +12,6 @@ import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.util.LibZen;
-import zen.util.Nullable;
-import zen.util.Var;
 import zen.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
@@ -155,7 +153,7 @@ public class DShell {
 				ARGVBuilder.append("\"");
 			}
 			ARGVBuilder.append("]");
-			//generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
+			generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
 			// load script file
 			boolean status = generator.LoadFile(scriptName, null);
 			if(!status) {
@@ -189,8 +187,8 @@ public class DShell {
 		System.exit(status);
 	}
 
-	public final ModifiedAsmGenerator initGenerator(@Nullable String ClassName, String GrammarClass) {
-		@Var ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
+	public final ModifiedAsmGenerator initGenerator(String ClassName, String GrammarClass) {
+		ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
 		LibZen._ImportGrammar(Generator.RootNameSpace, GrammarClass);
 		Generator.SetTypeChecker(new ModifiedTypeSafer((ModifiedAsmGenerator) Generator));
 		Generator.RequireLibrary("common", null);

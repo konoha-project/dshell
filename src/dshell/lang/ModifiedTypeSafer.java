@@ -38,7 +38,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 		if(Node.PipedNextNode != null) {
 			Node.PipedNextNode = this.CheckType(Node.PipedNextNode, ContextType);
 		}
-		this.TypedNode(Node, ContextType);
+		this.ReturnTypeNode(Node, ContextType);
 	}
 
 	@Override
@@ -53,7 +53,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 		if(Node.HasFinallyBlockNode()) {
 			this.CheckTypeAt(Node, DShellTryNode._Finally, ZType.VoidType);
 		}
-		this.TypedNode(Node, ZType.VoidType);
+		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
 	@Override
@@ -67,16 +67,16 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 			BlockNode.GetBlockNameSpace().SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken);
 		}
 		this.CheckTypeAt(Node, DShellCatchNode._Block, ZType.VoidType);
-		this.TypedNode(Node, ZType.VoidType);
+		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
 	@Override
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
-		this.Return(Node);
+		this.ReturnNode(Node);
 	}
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
 		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
-		this.TypedNode(Node, ZType.VoidType);
+		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 }

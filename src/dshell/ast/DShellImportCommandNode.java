@@ -34,13 +34,16 @@ public class DShellImportCommandNode extends ZTopLevelNode {
 	}
 
 	@Override
-	public void Perform(ZNameSpace NameSpace) {
+	public void Perform(ZNameSpace NameSpace) {	// do nothing
+	}
+
+	public void SetCommands() {
 		for(ZToken CommandToken : this.CommandTokenList) {
-			this.SetCommandSymbol(this.ParentNode, CommandToken);
+			this.SetCommandSymbol(CommandToken);
 		}
 	}
 
-	private void SetCommandSymbol(ZNode ParentNode, ZToken CommandToken) {	//TODO: absolute path
+	private void SetCommandSymbol(ZToken CommandToken) {	//TODO: absolute path
 		String CommandPath = CommandToken.GetText();
 		if(CommandPath.equals("~")) {
 			CommandPath = Utils.getEnv("HOME");
@@ -48,8 +51,8 @@ public class DShellImportCommandNode extends ZTopLevelNode {
 		else if(CommandPath.startsWith("~/")) {
 			CommandPath = Utils.getEnv("HOME") + CommandPath.substring(1);
 		}
-
-		ZNameSpace NameSpace = ParentNode.GetNameSpace();
+		
+		ZNameSpace NameSpace = this.ParentNode.GetNameSpace();
 		int loc = CommandPath.lastIndexOf('/');
 		String Command = CommandPath;
 		if(loc != -1) {
@@ -72,6 +75,6 @@ public class DShellImportCommandNode extends ZTopLevelNode {
 			}
 			return;
 		}
-		NameSpace.SetLocalSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
+		NameSpace.SetLocalSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(this.ParentNode, null, CommandPath));
 	}
 }

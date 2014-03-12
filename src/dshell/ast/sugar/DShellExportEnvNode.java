@@ -6,10 +6,11 @@ import zen.ast.ZLetNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.ast.ZDesugarNode;
-import zen.ast.ZSyntaxSugarNode;
+import zen.ast.ZSugarNode;
 import zen.parser.ZGenerator;
+import zen.parser.ZTypeChecker;
 
-public class DShellExportEnvNode extends ZSyntaxSugarNode {
+public class DShellExportEnvNode extends ZSugarNode {
 	public final static int _NameInfo = 0;
 	public final static int _EXPR = 1;
 
@@ -18,7 +19,7 @@ public class DShellExportEnvNode extends ZSyntaxSugarNode {
 	}
 
 	@Override
-	public ZDesugarNode DeSugar(ZGenerator Generator) {
+	public ZDesugarNode DeSugar(ZGenerator Generator, ZTypeChecker TypeChekcer) {
 		String envName = this.AST[_NameInfo].SourceToken.GetText();
 		ZNode SetEnvNode = new ZFuncCallNode(this, new ZGetNameNode(this, null, "setEnv"));
 		SetEnvNode.SetNode(ZNode._AppendIndex, new ZStringNode(SetEnvNode, null, envName));

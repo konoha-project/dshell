@@ -23,7 +23,7 @@ public class LocationDefinePattern extends ZMatchFunction {
 		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
 			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext._Required);
 			if(!ValueNode.IsErrorNode()) {
-				String NameSymbol = ((ZGetNameNode)Node).VarName;
+				String NameSymbol = ((ZGetNameNode)Node).GetName();
 				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
 				ParentNode.GetNameSpace().SetGlobalSymbol(NameSymbol, (ZStringNode)ValueNode);
 				return new DShellDummyNode(ParentNode);

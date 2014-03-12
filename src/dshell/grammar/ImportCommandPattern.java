@@ -29,6 +29,7 @@ public class ImportCommandPattern extends ZMatchFunction {
 			TokenContext.MoveNext();
 		}
 		Node.AppendTokenList(TokenList);
+		Node.SetCommands();
 		return Node;
 	}
 }

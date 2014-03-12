@@ -42,7 +42,6 @@ import zen.ast.ZTopLevelNode;
 import zen.ast.ZVarNode;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
-import zen.codegen.jvm.TryCatchLabel;
 import zen.util.LibZen;
 import zen.util.ZArray;
 import zen.parser.ZLogger;
@@ -55,7 +54,7 @@ import zen.type.ZTypePool;
 public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private ZFunctionNode untypedMainNode = null;
 	private LinkedList<String> topLevelSymbolList;
-	
+
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
 	private Method ExecCommandInt;
@@ -83,8 +82,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 		catch(Exception e) {
 			e.printStackTrace();
-			System.err.println("method loading failed");
-			System.exit(1);
+			Utils.fatal(1, "method loading failed");
 		}
 		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
@@ -161,20 +159,20 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 
 	@Override
 	public void VisitTryNode(DShellTryNode Node) {
-		TryCatchLabel Label = new TryCatchLabel();
+		AsmTryCatchLabel Label = new AsmTryCatchLabel();
 		this.TryCatchLabel.push(Label); // push
 		// try block
-		this.AsmBuilder.visitLabel(Label.beginTryLabel);
+		this.AsmBuilder.visitLabel(Label.BeginTryLabel);
 		Node.TryBlockNode().Accept(this);
-		this.AsmBuilder.visitLabel(Label.endTryLabel);
-		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
+		this.AsmBuilder.visitLabel(Label.EndTryLabel);
+		this.AsmBuilder.visitJumpInsn(GOTO, Label.FinallyLabel);
 		// catch block
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
 			Node.GetListAt(i).Accept(this);
 		}
 		// finally block
-		this.AsmBuilder.visitLabel(Label.finallyLabel);
+		this.AsmBuilder.visitLabel(Label.FinallyLabel);
 		if(Node.HasFinallyBlockNode()) {
 			Node.FinallyBlockNode().Accept(this);
 		}
@@ -184,18 +182,18 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
 		Label catchLabel = new Label();
-		TryCatchLabel Label = this.TryCatchLabel.peek();
+		AsmTryCatchLabel Label = this.TryCatchLabel.peek();
 
 		// prepare
 		String throwType = this.AsmType(Node.ExceptionType()).getInternalName();
-		this.AsmBuilder.visitTryCatchBlock(Label.beginTryLabel, Label.endTryLabel, catchLabel, throwType);
+		this.AsmBuilder.visitTryCatchBlock(Label.BeginTryLabel, Label.EndTryLabel, catchLabel, throwType);
 
 		// catch block
 		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 		this.AsmBuilder.visitLabel(catchLabel);
 		this.AsmBuilder.StoreLocal(Node.ExceptionName());
 		Node.BlockNode().Accept(this);
-		this.AsmBuilder.visitJumpInsn(GOTO, Label.finallyLabel);
+		this.AsmBuilder.visitJumpInsn(GOTO, Label.FinallyLabel);
 
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 	}
@@ -303,6 +301,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			Node.Accept(this);
 		}
 		catch(FoundErrorNodeException e) {
+			this.topLevelSymbolList.clear();
 			this.StopVisitor();
 		}
 	}
@@ -408,31 +407,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		return Node;
 	}
 
-	private StackTraceElement[] createStackTraceElements(StackTraceElement[] originalElements) {
-		LinkedList<StackTraceElement> elementStack = new LinkedList<StackTraceElement>();
-		boolean foundNativeMethod = false;
-		for(int i = originalElements.length - 1; i > -1; i--) {
-			StackTraceElement element = originalElements[i];
-			if(!foundNativeMethod && element.isNativeMethod()) {
-				foundNativeMethod = true;
-				continue;
-			}
-			if(foundNativeMethod) {
-				elementStack.add(element);
-			}
-		}
-		int size = elementStack.size();
-		StackTraceElement[] elements = new StackTraceElement[size];
-		for(int i = 0; i < size; i++) {
-			elements[i] = elementStack.pollLast();
-		}
-		return elements;
-	}
-
 	private void printException(InvocationTargetException e) {
 		Throwable cause = e.getCause();
 		if(cause instanceof DShellException) {
-			((DShellException) cause).setStackTrace(this.createStackTraceElements(cause.getStackTrace()));
 			cause.printStackTrace();
 		}
 		else {
