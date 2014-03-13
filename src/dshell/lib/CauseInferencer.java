@@ -249,7 +249,7 @@ class CauseInferencer_ltrace implements CauseInferencer {
 			else {
 				causeInfo.add(causedContext.funcName);
 				causeInfo.add(causedContext.param);
-				String errnoString = Errno.toErrrno((int)(-1 * causedContext.getExitStatus())).name();
+				String errnoString = Errno.toErrno((int)(-1 * causedContext.getExitStatus())).name();
 				causeInfo.add(errnoString);
 			}
 		}

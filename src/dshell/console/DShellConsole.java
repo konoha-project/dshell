@@ -12,14 +12,14 @@ import dshell.lib.Utils;
 import jline.Terminal;
 import jline.ANSIBuffer.ANSICodes;
 import jline.UnixTerminal;
-import zen.main.ZenMain;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.RetType.StringType;
 
 public class DShellConsole {
-	private jline.ConsoleReader consoleReader = null;
+	private final jline.ConsoleReader consoleReader;
 	private String userName = System.getProperty("user.name");
 	private final TTYConfigurator ttyConfig;
+	private int lineNumber;
 
 	public final static String welcomeMessage = "oooooooooo.            .oooooo..o oooo                  oooo  oooo  \n" +
                                                 "`888'   `Y8b          d8P'    `Y8 `888                  `888  `888  \n" +
@@ -33,12 +33,29 @@ public class DShellConsole {
 		try {
 			this.consoleReader = new jline.ConsoleReader();
 			this.consoleReader.addCompletor(new DShellCompletor());
+			this.lineNumber = 1;
 			// save jline tty config
 			this.ttyConfig = TTYConfigurator.initConfigurator(this.consoleReader.getTerminal());
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public final int getLineNumber() {
+		return this.lineNumber;
+	}
+
+	public void incrementLineNum(String line) {
+		int size = line.length();
+		int count = 1;
+		for(int i = 0; i < size; i++) {
+			char ch = line.charAt(i);
+			if(ch == '\n') {
+				count++;
+			}
+		}
+		this.lineNumber += count;
 	}
 
 	public final String readLine() {
@@ -58,7 +75,7 @@ public class DShellConsole {
 		}
 		if(prompt2 != null) {
 			int level = 0;
-			while((level = ZenMain.CheckBraceLevel(line)) > 0) {
+			while((level = checkBraceLevel(line)) > 0) {
 				String Line2;
 				try {
 					Line2 = this.consoleReader.readLine(prompt2);
@@ -73,6 +90,7 @@ public class DShellConsole {
 				System.out.println(" .. canceled");
 			}
 		}
+		line = line.trim();
 		this.consoleReader.getHistory().addToHistory(line);
 		this.ttyConfig.loadOriginalConfig();
 		return line;
@@ -95,6 +113,22 @@ public class DShellConsole {
 		prompts[0] = prompt;
 		prompts[1] = promptBuilder.toString();
 		return prompts;
+	}
+
+	private static int checkBraceLevel(String Text) {
+		int level = 0;
+		int i = 0;
+		while(i < Text.length()) {
+			char ch = Text.charAt(i);
+			if(ch == '{' || ch == '[') {
+				level = level + 1;
+			}
+			if(ch == '}' || ch == ']') {
+				level = level - 1;
+			}
+			i = i + 1;
+		}
+		return level;
 	}
 }
 

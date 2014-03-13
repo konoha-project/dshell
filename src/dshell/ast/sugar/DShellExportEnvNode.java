@@ -27,7 +27,6 @@ public class DShellExportEnvNode extends ZSugarNode {
 
 		ZNode LetNode = new ZLetNode(this);
 		LetNode.SetNode(ZLetNode._NameInfo, this.AST[_NameInfo]);
-		LetNode.SetNode(ZLetNode._TypeInfo, ParentNode.GetNameSpace().GetTypeNode("String", null));
 		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
 		FuncCallNode.SetNode(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, envName));
 		LetNode.SetNode(ZLetNode._InitValue, FuncCallNode);

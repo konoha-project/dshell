@@ -151,8 +151,9 @@ public enum Errno {
 	EKEYREJECTED	,
 	LAST_ELEMENT	;
 
-	private final static EnumMap<Errno, Class<?>> exceptClassMap = getClassMap();
-	public static Errno toErrrno(int errno) {
+	private final static EnumMap<Errno, Class<?>> exceptClassMap = initClassMap();
+
+	public static Errno toErrno(int errno) {
 		if(errno <= 0 || errno >= Errno.LAST_ELEMENT.ordinal()) {
 			Utils.fatal(1, "invalid errno: " + errno);
 		}
@@ -167,7 +168,7 @@ public enum Errno {
 		return this.ordinal() == errno;
 	}
 
-	private static EnumMap<Errno, Class<?>> getClassMap() {
+	private static EnumMap<Errno, Class<?>> initClassMap() {
 		EnumMap<Errno, Class<?>> exceptMap = 
 				new EnumMap<Errno, Class<?>>(Errno.class);
 		Class<?>[] classes = Errno.class.getClasses();
@@ -200,7 +201,7 @@ public enum Errno {
 	}
 
 	public static Class<?> getExceptionClass(int errno) {
-		return getFromMap(exceptClassMap, Errno.toErrrno(errno));
+		return getFromMap(exceptClassMap, Errno.toErrno(errno));
 	}
 
 	public static Class<?> getExceptionClass(String errnoString) {

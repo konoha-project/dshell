@@ -20,7 +20,7 @@ public class DShellCommandNode extends ZListNode {
 		while(CurrentNode.PipedNextNode != null) {
 			CurrentNode = (DShellCommandNode) CurrentNode.PipedNextNode;
 		}
-		CurrentNode.PipedNextNode = CurrentNode.SetChild(Node);
+		CurrentNode.PipedNextNode = CurrentNode.SetChild(Node, false);
 		return this;
 	}
 

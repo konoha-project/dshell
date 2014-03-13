@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
+import dshell.lib.DefinedArray.TaskArray;
 import dshell.remote.RequestSender;
-import dshell.remote.TaskArray;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.Behavior.throwable ;

@@ -108,7 +108,6 @@ public class DShell {
 		ModifiedAsmGenerator generator = this.initGenerator(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
-			int linenum = 1;
 			String line = null;
 			if(!this.disableWelcomeMessage) {
 				System.out.println(DShellConsole.welcomeMessage);
@@ -129,13 +128,13 @@ public class DShell {
 			}
 			generator.Logger.OutputErrorsToStdErr();
 			while ((line = console.readLine()) != null) {
-				if(line.trim().equals("")) {
+				if(line.equals("")) {
 					continue;
 				}
-				if(generator.LoadScript(line, "(stdin)", linenum, true)) {
+				if(generator.LoadScript(line, "(stdin)", console.getLineNumber(), true)) {
 					generator.EvalAndPrint();
 				}
-				linenum++;
+				console.incrementLineNum(line);
 			}
 			System.out.println("");
 		}

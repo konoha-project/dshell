@@ -24,11 +24,10 @@ import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
 import dshell.lang.DShellVisitor;
-import dshell.lib.DShellExceptionArray;
+import dshell.lib.DefinedArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
-import dshell.remote.TaskArray;
 import zen.ast.ZBlockNode;
 import zen.ast.ZClassNode;
 import zen.ast.ZErrorNode;
@@ -44,6 +43,7 @@ import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.util.LibZen;
 import zen.util.ZArray;
+import zen.util.ZNativeType;
 import zen.parser.ZLogger;
 import zen.parser.ZToken;
 import zen.type.ZFuncType;
@@ -90,17 +90,16 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		// load exception array
 		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
 		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, DShellExceptionType);
-		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DShellExceptionArray.class);
+		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DefinedArray.DShellExceptionArray.class);
 
-		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DShellExceptionArray.class, "GetIndex");
+		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DefinedArray.DShellExceptionArray.class, "GetIndex");
 
 		// load task array
 		ZType TaskType = JavaTypeTable.GetZenType(Task.class);
 		ZType TaskArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, TaskType);
-		JavaTypeTable.SetTypeTable(TaskArrayType, TaskArray.class);
+		JavaTypeTable.SetTypeTable(TaskArrayType, DefinedArray.TaskArray.class);
 
-		JavaMethodTable.Import(TaskArrayType, "[]", ZType.IntType, TaskArray.class, "GetIndex");
-		JavaMethodTable.Import(TaskArrayType, "[]=", ZType.IntType, TaskArray.class, "SetIndex", Task.class);
+		JavaMethodTable.Import(TaskArrayType, "[]", ZType.IntType, DefinedArray.TaskArray.class, "GetIndex");
 
 		// load static method
 		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
@@ -146,10 +145,10 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		else if(Node.Type.IsStringType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandString);
 		}
-		else if(this.GetJavaClass(Node.Type).equals(Task.class)) {
+		else if(Node.Type.equals(JavaTypeTable.GetZenType(Task.class))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTask);
 		}
-		else if(this.GetJavaClass(Node.Type).equals(TaskArray.class)) {
+		else if(Node.Type.equals(ZTypePool._GetGenericType1(ZGenericType._ArrayType, JavaTypeTable.GetZenType(Task.class)))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTaskArray);
 		}
 		else {
@@ -204,26 +203,37 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	}
 
 	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
-		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
-		if(Node.TargetType().IsIntType()) {
-			JavaClass = Long.class;
+		if(Node.LeftNode().Type instanceof ZNativeType) {
+			this.VisitNativeInstanceOfNode(Node);
+			return;
 		}
-		else if(Node.TargetType().IsFloatType()) {
-			JavaClass = Double.class;
+		Node.LeftNode().Accept(this);
+		this.AsmBuilder.Pop(Node.LeftNode().Type);
+		this.AsmBuilder.PushLong(Node.LeftNode().Type.TypeId);
+		this.AsmBuilder.PushLong(Node.TargetType().TypeId);
+		try {
+			this.invokeStaticMethod(null, JavaOperatorApi.class.getMethod("Equals", long.class, long.class));
 		}
-		else if(Node.TargetType().IsBooleanType()) {
-			JavaClass = Boolean.class;
+		catch(Exception e) {
+			e.printStackTrace();
+			Utils.fatal(1, "method loading failed");
 		}
-
-		ZNode TargetNode = Node.LeftNode();
-		if(TargetNode.Type.IsIntType() || TargetNode.Type.IsFloatType() || TargetNode.Type.IsBooleanType()) {
-			this.invokeBoxingMethod(TargetNode);
-		}
-		else {
-			TargetNode.Accept(this);
-		}
-		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
 	}
+
+ 	private void VisitNativeInstanceOfNode(ZInstanceOfNode Node) {
+ 		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
+ 		if(Node.TargetType().IsIntType()) {
+ 			JavaClass = Long.class;
+ 		}
+ 		else if(Node.TargetType().IsFloatType()) {
+ 			JavaClass = Double.class;
+ 		}
+ 		else if(Node.TargetType().IsBooleanType()) {
+ 			JavaClass = Boolean.class;
+ 		}
+ 		Node.LeftNode().Accept(this);
+ 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+ 	}
 
 	@Override
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
@@ -232,23 +242,6 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	@Override public void VisitErrorNode(ZErrorNode Node) {
 		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new FoundErrorNodeException();
-	}
-
-	private void invokeBoxingMethod(ZNode TargetNode) {
-		Class<?> TargetClass = Object.class;
-		if(TargetNode.Type.IsIntType()) {
-			TargetClass = Long.class;
-		}
-		else if(TargetNode.Type.IsFloatType()) {
-			TargetClass = Double.class;
-		}
-		else if(TargetNode.Type.IsBooleanType()) {
-			TargetClass = Boolean.class;
-		}
-		Class<?> SourceClass = this.GetJavaClass(TargetNode.Type);
-		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
-		TargetNode.Accept(this);
-		this.invokeStaticMethod(ZType.BooleanType, sMethod);
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
