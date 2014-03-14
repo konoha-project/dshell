@@ -367,7 +367,8 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			System.err.println("not found main");
 			return;
 		}
-		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VoidType);
+		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
+		Node.Type = ZType.VoidType;
 		Node.IsExport = true;
 		try {
 			Node.Accept(this);
