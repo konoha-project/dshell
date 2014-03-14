@@ -2,11 +2,11 @@
 class Person {
   var name: String = "naruto"
   var age: int = 17
-  var isChild: Func<boolean, Person, int>
+  var isChild: Func<Person, int, boolean>
 }
 
 // メンバ関数定義
-function isChild(x: Person, a: int) : boolean {
+function isChild(this: Person, a: int) : boolean {
   if (a < 5) {
     return true
   } else {
@@ -16,14 +16,12 @@ function isChild(x: Person, a: int) : boolean {
 
 function func() {
   var obj1 = new Person()
-  var obj2 = Person { name: "sakura", age: 16 }
+  var obj2 = new Person("hoge", 23)
 
   // クラスオブジェクトの後に「ドット」付けてメンバ関数を指定
   assert(obj1.isChild(1))
   // メンバ関数のパラメータにクラスオブジェクトを指定
   assert(isChild(ob2, 6))
-
-  return
 }
 
 func()

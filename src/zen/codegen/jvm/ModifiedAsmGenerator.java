@@ -43,7 +43,6 @@ import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.util.LibZen;
 import zen.util.ZArray;
-import zen.util.ZNativeType;
 import zen.parser.ZLogger;
 import zen.parser.ZToken;
 import zen.type.ZFuncType;
@@ -203,7 +202,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	}
 
 	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
-		if(Node.LeftNode().Type instanceof ZNativeType) {
+		if(!(Node.LeftNode().Type instanceof ZGenericType)) {
 			this.VisitNativeInstanceOfNode(Node);
 			return;
 		}
@@ -211,29 +210,43 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.AsmBuilder.Pop(Node.LeftNode().Type);
 		this.AsmBuilder.PushLong(Node.LeftNode().Type.TypeId);
 		this.AsmBuilder.PushLong(Node.TargetType().TypeId);
-		try {
-			this.invokeStaticMethod(null, JavaOperatorApi.class.getMethod("Equals", long.class, long.class));
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Utils.fatal(1, "method loading failed");
-		}
+		Method method = JavaMethodTable.GetBinaryStaticMethod(ZType.IntType, "==", ZType.IntType);
+		this.invokeStaticMethod(null, method);
 	}
 
  	private void VisitNativeInstanceOfNode(ZInstanceOfNode Node) {
- 		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
- 		if(Node.TargetType().IsIntType()) {
- 			JavaClass = Long.class;
- 		}
- 		else if(Node.TargetType().IsFloatType()) {
- 			JavaClass = Double.class;
- 		}
- 		else if(Node.TargetType().IsBooleanType()) {
- 			JavaClass = Boolean.class;
- 		}
- 		Node.LeftNode().Accept(this);
- 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
- 	}
+		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
+		if(Node.TargetType().IsIntType()) {
+			JavaClass = Long.class;
+		}
+		else if(Node.TargetType().IsFloatType()) {
+			JavaClass = Double.class;
+		}
+		else if(Node.TargetType().IsBooleanType()) {
+			JavaClass = Boolean.class;
+		}
+		this.invokeBoxingMethod(Node.LeftNode());
+		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+	}
+
+	private void invokeBoxingMethod(ZNode TargetNode) {
+		Class<?> TargetClass = Object.class;
+		if(TargetNode.Type.IsIntType()) {
+			TargetClass = Long.class;
+		}
+		else if(TargetNode.Type.IsFloatType()) {
+			TargetClass = Double.class;
+		}
+		else if(TargetNode.Type.IsBooleanType()) {
+			TargetClass = Boolean.class;
+		}
+		Class<?> SourceClass = this.GetJavaClass(TargetNode.Type);
+		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
+		TargetNode.Accept(this);
+		if(!TargetClass.equals(Object.class)) {
+			this.invokeStaticMethod(ZType.BooleanType, sMethod);
+		}
+	}
 
 	@Override
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing

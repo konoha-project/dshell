@@ -2,10 +2,10 @@ function func(x: int): int {
   return x * 2
 }
 
-function main() {
+function call() {
   var sub: Func<int, int> = func
   assert(sub(3) == 6)
   assert(sub instanceof Func<int, int>)
 }
 
-main()
+call()
