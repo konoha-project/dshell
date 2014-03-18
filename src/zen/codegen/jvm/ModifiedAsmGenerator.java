@@ -4,6 +4,7 @@ import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
 import static org.objectweb.asm.Opcodes.DUP;
 import static org.objectweb.asm.Opcodes.GOTO;
+import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.INSTANCEOF;
@@ -19,6 +20,7 @@ import org.objectweb.asm.Type;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
+import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
@@ -36,9 +38,11 @@ import zen.ast.ZInstanceOfNode;
 import zen.ast.ZLetNode;
 import zen.ast.ZNode;
 import zen.ast.ZReturnNode;
+import zen.ast.ZSugarNode;
 import zen.ast.ZThrowNode;
 import zen.ast.ZTopLevelNode;
 import zen.ast.ZVarNode;
+import zen.ast.sugar.ZContinueNode;
 import zen.codegen.jvm.JavaMethodTable;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.util.LibZen;
@@ -134,7 +138,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			}
 			this.AsmBuilder.visitInsn(AASTORE);
 		}
-		
+
 		if(Node.Type.IsBooleanType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandBool);
 		}
@@ -251,10 +255,58 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	@Override
 	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
 	}
-
+	
 	@Override public void VisitErrorNode(ZErrorNode Node) {
 		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new FoundErrorNodeException();
+	}
+
+	@Override public void VisitSugarNode(ZSugarNode Node) {
+		if(Node instanceof ZContinueNode) {
+			this.VisitContinueNode((ZContinueNode) Node);
+		}
+		else {
+			super.VisitSugarNode(Node);
+		}
+	}
+
+	@Override
+	public void VisitContinueNode(ZContinueNode Node) {
+		Label l = this.AsmBuilder.ContinueLabelStack.peek();
+		this.AsmBuilder.visitJumpInsn(GOTO, l);
+	}
+
+	@Override
+	public void VisitForNode(DShellForNode Node) {
+		Label headLabel = new Label();
+		Label continueLabel = new Label();
+		Label breakLabel = new Label();
+		this.AsmBuilder.BreakLabelStack.push(breakLabel);
+		this.AsmBuilder.ContinueLabelStack.push(continueLabel);
+
+		if(Node.HasDeclNode()) {
+			Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
+			this.AsmBuilder.AddLocal(DeclClass, Node.GetName());
+			this.AsmBuilder.PushNode(DeclClass, Node.InitValueNode());
+			this.AsmBuilder.StoreLocal(Node.GetName());
+		}
+		this.AsmBuilder.visitLabel(headLabel);
+		Node.CondNode().Accept(this);
+		this.AsmBuilder.visitJumpInsn(IFEQ, breakLabel);
+		Node.BlockNode().Accept(this);
+		this.AsmBuilder.visitLabel(continueLabel);
+		if(Node.HasNextNode()) {
+			Node.NextNode().Accept(this);
+		}
+		this.AsmBuilder.visitJumpInsn(GOTO, headLabel);
+		this.AsmBuilder.visitLabel(breakLabel);
+		if(Node.HasDeclNode()) {
+			Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
+			this.AsmBuilder.RemoveLocal(DeclClass, Node.GetName());
+		}
+
+		this.AsmBuilder.BreakLabelStack.pop();
+		this.AsmBuilder.ContinueLabelStack.pop();
 	}
 
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast

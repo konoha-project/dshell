@@ -7,6 +7,7 @@ import zen.grammar.ComparatorPatternFunction;
 import zen.ast.ZBlockNode;
 import zen.ast.ZStringNode;
 import zen.codegen.jvm.JavaImportPattern;
+import zen.lang.konoha.ContinuePatternFunction;
 import zen.lang.zen.ZenPrecedence;
 import zen.lang.zen.ZenGrammar;
 import zen.parser.ZNameSpace;
@@ -17,6 +18,7 @@ import dshell.DShell;
 import dshell.grammar.CommandArgPattern;
 import dshell.grammar.CommandSymbolToken;
 import dshell.grammar.ExportEnvPattern;
+import dshell.grammar.ForPattern;
 import dshell.grammar.ImportCommandPattern;
 import dshell.grammar.DShellCatchPattern;
 import dshell.grammar.DShellImportPattern;
@@ -66,6 +68,7 @@ public class DShellGrammar {
 		// import ZenGrammer
 		ZenGrammar.ImportGrammar(NameSpace);
 		overrideSyntaxPattern(NameSpace, "import", new JavaImportPattern(), true);
+		overrideSyntaxPattern(NameSpace, "continue", new ContinuePatternFunction(), true);
 
 		// import DShell Specific Grammar
 		CommandSymbolToken commandSymbolToken = new CommandSymbolToken();
@@ -94,6 +97,7 @@ public class DShellGrammar {
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
 		NameSpace.DefineExpression(PrefixOptionPattern.PatternName, prefixOptionPattern);
+		NameSpace.DefineStatement("for", new ForPattern());
 		NameSpace.DefineStatement("for", new ForeachPattern());
 		NameSpace.DefineStatement(ExportEnvPattern.PatternName, new ExportEnvPattern());
 

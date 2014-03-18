@@ -13,6 +13,10 @@ public class DShellException extends RuntimeException {
 		this.errorMessage = "";
 	}
 
+	public DShellException() {
+		this("");
+	}
+
 	public void setCommand(String commandName) {
 		this.commandName = commandName;
 	}
@@ -37,7 +41,7 @@ public class DShellException extends RuntimeException {
 	@Override
 	public void printStackTrace() {
 		StringBuilder sBuilder = new StringBuilder();
-		sBuilder.append(this.toString() +  ": " + this.getErrorMessage() + "\n");
+		sBuilder.append(this.toString() +  ": " + this.getErrorMessage().trim() + "\n");
 		for(StackTraceElement element : this.getStackTrace()) {
 			sBuilder.append("\tfrom ");
 			sBuilder.append(element.getFileName());

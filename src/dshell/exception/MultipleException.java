@@ -1,10 +1,7 @@
 package dshell.exception;
 
+import dshell.lib.DefinedArray;
 import dshell.lib.DefinedArray.DShellExceptionArray;
-import zen.codegen.jvm.JavaTypeTable;
-import zen.type.ZGenericType;
-import zen.type.ZType;
-import zen.type.ZTypePool;
 
 public class MultipleException extends DShellException {
 	private static final long serialVersionUID = 164898266354483402L;
@@ -22,9 +19,7 @@ public class MultipleException extends DShellException {
 
 	public DShellExceptionArray getExceptions() {
 		if(exceptionArray == null) {
-			ZType exceptionType = JavaTypeTable.GetZenType(DShellException.class);
-			ZType exceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, exceptionType);
-			this.exceptionArray = new DShellExceptionArray(exceptionArrayType.TypeId, this.exceptions);
+			this.exceptionArray = DefinedArray.createExceptionArray(exceptions);
 		}
 		return this.exceptionArray;
 	}

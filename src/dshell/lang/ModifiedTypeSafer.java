@@ -2,7 +2,11 @@ package dshell.lang;
 
 import zen.ast.ZBlockNode;
 import zen.ast.ZNode;
+import zen.ast.ZSugarNode;
 import zen.ast.ZThrowNode;
+import zen.ast.ZVarNode;
+import zen.ast.ZWhileNode;
+import zen.ast.sugar.ZContinueNode;
 import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.lang.zen.ZenTypeSafer;
@@ -12,6 +16,7 @@ import zen.type.ZVarType;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
+import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.lib.Task;
 
@@ -59,14 +64,14 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
 		ZBlockNode BlockNode = Node.BlockNode();
-		if(BlockNode.GetListSize() == 0) {
-			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
-		}
 		if(!(Node.ExceptionType() instanceof ZVarType)) {
 			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
 			BlockNode.GetBlockNameSpace().SetLocalVariable(this.CurrentFunctionNode, Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken);
 		}
 		this.CheckTypeAt(Node, DShellCatchNode._Block, ZType.VoidType);
+		if(BlockNode.GetListSize() == 0) {
+			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
+		}
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
@@ -77,6 +82,57 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
 		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
+		this.ReturnTypeNode(Node, ZType.VoidType);
+	}
+
+	@Override public void VisitSugarNode(ZSugarNode Node) {
+		if(Node instanceof ZContinueNode) {
+			this.VisitContinueNode((ZContinueNode) Node);
+		}
+		else {
+			super.VisitSugarNode(Node);
+		}
+	}
+
+	@Override
+	public void VisitContinueNode(ZContinueNode Node) {
+		ZNode CurrentNode = Node;
+		boolean foundWhile = false;
+		while(CurrentNode != null) {
+			if(CurrentNode instanceof ZWhileNode || CurrentNode instanceof DShellForNode) {
+				foundWhile = true;
+				break;
+			}
+			CurrentNode = CurrentNode.ParentNode;
+		}
+		if(!foundWhile) {
+			this.ReturnErrorNode(Node, Node.SourceToken, "only available inside loop statement");
+			return;
+		}
+		this.ReturnTypeNode(Node, ZType.VoidType);
+	}
+
+	@Override
+	public void VisitForNode(DShellForNode Node) {
+		Node.PrepareTypeCheck();
+		if(Node.HasDeclNode()) {
+			this.CheckTypeAt(Node, DShellForNode._InitValue, Node.DeclType());
+			if(Node.DeclType().IsVarType()) {
+				Node.SetDeclType(Node.GetAstType(ZVarNode._InitValue));
+			}
+			if(!Node.DeclType().IsVarType()) {
+				Node.SetDeclType(this.VarScope.NewVarType(Node.DeclType(), Node.GetName(), Node.SourceToken));
+				Node.BlockNode().GetBlockNameSpace().SetLocalVariable(this.CurrentFunctionNode, Node.DeclType(), Node.GetName(), Node.SourceToken);
+			}
+		}
+		this.CheckTypeAt(Node, DShellForNode._Block, ZType.VoidType);
+		this.CheckTypeAt(Node, DShellForNode._Cond, ZType.BooleanType);
+		if(Node.HasNextNode()) {
+			this.CheckTypeAt(Node, DShellForNode._Next, ZType.VoidType);
+		}
+		if(Node.BlockNode().GetListSize() == 0) {
+			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.GetName());
+		}
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 }

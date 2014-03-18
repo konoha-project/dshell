@@ -6,11 +6,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import zen.codegen.jvm.JavaTypeTable;
-import zen.type.ZGenericType;
-import zen.type.ZType;
-import zen.type.ZTypePool;
-
 import dshell.exception.DShellException;
 import dshell.exception.MultipleException;
 import dshell.lib.DefinedArray.TaskArray;
@@ -233,9 +228,7 @@ public class Task implements Serializable {
 		for(int i = 0; i < values.length; i++) {
 			values[i] = task.taskList.get(i);
 		}
-		ZType taskType = JavaTypeTable.GetZenType(Task.class);
-		ZType taskArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, taskType);
-		return new TaskArray(taskArrayType.TypeId, values);
+		return DefinedArray.createTaskArray(values);
 	}
 }
 

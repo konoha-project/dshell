@@ -23,19 +23,18 @@ import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
 import static dshell.lib.TaskOption.RetType.TaskType   ;
 
-/*
- * params: {
- *   type: StringTest.ds,           // test file name
- *   location: 192.168.59.150,      // host ip address
- *   data: 1,                       // 0: assert error, 1: assert success, 2: compile error, 3: file not found, 4: assert not found
- *   authid: xxx@gmail.com,         // mail address
- *   context: {
- *     assertpoint: StringTest.ds:12,       // if data is 2, 3 or 4, this is empty string
- *     content: content of StringTest.ds    // if data is 3, this is empty string
- *   }
- * }
- * 
- * */
+/**
+params: {
+  type: StringTest.ds,           // test file name
+  location: 192.168.59.150,      // host ip address
+  data: 1,                       // 0: assert error, 1: assert success, 2: compile error, 3: file not found, 4: assert not found
+  authid: xxx@gmail.com,         // mail address
+  context: {
+    assertpoint: StringTest.ds:12,       // if data is 2, 3 or 4, this is empty string
+    content: content of StringTest.ds    // if data is 3, this is empty string
+  }
+} 
+**/
 public class RECWriter {
 	// data definition
 	public final static int asseetError    = 0;
