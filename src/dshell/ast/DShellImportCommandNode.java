@@ -44,14 +44,7 @@ public class DShellImportCommandNode extends ZTopLevelNode {
 	}
 
 	private void SetCommandSymbol(ZToken CommandToken) {	//TODO: absolute path
-		String CommandPath = CommandToken.GetText();
-		if(CommandPath.equals("~")) {
-			CommandPath = Utils.getEnv("HOME");
-		}
-		else if(CommandPath.startsWith("~/")) {
-			CommandPath = Utils.getEnv("HOME") + CommandPath.substring(1);
-		}
-		
+		String CommandPath = Utils.ResolveHome(CommandToken.GetText());
 		ZNameSpace NameSpace = this.ParentNode.GetNameSpace();
 		int loc = CommandPath.lastIndexOf('/');
 		String Command = CommandPath;

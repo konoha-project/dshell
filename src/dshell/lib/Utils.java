@@ -127,4 +127,14 @@ public class Utils {
 		}
 		return null;
 	}
+
+	public static String ResolveHome(String Path) {
+		if(Path.equals("~")) {
+			return Utils.getEnv("HOME");
+		}
+		else if(Path.startsWith("~/")) {
+			return Utils.getEnv("HOME") + Path.substring(1);
+		}
+		return Path;
+	}
 }
