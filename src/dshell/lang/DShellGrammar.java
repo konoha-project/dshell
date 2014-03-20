@@ -15,22 +15,24 @@ import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.DShell;
-import dshell.grammar.CommandArgPattern;
-import dshell.grammar.CommandSymbolToken;
-import dshell.grammar.ExportEnvPattern;
-import dshell.grammar.ForPattern;
-import dshell.grammar.ImportCommandPattern;
-import dshell.grammar.DShellCatchPattern;
-import dshell.grammar.DShellImportPattern;
-import dshell.grammar.CommandSymbolPattern;
-import dshell.grammar.DShellTryPattern;
-import dshell.grammar.ImportEnvPattern;
-import dshell.grammar.ForeachPattern;
-import dshell.grammar.LocationDefinePattern;
-import dshell.grammar.PrefixOptionPattern;
-import dshell.grammar.RedirectPattern;
-import dshell.grammar.ShellStyleCommentToken;
-import dshell.grammar.SuffixOptionPattern;
+import dshell.grammar.CommandArgPatternFunc;
+import dshell.grammar.CommandSymbolTokenFunc;
+import dshell.grammar.ExportEnvPatternFunc;
+import dshell.grammar.ForPatternFunc;
+import dshell.grammar.ImportCommandPatternFunc;
+import dshell.grammar.DShellCatchPatternFunc;
+import dshell.grammar.DShellImportPatternFunc;
+import dshell.grammar.CommandSymbolPatternFunc;
+import dshell.grammar.DShellTryPatternFunc;
+import dshell.grammar.ImportEnvPatternFunc;
+import dshell.grammar.ForeachPatternFunc;
+import dshell.grammar.InterpolableStringLiteralPatternFunc;
+import dshell.grammar.InterpolableStringLiteralTokenFunc;
+import dshell.grammar.LocationDefinePatternFunc;
+import dshell.grammar.PrefixOptionPatternFunc;
+import dshell.grammar.RedirectPatternFunc;
+import dshell.grammar.ShellStyleCommentTokenFunc;
+import dshell.grammar.SuffixOptionPatternFunc;
 import dshell.lib.BuiltinCommand;
 
 public class DShellGrammar {
@@ -71,35 +73,37 @@ public class DShellGrammar {
 		overrideSyntaxPattern(NameSpace, "continue", new ContinuePatternFunction(), true);
 
 		// import DShell Specific Grammar
-		CommandSymbolToken commandSymbolToken = new CommandSymbolToken();
-		ImportCommandPattern importCommandPattern = new ImportCommandPattern();
-		CommandSymbolPattern commandSymbolPattern = new CommandSymbolPattern();
+		CommandSymbolTokenFunc commandSymbolToken = new CommandSymbolTokenFunc();
+		ImportCommandPatternFunc importCommandPattern = new ImportCommandPatternFunc();
+		CommandSymbolPatternFunc commandSymbolPattern = new CommandSymbolPatternFunc();
 		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
-		PrefixOptionPattern prefixOptionPattern = new PrefixOptionPattern();
+		PrefixOptionPatternFunc prefixOptionPattern = new PrefixOptionPatternFunc();
 
-		NameSpace.AppendTokenFunc("#", new ShellStyleCommentToken());
+		NameSpace.AppendTokenFunc("#", new ShellStyleCommentTokenFunc());
 		NameSpace.AppendTokenFunc("Aa_", commandSymbolToken);
 		NameSpace.AppendTokenFunc("1", commandSymbolToken);
+		NameSpace.AppendTokenFunc("\"", new InterpolableStringLiteralTokenFunc());
 
-		NameSpace.DefineStatement("import", new DShellImportPattern());
-		NameSpace.DefineExpression(ImportEnvPattern.PatternName, new ImportEnvPattern());
+		NameSpace.DefineStatement("import", new DShellImportPatternFunc());
+		NameSpace.DefineExpression(ImportEnvPatternFunc.PatternName, new ImportEnvPatternFunc());
 		NameSpace.DefineStatement("command", importCommandPattern);
-		NameSpace.DefineExpression(ImportCommandPattern.PatternName, importCommandPattern);
-		NameSpace.DefineExpression(CommandArgPattern.PatternName, new CommandArgPattern());
-		NameSpace.DefineExpression(RedirectPattern.PatternName, new RedirectPattern());
-		NameSpace.DefineExpression(SuffixOptionPattern.PatternName, new SuffixOptionPattern());
-		NameSpace.DefineExpression(CommandSymbolPattern.PatternName, commandSymbolPattern);
+		NameSpace.DefineExpression(ImportCommandPatternFunc.PatternName, importCommandPattern);
+		NameSpace.DefineExpression(CommandArgPatternFunc.PatternName, new CommandArgPatternFunc());
+		NameSpace.DefineExpression(RedirectPatternFunc.PatternName, new RedirectPatternFunc());
+		NameSpace.DefineExpression(SuffixOptionPatternFunc.PatternName, new SuffixOptionPatternFunc());
+		NameSpace.DefineExpression(CommandSymbolPatternFunc.PatternName, commandSymbolPattern);
 		NameSpace.DefineRightExpression("=~", ZenPrecedence._CStyleEquals, comparatorPattern);
 		NameSpace.DefineRightExpression("!~", ZenPrecedence._CStyleEquals, comparatorPattern);
-		overrideSyntaxPattern(NameSpace, "try", new DShellTryPattern(), true);
-		overrideSyntaxPattern(NameSpace, DShellTryPattern.CatchPatternName, new DShellCatchPattern(), true);
-		NameSpace.DefineStatement(location, new LocationDefinePattern());
+		overrideSyntaxPattern(NameSpace, "try", new DShellTryPatternFunc(), true);
+		overrideSyntaxPattern(NameSpace, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc(), true);
+		NameSpace.DefineStatement(location, new LocationDefinePatternFunc());
 		NameSpace.DefineExpression(timeout, prefixOptionPattern);
 		NameSpace.DefineExpression(trace, prefixOptionPattern);
-		NameSpace.DefineExpression(PrefixOptionPattern.PatternName, prefixOptionPattern);
-		NameSpace.DefineStatement("for", new ForPattern());
-		NameSpace.DefineStatement("for", new ForeachPattern());
-		NameSpace.DefineStatement(ExportEnvPattern.PatternName, new ExportEnvPattern());
+		NameSpace.DefineExpression(PrefixOptionPatternFunc.PatternName, prefixOptionPattern);
+		NameSpace.DefineStatement("for", new ForPatternFunc());
+		NameSpace.DefineStatement("for", new ForeachPatternFunc());
+		NameSpace.DefineStatement(ExportEnvPatternFunc.PatternName, new ExportEnvPatternFunc());
+		NameSpace.DefineExpression(InterpolableStringLiteralPatternFunc.PatternName, new InterpolableStringLiteralPatternFunc());
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

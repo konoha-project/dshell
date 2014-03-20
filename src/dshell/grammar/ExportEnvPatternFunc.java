@@ -5,7 +5,7 @@ import zen.ast.ZNode;
 import zen.parser.ZTokenContext;
 import zen.util.ZMatchFunction;
 
-public class ExportEnvPattern extends ZMatchFunction {
+public class ExportEnvPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "export";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {

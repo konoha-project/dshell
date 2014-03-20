@@ -3,6 +3,7 @@ package dshell.grammar;
 import java.util.ArrayList;
 
 import dshell.lang.DShellGrammar;
+import dshell.lang.InterpolableStringLiteralToken;
 import dshell.lib.Utils;
 import zen.ast.ZBinaryNode;
 import zen.ast.ZNode;
@@ -10,12 +11,11 @@ import zen.ast.ZStringNode;
 import zen.util.LibZen;
 import zen.util.ZMatchFunction;
 import zen.parser.ZNameSpace;
-import zen.parser.ZPatternToken;
 import zen.parser.ZSource;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class CommandArgPattern extends ZMatchFunction {
+public class CommandArgPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$CommandArg$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
@@ -26,8 +26,8 @@ public class CommandArgPattern extends ZMatchFunction {
 		ZToken Token;
 		do {
 			Token = TokenContext.GetToken();
-			if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.PatternName.equals(("$StringLiteral$"))) {
-				argBuilder.resolveStringInterpolation(Token);
+			if(Token instanceof InterpolableStringLiteralToken) {
+				argBuilder.appendAsNode(Token);
 			}
 			else {
 				if(!argBuilder.foundEscapeSequence() && Token.EqualsText("$")) {
@@ -81,10 +81,10 @@ public class CommandArgPattern extends ZMatchFunction {
 	}
 
 	private static class ArgumentBuilder {
-		private class Pair {
+		private class Element {
 			public final String tokenText;
 			public final boolean isExpr;
-			public Pair(String tokenText, boolean isExpr) {
+			public Element(String tokenText, boolean isExpr) {
 				this.isExpr = isExpr;
 				this.tokenText = this.isExpr ? tokenText.substring(2, tokenText.length() - 1) : tokenText;
 			}
@@ -102,11 +102,23 @@ public class CommandArgPattern extends ZMatchFunction {
 			}
 		}
 
+		private class NodeElement extends Element {
+			private final ZNode node;
+			public NodeElement(ZNode node) {
+				super("", false);
+				this.node = node;
+			}
+			@Override
+			public ZNode toNode() {
+				return this.node;
+			}
+		}
+
 		private final ZNode ParentNode;
 		private final ZTokenContext TokenContext;
 		private final String fileName;
 		private final int lineNum;
-		private ArrayList<Pair> pairList;
+		private ArrayList<Element> elementList;
 		private StringBuilder tokenTextBuffer;
 		private boolean foundError = false;
 		private boolean foundEscapseSequence = false;
@@ -117,12 +129,13 @@ public class CommandArgPattern extends ZMatchFunction {
 			ZToken token = TokenContext.GetToken();
 			this.fileName = token.GetFileName();
 			this.lineNum = token.GetLineNumber();
-			this.pairList = new ArrayList<Pair>();
+			this.elementList = new ArrayList<Element>();
 			this.tokenTextBuffer = null;
 		}
 
-		public void append(char tokenChar) {
-			this.append(Character.toString(tokenChar), false);
+		public void appendAsNode(ZToken token) {
+			ZNode node = ((InterpolableStringLiteralToken)token).ToNode(this.ParentNode, this.TokenContext);
+			this.elementList.add(new NodeElement(node));
 		}
 
 		public void append(String tokenText, boolean isExpr) {
@@ -134,7 +147,7 @@ public class CommandArgPattern extends ZMatchFunction {
 			}
 			if(isExpr) {
 				this.flushBuffer();
-				this.pairList.add(new Pair(tokenText, true));
+				this.elementList.add(new Element(tokenText, true));
 			}
 			else {
 				if(this.tokenTextBuffer == null) {
@@ -149,67 +162,13 @@ public class CommandArgPattern extends ZMatchFunction {
 
 		private void flushBuffer() {
 			if(this.tokenTextBuffer != null) {
-				this.pairList.add(new Pair(this.tokenTextBuffer.toString(), false));
+				this.elementList.add(new Element(this.tokenTextBuffer.toString(), false));
 				this.tokenTextBuffer = null;
 			}
 		}
 
 		public boolean foundEscapeSequence() {
 			return this.foundEscapseSequence;
-		}
-
-		public void resolveStringInterpolation(ZToken token) {	//TODO
-			String tokenText = token.GetText();
-			String Value = tokenText.substring(1, tokenText.length() - 1);
-			StringBuilder exprBuilder = new StringBuilder();
-			boolean foundDollar = false;
-			boolean foundBrace = false;
-			int braceCount = 0;
-			int size = Value.length();
-			for(int i = 0; i < size; i++) {
-				char ch = Value.charAt(i);
-				if(!LibZen._IsSymbol(ch) && !LibZen._IsDigit(ch) && foundDollar) {
-					foundDollar = false;
-					exprBuilder.append("}");
-					this.append(exprBuilder.toString(), true);
-					exprBuilder = new StringBuilder();
-				}
-				if(!foundDollar && !foundBrace && ch == '$' && i + 1 < size && !this.foundEscapeSequence()) {
-					if(Value.charAt(i + 1) != '{') {
-						foundDollar = true;
-					}
-					else {
-						foundBrace = true;
-						braceCount++;
-						i++;
-					}
-					exprBuilder.append("${");
-					continue;
-				}
-				if(ch == '{' && foundBrace) {
-					braceCount++;
-				}
-				if(ch == '}' && foundBrace && --braceCount == 0) {
-					foundBrace = false;
-					exprBuilder.append("}");
-					this.append(exprBuilder.toString(), true);
-					exprBuilder = new StringBuilder();
-					continue;
-				}
-				if(foundDollar || foundBrace) {
-					exprBuilder.append(ch);
-				}
-				else {
-					this.append(ch);
-				}
-			}
-			if(foundDollar) {
-				exprBuilder.append("}");
-				this.append(exprBuilder.toString(), true);
-			}
-			if(foundBrace) {
-				this.foundError = true;
-			}
 		}
 
 		public ZNode buildArgNode() {
@@ -220,7 +179,7 @@ public class CommandArgPattern extends ZMatchFunction {
 			ZToken plusToken = new ZToken(new ZSource(fileName, lineNum, "+", TokenContext), 0, "+".length());
 			ZToken token = new ZToken(new ZSource(fileName, lineNum, "", TokenContext), 0, "".length());
 			ZNode node = new ZStringNode(ParentNode, token, "");
-			for(Pair pair : this.pairList) {
+			for(Element pair : this.elementList) {
 				ZBinaryNode binaryNode = new ZBinaryNode(ParentNode, plusToken, node, null);
 				binaryNode.SetNode(ZBinaryNode._Right, pair.toNode());
 				node = binaryNode;

@@ -169,8 +169,7 @@ public enum Errno {
 	}
 
 	private static EnumMap<Errno, Class<?>> initClassMap() {
-		EnumMap<Errno, Class<?>> exceptMap = 
-				new EnumMap<Errno, Class<?>>(Errno.class);
+		EnumMap<Errno, Class<?>> exceptMap = new EnumMap<Errno, Class<?>>(Errno.class);
 		Class<?>[] classes = Errno.class.getClasses();
 		for(Class<?> exceptionClass : classes) {
 			Annotation[] anos = exceptionClass.getDeclaredAnnotations();
@@ -212,6 +211,14 @@ public enum Errno {
 		return getFromMap(exceptClassMap, key);
 	}
 
+	public static ArrayList<Class<?>> getExceptionClassList() {
+		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
+		for(Map.Entry<Errno, Class<?>> entry : exceptClassMap.entrySet()) {
+			classList.add(entry.getValue());
+		}
+		return classList;
+	}
+
 	public static ArrayList<String> getUnsupportedErrnoList() {
 		ArrayList<String> errnoList = new ArrayList<String>();
 		Errno[] values = Errno.values();
@@ -226,12 +233,11 @@ public enum Errno {
 		return errnoList;
 	}
 
-	public static ArrayList<Class<?>> getExceptionClassList() {
-		ArrayList<Class<?>> classList = new ArrayList<Class<?>>();
-		for(Map.Entry<Errno, Class<?>> entry : exceptClassMap.entrySet()) {
-			classList.add(entry.getValue());
+	public static void main(String[] args) {
+		ArrayList<String> errnoList = Errno.getUnsupportedErrnoList();
+		for(String errnoString : errnoList) {
+			System.err.println(errnoString + " is not supported");
 		}
-		return classList;
 	}
 
 	// base class
@@ -240,7 +246,7 @@ public enum Errno {
 
 		private String syscallName;
 		private String param;
-		private String errno;
+		protected String errno;
 
 		public DerivedFromErrnoException() {
 			this("");
@@ -262,9 +268,11 @@ public enum Errno {
 		}
 
 		public String getErrno() {
-			Annotation[] anos = this.getClass().getDeclaredAnnotations();
-			if(anos.length == 1 && anos[0] instanceof DerivedFromErrno) {
-				return ((DerivedFromErrno)anos[0]).value().name();
+			if(this.errno.equals("")) {
+				Annotation[] anos = this.getClass().getDeclaredAnnotations();
+				if(anos.length == 1 && anos[0] instanceof DerivedFromErrno) {
+					this.errno = ((DerivedFromErrno)anos[0]).value().name();
+				}
 			}
 			return this.errno;
 		}
@@ -283,7 +291,10 @@ public enum Errno {
 		public UnimplementedErrnoException(String message) {
 			super(message);
 		}
-		
+		@Override
+		public String getErrno() {
+			return this.errno;
+		}
 		@Override
 		public String toString() {
 			return super.toString() + " :" + this.getErrno() + " has not supported yet";

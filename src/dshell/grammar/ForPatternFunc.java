@@ -5,7 +5,7 @@ import zen.ast.ZNode;
 import zen.parser.ZTokenContext;
 import zen.util.ZMatchFunction;
 
-public class ForPattern extends ZMatchFunction {
+public class ForPatternFunc extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode Node = new DShellForNode(ParentNode);

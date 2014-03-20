@@ -1,6 +1,7 @@
 package dshell.lib;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -97,5 +98,33 @@ public class Utils {
 	public static boolean setEnv(String key, String env) {
 		int ret = RuntimeContext.getContext().setenv(key, env, true);
 		return ret == 0;
+	}
+
+	public static void setValue(Object targetObject, String fieldName, Object value) {
+		try {
+			Field field = targetObject.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			field.set(targetObject, value);
+			field.setAccessible(false);
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			Utils.fatal(1, "field access failed: " + fieldName);
+		}
+	}
+
+	public static Object getValue(Object targetObject, String fieldName) {
+		try {
+			Field field = targetObject.getClass().getDeclaredField(fieldName);
+			field.setAccessible(true);
+			Object value = field.get(targetObject);
+			field.setAccessible(false);
+			return value;
+		}
+		catch (Exception e) {
+			e.printStackTrace();
+			Utils.fatal(1, "field access failed: " + fieldName);
+		}
+		return null;
 	}
 }

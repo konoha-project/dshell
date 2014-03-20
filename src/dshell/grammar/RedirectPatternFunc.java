@@ -7,7 +7,7 @@ import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class RedirectPattern extends ZMatchFunction {
+public class RedirectPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$Redirect$";
 	@Override	// <, >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
@@ -52,7 +52,7 @@ public class RedirectPattern extends ZMatchFunction {
 		ZNode Node = new DShellCommandNode(ParentNode, null);
 		Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, null, RedirectSymbol));
 		if(existTarget) {
-			Node = TokenContext.MatchPattern(Node, ZNode._AppendIndex, CommandArgPattern.PatternName, ZTokenContext._Required);
+			Node = TokenContext.MatchPattern(Node, ZNode._AppendIndex, CommandArgPatternFunc.PatternName, ZTokenContext._Required);
 		}
 		return Node;
 	}

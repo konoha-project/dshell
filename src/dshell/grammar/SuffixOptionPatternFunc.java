@@ -9,7 +9,7 @@ import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class SuffixOptionPattern extends ZMatchFunction {
+public class SuffixOptionPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$SuffixOption$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
@@ -25,7 +25,7 @@ public class SuffixOptionPattern extends ZMatchFunction {
 	public ZNode CreateNodeAndMatchNextOption(ZNode ParentNode, ZTokenContext TokenContext, String OptionSymbol) {
 		ZNode Node = new DShellCommandNode(ParentNode, null);
 		Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, null, OptionSymbol));
-		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, SuffixOptionPattern.PatternName, ZTokenContext._Optional);
+		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, SuffixOptionPatternFunc.PatternName, ZTokenContext._Optional);
 		if(PipedNode != null) {
 			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
 		}

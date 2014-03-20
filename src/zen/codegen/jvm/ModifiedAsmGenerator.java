@@ -26,10 +26,11 @@ import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
 import dshell.lang.DShellVisitor;
-import dshell.lib.DefinedArray;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
+import dshell.lib.DefinedArray.DShellExceptionArray;
+import dshell.lib.DefinedArray.TaskArray;
 import zen.ast.ZBlockNode;
 import zen.ast.ZClassNode;
 import zen.ast.ZErrorNode;
@@ -68,12 +69,12 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	public ModifiedAsmGenerator() {
 		super();
 		this.topLevelSymbolList = new LinkedList<String>();
-		this.importJavaClass(Task.class);
-		this.importJavaClass(DShellException.class);
-		this.importJavaClass(MultipleException.class);
-		this.importJavaClass(Errno.UnimplementedErrnoException.class);
-		this.importJavaClass(DShellException.NullException.class);
-		this.importJavaClassList(Errno.getExceptionClassList());
+		this.loadJavaClass(Task.class);
+		this.loadJavaClass(DShellException.class);
+		this.loadJavaClass(MultipleException.class);
+		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
+		this.loadJavaClass(DShellException.NullException.class);
+		this.loadJavaClassList(Errno.getExceptionClassList());
 
 		try {
 			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);
@@ -90,19 +91,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
 
-		// load exception array
-		ZType DShellExceptionType = JavaTypeTable.GetZenType(DShellException.class);
-		ZType DShellExceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, DShellExceptionType);
-		JavaTypeTable.SetTypeTable(DShellExceptionArrayType, DefinedArray.DShellExceptionArray.class);
-
-		JavaMethodTable.Import(DShellExceptionArrayType, "[]", ZType.IntType, DefinedArray.DShellExceptionArray.class, "GetIndex");
-
-		// load task array
-		ZType TaskType = JavaTypeTable.GetZenType(Task.class);
-		ZType TaskArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, TaskType);
-		JavaTypeTable.SetTypeTable(TaskArrayType, DefinedArray.TaskArray.class);
-
-		JavaMethodTable.Import(TaskArrayType, "[]", ZType.IntType, DefinedArray.TaskArray.class, "GetIndex");
+		// load array class
+		this.loadArrayClass(DShellException.class, DShellExceptionArray.class);
+		this.loadArrayClass(Task.class, TaskArray.class);
 
 		// load static method
 		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
@@ -258,7 +249,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	
 	@Override public void VisitErrorNode(ZErrorNode Node) {
 		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
-		throw new FoundErrorNodeException();
+		throw new ErrorNodeFoundException();
 	}
 
 	@Override public void VisitSugarNode(ZSugarNode Node) {
@@ -314,14 +305,14 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 	}
 
-	private void importJavaClass(Class<?> classObject) {
+	private void loadJavaClass(Class<?> classObject) {
 		ZType type = JavaTypeTable.GetZenType(classObject);
 		this.RootNameSpace.SetTypeName(type, null);
 	}
 
-	private void importJavaClassList(ArrayList<Class<?>> classObjList) {
+	private void loadJavaClassList(ArrayList<Class<?>> classObjList) {
 		for(Class<?> classObj : classObjList) {
-			this.importJavaClass(classObj);
+			this.loadJavaClass(classObj);
 		}
 	}
 
@@ -353,12 +344,20 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 	}
 
+	private void loadArrayClass(Class<?> baseClass, Class<?> arrayClass) {
+		ZType baseType = JavaTypeTable.GetZenType(baseClass);
+		ZType arrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, baseType);
+		JavaTypeTable.SetTypeTable(arrayType, arrayClass);
+		// define operator
+		JavaMethodTable.Import(arrayType, "[]", ZType.IntType, arrayClass, "GetIndex");
+	}
+
 	@Override
 	public void GenerateStatement(ZNode Node) {
 		try {
 			Node.Accept(this);
 		}
-		catch(FoundErrorNodeException e) {
+		catch(ErrorNodeFoundException e) {
 			this.topLevelSymbolList.clear();
 			this.StopVisitor();
 		}
@@ -439,7 +438,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			Node.Accept(this);
 			this.Logger.OutputErrorsToStdErr();
 		}
-		catch(FoundErrorNodeException e) {
+		catch(ErrorNodeFoundException e) {
 			this.Logger.OutputErrorsToStdErr();
 			return;
 		}
@@ -479,7 +478,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 	}
 
-	private static class FoundErrorNodeException extends RuntimeException {
+	private static class ErrorNodeFoundException extends RuntimeException {
 		private static final long serialVersionUID = -2465006344250569543L;
 	}
 }

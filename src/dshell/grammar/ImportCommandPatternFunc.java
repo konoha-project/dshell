@@ -8,7 +8,7 @@ import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class ImportCommandPattern extends ZMatchFunction {
+public class ImportCommandPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$ImportCommand$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {

@@ -5,7 +5,7 @@ import zen.ast.ZNode;
 import zen.parser.ZTokenContext;
 import zen.util.ZMatchFunction;
 
-public class ForeachPattern extends ZMatchFunction {
+public class ForeachPatternFunc extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZNode Node = new DShellForeachNode(ParentNode);

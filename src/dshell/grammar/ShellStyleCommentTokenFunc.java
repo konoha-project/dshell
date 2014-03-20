@@ -3,7 +3,7 @@ package dshell.grammar;
 import zen.util.ZTokenFunction;
 import zen.parser.ZSourceContext;
 
-public class ShellStyleCommentToken extends ZTokenFunction {
+public class ShellStyleCommentTokenFunc extends ZTokenFunction {
 	@Override
 	public boolean Invoke(ZSourceContext SourceContext) {
 		while(SourceContext.HasChar()) {

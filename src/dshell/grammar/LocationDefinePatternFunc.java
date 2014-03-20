@@ -10,10 +10,10 @@ import zen.parser.ZTokenContext;
 /*
  * location www = hoge@192.168.12.3, huge@192.168.2.4:567
  * */
-public class LocationDefinePattern extends ZMatchFunction {
-	private final LocationPattern locationPattern;
-	public LocationDefinePattern() {
-		this.locationPattern = new LocationPattern();
+public class LocationDefinePatternFunc extends ZMatchFunction {
+	private final LocationPatternFunc locationPattern;
+	public LocationDefinePatternFunc() {
+		this.locationPattern = new LocationPatternFunc();
 	}
 
 	@Override	//TODO: multiple host, ssh

@@ -4,9 +4,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import dshell.exception.DShellException;
+import dshell.exception.Errno;
 import dshell.exception.MultipleException;
 import dshell.lib.DefinedArray.TaskArray;
 import dshell.remote.RequestSender;
@@ -332,7 +335,7 @@ class ShellExceptionBuilder {
 			DShellException exception;
 			if(proc.isTraced()) {
 				ArrayList<String> infoList = inferencer.doInference((SubProc)proc);
-				exception = ExceptionClassMap.createException(message, infoList.toArray(new String[infoList.size()]));
+				exception = createException(message, infoList.toArray(new String[infoList.size()]));
 			}
 			else {
 				exception = new DShellException(message);
@@ -347,6 +350,46 @@ class ShellExceptionBuilder {
 		if(proc instanceof SubProc) {
 			((SubProc)proc).deleteLogFile();
 		}
+	}
+
+	private static DShellException createException(String message, String[] causeInfo) {
+		// syscall: syscallName: 0, param: 1, errno: 2
+		Class<?>[] types = {String.class};
+		Object[] args = {message};
+		String errnoString = causeInfo[2];
+		if(Errno.SUCCESS.match(errnoString)) {
+			return DShellException.createNullException(message);
+		}
+		if(Errno.LAST_ELEMENT.match(errnoString)) {
+			return new DShellException(message);
+		}
+		Class<?> exceptionClass = Errno.getExceptionClass(errnoString);
+		try {
+			Constructor<?> constructor = exceptionClass.getConstructor(types);
+			Errno.DerivedFromErrnoException exception = (Errno.DerivedFromErrnoException) constructor.newInstance(args);
+			exception.setSyscallInfo(causeInfo);
+			return exception;
+		}
+		catch (NoSuchMethodException e) {
+			e.printStackTrace();
+		}
+		catch (SecurityException e) {
+			e.printStackTrace();
+		}
+		catch (InstantiationException e) {
+			e.printStackTrace();
+		}
+		catch (IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		}
+		catch (InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		Utils.fatal(1, "Creating Exception failed");
+		return null;	// unreachable 
 	}
 }
 

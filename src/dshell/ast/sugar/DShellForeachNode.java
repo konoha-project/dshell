@@ -50,7 +50,7 @@ public class DShellForeachNode extends ZSugarNode {
 	public ZDesugarNode DeSugar(ZGenerator Generator, ZTypeChecker TypeChekcer) {
 		String ValuesSymbol = Generator.NameUniqueSymbol("values");
 		String SizeSymbol = Generator.NameUniqueSymbol("size");
-		String IndexSymbol = "index";
+		String IndexSymbol = Generator.NameUniqueSymbol("index");
 		// create if
 		ZNode Node = new ZIfNode(this.ParentNode);
 		Node.SetNode(ZIfNode._Cond, new ZBooleanNode(true));

@@ -2,7 +2,7 @@ package dshell.ast;
 
 import java.util.ArrayList;
 
-import dshell.grammar.CommandSymbolPattern;
+import dshell.grammar.CommandSymbolPatternFunc;
 import dshell.lang.DShellGrammar;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
@@ -69,7 +69,7 @@ public class DShellImportCommandNode extends ZTopLevelNode {
 			}
 		}
 		ZSyntax Syntax = NameSpace.GetSyntaxPattern(Command);
-		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPattern)) {
+		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPatternFunc)) {
 			if(LibZen.DebugMode) {
 				System.err.println("found duplicated syntax pattern: " + Syntax);
 			}

@@ -3,7 +3,6 @@ package dshell.lib;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Calendar;
 
@@ -34,13 +33,11 @@ public class TaskBuilder {
 		this.sBuilder = new StringBuilder();
 		for(int i = 0; i< this.Processes.length; i++) {
 			if(i != 0) {
-				this.sBuilder.append(",\n");
+				this.sBuilder.append(",");
 			}
-			this.sBuilder.append("{");
 			this.sBuilder.append(this.Processes[i].toString());
-			this.sBuilder.append("}");
 		}
-		this.sBuilder.append("\n<");
+		this.sBuilder.append(" <");
 		this.sBuilder.append(this.option.toString());
 		this.sBuilder.append(">");
 	}
@@ -399,12 +396,7 @@ class SubProc extends PseudoProcess {
 			return;
 		} 
 		try {
-			// get target pid
-			Field pidField = this.proc.getClass().getDeclaredField("pid");
-			pidField.setAccessible(true);
-			int pid = pidField.getInt(this.proc);
-			
-			// kill process
+			int pid = (Integer) Utils.getValue(this.proc, "pid");
 			String[] cmds = {"kill", "-9", Integer.toString(pid)};
 			Process procKiller = new ProcessBuilder(cmds).start();
 			procKiller.waitFor();

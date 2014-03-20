@@ -4,7 +4,7 @@ import dshell.lang.DShellGrammar;
 import zen.util.ZTokenFunction;
 import zen.parser.ZSourceContext;
 
-public class CommandSymbolToken extends ZTokenFunction {
+public class CommandSymbolTokenFunc extends ZTokenFunction {
 	@Override
 	public boolean Invoke(ZSourceContext SourceContext) {
 		int startIndex = SourceContext.GetPosition();
@@ -18,7 +18,7 @@ public class CommandSymbolToken extends ZTokenFunction {
 			SourceContext.MoveNext();
 		}
 		if(SourceContext.TokenContext.NameSpace.GetSymbolNode(DShellGrammar.toCommandSymbol(symbolBuilder.toString())) != null) {
-			SourceContext.Tokenize(CommandSymbolPattern.PatternName, startIndex, SourceContext.GetPosition());
+			SourceContext.Tokenize(CommandSymbolPatternFunc.PatternName, startIndex, SourceContext.GetPosition());
 			return true;
 		}
 		return false;

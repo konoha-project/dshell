@@ -1,7 +1,6 @@
 package dshell.console;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 import dshell.lib.RuntimeContext;
@@ -117,16 +116,15 @@ public class DShellConsole {
 
 	private static int checkBraceLevel(String Text) {
 		int level = 0;
-		int i = 0;
-		while(i < Text.length()) {
+		int size = Text.length();
+		for(int i = 0; i < size; i++) {
 			char ch = Text.charAt(i);
 			if(ch == '{' || ch == '[') {
-				level = level + 1;
+				level++;
 			}
 			if(ch == '}' || ch == ']') {
-				level = level - 1;
+				level--;
 			}
-			i = i + 1;
 		}
 		return level;
 	}
@@ -179,21 +177,11 @@ class TTYConfigurator {
 	public static TTYConfigurator initConfigurator(Terminal term) {
 		if(term instanceof UnixTerminal && System.console() != null) {
 			UnixTerminal unixTerm = (UnixTerminal)term;
-			Field field;
-			try {
-				field = unixTerm.getClass().getDeclaredField("ttyConfig");
-				field.setAccessible(true);
-				String originalTTYConfig = (String) field.get(unixTerm);
-				String jlineTTYConfig = saveTTYConfig();
-
-				System.out.print(ANSICodes.attrib(36));
-				Runtime.getRuntime().addShutdownHook(new ShutdownOp());
-				return new TTYConfigurator(originalTTYConfig, jlineTTYConfig);
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-				Utils.fatal(1, "field access failed: ttyConfig");
-			}
+			String originalTTYConfig = (String) Utils.getValue(unixTerm, "ttyConfig");
+			String jlineTTYConfig = saveTTYConfig();
+			System.out.print(ANSICodes.attrib(36));
+			Runtime.getRuntime().addShutdownHook(new ShutdownOp());
+			return new TTYConfigurator(originalTTYConfig, jlineTTYConfig);
 		}
 		return new NullConfigurator();
 	}

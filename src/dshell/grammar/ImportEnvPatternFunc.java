@@ -8,7 +8,7 @@ import zen.ast.ZStringNode;
 import zen.util.ZMatchFunction;
 import zen.parser.ZTokenContext;
 
-public class ImportEnvPattern extends ZMatchFunction {
+public class ImportEnvPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$ImportEnv$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
