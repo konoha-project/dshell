@@ -2,7 +2,7 @@ package dshell.grammar;
 
 import java.util.ArrayList;
 
-import dshell.lang.InterpolableStringLiteralToken;
+import dshell.lang.InterStringLiteralToken;
 import zen.ast.ZBinaryNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -12,12 +12,12 @@ import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import zen.util.ZMatchFunction;
 
-public class InterpolableStringLiteralPatternFunc extends ZMatchFunction {
-	public final static String PatternName = "$InterpolableStringLiteral$";
+public class InterStringLiteralPatternFunc extends ZMatchFunction {
+	public final static String PatternName = "$InterStringLiteral$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-		return ToNode(ParentNode, TokenContext, ((InterpolableStringLiteralToken)Token).GetNodeList());
+		return ToNode(ParentNode, TokenContext, ((InterStringLiteralToken)Token).GetNodeList());
 	}
 
 	public static ZNode ToNode(ZNode ParentNode, ZTokenContext TokenContext, ArrayList<ZNode> NodeList) {

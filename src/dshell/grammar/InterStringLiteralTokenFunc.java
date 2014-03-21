@@ -2,20 +2,19 @@ package dshell.grammar;
 
 import java.util.ArrayList;
 
-import dshell.lang.InterpolableStringLiteralToken;
+import dshell.lang.InterStringLiteralToken;
 import dshell.lib.Utils;
 
 import zen.ast.ZBlockNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.parser.ZSourceContext;
-import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import zen.util.LibZen;
 import zen.util.ZTokenFunction;
 
-public class InterpolableStringLiteralTokenFunc extends ZTokenFunction{
+public class InterStringLiteralTokenFunc extends ZTokenFunction{
 	@Override
 	public boolean Invoke(ZSourceContext SourceContext) {
 		ArrayList<ZNode> NodeList = new ArrayList<ZNode>();
@@ -87,12 +86,8 @@ public class InterpolableStringLiteralTokenFunc extends ZTokenFunction{
 	private void OverrideToken(ArrayList<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
 		ZTokenContext TokenContext = SourceContext.TokenContext;
 		int size = TokenContext.TokenList.size();
-		ZSyntax Pattern = TokenContext.NameSpace.GetSyntaxPattern(InterpolableStringLiteralPatternFunc.PatternName);
-		if(Pattern == null) {
-			Utils.fatal(1, "Pattern is Null");
-		}
-		ZToken Token = new InterpolableStringLiteralToken(SourceContext, StartIndex, EndIndex, Pattern);
-		((InterpolableStringLiteralToken)Token).SetNodeList(NodeList);
+		ZToken Token = new InterStringLiteralToken(SourceContext, StartIndex, EndIndex);
+		((InterStringLiteralToken)Token).SetNodeList(NodeList);
 		TokenContext.TokenList.clear(size - 1);
 		TokenContext.TokenList.add(Token);
 	}

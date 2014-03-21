@@ -28,10 +28,13 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {	//FIXME
 		ZType ContextType = this.GetContextType();
-		if(ContextType.IsVarType() && Node.ParentNode instanceof ZBlockNode) {
+		if(Node.Type.IsStringType()) {
+			ContextType = ZType.StringType;
+		}
+		else if(ContextType.IsVarType() && Node.ParentNode instanceof ZBlockNode) {
 			ContextType = ZType.VoidType;
 		}
-		if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
+		else if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
 			ContextType = JavaTypeTable.GetZenType(Task.class);
 		}
 		int size = Node.GetListSize();

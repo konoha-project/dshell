@@ -3,7 +3,8 @@ package dshell.grammar;
 import java.util.ArrayList;
 
 import dshell.lang.DShellGrammar;
-import dshell.lang.InterpolableStringLiteralToken;
+import dshell.lang.InterStringLiteralToken;
+import dshell.lang.SubCommandToken;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -25,39 +26,45 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 		StringNodeBuilder NodeBuilder = new StringNodeBuilder(ParentNode);
 		while(!DShellGrammar.MatchStopToken(TokenContext)) {
 			ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-			if(Token instanceof InterpolableStringLiteralToken) {
+			if(Token instanceof InterStringLiteralToken) {
 				NodeBuilder.Flush(NodeList);
-				InterpolableStringLiteralToken InterStringToken = (InterpolableStringLiteralToken) Token;
-				NodeList.add(InterpolableStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
+				InterStringLiteralToken InterStringToken = (InterStringLiteralToken) Token;
+				NodeList.add(InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
+			}
+			else if(Token instanceof SubCommandToken) {
+				NodeBuilder.Flush(NodeList);
+				SubCommandToken SubCmdToken = (SubCommandToken) Token;
+				NodeList.add(SubCmdToken.GetNode());
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				NodeBuilder.Flush(NodeList);
 				ZNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", ZTokenContext._Required);
-				Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-				if(Node.IsErrorNode() || !Token.EqualsText('}')) {
-					return null;
+				Node = TokenContext.MatchToken(Node, "}", ZTokenContext._Required);
+				if(Node.IsErrorNode()) {
+					return Node;
 				}
+				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.GetToken().IsNameSymbol()) {
 				NodeBuilder.Flush(NodeList);
 				ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
-				Token = TokenContext.LatestToken;
 				if(Node.IsErrorNode()) {
-					return null;
+					return Node;
 				}
+				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
 			}
 			else {
 				NodeBuilder.Append(Token);
 			}
-			FoundEscape = this.CheckEscape(Token, FoundEscape);
 			if(Token.IsNextWhiteSpace()) {
 				break;
 			}
+			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
 		NodeBuilder.Flush(NodeList);
-		return InterpolableStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, NodeList);
+		return InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, NodeList);
 	}
 
 	private boolean CheckEscape(ZToken Token, boolean FoundEscape) {
