@@ -164,14 +164,6 @@ public class Task implements Serializable {
 		return this.stderrMessage;
 	}
 
-	public String getReplacedOutMessage() {
-		return Utils.replaceDelim(this.getOutMessage());
-	}
-
-	public String getReplacedErrorMessage() {
-		return Utils.replaceDelim(this.getErrorMessage());
-	}
-
 	public int getExitStatus() {
 		this.join();
 		return this.exitStatusList.get(this.exitStatusList.size() - 1);

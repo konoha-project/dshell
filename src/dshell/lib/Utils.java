@@ -139,21 +139,8 @@ public class Utils {
 	}
 
 	private final static Pattern defaultDelimPattern = Pattern.compile("[\n\t ]+", Pattern.UNIX_LINES);
-	public static String replaceDelim(String targetValue) {	//TODO: support IFS variable
-		StringBuilder sBuilder = new StringBuilder();
-		int size = targetValue.length();
-		boolean foundValue = false;
-		for(int i = size - 1; i > -1; i--) {
-			char ch = targetValue.charAt(i);
-			if(ch == '\n' && !foundValue) {
-				continue;
-			}
-			else if(ch != '\n' && !foundValue) {
-				foundValue = true;
-			}
-			sBuilder.append(ch);
-		}
-		return defaultDelimPattern.matcher(sBuilder.reverse().toString()).replaceAll(" ");
+	public static String[] splitWithDelim(String targetValue) {	//TODO: support IFS variable
+		return defaultDelimPattern.matcher(targetValue).replaceAll(" ").split(" ");
 	}
 
 	public static String removeNewLine(String targetValue) {

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import dshell.lang.DShellGrammar;
+import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.DefinedArray.TaskArray;
 import dshell.remote.RequestSender;
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -201,6 +202,11 @@ public class TaskBuilder {
 	public static TaskArray ExecCommandTaskArray(String[][] cmds) {
 		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
 		return (TaskArray)new TaskBuilder(toCmdsList(cmds), option).invoke();
+	}
+
+	public static SubstitutedArg ExecCommandSubstitution(String[][] cmds) {
+		TaskOption option = TaskOption.of(StringType, returnable);
+		return new SubstitutedArg((String) new TaskBuilder(toCmdsList(cmds), option).invoke());
 	}
 
 	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {

@@ -50,10 +50,8 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 					CurrentIndex = SourceContext.GetPosition();
 					continue;
 				}
-				else {
-					SourceContext.LogWarning(StartIndex, "not match Expression");
-					break;
-				}
+				SourceContext.LogWarning(StartIndex, "not match Expression");
+				break;
 			}
 			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') {
 				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
@@ -65,10 +63,8 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 					CurrentIndex = SourceContext.GetPosition();
 					continue;
 				}
-				else {
-					SourceContext.LogWarning(StartIndex, "not match Command Symbol");
-					break;
-				}
+				SourceContext.LogWarning(StartIndex, "not match Command Symbol");
+				break;
 			}
 			else if(ch == '`') {
 				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
@@ -80,10 +76,8 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 					CurrentIndex = SourceContext.GetPosition();
 					continue;
 				}
-				else {
-					SourceContext.LogWarning(StartIndex, "not match Command Symbol");
-					break;
-				}
+				SourceContext.LogWarning(StartIndex, "not match Command Symbol");
+				break;
 			}
 			SourceContext.MoveNext();
 		}
