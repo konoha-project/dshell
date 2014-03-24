@@ -1,4 +1,4 @@
-この章では、 D-Shell のクラスの利用方法を説明します。
+この章では、 D-Shell のクラスの利用方法を説明します。  
 
 # クラス定義
 ***
@@ -25,7 +25,7 @@ class Person {
 }
 </pre>
 
-class ステートメントブロックのあとにメンバ関数を定義すると、クラスにバインドされます。
+class ステートメントブロックのあとにメンバ関数を定義すると、クラスにバインドされます。  
 
 <pre class="toolbar:0 highlight:0">
 // クラス定義
@@ -54,7 +54,7 @@ function isChild(x: Person, a: int) : boolean {
 var obj = new Person()
 </pre>
 
-* データを指定する
+* データを指定する  
 <pre class="toolbar:0 highlight:0">
 var obj = Person { name: "sakura", age: 16 }
 </pre>
