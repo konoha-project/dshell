@@ -2,16 +2,16 @@
 
 # 代数演算子
 ***
-数値の加減乗除に使用します。
+数値の加減乗除に使用します。  
 
-例|処理
---|--
-- A|負
-A + B|加算
-A - B|減算
-A * B|乗算
-A / B|除算
-A % B|剰余
+例|処理  
+--|--  
+- A|負  
+A + B|加算  
+A - B|減算  
+A * B|乗算  
+A / B|除算  
+A % B|剰余  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル:  AlgebraicOp.ds" >
 function func() {
@@ -46,14 +46,14 @@ $ dshell AlgebraicOp.ds
 同じ数値であることや、違う数値である条件式を表すために使用します。  
 各演算子はboolean型の値を返します。  
 
-例|処理
---|--
-A == B|等しい
-A != B|等しくない
-A < B|より少ない
-A > B|より多い
-A <= B|より少ないか等しい
-A >= B|より多いか等しい
+例|処理  
+--|--  
+A == B|等しい  
+A != B|等しくない  
+A < B|より少ない  
+A > B|より多い  
+A <= B|より少ないか等しい  
+A >= B|より多いか等しい  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル:  RelationalOp.ds" >
 function func() {
@@ -86,14 +86,14 @@ true
 
 # 論理演算子
 ***
-複数の条件式を組み合わせた複雑な条件式を表すために使用します。 
+複数の条件式を組み合わせた複雑な条件式を表すために使用します。  
 各演算子はboolean型の値を返します。  
 
-例|名前|処理
---|--
-! A|否定|A が true でない場合 true
-A && B|論理積|A および B が共に true の場合に true
-A || B|論理和|A または B のどちらかが true の場合に ture
+例|名前|処理  
+--|--  
+! A|否定|A が true でない場合 true  
+A && B|論理積|A および B が共に true の場合に true  
+A `||` B|論理和|A または B のどちらかが true の場合に ture  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: LogicalOp.ds" >
 function func() {
@@ -119,9 +119,9 @@ true
 # パターンマッチング演算子
 ***
 正規表現の条件式を表すために使用します。  
-例|名前|処理
---|--
-A =~ B|正規表現|文字列 A が 正規表現パターン B を満たす場合に true
+例|名前|処理  
+--|--  
+A =~ B|正規表現|文字列 A が 正規表現パターン B を満たす場合に true  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル: Regex.ds" >
 function func() {
@@ -149,4 +149,3 @@ $ dshell Regex.ds
 match!
 not match!
 </pre>
-

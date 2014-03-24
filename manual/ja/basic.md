@@ -60,7 +60,7 @@ p2
 # 画面への出力
 ***
 
-* 内部コマンドの利用( log コマンド)
+* 内部コマンドの利用( log コマンド)  
 D-Shell にビルトインコマンドとして組み込まれている log コマンドを利用する例です。  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputLog.ds" >
@@ -81,8 +81,8 @@ Hello, World
 123
 </pre>
 
-* 外部コマンドの利用( echo コマンド)
-外部コマンドの echo を D-Shell にインポートして利用する例です。
+* 外部コマンドの利用( echo コマンド)  
+外部コマンドの echo を D-Shell にインポートして利用する例です。  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputEcho.ds" >
 import command echo
@@ -104,8 +104,8 @@ Hello, World
 123
 </pre>
 
-* Javaメソッドの利用( println 関数)
-Java の println 関数を D-Shell にインポートして利用する例です。
+* Javaメソッドの利用( println 関数)  
+Java の println 関数を D-Shell にインポートして利用する例です。  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true " title="サンプル: OutputPrintln.ds" >
 import java.lang.System
@@ -127,5 +127,4 @@ Hello, World
 </pre>
 
 # 予約語
-D-Shell では、制御構造は糖衣構文により再定義することが可能なため、予約語の制限はありません。 
-
+D-Shell では、制御構造は糖衣構文により再定義することが可能なため、予約語の制限はありません。  

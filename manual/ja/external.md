@@ -15,7 +15,7 @@ import java.io.FileWriter
 
 function func() {
 
-  var filewriter: FileWriter = new FileWriter(File("/tmp/file.txt"))
+  var filewriter: FileWriter = new FileWriter(new File("/tmp/file.txt"))
 
   filewriter.write("Hello, World")
   filewriter.close()
@@ -54,7 +54,7 @@ Hello, World
 /home/hogehoge
 </pre>
 
-指定したコマンドが存在しない場合、import 宣言時に異常終了します。(未定義の値)
+指定したコマンドが存在しない場合、import 宣言時に異常終了します。(未定義の値)  
 <pre class="toolbar:0 highlight:0">
 import command hoge   // hoge という名前のコマンドがないためエラーとなる
 </pre>
@@ -141,13 +141,13 @@ D-Shell では、環境変数を String 型の定数として参照すること�
 import env 環境変数名
 </pre>
 
-import 宣言後、環境変数名の定数が参照できるようになります。
+import 宣言後、環境変数名の定数が参照できるようになります。  
 <pre class="toolbar:0 highlight:0">
 import env HOME
 log ${HOME}  // 環境変数 HOME の値が表示される(/home/hogehoge など)
 </pre>
 
-指定した環境変数が存在しない場合、定数を参照しても空文字が返ります。
+指定した環境変数が存在しない場合、定数を参照しても空文字が返ります。  
 
 <pre class="nums:true toolbar:1 lang:scala decode:true" title="サンプル:  GetEnv.ds" >
 import env HOME               // 定義済み環境変数
