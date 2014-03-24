@@ -164,6 +164,14 @@ public class Task implements Serializable {
 		return this.stderrMessage;
 	}
 
+	public String getReplacedOutMessage() {
+		return Utils.replaceDelim(this.getOutMessage());
+	}
+
+	public String getReplacedErrorMessage() {
+		return Utils.replaceDelim(this.getErrorMessage());
+	}
+
 	public int getExitStatus() {
 		this.join();
 		return this.exitStatusList.get(this.exitStatusList.size() - 1);
@@ -273,7 +281,7 @@ class MessageStreamHandler {
 				Utils.fatal(1, "interrupt problem");
 			}
 		}
-		return this.messageBuffer.toString();
+		return Utils.removeNewLine(this.messageBuffer.toString());
 	}
 
 	public ByteArrayOutputStream[] getEachBuffers() {

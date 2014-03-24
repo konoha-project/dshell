@@ -32,8 +32,6 @@ import dshell.grammar.LocationDefinePatternFunc;
 import dshell.grammar.PrefixOptionPatternFunc;
 import dshell.grammar.RedirectPatternFunc;
 import dshell.grammar.ShellStyleCommentTokenFunc;
-import dshell.grammar.SubCommandPatternFunc;
-import dshell.grammar.SubCommandTokenFunc;
 import dshell.grammar.SuffixOptionPatternFunc;
 import dshell.lib.BuiltinCommand;
 
@@ -85,7 +83,6 @@ public class DShellGrammar {
 		NameSpace.AppendTokenFunc("Aa_", commandSymbolToken);
 		NameSpace.AppendTokenFunc("1", commandSymbolToken);
 		NameSpace.AppendTokenFunc("\"", new InterStringLiteralTokenFunc());
-		NameSpace.AppendTokenFunc("$ `", new SubCommandTokenFunc());
 
 		NameSpace.DefineStatement("import", new DShellImportPatternFunc());
 		NameSpace.DefineExpression(ImportEnvPatternFunc.PatternName, new ImportEnvPatternFunc());
@@ -107,7 +104,6 @@ public class DShellGrammar {
 		NameSpace.DefineStatement("for", new ForeachPatternFunc());
 		NameSpace.DefineStatement(ExportEnvPatternFunc.PatternName, new ExportEnvPatternFunc());
 		NameSpace.DefineExpression(InterStringLiteralPatternFunc.PatternName, new InterStringLiteralPatternFunc());
-		NameSpace.DefineExpression(SubCommandPatternFunc.PatternName, new SubCommandPatternFunc());
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

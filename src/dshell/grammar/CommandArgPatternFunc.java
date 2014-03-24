@@ -4,7 +4,6 @@ import java.util.ArrayList;
 
 import dshell.lang.DShellGrammar;
 import dshell.lang.InterStringLiteralToken;
-import dshell.lang.SubCommandToken;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -14,7 +13,7 @@ import zen.parser.ZPatternToken;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class CommandArgPatternFunc extends ZMatchFunction {
+public class CommandArgPatternFunc extends ZMatchFunction {	//TODO: command substitution
 	public final static String PatternName = "$CommandArg$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
@@ -31,10 +30,9 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 				InterStringLiteralToken InterStringToken = (InterStringLiteralToken) Token;
 				NodeList.add(InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
 			}
-			else if(Token instanceof SubCommandToken) {
+			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				NodeBuilder.Flush(NodeList);
-				SubCommandToken SubCmdToken = (SubCommandToken) Token;
-				NodeList.add(SubCmdToken.GetNode());
+				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				NodeBuilder.Flush(NodeList);
@@ -87,21 +85,12 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 			if(this.TokenBuffer == null) {
 				this.TokenBuffer = new StringBuilder();
 			}
-			String TokenText = Token.GetText();
-			if(Token instanceof ZPatternToken) {
-				ZPatternToken PatternToken = (ZPatternToken) Token;
-				if(PatternToken.PresetPattern.PatternName.equals("$StringLiteral$")) {
-					this.TokenBuffer.append(TokenText.substring(1, TokenText.length() - 1));
-					return;
-				}
-			}
-			
-			this.TokenBuffer.append(TokenText);
+			this.TokenBuffer.append(Token.GetText());
 		}
 
 		public void Flush(ArrayList<ZNode> NodeList) {
 			if(this.TokenBuffer != null) {
-				String Value = Utils.ResolveHome(this.TokenBuffer.toString());
+				String Value = Utils.resolveHome(this.TokenBuffer.toString());
 				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Value)));
 				this.TokenBuffer = null;
 			}

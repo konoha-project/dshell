@@ -128,7 +128,7 @@ public class Utils {
 		return null;
 	}
 
-	public static String ResolveHome(String Path) {
+	public static String resolveHome(String Path) {
 		if(Path.equals("~")) {
 			return Utils.getEnv("HOME");
 		}
@@ -136,5 +136,40 @@ public class Utils {
 			return Utils.getEnv("HOME") + Path.substring(1);
 		}
 		return Path;
+	}
+
+	private final static Pattern defaultDelimPattern = Pattern.compile("[\n\t ]+", Pattern.UNIX_LINES);
+	public static String replaceDelim(String targetValue) {	//TODO: support IFS variable
+		StringBuilder sBuilder = new StringBuilder();
+		int size = targetValue.length();
+		boolean foundValue = false;
+		for(int i = size - 1; i > -1; i--) {
+			char ch = targetValue.charAt(i);
+			if(ch == '\n' && !foundValue) {
+				continue;
+			}
+			else if(ch != '\n' && !foundValue) {
+				foundValue = true;
+			}
+			sBuilder.append(ch);
+		}
+		return defaultDelimPattern.matcher(sBuilder.reverse().toString()).replaceAll(" ");
+	}
+
+	public static String removeNewLine(String targetValue) {
+		StringBuilder sBuilder = new StringBuilder();
+		int size = targetValue.length();
+		boolean foundValue = false;
+		for(int i = size - 1; i > -1; i--) {
+			char ch = targetValue.charAt(i);
+			if(ch == '\n' && !foundValue) {
+				continue;
+			}
+			else if(ch != '\n' && !foundValue) {
+				foundValue = true;
+			}
+			sBuilder.append(ch);
+		}
+		return sBuilder.reverse().toString();
 	}
 }

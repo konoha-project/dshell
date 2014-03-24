@@ -11,6 +11,7 @@ import zen.ast.ZStringNode;
 import zen.parser.ZSourceContext;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
+import zen.type.ZType;
 import zen.util.LibZen;
 import zen.util.ZTokenFunction;
 
@@ -41,14 +42,46 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 				return true;
 			}
 			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '{') {
-				FoundExpr = true;
 				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
-				if(this.CreateAndAppendExprNode(NodeList, SourceContext)) {
+				ZNode Node = this.CreateExprNode(SourceContext, "$Expression$", '}', 2);
+				if(Node != null) {
+					FoundExpr = true;
+					NodeList.add(Node);
 					CurrentIndex = SourceContext.GetPosition();
 					continue;
 				}
 				else {
 					SourceContext.LogWarning(StartIndex, "not match Expression");
+					break;
+				}
+			}
+			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') {
+				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
+				ZNode Node = this.CreateExprNode(SourceContext, CommandSymbolPatternFunc.PatternName, ')', 2);
+				if(Node != null) {
+					FoundExpr = true;
+					Node.Type = ZType.StringType;
+					NodeList.add(Node);
+					CurrentIndex = SourceContext.GetPosition();
+					continue;
+				}
+				else {
+					SourceContext.LogWarning(StartIndex, "not match Command Symbol");
+					break;
+				}
+			}
+			else if(ch == '`') {
+				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
+				ZNode Node = this.CreateExprNode(SourceContext, CommandSymbolPatternFunc.PatternName, '`', 1);
+				if(Node != null) {
+					FoundExpr = true;
+					Node.Type = ZType.StringType;
+					NodeList.add(Node);
+					CurrentIndex = SourceContext.GetPosition();
+					continue;
+				}
+				else {
+					SourceContext.LogWarning(StartIndex, "not match Command Symbol");
 					break;
 				}
 			}
@@ -66,21 +99,21 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 		NodeList.add(new ZStringNode(null, Token, LibZen._UnquoteString(Token.GetText())));
 	}
 
-	private boolean CreateAndAppendExprNode(ArrayList<ZNode> NodeList, ZSourceContext SourceContext) {
-		SourceContext.MoveNext();
-		SourceContext.MoveNext();
+	private ZNode CreateExprNode(ZSourceContext SourceContext, String PatternName, char EndChar, int Next) {
+		for(int i = 0; i < Next; i++) {
+			SourceContext.MoveNext();
+		}
 		ZTokenContext TokenContext = SourceContext.TokenContext;
 		int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
-		int prevSize = TokenContext.TokenList.size();
-		ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), "$Expression$", ZTokenContext._Required);
+		int PrevSize = TokenContext.TokenList.size();
+		ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), PatternName, ZTokenContext._Required);
 		char ch = SourceContext.GetCharAt(SourceContext.GetPosition() - 1);
 		Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
-		if(!Node.IsErrorNode() && ch == '}') {
-			NodeList.add(Node);
-			TokenContext.TokenList.clear(prevSize);
-			return true;
+		if(!Node.IsErrorNode() && ch == EndChar) {
+			TokenContext.TokenList.clear(PrevSize);
+			return Node;
 		}
-		return false;
+		return null;
 	}
 
 	private void OverrideToken(ArrayList<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
