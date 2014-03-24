@@ -75,9 +75,9 @@ public class TaskOption implements Serializable {
 		return !this.is(sender) && this.is(throwable) || this.isRetType(TaskType);
 	}
 
-	public void setTimeout(String timeSymbol) {
+	public void setTimeout(CommandArg timeSymbol) {
 		this.setFlag(timeout, true);
-		this.time = Long.parseLong(timeSymbol);
+		this.time = Long.parseLong(timeSymbol.toString());
 	}
 
 	public long getTimeout() {

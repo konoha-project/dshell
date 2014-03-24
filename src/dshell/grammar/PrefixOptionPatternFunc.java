@@ -1,9 +1,9 @@
 package dshell.grammar;
 
 import dshell.ast.DShellCommandNode;
+import dshell.ast.sugar.DShellArgNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZNode;
-import zen.ast.ZStringNode;
 import zen.util.LibZen;
 import zen.util.ZMatchFunction;
 import zen.parser.ZPatternToken;
@@ -22,7 +22,7 @@ public class PrefixOptionPatternFunc extends ZMatchFunction {
 				return CommandNode;
 			}
 			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
+			Node.SetNode(ZNode._AppendIndex, new DShellArgNode(Node, Symbol));
 			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
 		if(Symbol.equals(DShellGrammar.timeout) && LeftNode == null) {
@@ -35,7 +35,7 @@ public class PrefixOptionPatternFunc extends ZMatchFunction {
 				return CommandNode;
 			}
 			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, Token, Symbol));
+			Node.SetNode(ZNode._AppendIndex, new DShellArgNode(Node, Symbol));
 			Node.SetNode(ZNode._AppendIndex, TimeNode);
 			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
@@ -49,18 +49,18 @@ public class PrefixOptionPatternFunc extends ZMatchFunction {
 				long Num = LibZen._ParseInt(NumToken.GetText());
 				if(Num > 0) {
 					if(NumToken.IsNextWhiteSpace()) {
-						return new ZStringNode(ParentNode, NumToken, Long.toString(Num));
+						return new DShellArgNode(ParentNode, Long.toString(Num));
 					}
 					ZToken UnitToken = TokenContext.GetToken(ZTokenContext._MoveNext);
 					String UnitSymbol = UnitToken.GetText();
 					if(UnitSymbol.equals("ms")) {
-						return new ZStringNode(ParentNode, NumToken, Long.toString(Num));
+						return new DShellArgNode(ParentNode, Long.toString(Num));
 					}
 					if(UnitSymbol.equals("s")) {
-						return new ZStringNode(ParentNode, NumToken, Long.toString(Num * 1000));
+						return new DShellArgNode(ParentNode, Long.toString(Num * 1000));
 					}
 					if(UnitSymbol.equals("m")) {
-						return new ZStringNode(ParentNode, NumToken, Long.toString(Num * 1000 * 60));
+						return new DShellArgNode(ParentNode, Long.toString(Num * 1000 * 60));
 					}
 					return TokenContext.CreateExpectedErrorNode(UnitToken, "{ms, s, m}");
 				}

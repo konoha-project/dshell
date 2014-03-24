@@ -11,7 +11,6 @@ import zen.ast.ZStringNode;
 import zen.parser.ZSourceContext;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
-import zen.type.ZType;
 import zen.util.LibZen;
 import zen.util.ZTokenFunction;
 
@@ -43,7 +42,7 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 			}
 			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '{') {
 				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
-				ZNode Node = this.CreateExprNode(SourceContext, "$Expression$", '}', 2);
+				ZNode Node = this.CreateExprNode(SourceContext);
 				if(Node != null) {
 					FoundExpr = true;
 					NodeList.add(Node);
@@ -53,25 +52,15 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 				SourceContext.LogWarning(StartIndex, "not match Expression");
 				break;
 			}
-			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') {
-				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
-				ZNode Node = this.CreateExprNode(SourceContext, CommandSymbolPatternFunc.PatternName, ')', 2);
-				if(Node != null) {
+			else if((ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') || ch == '`') {
+				ZTokenContext TokenContext = SourceContext.TokenContext;
+				int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
+				int PrevSize = TokenContext.TokenList.size();
+				ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc.PatternName, ZTokenContext._Required);
+				Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
+				if(!Node.IsErrorNode()) {
+					TokenContext.TokenList.clear(PrevSize);
 					FoundExpr = true;
-					Node.Type = ZType.StringType;
-					NodeList.add(Node);
-					CurrentIndex = SourceContext.GetPosition();
-					continue;
-				}
-				SourceContext.LogWarning(StartIndex, "not match Command Symbol");
-				break;
-			}
-			else if(ch == '`') {
-				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
-				ZNode Node = this.CreateExprNode(SourceContext, CommandSymbolPatternFunc.PatternName, '`', 1);
-				if(Node != null) {
-					FoundExpr = true;
-					Node.Type = ZType.StringType;
 					NodeList.add(Node);
 					CurrentIndex = SourceContext.GetPosition();
 					continue;
@@ -93,17 +82,16 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 		NodeList.add(new ZStringNode(null, Token, LibZen._UnquoteString(Token.GetText())));
 	}
 
-	private ZNode CreateExprNode(ZSourceContext SourceContext, String PatternName, char EndChar, int Next) {
-		for(int i = 0; i < Next; i++) {
-			SourceContext.MoveNext();
-		}
+	private ZNode CreateExprNode(ZSourceContext SourceContext) {
+		SourceContext.MoveNext();
+		SourceContext.MoveNext();
 		ZTokenContext TokenContext = SourceContext.TokenContext;
 		int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 		int PrevSize = TokenContext.TokenList.size();
-		ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), PatternName, ZTokenContext._Required);
+		ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), "$Expression$", ZTokenContext._Required);
 		char ch = SourceContext.GetCharAt(SourceContext.GetPosition() - 1);
 		Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
-		if(!Node.IsErrorNode() && ch == EndChar) {
+		if(!Node.IsErrorNode() && ch == '}') {
 			TokenContext.TokenList.clear(PrevSize);
 			return Node;
 		}

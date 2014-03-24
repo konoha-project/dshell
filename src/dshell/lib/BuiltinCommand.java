@@ -8,11 +8,11 @@ public abstract class BuiltinCommand extends PseudoProcess {
 	}	// do nothing
 	
 	@Override
-	public void setInputRedirect(String readFileName) {
+	public void setInputRedirect(CommandArg readFileName) {
 	}	// do nothing
 	
 	@Override
-	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
+	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
 	}	// do nothing
 	
 	abstract public void start();
@@ -36,8 +36,8 @@ public abstract class BuiltinCommand extends PseudoProcess {
 		this.retValue = 1;
 	}
 
-	public static BuiltinCommand createCommand(ArrayList<String> cmds) {
-		String commandSymbol = cmds.get(0);
+	public static BuiltinCommand createCommand(ArrayList<CommandArg> cmds) {
+		String commandSymbol = cmds.get(0).toString();
 		boolean matchCommand = false;
 		ArrayList<String> commandSymbolList = getCommandSymbolList();
 		for(String currentSymbol : commandSymbolList) {
@@ -80,7 +80,7 @@ class Command_cd extends BuiltinCommand {
 		int size = this.commandList.size();
 		String path = "";
 		if(size > 1) {
-			path = this.commandList.get(1);
+			path = this.commandList.get(1).toString();
 		}
 		this.retValue = RuntimeContext.getContext().changeDirectory(path);
 	}
@@ -96,7 +96,7 @@ class Command_exit extends BuiltinCommand {
 		}
 		else if(size == 2) {
 			try {
-				status = Integer.parseInt(this.commandList.get(1));
+				status = Integer.parseInt(this.commandList.get(1).toString());
 			}
 			catch(NumberFormatException e) {
 				this.printArgumentErrorAndSetStatus(BuiltinSymbol.exit);
@@ -122,7 +122,7 @@ class Command_help extends BuiltinCommand {
 			foundValidCommand = true;
 		}
 		for(int i = 1; i < size; i++) {
-			String arg = this.commandList.get(i);
+			String arg = this.commandList.get(i).toString();
 			if(arg.equals("-s") && size == 2) {
 				this.printAllCommandUsage();
 				foundValidCommand = true;
@@ -154,7 +154,7 @@ class Command_help extends BuiltinCommand {
 		}
 	}
 
-	private void printNotMatchedMessage(String commandSymbol) {
+	private void printNotMatchedMessage(CommandArg commandSymbol) {
 		System.err.println("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
 	}
 }
@@ -167,7 +167,7 @@ class Command_log extends BuiltinCommand {
 			this.printArgumentErrorAndSetStatus(BuiltinSymbol.log);
 			return;
 		}
-		Utils.log(this.commandList.get(1));
+		Utils.log(this.commandList.get(1).toString());
 		this.retValue = 0;
 	}
 }

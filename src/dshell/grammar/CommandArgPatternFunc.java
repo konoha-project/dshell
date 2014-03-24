@@ -2,8 +2,10 @@ package dshell.grammar;
 
 import java.util.ArrayList;
 
+import dshell.ast.sugar.DShellArgNode;
 import dshell.lang.DShellGrammar;
 import dshell.lang.InterStringLiteralToken;
+import dshell.lang.SubstitutionToken;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -13,13 +15,14 @@ import zen.parser.ZPatternToken;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 
-public class CommandArgPatternFunc extends ZMatchFunction {	//TODO: command substitution
+public class CommandArgPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$CommandArg$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		if(DShellGrammar.MatchStopToken(TokenContext)) {
 			return null;
 		}
+		boolean FoundSubstitution = false;
 		boolean FoundEscape = false;
 		ArrayList<ZNode> NodeList = new ArrayList<ZNode>();
 		StringNodeBuilder NodeBuilder = new StringNodeBuilder(ParentNode);
@@ -29,6 +32,12 @@ public class CommandArgPatternFunc extends ZMatchFunction {	//TODO: command subs
 				NodeBuilder.Flush(NodeList);
 				InterStringLiteralToken InterStringToken = (InterStringLiteralToken) Token;
 				NodeList.add(InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
+			}
+			else if(Token instanceof SubstitutionToken) {
+				NodeBuilder.Flush(NodeList);
+				SubstitutionToken SubToken = (SubstitutionToken) Token;
+				NodeList.add(SubToken.GetNode());
+				FoundSubstitution = true;
 			}
 			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				NodeBuilder.Flush(NodeList);
@@ -62,7 +71,9 @@ public class CommandArgPatternFunc extends ZMatchFunction {	//TODO: command subs
 			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
 		NodeBuilder.Flush(NodeList);
-		return InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, NodeList);
+		ZNode ArgNode = new DShellArgNode(ParentNode, FoundSubstitution ? DShellArgNode.__substitution : DShellArgNode.__normal);
+		ArgNode.SetNode(DShellArgNode._Expr, InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, NodeList));
+		return ArgNode;
 	}
 
 	private boolean CheckEscape(ZToken Token, boolean FoundEscape) {

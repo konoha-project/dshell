@@ -14,7 +14,7 @@ public abstract class PseudoProcess {
 	protected InputStream stderr = null;
 
 	protected StringBuilder cmdNameBuilder;
-	protected ArrayList<String> commandList;
+	protected ArrayList<CommandArg> commandList;
 	protected StringBuilder sBuilder;
 
 	protected boolean stdinIsDirty = false;
@@ -28,11 +28,11 @@ public abstract class PseudoProcess {
 
 	public PseudoProcess() {
 		this.cmdNameBuilder = new StringBuilder();
-		this.commandList = new ArrayList<String>();
+		this.commandList = new ArrayList<CommandArg>();
 		this.sBuilder = new StringBuilder();
 	}
 
-	public void setArgumentList(ArrayList<String> argList) {
+	public void setArgumentList(ArrayList<CommandArg> argList) {
 		this.commandList = argList;
 		int size = this.commandList.size();
 		for(int i = 0; i < size; i++) {
@@ -43,8 +43,8 @@ public abstract class PseudoProcess {
 		}
 	}
 	abstract public void mergeErrorToOut();
-	abstract public void setInputRedirect(String readFileName);
-	abstract public void setOutputRedirect(int fd, String writeFileName, boolean append);
+	abstract public void setInputRedirect(CommandArg readFileName);
+	abstract public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append);
 	abstract public void start();
 	abstract public void kill();
 	abstract public void waitTermination();

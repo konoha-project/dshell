@@ -9,7 +9,7 @@ public class CommandArg implements Serializable {
 
 	private final String value;
 
-	public CommandArg(String value) {
+	private CommandArg(String value) {
 		this.value = value;
 	}
 
@@ -18,8 +18,16 @@ public class CommandArg implements Serializable {
 		return this.value;
 	}
 
-	public boolean eq(CommandArg arg) {
-		return this.toString().equals(arg.toString());
+	public boolean eq(String symbol) {
+		return this.toString().equals(symbol);
+	}
+
+	public static CommandArg createCommandArg(String value) {
+		return new CommandArg(value);
+	}
+
+	public static SubstitutedArg createSubstitutedArg(String value) {
+		return new SubstitutedArg(value);
 	}
 
 	public final static class SubstitutedArg extends CommandArg {
@@ -28,7 +36,7 @@ public class CommandArg implements Serializable {
 		private final List<String> valueList;
 		private String stringfyValues;
 
-		public SubstitutedArg(String value) {
+		private SubstitutedArg(String value) {
 			super(value);
 			this.valueList = Arrays.asList(Utils.splitWithDelim(value));
 		}

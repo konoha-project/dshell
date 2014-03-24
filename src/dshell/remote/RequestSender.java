@@ -5,6 +5,7 @@ import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 
+import dshell.lib.CommandArg;
 import dshell.lib.PseudoProcess;
 import dshell.lib.Task;
 import dshell.lib.Utils;
@@ -16,7 +17,7 @@ public class RequestSender extends PseudoProcess {
 	private Thread resultHandler;
 	private Task result;
 
-	public RequestSender(ArrayList<ArrayList<String>> cmdsList, boolean isBackground) {
+	public RequestSender(ArrayList<ArrayList<CommandArg>> cmdsList, boolean isBackground) {
 		this.requestString = CommandRequest.encodeToString(new CommandRequest(cmdsList, isBackground));
 		this.isBackground = isBackground;
 	}
@@ -25,10 +26,10 @@ public class RequestSender extends PseudoProcess {
 	public void mergeErrorToOut() {
 	}
 	@Override
-	public void setInputRedirect(String readFileName) {
+	public void setInputRedirect(CommandArg readFileName) {
 	}
 	@Override
-	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
+	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
 	}
 
 	@Override
@@ -39,9 +40,9 @@ public class RequestSender extends PseudoProcess {
 				prcoBuilder = new ProcessBuilder("dshell", "--receive", this.requestString);
 			}
 			else {
-				String[] splittedString = this.commandList.get(1).split(":");
+				String[] splittedString = this.commandList.get(1).toString().split(":");
 				if(splittedString.length == 1) {
-					prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1), "dshell", "--receive", this.requestString);
+					prcoBuilder = new ProcessBuilder("ssh", this.commandList.get(1).toString(), "dshell", "--receive", this.requestString);
 				}
 				else if(splittedString.length == 2) {
 					prcoBuilder = new ProcessBuilder("ssh", splittedString[0], "-p", splittedString[1], "dshell", "--receive", this.requestString);

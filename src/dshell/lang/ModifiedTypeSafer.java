@@ -18,6 +18,7 @@ import dshell.ast.DShellCommandNode;
 import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
+import dshell.lib.CommandArg;
 import dshell.lib.Task;
 
 public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
@@ -40,7 +41,7 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
 			ZNode SubNode = Node.GetListAt(i);
-			SubNode = this.CheckType(SubNode, ZType.StringType);
+			SubNode = this.CheckType(SubNode, JavaTypeTable.GetZenType(CommandArg.class));
 			Node.SetListAt(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {

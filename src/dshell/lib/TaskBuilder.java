@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import dshell.lang.DShellGrammar;
 import dshell.lib.CommandArg.SubstitutedArg;
@@ -26,9 +27,9 @@ public class TaskBuilder {
 	private PseudoProcess[] Processes;
 	private StringBuilder sBuilder;
 
-	public TaskBuilder(ArrayList<ArrayList<String>> cmdsList, TaskOption option) {
+	public TaskBuilder(ArrayList<ArrayList<CommandArg>> cmdsList, TaskOption option) {
 		this.option = option;
-		ArrayList<ArrayList<String>> newCmdsList = this.setInternalOption(cmdsList);
+		ArrayList<ArrayList<CommandArg>> newCmdsList = this.setInternalOption(cmdsList);
 		this.Processes = this.createProcs(newCmdsList);
 		// generate object representation
 		this.sBuilder = new StringBuilder();
@@ -81,10 +82,10 @@ public class TaskBuilder {
 		return this.sBuilder.toString();
 	}
 
-	private ArrayList<ArrayList<String>> setInternalOption(ArrayList<ArrayList<String>> cmdsList) {
-		ArrayList<ArrayList<String>> newCmdsBuffer = new ArrayList<ArrayList<String>>();
-		for(ArrayList<String> currentCmds : cmdsList) {
-			if(currentCmds.get(0).equals(DShellGrammar.background)) {
+	private ArrayList<ArrayList<CommandArg>> setInternalOption(ArrayList<ArrayList<CommandArg>> cmdsList) {
+		ArrayList<ArrayList<CommandArg>> newCmdsBuffer = new ArrayList<ArrayList<CommandArg>>();
+		for(ArrayList<CommandArg> currentCmds : cmdsList) {
+			if(currentCmds.get(0).eq(DShellGrammar.background)) {
 				this.option.setFlag(background, this.option.isRetType(TaskType) || this.option.isRetType(VoidType));
 				continue;
 			}
@@ -93,43 +94,43 @@ public class TaskBuilder {
 		return newCmdsBuffer;
 	}
 
-	private PseudoProcess[] createProcs(ArrayList<ArrayList<String>> cmdsList) {
+	private PseudoProcess[] createProcs(ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		boolean foundTraceOption = false;
 		int size = cmdsList.size();
 		for(int i = 0; i < size; i++) {
-			ArrayList<String> currentCmds = cmdsList.get(i);
-			String cmdSymbol = currentCmds.get(0);
+			ArrayList<CommandArg> currentCmds = cmdsList.get(i);
+			CommandArg cmdSymbol = currentCmds.get(0);
 			PseudoProcess prevProc = null;
 			int currentbufferSize = procBuffer.size();
 			if(currentbufferSize > 0) {
 				prevProc = procBuffer.get(currentbufferSize - 1);
 			}
-			if(cmdSymbol.equals("<")) {
+			if(cmdSymbol.eq("<")) {
 				prevProc.setInputRedirect(currentCmds.get(1));
 			}
-			else if(cmdSymbol.equals("1>") || cmdSymbol.equals(">")) {
+			else if(cmdSymbol.eq("1>") || cmdSymbol.eq(">")) {
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
 			}	
-			else if(cmdSymbol.equals("1>>") || cmdSymbol.equals(">>")) {
+			else if(cmdSymbol.eq("1>>") || cmdSymbol.eq(">>")) {
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 			}
-			else if(cmdSymbol.equals("2>")) {
+			else if(cmdSymbol.eq("2>")) {
 				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), false);
 			}
-			else if(cmdSymbol.equals("2>>")) {
+			else if(cmdSymbol.eq("2>>")) {
 				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), true);
 			}
-			else if(cmdSymbol.equals("&>") || cmdSymbol.equals(">&")) {
+			else if(cmdSymbol.eq("&>") || cmdSymbol.eq(">&")) {
 				prevProc.mergeErrorToOut();
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
 			}
-			else if(cmdSymbol.equals("&>>")) {
+			else if(cmdSymbol.eq("&>>")) {
 				prevProc.mergeErrorToOut();
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 			}
-			else if(cmdSymbol.equals(DShellGrammar.location)) {
-				ArrayList<ArrayList<String>> sendingCmdsList = new ArrayList<ArrayList<String>>();
+			else if(cmdSymbol.eq(DShellGrammar.location)) {
+				ArrayList<ArrayList<CommandArg>> sendingCmdsList = new ArrayList<ArrayList<CommandArg>>();
 				for(int j = i + 1; j < size; j++) {
 					sendingCmdsList.add(cmdsList.get(j));
 				}
@@ -139,11 +140,11 @@ public class TaskBuilder {
 				this.option.setFlag(background, false);
 				break;
 			}
-			else if(cmdSymbol.equals(DShellGrammar.trace)) {
+			else if(cmdSymbol.eq(DShellGrammar.trace)) {
 				foundTraceOption = true;
 				continue;
 			}
-			else if(cmdSymbol.equals(DShellGrammar.timeout)) {
+			else if(cmdSymbol.eq(DShellGrammar.timeout)) {
 				this.option.setTimeout(currentCmds.get(1));
 				continue;
 			}
@@ -163,7 +164,7 @@ public class TaskBuilder {
 		return procBuffer.toArray(new PseudoProcess[bufferSize]);
 	}
 
-	private PseudoProcess createProc(ArrayList<String> cmds, boolean enableTrace) {
+	private PseudoProcess createProc(ArrayList<CommandArg> cmds, boolean enableTrace) {
 		PseudoProcess proc = BuiltinCommand.createCommand(cmds);
 		if(proc != null) {
 			return proc;
@@ -174,46 +175,41 @@ public class TaskBuilder {
 	}
 
 	// called by ModifiedAsmGenerator#VisitCommandNode
-	public static void ExecCommandVoid(String[][] cmds) {
+	public static void ExecCommandVoid(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(VoidType, printable, throwable);
 		new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static int ExecCommandInt(String[][] cmds) {
+	public static int ExecCommandInt(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(IntType, printable, returnable);
 		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
 	}
 
-	public static boolean ExecCommandBool(String[][] cmds) {
+	public static boolean ExecCommandBool(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
 		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option).invoke()).booleanValue();
 	}
 
-	public static String ExecCommandString(String[][] cmds) {
+	public static String ExecCommandString(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(StringType, returnable);
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static Task ExecCommandTask(String[][] cmds) {
+	public static Task ExecCommandTask(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
 		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static TaskArray ExecCommandTaskArray(String[][] cmds) {
+	public static TaskArray ExecCommandTaskArray(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
 		return (TaskArray)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static SubstitutedArg ExecCommandSubstitution(String[][] cmds) {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		return new SubstitutedArg((String) new TaskBuilder(toCmdsList(cmds), option).invoke());
-	}
-
-	private static ArrayList<ArrayList<String>> toCmdsList(String[][] cmds) {
-		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
-		for(String[] cmd : cmds) {
-			ArrayList<String> cmdList = new ArrayList<String>();
-			for(String tempCmd : cmd) {
+	private static ArrayList<ArrayList<CommandArg>> toCmdsList(CommandArg[][] cmds) {
+		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
+		for(CommandArg[] cmd : cmds) {
+			ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
+			for(CommandArg tempCmd : cmd) {
 				cmdList.add(tempCmd);
 			}
 			cmdsList.add(cmdList);
@@ -278,19 +274,19 @@ class SubProc extends PseudoProcess {
 				return;
 			}
 			for(String traceCmd : traceCmds) {
-				this.commandList.add(traceCmd);
+				this.commandList.add(CommandArg.createCommandArg(traceCmd));
 			}
 		}
 	}
 
 	@Override
-	public void setArgumentList(ArrayList<String> argList) {
-		String arg = argList.get(0);
+	public void setArgumentList(ArrayList<CommandArg> argList) {
+		CommandArg arg = argList.get(0);
 		this.cmdNameBuilder.append(arg);
-		if(arg.equals("sudo")) {
-			ArrayList<String> newCommandList = new ArrayList<String>();
+		if(arg.eq("sudo")) {
+			ArrayList<CommandArg> newCommandList = new ArrayList<CommandArg>();
 			newCommandList.add(arg);
-			for(String cmd : this.commandList) {
+			for(CommandArg cmd : this.commandList) {
 				newCommandList.add(cmd);
 			}
 			this.commandList = newCommandList;
@@ -309,9 +305,23 @@ class SubProc extends PseudoProcess {
 			this.sBuilder.append(arg);
 		}
 		this.sBuilder.append("]");
-		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
+		List<String> paramList = this.toStringList(this.commandList);
+		this.procBuilder = new ProcessBuilder(paramList.toArray(new String[paramList.size()]));
 		this.procBuilder.redirectError(Redirect.INHERIT);
 		this.stderrIsDirty = true;
+	}
+
+	private ArrayList<String> toStringList(ArrayList<CommandArg> commandList) {
+		ArrayList<String> paramList = new ArrayList<String>();
+		for(CommandArg arg : commandList) {
+			if(arg instanceof SubstitutedArg) {
+				paramList.addAll(((SubstitutedArg)arg).getValueList());
+			}
+			else {
+				paramList.add(arg.toString());
+			}
+		}
+		return paramList;
 	}
 
 	@Override
@@ -355,16 +365,16 @@ class SubProc extends PseudoProcess {
 	}
 
 	@Override
-	public void setInputRedirect(String readFileName) {
+	public void setInputRedirect(CommandArg readFileName) {
 		this.stdinIsDirty = true;
-		this.procBuilder.redirectInput(new File(readFileName));
+		this.procBuilder.redirectInput(new File(readFileName.toString()));
 		this.sBuilder.append(" <");
 		this.sBuilder.append(readFileName);
 	}
 
 	@Override
-	public void setOutputRedirect(int fd, String writeFileName, boolean append) {
-		File file = new File(writeFileName);
+	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
+		File file = new File(writeFileName.toString());
 		Redirect redirDest = Redirect.to(file);
 		if(append) {
 			redirDest = Redirect.appendTo(file);

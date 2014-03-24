@@ -1,9 +1,9 @@
 package dshell.grammar;
 
 import dshell.ast.DShellCommandNode;
+import dshell.ast.sugar.DShellArgNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZNode;
-import zen.ast.ZStringNode;
 import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
@@ -13,7 +13,7 @@ public class LocationPatternFunc extends ZMatchFunction {
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken();
 		TokenContext.MoveNext();
-		ZStringNode KeyNode = new ZStringNode(ParentNode, null, DShellGrammar.location);
+		ZNode KeyNode = new DShellArgNode(ParentNode, DShellGrammar.location);
 		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token);
 		Node.SetNode(ZNode._AppendIndex, KeyNode);
 		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));

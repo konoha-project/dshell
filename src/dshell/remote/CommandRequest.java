@@ -18,17 +18,18 @@ import java.util.ArrayList;
 
 import org.apache.commons.codec.binary.Base64;
 
+import dshell.lib.CommandArg;
 import dshell.lib.RuntimeContext;
 import dshell.lib.TaskOption;
 import dshell.lib.Utils;
 
 public class CommandRequest implements Serializable {
-	private static final long serialVersionUID = 2907070450718884160L;
+	private static final long serialVersionUID = -2526526893412679466L;
 	private final RuntimeContext context;
-	private final ArrayList<ArrayList<String>> cmdsList;
+	private final ArrayList<ArrayList<CommandArg>> cmdsList;
 	private final TaskOption option;
 
-	public CommandRequest(ArrayList<ArrayList<String>> cmdsList, boolean isBackground) {
+	public CommandRequest(ArrayList<ArrayList<CommandArg>> cmdsList, boolean isBackground) {
 		this.context = RuntimeContext.getContext();
 		this.cmdsList = cmdsList;
 		if(isBackground) {
@@ -39,7 +40,7 @@ public class CommandRequest implements Serializable {
 		}
 	}
 
-	public ArrayList<ArrayList<String>> getCmdsList() {
+	public ArrayList<ArrayList<CommandArg>> getCmdsList() {
 		return this.cmdsList;
 	}
 

@@ -3,11 +3,11 @@ package dshell.console;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import dshell.lib.CommandArg;
 import dshell.lib.RuntimeContext;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;
 import dshell.lib.Utils;
-
 import jline.Terminal;
 import jline.ANSIBuffer.ANSICodes;
 import jline.UnixTerminal;
@@ -156,20 +156,20 @@ class TTYConfigurator {
 
 	private static void loadTTYConfig(String ttyConfig) {
 		TaskOption option = TaskOption.of(StringType, returnable);
-		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
-		ArrayList<String> cmdList = new ArrayList<String>();
-		cmdList.add("stty");
-		cmdList.add(ttyConfig);
+		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
+		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
+		cmdList.add(CommandArg.createCommandArg("stty"));
+		cmdList.add(CommandArg.createCommandArg(ttyConfig));
 		cmdsList.add(cmdList);
 		new TaskBuilder(cmdsList, option).invoke();
 	}
 
 	private static String saveTTYConfig() {
 		TaskOption option = TaskOption.of(StringType, returnable);
-		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
-		ArrayList<String> cmdList = new ArrayList<String>();
-		cmdList.add("stty");
-		cmdList.add("-g");
+		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
+		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
+		cmdList.add(CommandArg.createCommandArg("stty"));
+		cmdList.add(CommandArg.createCommandArg("-g"));
 		cmdsList.add(cmdList);
 		return ((String) new TaskBuilder(cmdsList, option).invoke()).trim();
 	}

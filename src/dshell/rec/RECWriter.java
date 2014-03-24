@@ -15,6 +15,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
 import zen.util.LibZen;
+import dshell.lib.CommandArg;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.TaskOption;
@@ -55,11 +56,11 @@ public class RECWriter {
 			Utils.fatal(1, "Host Problem");
 		}
 		// execute script file
-		ArrayList<ArrayList<String>> cmdsList = new ArrayList<ArrayList<String>>();
-		ArrayList<String> cmdList = new ArrayList<String>();
-		cmdList.add("dshell");
+		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
+		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
+		cmdList.add(CommandArg.createCommandArg("dshell"));
 		for(int i = 0; i < scriptArgs.length; i++) {
-			cmdList.add(scriptArgs[i]);
+			cmdList.add(CommandArg.createCommandArg(scriptArgs[i]));
 		}
 		cmdsList.add(cmdList);
 		TaskOption option = TaskOption.of(TaskType, returnable, printable);

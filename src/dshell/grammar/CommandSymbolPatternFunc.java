@@ -1,6 +1,7 @@
 package dshell.grammar;
 
 import dshell.ast.DShellCommandNode;
+import dshell.ast.sugar.DShellArgNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
@@ -20,7 +21,7 @@ public class CommandSymbolPatternFunc extends ZMatchFunction {
 		}
 		String Command = ((ZStringNode)SymbolNode).StringValue;
 		ZNode CommandNode = new DShellCommandNode(ParentNode, CommandToken);
-		CommandNode.SetNode(ZNode._AppendIndex, new ZStringNode(ParentNode, CommandToken, Command));
+		CommandNode.SetNode(ZNode._AppendIndex, new DShellArgNode(ParentNode, Command));
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
 				// Match Prefix Option

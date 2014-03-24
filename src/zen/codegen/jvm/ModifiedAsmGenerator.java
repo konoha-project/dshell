@@ -26,6 +26,8 @@ import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
 import dshell.lang.DShellVisitor;
+import dshell.lib.CommandArg;
+import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -75,14 +77,16 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
 		this.loadJavaClass(DShellException.NullException.class);
 		this.loadJavaClassList(Errno.getExceptionClassList());
+		this.loadJavaClass(CommandArg.class);
+		this.loadJavaClass(SubstitutedArg.class);
 
 		try {
-			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", String[][].class);
-			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", String[][].class);
-			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", String[][].class);
-			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", String[][].class);
-			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", String[][].class);
-			ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", String[][].class);
+			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
+			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", CommandArg[][].class);
+			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", CommandArg[][].class);
+			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", CommandArg[][].class);
+			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
+			ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -98,6 +102,8 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		// load static method
 		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
 		this.loadJavaStaticMethod(Utils.class, "setEnv", String.class, String.class);
+		this.loadJavaStaticMethod(CommandArg.class, "createCommandArg", String.class);
+		this.loadJavaStaticMethod(CommandArg.class, "createSubstitutedArg", String.class);
 	}
 
 	@Override
@@ -112,7 +118,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		// new String[n][]
 		int size = nodeList.size();
 		this.AsmBuilder.visitLdcInsn(size);
-		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String[].class));
+		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(CommandArg[].class));
 		for(int i = 0; i < size; i++) {
 			// new String[m];
 			DShellCommandNode currentNode = nodeList.get(i);
@@ -120,7 +126,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			this.AsmBuilder.visitInsn(DUP);
 			this.AsmBuilder.visitLdcInsn(i);
 			this.AsmBuilder.visitLdcInsn(listSize);
-			this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(String.class));
+			this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(CommandArg.class));
 			for(int j = 0; j < listSize; j++ ) {
 				this.AsmBuilder.visitInsn(DUP);
 				this.AsmBuilder.visitLdcInsn(j);
