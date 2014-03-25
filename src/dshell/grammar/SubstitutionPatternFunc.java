@@ -1,9 +1,9 @@
 package dshell.grammar;
 
-import dshell.lang.SubstitutionToken;
 import zen.ast.ZNode;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
+import zen.type.ZType;
 import zen.util.ZMatchFunction;
 
 public class SubstitutionPatternFunc extends ZMatchFunction {
@@ -12,6 +12,18 @@ public class SubstitutionPatternFunc extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-		return ((SubstitutionToken)Token).GetNode();
+		if(Token.EqualsText("$") && TokenContext.MatchToken("(")) {
+			ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
+			if(Node == null) {
+				Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
+			}
+			Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
+			Node.Type = ZType.StringType;
+			return Node;
+		}
+		else if(Token.EqualsText("`")) {
+			//TODO:
+		}
+		return null;
 	}
 }

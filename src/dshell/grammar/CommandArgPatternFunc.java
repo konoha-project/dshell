@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import dshell.ast.sugar.DShellArgNode;
 import dshell.lang.DShellGrammar;
 import dshell.lang.InterStringLiteralToken;
-import dshell.lang.SubstitutionToken;
 import dshell.lib.Utils;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
+import zen.type.ZType;
 import zen.util.LibZen;
 import zen.util.ZMatchFunction;
 import zen.parser.ZPatternToken;
@@ -33,19 +33,13 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 				InterStringLiteralToken InterStringToken = (InterStringLiteralToken) Token;
 				NodeList.add(InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
 			}
-			else if(Token instanceof SubstitutionToken) {
-				NodeBuilder.Flush(NodeList);
-				SubstitutionToken SubToken = (SubstitutionToken) Token;
-				NodeList.add(SubToken.GetNode());
-				FoundSubstitution = true;
-			}
 			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				NodeBuilder.Flush(NodeList);
 				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				NodeBuilder.Flush(NodeList);
-				ZNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", ZTokenContext._Required);
+				ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
 				Node = TokenContext.MatchToken(Node, "}", ZTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
@@ -61,6 +55,21 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 				}
 				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
+			}
+//			else if(!FoundEscape && Token.EqualsText("`")) {	//TODO
+//				
+//			}
+			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("(")) {
+				NodeBuilder.Flush(NodeList);
+				ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
+				if(Node == null) {
+					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
+				}
+				Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
+				Node.Type = ZType.StringType;
+				Token = TokenContext.LatestToken;
+				NodeList.add(Node);
+				FoundSubstitution = true;
 			}
 			else {
 				NodeBuilder.Append(Token);

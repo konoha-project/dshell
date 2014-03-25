@@ -367,6 +367,12 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			this.topLevelSymbolList.clear();
 			this.StopVisitor();
 		}
+		catch(Exception e) {
+			System.err.println("Code Generation Failed");
+			e.printStackTrace();
+			this.topLevelSymbolList.clear();
+			this.StopVisitor();
+		}
 	}
 
 	@Override

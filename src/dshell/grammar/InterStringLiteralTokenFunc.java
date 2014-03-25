@@ -11,6 +11,7 @@ import zen.ast.ZStringNode;
 import zen.parser.ZSourceContext;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
+import zen.type.ZType;
 import zen.util.LibZen;
 import zen.util.ZTokenFunction;
 
@@ -52,7 +53,8 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 				SourceContext.LogWarning(StartIndex, "not match Expression");
 				break;
 			}
-			else if((ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') || ch == '`') {
+			//else if((ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') || ch == '`') {
+			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') {
 				ZTokenContext TokenContext = SourceContext.TokenContext;
 				int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 				int PrevSize = TokenContext.TokenList.size();
@@ -93,6 +95,7 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 		Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 		if(!Node.IsErrorNode() && ch == '}') {
 			TokenContext.TokenList.clear(PrevSize);
+			Node.Type = ZType.StringType;
 			return Node;
 		}
 		return null;

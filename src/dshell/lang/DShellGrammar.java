@@ -33,7 +33,6 @@ import dshell.grammar.PrefixOptionPatternFunc;
 import dshell.grammar.RedirectPatternFunc;
 import dshell.grammar.ShellStyleCommentTokenFunc;
 import dshell.grammar.SubstitutionPatternFunc;
-import dshell.grammar.SubstitutionTokenFunc;
 import dshell.grammar.SuffixOptionPatternFunc;
 import dshell.lib.BuiltinCommand;
 
@@ -80,12 +79,12 @@ public class DShellGrammar {
 		CommandSymbolPatternFunc commandSymbolPattern = new CommandSymbolPatternFunc();
 		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		PrefixOptionPatternFunc prefixOptionPattern = new PrefixOptionPatternFunc();
+		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 
 		NameSpace.AppendTokenFunc("#", new ShellStyleCommentTokenFunc());
 		NameSpace.AppendTokenFunc("Aa_", commandSymbolToken);
 		NameSpace.AppendTokenFunc("1", commandSymbolToken);
 		NameSpace.AppendTokenFunc("\"", new InterStringLiteralTokenFunc());
-		NameSpace.AppendTokenFunc("`$", new SubstitutionTokenFunc());
 
 		NameSpace.DefineStatement("import", new DShellImportPatternFunc());
 		NameSpace.DefineExpression(ImportEnvPatternFunc.PatternName, new ImportEnvPatternFunc());
@@ -107,7 +106,9 @@ public class DShellGrammar {
 		NameSpace.DefineStatement("for", new ForeachPatternFunc());
 		NameSpace.DefineStatement(ExportEnvPatternFunc.PatternName, new ExportEnvPatternFunc());
 		NameSpace.DefineExpression(InterStringLiteralPatternFunc.PatternName, new InterStringLiteralPatternFunc());
-		NameSpace.DefineExpression(SubstitutionPatternFunc.PatternName, new SubstitutionPatternFunc());
+//		NameSpace.DefineExpression("$( `", substitutionPattern);
+		NameSpace.DefineExpression("$", substitutionPattern);
+		NameSpace.DefineExpression(SubstitutionPatternFunc.PatternName, substitutionPattern);
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

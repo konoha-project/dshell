@@ -5,6 +5,12 @@ class Person {
   var isChild: Func<Person, int, boolean>
 }
 
+function Person(this : Person, name: String, age : int) : Person {
+  this.name = name
+  this.age = age
+  return this
+}
+
 // メンバ関数定義
 function isChild(this: Person, a: int) : boolean {
   if (a < 5) {
@@ -21,7 +27,7 @@ function func() {
   // クラスオブジェクトの後に「ドット」付けてメンバ関数を指定
   assert(obj1.isChild(1))
   // メンバ関数のパラメータにクラスオブジェクトを指定
-  assert(isChild(ob2, 6))
+  assert(!isChild(obj2, 6))
 }
 
 func()
