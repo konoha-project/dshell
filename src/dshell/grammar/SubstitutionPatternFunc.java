@@ -1,5 +1,6 @@
 package dshell.grammar;
 
+import dshell.ast.sugar.DShellCommandNode;
 import zen.ast.ZNode;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
@@ -18,7 +19,9 @@ public class SubstitutionPatternFunc extends ZMatchFunction {
 				Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
 			}
 			Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
-			Node.Type = ZType.StringType;
+			if(Node instanceof DShellCommandNode) {
+				((DShellCommandNode)Node).SetType(ZType.StringType);
+			}
 			return Node;
 		}
 		else if(Token.EqualsText("`")) {

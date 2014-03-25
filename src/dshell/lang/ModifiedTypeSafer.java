@@ -18,7 +18,6 @@ import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.sugar.DShellCommandNode;
 import dshell.lib.CommandArg;
-import dshell.lib.Task;
 
 public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	public ModifiedTypeSafer(ModifiedAsmGenerator Generator) {
@@ -28,14 +27,14 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {	//FIXME
 		ZType ContextType = this.GetContextType();
-		if(Node.Type.IsStringType()) {
+		if(Node.RetType().IsStringType()) {
 			ContextType = ZType.StringType;
 		}
 		else if(ContextType.IsVarType() && Node.ParentNode instanceof ZBlockNode) {
 			ContextType = ZType.VoidType;
 		}
-		else if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
-			ContextType = JavaTypeTable.GetZenType(Task.class);
+		else if(ContextType.IsVarType()) {
+			ContextType = ZType.StringType;
 		}
 		int size = Node.GetArgSize();
 		for(int i = 0; i < size; i++) {

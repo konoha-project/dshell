@@ -3,6 +3,7 @@ package dshell.grammar;
 import java.util.ArrayList;
 
 import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import dshell.lang.InterStringLiteralToken;
 import dshell.lib.Utils;
@@ -66,7 +67,9 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
 				}
 				Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
-				Node.Type = ZType.StringType;
+				if(Node instanceof DShellCommandNode) {
+					((DShellCommandNode)Node).SetType(ZType.StringType);
+				}
 				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
 				FoundSubstitution = true;

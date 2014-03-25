@@ -2,16 +2,17 @@ package dshell.ast.sugar;
 
 import java.util.ArrayList;
 
-
 import zen.ast.ZDesugarNode;
 import zen.ast.ZNode;
 import zen.ast.ZSugarNode;
 import zen.parser.ZGenerator;
 import zen.parser.ZToken;
 import zen.parser.ZTypeChecker;
+import zen.type.ZType;
 
 public class DShellCommandNode extends ZSugarNode {
 	private final ArrayList<ZNode> ArgList;
+	private ZType RetType = ZType.VarType;
 	public ZNode PipedNextNode;
 
 	public DShellCommandNode(ZNode ParentNode, ZToken Token, String Command) {
@@ -46,9 +47,16 @@ public class DShellCommandNode extends ZSugarNode {
 		return this.ArgList.get(Index);
 	}
 
+	public void SetType(ZType Type) {
+		this.RetType = Type;
+	}
+
+	public ZType RetType() {
+		return this.RetType;
+	}
+
 	@Override
 	public ZDesugarNode DeSugar(ZGenerator Generator, ZTypeChecker TypeChekcer) {
-		// TODO 自動生成されたメソッド・スタブ
 		return null;
 	}
 }

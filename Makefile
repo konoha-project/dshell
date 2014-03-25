@@ -7,6 +7,8 @@ SCRIPT_NAME="dshell"
 all: build
 
 build:
+	cd ./ext/libzen && git checkout master && git checkout a9db0843c3507b81e0991219c57404fe78bacd02
+	cd ../../
 	ant
 
 clean:
