@@ -1,7 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellCommandNode;
-import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
@@ -23,11 +22,10 @@ public class SuffixOptionPatternFunc extends ZMatchFunction {
 	}
 
 	public ZNode CreateNodeAndMatchNextOption(ZNode ParentNode, ZTokenContext TokenContext, String OptionSymbol) {
-		ZNode Node = new DShellCommandNode(ParentNode, null);
-		Node.SetNode(ZNode._AppendIndex, new DShellArgNode(ParentNode, OptionSymbol));
+		DShellCommandNode Node = new DShellCommandNode(ParentNode, null, OptionSymbol);
 		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, SuffixOptionPatternFunc.PatternName, ZTokenContext._Optional);
 		if(PipedNode != null) {
-			((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode)PipedNode);
+			Node.AppendPipedNextNode((DShellCommandNode)PipedNode);
 		}
 		if(!DShellGrammar.MatchStopToken(TokenContext)) {
 			return new ZErrorNode(ParentNode, TokenContext.GetToken(), "not match stop token");

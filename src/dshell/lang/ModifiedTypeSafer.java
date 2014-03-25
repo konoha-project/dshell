@@ -14,10 +14,9 @@ import zen.parser.ZLogger;
 import zen.type.ZType;
 import zen.type.ZVarType;
 import dshell.ast.DShellCatchNode;
-import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lib.CommandArg;
 import dshell.lib.Task;
 
@@ -38,11 +37,11 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 		else if(!ContextType.IsBooleanType() && !ContextType.IsIntType() && !ContextType.IsStringType() && !ContextType.IsVoidType()) {
 			ContextType = JavaTypeTable.GetZenType(Task.class);
 		}
-		int size = Node.GetListSize();
+		int size = Node.GetArgSize();
 		for(int i = 0; i < size; i++) {
-			ZNode SubNode = Node.GetListAt(i);
+			ZNode SubNode = Node.GetArgAt(i);
 			SubNode = this.CheckType(SubNode, JavaTypeTable.GetZenType(CommandArg.class));
-			Node.SetListAt(i, SubNode);
+			Node.SetArgAt(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {
 			Node.PipedNextNode = this.CheckType(Node.PipedNextNode, ContextType);
@@ -79,11 +78,6 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
-	@Override
-	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
-		this.ReturnNode(Node);
-	}
-
 	@Override public void VisitThrowNode(ZThrowNode Node) {
 		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
 		this.ReturnTypeNode(Node, ZType.VoidType);
@@ -92,6 +86,9 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	@Override public void VisitSugarNode(ZSugarNode Node) {
 		if(Node instanceof ZContinueNode) {
 			this.VisitContinueNode((ZContinueNode) Node);
+		}
+		else if(Node instanceof DShellCommandNode) {
+			this.VisitCommandNode((DShellCommandNode) Node);
 		}
 		else {
 			super.VisitSugarNode(Node);

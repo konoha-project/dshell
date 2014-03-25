@@ -18,10 +18,9 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
-import dshell.ast.DShellCommandNode;
-import dshell.ast.DShellDummyNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -35,6 +34,7 @@ import dshell.lib.DefinedArray.DShellExceptionArray;
 import dshell.lib.DefinedArray.TaskArray;
 import zen.ast.ZBlockNode;
 import zen.ast.ZClassNode;
+import zen.ast.ZEmptyNode;
 import zen.ast.ZErrorNode;
 import zen.ast.ZFunctionNode;
 import zen.ast.ZInstanceOfNode;
@@ -122,7 +122,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		for(int i = 0; i < size; i++) {
 			// new String[m];
 			DShellCommandNode currentNode = nodeList.get(i);
-			int listSize = currentNode.GetListSize();
+			int listSize = currentNode.GetArgSize();
 			this.AsmBuilder.visitInsn(DUP);
 			this.AsmBuilder.visitLdcInsn(i);
 			this.AsmBuilder.visitLdcInsn(listSize);
@@ -130,7 +130,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			for(int j = 0; j < listSize; j++ ) {
 				this.AsmBuilder.visitInsn(DUP);
 				this.AsmBuilder.visitLdcInsn(j);
-				currentNode.GetListAt(j).Accept(this);
+				currentNode.GetArgAt(j).Accept(this);
 				this.AsmBuilder.visitInsn(AASTORE);
 			}
 			this.AsmBuilder.visitInsn(AASTORE);
@@ -249,10 +249,6 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 	}
 
-	@Override
-	public void VisitDummyNode(DShellDummyNode Node) {	// do nothing
-	}
-	
 	@Override public void VisitErrorNode(ZErrorNode Node) {
 		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new ErrorNodeFoundException();
@@ -261,6 +257,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	@Override public void VisitSugarNode(ZSugarNode Node) {
 		if(Node instanceof ZContinueNode) {
 			this.VisitContinueNode((ZContinueNode) Node);
+		}
+		else if(Node instanceof DShellCommandNode) {
+			this.VisitCommandNode((DShellCommandNode) Node);
 		}
 		else {
 			super.VisitSugarNode(Node);
@@ -378,6 +377,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	@Override
 	protected boolean ExecStatement(ZNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
+		if(Node instanceof ZEmptyNode) {
+			return this.IsVisitable();
+		}
 		if(Node instanceof ZTopLevelNode) {
 			((ZTopLevelNode)Node).Perform(this.RootNameSpace);
 			return this.IsVisitable();
@@ -483,9 +485,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			cause.printStackTrace();
 		}
 		else {
-			System.err.println(e.getCause());
+			System.err.println(cause);
 			if(LibZen.DebugMode) {
-				e.getCause().printStackTrace();
+				cause.printStackTrace();
 			}
 		}
 	}

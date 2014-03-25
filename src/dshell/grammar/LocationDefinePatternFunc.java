@@ -1,6 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellDummyNode;
+import zen.ast.ZEmptyNode;
 import zen.ast.ZGetNameNode;
 import zen.ast.ZNode;
 import zen.ast.ZStringNode;
@@ -26,7 +26,7 @@ public class LocationDefinePatternFunc extends ZMatchFunction {
 				String NameSymbol = ((ZGetNameNode)Node).GetName();
 				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
 				ParentNode.GetNameSpace().SetGlobalSymbol(NameSymbol, (ZStringNode)ValueNode);
-				return new DShellDummyNode(ParentNode);
+				return new ZEmptyNode(ParentNode, null);
 			}
 		}
 		return null;

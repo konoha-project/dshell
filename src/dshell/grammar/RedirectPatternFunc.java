@@ -1,7 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellCommandNode;
-import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import zen.ast.ZNode;
 import zen.util.ZMatchFunction;
 import zen.parser.ZToken;
@@ -49,10 +48,13 @@ public class RedirectPatternFunc extends ZMatchFunction {
 	}
 
 	private ZNode CreateRedirectNode(ZNode ParentNode, ZTokenContext TokenContext, String RedirectSymbol, boolean existTarget) {
-		ZNode Node = new DShellCommandNode(ParentNode, null);
-		Node.SetNode(ZNode._AppendIndex, new DShellArgNode(ParentNode, RedirectSymbol));
+		DShellCommandNode Node = new DShellCommandNode(ParentNode, null, RedirectSymbol);
 		if(existTarget) {
-			Node = TokenContext.MatchPattern(Node, ZNode._AppendIndex, CommandArgPatternFunc.PatternName, ZTokenContext._Required);
+			ZNode TargetNode = TokenContext.ParsePattern(Node, CommandArgPatternFunc.PatternName, ZTokenContext._Required);
+			if(TargetNode.IsErrorNode()) {
+				return TargetNode;
+			}
+			Node.AppendArgNode(TargetNode);
 		}
 		return Node;
 	}

@@ -1,7 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellCommandNode;
-import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZErrorNode;
 import zen.ast.ZNode;
@@ -20,26 +19,25 @@ public class CommandSymbolPatternFunc extends ZMatchFunction {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}
 		String Command = ((ZStringNode)SymbolNode).StringValue;
-		ZNode CommandNode = new DShellCommandNode(ParentNode, CommandToken);
-		CommandNode.SetNode(ZNode._AppendIndex, new DShellArgNode(ParentNode, Command));
+		DShellCommandNode CommandNode = new DShellCommandNode(ParentNode, CommandToken, Command);
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
 				// Match Prefix Option
 				ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, CommandNode, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
 				if(PrefixOptionNode != null) {
-					return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)PrefixOptionNode);
+					return CommandNode.AppendPipedNextNode((DShellCommandNode)PrefixOptionNode);
 				}
 				// Match Command Symbol
 				ZNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
 				if(PipedNode.IsErrorNode()) {
 					return PipedNode;
 				}
-				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)PipedNode);
+				return CommandNode.AppendPipedNextNode((DShellCommandNode)PipedNode);
 			}
 			// Match Redirect
 			ZNode RedirectNode = TokenContext.ParsePattern(ParentNode, RedirectPatternFunc.PatternName, ZTokenContext._Optional);
 			if(RedirectNode != null) {
-				((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)RedirectNode);
+				CommandNode.AppendPipedNextNode((DShellCommandNode)RedirectNode);
 				continue;
 			}
 			// Match Suffix Option
@@ -48,14 +46,14 @@ public class CommandSymbolPatternFunc extends ZMatchFunction {
 				if(SuffixOptionNode.IsErrorNode()) {
 					return SuffixOptionNode;
 				}
-				return ((DShellCommandNode)CommandNode).AppendPipedNextNode((DShellCommandNode)SuffixOptionNode);
+				return CommandNode.AppendPipedNextNode((DShellCommandNode)SuffixOptionNode);
 			}
 			// Match Argument
 			ZNode ArgNode = TokenContext.ParsePattern(ParentNode, CommandArgPatternFunc.PatternName, ZTokenContext._Optional);
 			if(ArgNode == null) {
 				break;
 			}
-			CommandNode.SetNode(ZNode._AppendIndex, ArgNode);
+			CommandNode.AppendArgNode(ArgNode);
 		}
 		return CommandNode;
 	}

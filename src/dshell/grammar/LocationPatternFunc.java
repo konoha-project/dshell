@@ -1,7 +1,6 @@
 package dshell.grammar;
 
-import dshell.ast.DShellCommandNode;
-import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZNode;
 import zen.util.ZMatchFunction;
@@ -13,10 +12,8 @@ public class LocationPatternFunc extends ZMatchFunction {
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken();
 		TokenContext.MoveNext();
-		ZNode KeyNode = new DShellArgNode(ParentNode, DShellGrammar.location);
-		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token);
-		Node.SetNode(ZNode._AppendIndex, KeyNode);
-		Node.Append(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));
+		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token, DShellGrammar.location);
+		Node.AppendArgNode(ParentNode.GetNameSpace().GetSymbolNode(Token.GetText()));
 		// Match Prefix Option
 		ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
 		if(PrefixOptionNode != null) {
@@ -29,5 +26,4 @@ public class LocationPatternFunc extends ZMatchFunction {
 		}
 		return null;
 	}
-
 }

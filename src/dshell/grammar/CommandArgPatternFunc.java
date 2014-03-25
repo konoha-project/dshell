@@ -92,7 +92,7 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 		return false;
 	}
 
-	private class StringNodeBuilder {
+	private class StringNodeBuilder { //FIXME
 		private final ZNode ParentNode;
 		private StringBuilder TokenBuffer;
 
@@ -110,10 +110,14 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 
 		public void Flush(ArrayList<ZNode> NodeList) {
 			if(this.TokenBuffer != null) {
-				String Value = Utils.resolveHome(this.TokenBuffer.toString());
+				String Value = this.ResolveHome(this.TokenBuffer.toString());
 				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Value)));
 				this.TokenBuffer = null;
 			}
+		}
+
+		public String ResolveHome(String Path) {
+			return Utils.resolveHome(Path);
 		}
 	}
 }

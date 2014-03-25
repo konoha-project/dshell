@@ -1,7 +1,7 @@
 package dshell.grammar;
 
-import dshell.ast.DShellCommandNode;
 import dshell.ast.sugar.DShellArgNode;
+import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
 import zen.ast.ZNode;
 import zen.util.LibZen;
@@ -21,9 +21,8 @@ public class PrefixOptionPatternFunc extends ZMatchFunction {
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
-			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.SetNode(ZNode._AppendIndex, new DShellArgNode(Node, Symbol));
-			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
+			DShellCommandNode Node = new DShellCommandNode(ParentNode, Token, Symbol);
+			return Node.AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
 		if(Symbol.equals(DShellGrammar.timeout) && LeftNode == null) {
 			ZNode TimeNode = this.ParseTimeout(ParentNode, TokenContext);
@@ -34,10 +33,9 @@ public class PrefixOptionPatternFunc extends ZMatchFunction {
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
-			ZNode Node = new DShellCommandNode(ParentNode, Token);
-			Node.SetNode(ZNode._AppendIndex, new DShellArgNode(Node, Symbol));
-			Node.SetNode(ZNode._AppendIndex, TimeNode);
-			return ((DShellCommandNode)Node).AppendPipedNextNode((DShellCommandNode) CommandNode);
+			DShellCommandNode Node = new DShellCommandNode(ParentNode, Token, Symbol);
+			Node.AppendArgNode(TimeNode);
+			return Node.AppendPipedNextNode((DShellCommandNode) CommandNode);
 		}
 		return null;
 	}
