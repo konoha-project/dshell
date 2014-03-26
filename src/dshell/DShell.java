@@ -159,8 +159,7 @@ public class DShell {
 				System.err.println("abort loading: " + scriptName);
 				System.exit(1);
 			}
-			generator.InvokeMain();
-			System.exit(0);
+			generator.InvokeMain(); // never return
 		}
 	}
 

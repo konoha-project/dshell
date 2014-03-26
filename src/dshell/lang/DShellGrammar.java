@@ -15,6 +15,7 @@ import zen.parser.ZSyntax;
 import zen.parser.ZToken;
 import zen.parser.ZTokenContext;
 import dshell.DShell;
+import dshell.grammar.AssertPatternFunc;
 import dshell.grammar.CommandArgPatternFunc;
 import dshell.grammar.CommandSymbolTokenFunc;
 import dshell.grammar.ExportEnvPatternFunc;
@@ -109,6 +110,7 @@ public class DShellGrammar {
 //		NameSpace.DefineExpression("$( `", substitutionPattern);
 		NameSpace.DefineExpression("$", substitutionPattern);
 		NameSpace.DefineExpression(SubstitutionPatternFunc.PatternName, substitutionPattern);
+		overrideSyntaxPattern(NameSpace, "assert", new AssertPatternFunc(), false);
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

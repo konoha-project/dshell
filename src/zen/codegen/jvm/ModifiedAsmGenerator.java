@@ -104,6 +104,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.loadJavaStaticMethod(Utils.class, "setEnv", String.class, String.class);
 		this.loadJavaStaticMethod(CommandArg.class, "createCommandArg", String.class);
 		this.loadJavaStaticMethod(CommandArg.class, "createSubstitutedArg", String.class);
+		this.loadJavaStaticMethod(Utils.class, "assertDShell", boolean.class);
 	}
 
 	@Override
@@ -443,27 +444,34 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	public void InvokeMain() {	//TODO
 		if(this.untypedMainNode == null) {
 			System.err.println("not found main");
-			return;
+			System.exit(1);
 		}
-		ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
-		Node.Type = ZType.VoidType;
-		Node.IsExport = true;
 		try {
+			ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
+			Node.Type = ZType.VoidType;
+			Node.IsExport = true;
 			Node.Accept(this);
 			this.Logger.OutputErrorsToStdErr();
 		}
 		catch(ErrorNodeFoundException e) {
 			this.Logger.OutputErrorsToStdErr();
-			return;
+			System.exit(1);
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+			System.err.println("Code Generation Failed");
+			System.exit(1);
 		}
 		if(this.MainFuncNode != null) {
 			JavaStaticFieldNode MainFunc = this.MainFuncNode;
 			try {
 				Method Method = MainFunc.StaticClass.getMethod("f");
 				Method.invoke(null);
+				System.exit(0);
 			}
 			catch(InvocationTargetException e) {
 				this.printException(e);
+				System.exit(1);
 			}
 			catch(Exception e) {
 				e.printStackTrace();

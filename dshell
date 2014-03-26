@@ -6,3 +6,4 @@ then
     jar=dshell.jar
 fi
 java -jar ${jar} $@
+exit $?

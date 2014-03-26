@@ -6,6 +6,8 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import dshell.exception.DShellException;
+
 public class Utils {
 	public final static boolean isUnixCommand(String cmd) {
 		String[] paths = getEnv("PATH").split(":");
@@ -158,5 +160,20 @@ public class Utils {
 			sBuilder.append(ch);
 		}
 		return sBuilder.reverse().toString();
+	}
+
+	public static void assertDShell(boolean result) {	//TODO
+		if(!result) {
+			new AssertionError("").printStackTrace();
+			System.err.println("REC assert 0 @" + "dummy");
+			System.exit(1);
+		}
+	}
+
+	private static class AssertionError extends DShellException {
+		private static final long serialVersionUID = 1160350956527375486L;
+		public AssertionError(String message) {
+			super(message);
+		}
 	}
 }
