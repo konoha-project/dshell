@@ -80,7 +80,7 @@ class Command_cd extends BuiltinCommand {
 		int size = this.commandList.size();
 		String path = "";
 		if(size > 1) {
-			path = this.commandList.get(1).toString();
+			path = this.commandList.get(1);
 		}
 		this.retValue = RuntimeContext.getContext().changeDirectory(path);
 	}
@@ -96,7 +96,7 @@ class Command_exit extends BuiltinCommand {
 		}
 		else if(size == 2) {
 			try {
-				status = Integer.parseInt(this.commandList.get(1).toString());
+				status = Integer.parseInt(this.commandList.get(1));
 			}
 			catch(NumberFormatException e) {
 				this.printArgumentErrorAndSetStatus(BuiltinSymbol.exit);
@@ -122,7 +122,7 @@ class Command_help extends BuiltinCommand {
 			foundValidCommand = true;
 		}
 		for(int i = 1; i < size; i++) {
-			String arg = this.commandList.get(i).toString();
+			String arg = this.commandList.get(i);
 			if(arg.equals("-s") && size == 2) {
 				this.printAllCommandUsage();
 				foundValidCommand = true;
@@ -154,7 +154,7 @@ class Command_help extends BuiltinCommand {
 		}
 	}
 
-	private void printNotMatchedMessage(CommandArg commandSymbol) {
+	private void printNotMatchedMessage(String commandSymbol) {
 		System.err.println("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
 	}
 }

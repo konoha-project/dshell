@@ -5,12 +5,10 @@ import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 
 import zen.util.ZStringArray;
 
 import dshell.lang.DShellGrammar;
-import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -19,7 +17,6 @@ import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.RetType.VoidType   ;
 import static dshell.lib.TaskOption.RetType.IntType    ;
-import static dshell.lib.TaskOption.RetType.BooleanType;
 import static dshell.lib.TaskOption.RetType.StringType ;
 import static dshell.lib.TaskOption.RetType.TaskType   ;
 import static dshell.lib.TaskOption.RetType.TaskArrayType;
@@ -55,9 +52,6 @@ public class TaskBuilder {
 		if(this.option.is(returnable)) {
 			if(this.option.isRetType(StringType)) {
 				return task.getOutMessage();
-			}
-			else if(this.option.isRetType(BooleanType)) {
-				return new Boolean(task.getExitStatus() == 0);
 			}
 			else if(this.option.isRetType(IntType)) {
 				return new Integer(task.getExitStatus());
@@ -191,8 +185,7 @@ public class TaskBuilder {
 	}
 
 	public static boolean ExecCommandBool(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(BooleanType, printable, returnable);
-		return ((Boolean)new TaskBuilder(toCmdsList(cmds), option).invoke()).booleanValue();
+		return ExecCommandInt(cmds) == 0;
 	}
 
 	public static String ExecCommandString(CommandArg[][] cmds) {
@@ -283,7 +276,7 @@ class SubProc extends PseudoProcess {
 				return;
 			}
 			for(String traceCmd : traceCmds) {
-				this.commandList.add(CommandArg.createCommandArg(traceCmd));
+				this.commandList.add(traceCmd);
 			}
 		}
 	}
@@ -293,47 +286,30 @@ class SubProc extends PseudoProcess {
 		CommandArg arg = argList.get(0);
 		this.cmdNameBuilder.append(arg);
 		if(arg.eq("sudo")) {
-			ArrayList<CommandArg> newCommandList = new ArrayList<CommandArg>();
-			newCommandList.add(arg);
-			for(CommandArg cmd : this.commandList) {
+			ArrayList<String> newCommandList = new ArrayList<String>();
+			newCommandList.add(arg.toString());
+			for(String cmd : this.commandList) {
 				newCommandList.add(cmd);
 			}
 			this.commandList = newCommandList;
 		}
 		else {
-			this.commandList.add(arg);
+			this.addToCommandList(arg);
 		}
 		this.sBuilder.append("[");
 		this.sBuilder.append(arg);
 		int size = argList.size();
 		for(int i = 1; i < size; i++) {
 			arg = argList.get(i);
-			if(arg.eq("")) {
-				continue;
-			}
-			this.commandList.add(arg);
+			this.addToCommandList(arg);
 			this.cmdNameBuilder.append(" " + arg);
 			this.sBuilder.append(", ");
 			this.sBuilder.append(arg);
 		}
 		this.sBuilder.append("]");
-		List<String> paramList = this.toStringList(this.commandList);
-		this.procBuilder = new ProcessBuilder(paramList.toArray(new String[paramList.size()]));
+		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
 		this.procBuilder.redirectError(Redirect.INHERIT);
 		this.stderrIsDirty = true;
-	}
-
-	private ArrayList<String> toStringList(ArrayList<CommandArg> commandList) {
-		ArrayList<String> paramList = new ArrayList<String>();
-		for(CommandArg arg : commandList) {
-			if(arg instanceof SubstitutedArg) {
-				paramList.addAll(((SubstitutedArg)arg).getValueList());
-			}
-			else {
-				paramList.add(arg.toString());
-			}
-		}
-		return paramList;
 	}
 
 	@Override

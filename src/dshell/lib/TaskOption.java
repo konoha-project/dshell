@@ -26,7 +26,6 @@ public class TaskOption implements Serializable {
 	public static enum RetType {
 		VoidType   ,
 		IntType    ,
-		BooleanType,
 		StringType ,
 		TaskType   ,
 		TaskArrayType,

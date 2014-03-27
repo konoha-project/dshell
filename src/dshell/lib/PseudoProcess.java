@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import dshell.lib.CommandArg.SubstitutedArg;
+
 public abstract class PseudoProcess {
 	public static final int STDOUT_FILENO = 1;
 	public static final int STDERR_FILENO = 2;
@@ -14,7 +16,7 @@ public abstract class PseudoProcess {
 	protected InputStream stderr = null;
 
 	protected StringBuilder cmdNameBuilder;
-	protected ArrayList<CommandArg> commandList;
+	protected ArrayList<String> commandList;
 	protected StringBuilder sBuilder;
 
 	protected boolean stdinIsDirty = false;
@@ -28,20 +30,31 @@ public abstract class PseudoProcess {
 
 	public PseudoProcess() {
 		this.cmdNameBuilder = new StringBuilder();
-		this.commandList = new ArrayList<CommandArg>();
+		this.commandList = new ArrayList<String>();
 		this.sBuilder = new StringBuilder();
 	}
 
 	public void setArgumentList(ArrayList<CommandArg> argList) {
-		this.commandList = argList;
-		int size = this.commandList.size();
+		int size = argList.size();
 		for(int i = 0; i < size; i++) {
+			CommandArg arg = argList.get(i);
 			if(i != 0) {
 				this.cmdNameBuilder.append(" ");
 			}
-			this.cmdNameBuilder.append(this.commandList.get(i));
+			this.cmdNameBuilder.append(arg);
+			this.addToCommandList(arg);
 		}
 	}
+
+	protected final void addToCommandList(CommandArg arg) {
+		if(arg instanceof SubstitutedArg) {
+			this.commandList.addAll(((SubstitutedArg)arg).getValueList());
+		}
+		else {
+			this.commandList.add(arg.toString());
+		}
+	}
+
 	abstract public void mergeErrorToOut();
 	abstract public void setInputRedirect(CommandArg readFileName);
 	abstract public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append);
