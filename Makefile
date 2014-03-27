@@ -23,6 +23,9 @@ install:
 test:
 	TEST_DIR=./test ./test/test_all.sh
 
+self-test:
+	TEST_DIR=./test dshell ./test/test_all.ds
+
 test-rec:
 	#USAGE: make test-rec URL=http://www.ubicg.ynu.ac.jp/Rec/api/3.0
 	TEST_DIR=./test ./test/test_all.sh $(URL)

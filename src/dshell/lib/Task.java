@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
-import dshell.lib.DefinedArray.TaskArray;
+import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -231,7 +231,7 @@ public class Task implements Serializable {
 		for(int i = 0; i < values.length; i++) {
 			values[i] = task.taskList.get(i);
 		}
-		return DefinedArray.createTaskArray(values);
+		return ArrayUtils.createTaskArray(values);
 	}
 }
 

@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
+import zen.util.ZStringArray;
+
 import dshell.lang.DShellGrammar;
 import dshell.lib.CommandArg.SubstitutedArg;
-import dshell.lib.DefinedArray.TaskArray;
+import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -121,6 +123,9 @@ public class TaskBuilder {
 			else if(cmdSymbol.eq("2>>")) {
 				prevProc.setOutputRedirect(PseudoProcess.STDERR_FILENO, currentCmds.get(1), true);
 			}
+			else if(cmdSymbol.eq("2>&1")) {
+				prevProc.mergeErrorToOut();
+			}
 			else if(cmdSymbol.eq("&>") || cmdSymbol.eq(">&")) {
 				prevProc.mergeErrorToOut();
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), false);
@@ -193,6 +198,10 @@ public class TaskBuilder {
 	public static String ExecCommandString(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(StringType, returnable);
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
+	}
+
+	public static ZStringArray ExecCommandStringArray(CommandArg[][] cmds) {
+		return ArrayUtils.createStringArray(Utils.splitWithDelim(ExecCommandString(cmds)));
 	}
 
 	public static Task ExecCommandTask(CommandArg[][] cmds) {
@@ -299,6 +308,9 @@ class SubProc extends PseudoProcess {
 		int size = argList.size();
 		for(int i = 1; i < size; i++) {
 			arg = argList.get(i);
+			if(arg.eq("")) {
+				continue;
+			}
 			this.commandList.add(arg);
 			this.cmdNameBuilder.append(" " + arg);
 			this.sBuilder.append(", ");

@@ -50,11 +50,11 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.GetToken().IsNameSymbol()) {
 				NodeBuilder.Flush(NodeList);
+				Token = TokenContext.GetToken();
 				ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
 				}
-				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
 			}
 //			else if(!FoundEscape && Token.EqualsText("`")) {	//TODO

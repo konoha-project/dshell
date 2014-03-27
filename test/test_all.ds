@@ -1,0 +1,26 @@
+import command ls, echo, dshell
+import env TEST_DIR
+
+
+if(ARGV.size() == 2) {
+	let REC = "--rec ${ARGV[1]}"
+}
+else {
+	let REC = ""
+}
+
+let LOG = "./test-result.log"
+let DIR = "${TEST_DIR}/tests"
+
+echo > $LOG
+for(test_dir in $(ls $DIR)) {
+	for(test_file in $(ls $DIR/$test_dir)) {
+		echo "====== Test: ${test_file} ======" &>> $LOG
+		var prefix = "[fail:]"
+		if(dshell $REC $DIR/$test_dir/$test_file &>> $LOG) {
+			prefix = "[pass:]"
+		}
+		echo "${prefix} ${test_file}"
+		echo "${prefix} ${test_file}" &>> $LOG
+	}
+}

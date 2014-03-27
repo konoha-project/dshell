@@ -7,6 +7,7 @@ import zen.ast.ZBlockNode;
 import zen.ast.ZBooleanNode;
 import zen.ast.ZComparatorNode;
 import zen.ast.ZDesugarNode;
+import zen.ast.ZErrorNode;
 import zen.ast.ZGetIndexNode;
 import zen.ast.ZGetNameNode;
 import zen.ast.ZIfNode;
@@ -47,7 +48,11 @@ public class DShellForeachNode extends ZSugarNode {
 	}
 
 	@Override
-	public ZDesugarNode DeSugar(ZGenerator Generator, ZTypeChecker TypeChekcer) {
+	public ZDesugarNode DeSugar(ZGenerator Generator, ZTypeChecker TypeChecker) {
+		TypeChecker.CheckTypeAt(this, _Expr, ZType.VarType);
+		if(!this.AST[_Expr].Type.IsArrayType()) {
+			return new ZDesugarNode(this, new ZErrorNode(this.ParentNode, this.SourceToken, "require array type")) ;
+		}
 		String ValuesSymbol = Generator.NameUniqueSymbol("values");
 		String SizeSymbol = Generator.NameUniqueSymbol("size");
 		String IndexSymbol = Generator.NameUniqueSymbol("index");
@@ -57,17 +62,17 @@ public class DShellForeachNode extends ZSugarNode {
 		ZBlockNode ThenBlockNode = new ZBlockNode(Node, null);
 		Node.SetNode(ZIfNode._Then, ThenBlockNode);
 		// create var
-		ZVarNode ValuesDeclNode = TypeChekcer.CreateVarNode(ThenBlockNode, ValuesSymbol, ZType.VarType, this.AST[_Expr]);
+		ZVarNode ValuesDeclNode = TypeChecker.CreateVarNode(ThenBlockNode, ValuesSymbol, ZType.VarType, this.AST[_Expr]);
 		ThenBlockNode.SetNode(ZNode._AppendIndex, ValuesDeclNode);
-		ZVarNode SizeDeclNode = this.CreateSizeDeclNode(ValuesDeclNode, SizeSymbol, ValuesSymbol, TypeChekcer);
+		ZVarNode SizeDeclNode = this.CreateSizeDeclNode(ValuesDeclNode, SizeSymbol, ValuesSymbol, TypeChecker);
 		ValuesDeclNode.SetNode(ZNode._AppendIndex, SizeDeclNode);
 		// create for
 		DShellForNode ForNode = new DShellForNode(SizeDeclNode);
 		SizeDeclNode.SetNode(ZNode._AppendIndex, ForNode);
-		ForNode.SetNode(DShellForNode._Init, TypeChekcer.CreateVarNode(ForNode, IndexSymbol, ZType.IntType, new ZIntNode(ForNode, null, 0)));
+		ForNode.SetNode(DShellForNode._Init, TypeChecker.CreateVarNode(ForNode, IndexSymbol, ZType.IntType, new ZIntNode(ForNode, null, 0)));
 		ForNode.SetNode(DShellForNode._Cond, this.CreateCondNode(ForNode, IndexSymbol, SizeSymbol));
 		ForNode.SetNode(DShellForNode._Next, this.CreateIncrementNode(ForNode, IndexSymbol));
-		ForNode.SetNode(DShellForNode._Block, this.CreateForBlockNode(ForNode, ValuesSymbol, IndexSymbol, TypeChekcer));
+		ForNode.SetNode(DShellForNode._Block, this.CreateForBlockNode(ForNode, ValuesSymbol, IndexSymbol, TypeChecker));
 		return new ZDesugarNode(this, Node);
 	}
 

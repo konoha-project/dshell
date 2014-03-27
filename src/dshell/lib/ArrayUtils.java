@@ -6,8 +6,9 @@ import zen.type.ZGenericType;
 import zen.type.ZType;
 import zen.type.ZTypePool;
 import zen.util.ZObjectArray;
+import zen.util.ZStringArray;
 
-public class DefinedArray {
+public class ArrayUtils {
 	public static DShellExceptionArray createExceptionArray(DShellException[] exceptions) {
 		ZType exceptionType = JavaTypeTable.GetZenType(DShellException.class);
 		ZType exceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, exceptionType);
@@ -60,5 +61,10 @@ public class DefinedArray {
 		public final static Task GetIndex(TaskArray a, long Index) {
 			return (Task) ZObjectArray.GetIndex(a, Index);
 		}
+	}
+
+	public static ZStringArray createStringArray(String[] values) {
+		ZType stringArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType);
+		return new ZStringArray(stringArrayType.TypeId, values);
 	}
 }

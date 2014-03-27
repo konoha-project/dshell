@@ -1,7 +1,7 @@
 package dshell.exception;
 
-import dshell.lib.DefinedArray;
-import dshell.lib.DefinedArray.DShellExceptionArray;
+import dshell.lib.ArrayUtils;
+import dshell.lib.ArrayUtils.DShellExceptionArray;
 
 public class MultipleException extends DShellException {
 	private static final long serialVersionUID = 164898266354483402L;
@@ -19,7 +19,7 @@ public class MultipleException extends DShellException {
 
 	public DShellExceptionArray getExceptions() {
 		if(exceptionArray == null) {
-			this.exceptionArray = DefinedArray.createExceptionArray(exceptions);
+			this.exceptionArray = ArrayUtils.createExceptionArray(exceptions);
 		}
 		return this.exceptionArray;
 	}

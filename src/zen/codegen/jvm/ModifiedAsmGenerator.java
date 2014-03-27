@@ -30,8 +30,8 @@ import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
-import dshell.lib.DefinedArray.DShellExceptionArray;
-import dshell.lib.DefinedArray.TaskArray;
+import dshell.lib.ArrayUtils.DShellExceptionArray;
+import dshell.lib.ArrayUtils.TaskArray;
 import zen.ast.ZBlockNode;
 import zen.ast.ZClassNode;
 import zen.ast.ZEmptyNode;
@@ -65,6 +65,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	private Method ExecCommandBool;
 	private Method ExecCommandInt;
 	private Method ExecCommandString;
+	private Method ExecCommandStringArray;
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
@@ -85,6 +86,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", CommandArg[][].class);
 			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", CommandArg[][].class);
 			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", CommandArg[][].class);
+			ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
 			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
 			ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
 		}
@@ -145,6 +147,9 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		}
 		else if(Node.Type.IsStringType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandString);
+		}
+		else if(Node.Type.equals(ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType))) {
+			this.invokeStaticMethod(Node.Type, ExecCommandStringArray);
 		}
 		else if(Node.Type.equals(JavaTypeTable.GetZenType(Task.class))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTask);

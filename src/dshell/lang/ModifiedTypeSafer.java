@@ -11,12 +11,15 @@ import zen.codegen.jvm.JavaTypeTable;
 import zen.codegen.jvm.ModifiedAsmGenerator;
 import zen.lang.zen.ZenTypeSafer;
 import zen.parser.ZLogger;
+import zen.type.ZGenericType;
 import zen.type.ZType;
+import zen.type.ZTypePool;
 import zen.type.ZVarType;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.sugar.DShellCommandNode;
+import dshell.ast.sugar.DShellForeachNode;
 import dshell.lib.CommandArg;
 
 public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
@@ -27,14 +30,19 @@ public class ModifiedTypeSafer extends ZenTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitCommandNode(DShellCommandNode Node) {	//FIXME
 		ZType ContextType = this.GetContextType();
-		if(Node.RetType().IsStringType()) {
-			ContextType = ZType.StringType;
-		}
-		else if(ContextType.IsVarType() && Node.ParentNode instanceof ZBlockNode) {
-			ContextType = ZType.VoidType;
-		}
-		else if(ContextType.IsVarType()) {
-			ContextType = ZType.StringType;
+		if(!(Node.ParentNode instanceof DShellCommandNode)) {
+			if(Node.RetType().IsStringType() && Node.ParentNode instanceof DShellForeachNode) {
+				ContextType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType);
+			}
+			else if(Node.RetType().IsStringType()) {
+				ContextType = ZType.StringType;
+			}
+			else if(ContextType.IsVarType() && Node.ParentNode instanceof ZBlockNode) {
+				ContextType = ZType.VoidType;
+			}
+			else if(ContextType.IsVarType()) {
+				ContextType = ZType.StringType;
+			}
 		}
 		int size = Node.GetArgSize();
 		for(int i = 0; i < size; i++) {
