@@ -222,7 +222,7 @@ public class TaskBuilder {
 	private static boolean checkTraceRequirements() {
 		if(System.getProperty("os.name").equals("Linux")) {
 			SubProc.traceBackendType = SubProc.traceBackend_ltrace;
-			return Utils.isUnixCommand("ltrace");
+			return Utils.getCommandFromPath("ltrace") != null;
 		}
 		System.err.println("Systemcall Trace is Not Supported");
 		return false;

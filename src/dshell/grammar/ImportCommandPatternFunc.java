@@ -9,7 +9,6 @@ import zen.ast.ZNode;
 import zen.ast.ZStringNode;
 import zen.util.LibZen;
 import zen.util.ZMatchFunction;
-import zen.parser.ZLogger;
 import zen.parser.ZNameSpace;
 import zen.parser.ZSyntax;
 import zen.parser.ZToken;
@@ -26,8 +25,8 @@ public class ImportCommandPatternFunc extends ZMatchFunction {
 		return Utils.isFileExecutable(Path);
 	}
 
-	public boolean isUnixCommand(String cmd) { //FIXME
-		return Utils.isUnixCommand(cmd);
+	public String getUnixCommand(String cmd) { //FIXME
+		return Utils.getCommandFromPath(cmd);
 	}
 
 	private ZToken ToCommandToken(ArrayList<ZToken> TokenList) {
@@ -52,16 +51,18 @@ public class ImportCommandPatternFunc extends ZMatchFunction {
 		String Command = CommandPath;
 		if(loc != -1) {
 			if(!this.isFileExecutable(CommandPath)) {
-				ZLogger._LogWarning(CommandToken, "unknown command");
+				System.err.println("[warning] unknown command: " + CommandPath);
 				return;
 			}
 			Command = CommandPath.substring(loc + 1);
 		}
 		else {
-			if(!this.isUnixCommand(CommandPath)) {
-				ZLogger._LogWarning(CommandToken, "unknown command");
+			String FullPath = this.getUnixCommand(CommandPath);
+			if(FullPath == null) {
+				System.err.println("[warning] unknown command: " + CommandPath);
 				return;
 			}
+			CommandPath = FullPath;
 		}
 		ZSyntax Syntax = NameSpace.GetSyntaxPattern(Command);
 		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPatternFunc)) {

@@ -5,7 +5,7 @@ if [ $# -eq 1 ]; then
 	REC="--rec $1"
 fi
 
-LOG="./test-resutl.log"
+LOG="./test-result.log"
 echo > $LOG
 for test_dir in `ls ${TEST_DIR}/tests`; do
 	for test_file in `ls ${TEST_DIR}/tests/$test_dir`; do

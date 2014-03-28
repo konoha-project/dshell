@@ -1,8 +1,9 @@
 .SILENT:
 
 INSTALL_PREFIX?="$(HOME)"
-BIN_NAME="dshell.jar"
-SCRIPT_NAME="dshell"
+JAR_NAME="dshell.jar"
+BIN_NAME="dshell"
+TOOLS_DIR="./tools"
 
 all: build
 
@@ -11,14 +12,18 @@ build:
 	cd ../../
 	ant
 
-clean:
+clean: clean-launcher
 	ant clean
+
+clean-launcher:
+	make -C $(TOOLS_DIR)/launcher clean
 
 install:
 	echo "install dshell to $(INSTALL_PREFIX)/bin"
 	install -d $(INSTALL_PREFIX)/bin
-	cp -f $(BIN_NAME) $(INSTALL_PREFIX)/bin/
-	install -m 775 $(SCRIPT_NAME) $(INSTALL_PREFIX)/bin/
+	make -C $(TOOLS_DIR)/launcher JAR_PREFIX=$(INSTALL_PREFIX)/bin
+	cp -f $(JAR_NAME) $(INSTALL_PREFIX)/bin/
+	install -m 775 $(TOOLS_DIR)/launcher/$(BIN_NAME) $(INSTALL_PREFIX)/bin/
 
 test:
 	TEST_DIR=./test ./test/test_all.sh

@@ -9,14 +9,15 @@ import java.util.regex.PatternSyntaxException;
 import dshell.exception.DShellException;
 
 public class Utils {
-	public final static boolean isUnixCommand(String cmd) {
+	public final static String getCommandFromPath(String cmd) {
 		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
-			if(isFileExecutable(path + "/" + cmd)) {
-				return true;
+			String fullPath = resolveHome(path + "/" + cmd);
+			if(isFileExecutable(fullPath)) {
+				return fullPath;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	public final static boolean isFile(String Path) {
@@ -47,9 +48,7 @@ public class Utils {
 		TreeSet<String> commandSet = new TreeSet<String>();
 		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
-			if(path.startsWith("~")) {
-				path = getEnv("HOME") + path.substring(1);
-			}
+			path = resolveHome(path);
 			File[] files = new File(path).listFiles();
 			if(files == null) {
 				continue;
