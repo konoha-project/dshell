@@ -2,26 +2,27 @@ package dshell.ast.sugar;
 
 import dshell.ast.DShellForNode;
 import dshell.lib.Utils;
-import zen.ast.ZBinaryNode;
-import zen.ast.ZBlockNode;
-import zen.ast.ZBooleanNode;
-import zen.ast.ZComparatorNode;
-import zen.ast.ZDesugarNode;
-import zen.ast.ZErrorNode;
-import zen.ast.ZGetIndexNode;
-import zen.ast.ZGetNameNode;
-import zen.ast.ZIfNode;
-import zen.ast.ZIntNode;
-import zen.ast.ZMethodCallNode;
-import zen.ast.ZNode;
-import zen.ast.ZSetNameNode;
-import zen.ast.ZSugarNode;
-import zen.ast.ZVarNode;
-import zen.parser.ZGenerator;
-import zen.parser.ZSource;
-import zen.parser.ZToken;
-import zen.parser.ZTypeChecker;
-import zen.type.ZType;
+import libbun.parser.ast.ZBinaryNode;
+import libbun.parser.ast.ZBlockNode;
+import libbun.parser.ast.ZBooleanNode;
+import libbun.parser.ast.ZComparatorNode;
+import libbun.parser.ast.ZDesugarNode;
+import libbun.parser.ast.ZErrorNode;
+import libbun.parser.ast.ZGetIndexNode;
+import libbun.parser.ast.ZGetNameNode;
+import libbun.parser.ast.ZIfNode;
+import libbun.parser.ast.ZIntNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZMethodCallNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZSetNameNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ast.ZVarBlockNode;
+import libbun.parser.ZGenerator;
+import libbun.parser.ZSource;
+import libbun.parser.ZToken;
+import libbun.parser.ZTypeChecker;
+import libbun.type.ZType;
 
 /**
 for(value in Expr) {
@@ -62,9 +63,9 @@ public class DShellForeachNode extends ZSugarNode {
 		ZBlockNode ThenBlockNode = new ZBlockNode(Node, null);
 		Node.SetNode(ZIfNode._Then, ThenBlockNode);
 		// create var
-		ZVarNode ValuesDeclNode = TypeChecker.CreateVarNode(ThenBlockNode, ValuesSymbol, ZType.VarType, this.AST[_Expr]);
+		ZVarBlockNode ValuesDeclNode = TypeChecker.CreateVarNode(ThenBlockNode, ValuesSymbol, ZType.VarType, this.AST[_Expr]);
 		ThenBlockNode.SetNode(ZNode._AppendIndex, ValuesDeclNode);
-		ZVarNode SizeDeclNode = this.CreateSizeDeclNode(ValuesDeclNode, SizeSymbol, ValuesSymbol, TypeChecker);
+		ZVarBlockNode SizeDeclNode = this.CreateSizeDeclNode(ValuesDeclNode, SizeSymbol, ValuesSymbol, TypeChecker);
 		ValuesDeclNode.SetNode(ZNode._AppendIndex, SizeDeclNode);
 		// create for
 		DShellForNode ForNode = new DShellForNode(SizeDeclNode);
@@ -76,13 +77,13 @@ public class DShellForeachNode extends ZSugarNode {
 		return new ZDesugarNode(this, Node);
 	}
 
-	private ZVarNode CreateSizeDeclNode(ZNode ParentNode, String SizeSymbol, String ValuesSymbol, ZTypeChecker TypeChekcer) {
-		ZVarNode Node = TypeChekcer.CreateVarNode(ParentNode, SizeSymbol, ZType.IntType, new ZIntNode(ParentNode, null, 0));
+	private ZVarBlockNode CreateSizeDeclNode(ZNode ParentNode, String SizeSymbol, String ValuesSymbol, ZTypeChecker TypeChekcer) {
+		ZVarBlockNode Node = TypeChekcer.CreateVarNode(ParentNode, SizeSymbol, ZType.IntType, new ZIntNode(ParentNode, null, 0));
 		ZMethodCallNode SizeNode = new ZMethodCallNode(Node, new ZGetNameNode(ParentNode, null, ValuesSymbol));
 		SizeNode.SourceToken = this.SourceToken; // for line number
 		SizeNode.SetNode(ZMethodCallNode._NameInfo, new ZGetNameNode(SizeNode, null, "Size"));
 		SizeNode.GivenName = "Size";
-		Node.SetNode(ZVarNode._InitValue, SizeNode);
+		Node.VarDeclNode().SetNode(ZLetVarNode._InitValue, SizeNode);
 		return Node;
 	}
 
@@ -105,14 +106,14 @@ public class DShellForeachNode extends ZSugarNode {
 		return new ZSetNameNode(IndexSymbol, BinaryNode);
 	}
 
-	private ZVarNode CreateValueDeclNode(ZNode ParentNode, String ValuesSymbol, String IndexSymbol, ZTypeChecker TypeChekcer) {
+	private ZVarBlockNode CreateValueDeclNode(ZNode ParentNode, String ValuesSymbol, String IndexSymbol, ZTypeChecker TypeChekcer) {
 		ZNode GetIndexNode = new ZGetIndexNode(ParentNode, new ZGetNameNode(ParentNode, null, ValuesSymbol));
 		GetIndexNode.SetNode(ZGetIndexNode._Index, new ZGetNameNode(GetIndexNode, null, IndexSymbol));
 		return TypeChekcer.CreateVarNode(ParentNode, this.GetName(), ZType.VarType, GetIndexNode);
 	}
 
 	private ZBlockNode CreateForBlockNode(ZNode ParentNode, String ValuesSymbol, String IndexSymbol, ZTypeChecker TypeChekcer) {
-		ZVarNode ForBlockNode = this.CreateValueDeclNode(ParentNode, ValuesSymbol, IndexSymbol, TypeChekcer);
+		ZVarBlockNode ForBlockNode = this.CreateValueDeclNode(ParentNode, ValuesSymbol, IndexSymbol, TypeChekcer);
 		ZBlockNode OldBlockNode = this.BlockNode();
 		int size = OldBlockNode.GetListSize();
 		for(int i = 0; i < size; i++) {

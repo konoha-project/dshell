@@ -1,9 +1,9 @@
 package dshell.grammar;
 
 import dshell.ast.DShellForNode;
-import zen.ast.ZNode;
-import zen.parser.ZTokenContext;
-import zen.util.ZMatchFunction;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ZTokenContext;
+import libbun.util.ZMatchFunction;
 
 public class ForPatternFunc extends ZMatchFunction {
 	@Override

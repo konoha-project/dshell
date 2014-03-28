@@ -1,24 +1,24 @@
 package dshell.grammar;
 
-import zen.ast.ZFuncCallNode;
-import zen.ast.ZGetNameNode;
-import zen.ast.ZLetNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.util.ZMatchFunction;
-import zen.parser.ZTokenContext;
+import libbun.parser.ast.ZFuncCallNode;
+import libbun.parser.ast.ZGetNameNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.util.ZMatchFunction;
+import libbun.parser.ZTokenContext;
 
 public class ImportEnvPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$ImportEnv$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZNode LetNode = new ZLetNode(ParentNode);
+		ZNode LetNode = new ZLetVarNode(ParentNode, ZLetVarNode._IsReadOnly);
 		LetNode = TokenContext.MatchToken(LetNode, "env", ZTokenContext._Required);
-		LetNode = TokenContext.MatchPattern(LetNode, ZLetNode._NameInfo, "$Name$", ZTokenContext._Required);
-		String Name = ((ZLetNode)LetNode).GetName();
+		LetNode = TokenContext.MatchPattern(LetNode, ZLetVarNode._NameInfo, "$Name$", ZTokenContext._Required);
+		String Name = ((ZLetVarNode)LetNode).GetName();
 		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
 		FuncCallNode.SetNode(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, Name));
-		LetNode.SetNode(ZLetNode._InitValue, FuncCallNode);
+		LetNode.SetNode(ZLetVarNode._InitValue, FuncCallNode);
 		return LetNode;
 	}
 }

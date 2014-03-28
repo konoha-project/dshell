@@ -1,6 +1,6 @@
 package dshell.lang;
 
-import zen.ast.sugar.ZContinueNode;
+import libbun.parser.sugar.ZContinueNode;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;

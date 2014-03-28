@@ -2,19 +2,19 @@ package dshell.grammar;
 
 import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
-import zen.ast.ZErrorNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.util.ZMatchFunction;
-import zen.parser.ZToken;
-import zen.parser.ZTokenContext;
+import libbun.parser.ast.ZErrorNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.util.ZMatchFunction;
+import libbun.parser.ZToken;
+import libbun.parser.ZTokenContext;
 
 public class CommandSymbolPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$CommandSymbol$";
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken CommandToken = TokenContext.GetToken(ZTokenContext._MoveNext);
-		ZNode SymbolNode = ParentNode.GetNameSpace().GetSymbolNode(DShellGrammar.toCommandSymbol(CommandToken.GetText()));
+		ZNode SymbolNode = ParentNode.GetNameSpace().GetSymbol(DShellGrammar.toCommandSymbol(CommandToken.GetText()));
 		if(SymbolNode == null || !(SymbolNode instanceof ZStringNode)) {
 			return new ZErrorNode(ParentNode, CommandToken, "undefined command symbol");
 		}

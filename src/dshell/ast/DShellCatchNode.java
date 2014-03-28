@@ -2,11 +2,12 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import zen.ast.ZBlockNode;
-import zen.ast.ZNode;
-import zen.ast.ZTypeNode;
-import zen.parser.ZVisitor;
-import zen.type.ZType;
+import libbun.parser.ast.ZBlockNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZTypeNode;
+import libbun.parser.ZVisitor;
+import libbun.type.ZType;
 
 public class DShellCatchNode extends ZNode {
 	public final static int _NameInfo = 0;
@@ -34,6 +35,18 @@ public class DShellCatchNode extends ZNode {
 		return this.ExceptionType;
 	}
 
+	public void SetExceptionType(ZType Type) {
+		this.ExceptionType = Type;
+	}
+
+	public ZLetVarNode ToLetVarNode() {
+		ZLetVarNode Node = new ZLetVarNode(this.ParentNode, ZLetVarNode._IsReadOnly);
+		Node.SetNode(ZLetVarNode._NameInfo, this.AST[_NameInfo]);
+		Node.SetNode(ZLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+		Node.SetDeclType(this.ExceptionType());
+		return Node;
+	}
+
 	public final ZBlockNode BlockNode() {
 		ZNode BlockNode = this.AST[_Block];
 		if(BlockNode instanceof ZBlockNode) {
@@ -41,10 +54,6 @@ public class DShellCatchNode extends ZNode {
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
-	}
-
-	public void SetExceptionType(ZType Type) {
-		this.ExceptionType = Type;
 	}
 
 	@Override public void Accept(ZVisitor Visitor) {

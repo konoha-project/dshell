@@ -2,21 +2,18 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import zen.ast.ZBlockNode;
-import zen.ast.ZNode;
-import zen.ast.ZVarNode;
-import zen.parser.ZVisitor;
-import zen.type.ZType;
+import libbun.parser.ast.ZBlockNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZVarBlockNode;
+import libbun.parser.ZVisitor;
 
 public class DShellForNode extends ZNode {
-	public final static int _InitValue = 0;
-	public final static int _Init  = 1;	// VarNode
+	public final static int _VarDecl = 0;	// LetVarNode
+	public final static int _Init  = 1;	// VarBlockNode
 	public final static int _Cond  = 2;
 	public final static int _Next  = 3;
 	public final static int _Block = 4;
-
-	private ZType GivenType = null;
-	private String GivenName = null;
 
 	public DShellForNode(ZNode ParentNode) {
 		super(ParentNode, null, 5);
@@ -33,32 +30,14 @@ public class DShellForNode extends ZNode {
 	}
 
 	public final boolean HasDeclNode() {
-		return this.AST[_Init] != null && this.AST[_Init] instanceof ZVarNode;
+		return this.AST[_Init] != null && this.AST[_Init] instanceof ZVarBlockNode;
 	}
 
-	public final ZType DeclType() {
-		if(this.GivenType == null) {
-			this.GivenType = ((ZVarNode)this.AST[_Init]).DeclType();
+	public final ZLetVarNode VarDeclNode() {
+		if(this.AST[_VarDecl] == null) {
+			this.AST[_VarDecl] = ((ZVarBlockNode)this.AST[_Init]).VarDeclNode();
 		}
-		return this.GivenType;
-	}
-
-	public final void SetDeclType(ZType Type) {
-		this.GivenType = Type;
-	}
-
-	public final String GetName() {
-		if(this.GivenName == null) {
-			this.GivenName = ((ZVarNode)this.AST[_Init]).GetName();
-		}
-		return this.GivenName;
-	}
-
-	public final ZNode InitValueNode() {
-		if(this.AST[_InitValue] == null) {
-			this.AST[_InitValue] = ((ZVarNode)this.AST[_Init]).InitValueNode();
-		}
-		return this.AST[_InitValue];
+		return (ZLetVarNode) this.AST[_VarDecl];
 	}
 
 	public final ZNode CondNode() {
@@ -92,7 +71,7 @@ public class DShellForNode extends ZNode {
 
 	public final void PrepareTypeCheck() { // must call before type check
 		if(this.HasDeclNode()) {
-			this.InitValueNode();
+			this.VarDeclNode();
 		}
 		this.CondNode();
 		if(this.HasNextNode()) {

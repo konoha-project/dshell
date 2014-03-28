@@ -3,7 +3,7 @@ D-Shell
 
 ## Build Requirement
 
-* libzen (https://github.com/konoha-project/libzen)
+* libbun (https://github.com/libbun/libbun)
 * ant
 * jdk 1.7
 

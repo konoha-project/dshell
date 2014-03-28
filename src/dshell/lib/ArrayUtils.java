@@ -1,12 +1,12 @@
 package dshell.lib;
 
+import libbun.encode.jvm.JavaTypeTable;
 import dshell.exception.DShellException;
-import zen.codegen.jvm.JavaTypeTable;
-import zen.type.ZGenericType;
-import zen.type.ZType;
-import zen.type.ZTypePool;
-import zen.util.ZObjectArray;
-import zen.util.ZStringArray;
+import libbun.type.ZGenericType;
+import libbun.type.ZType;
+import libbun.type.ZTypePool;
+import libbun.util.ZObjectArray;
+import libbun.util.ZStringArray;
 
 public class ArrayUtils {
 	public static DShellExceptionArray createExceptionArray(DShellException[] exceptions) {

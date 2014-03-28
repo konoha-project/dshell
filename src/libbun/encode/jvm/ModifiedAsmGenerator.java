@@ -1,4 +1,4 @@
-package zen.codegen.jvm;
+package libbun.encode.jvm;
 
 import static org.objectweb.asm.Opcodes.AASTORE;
 import static org.objectweb.asm.Opcodes.ANEWARRAY;
@@ -13,6 +13,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
+
+import libbun.encode.jvm.JavaMethodTable;
+import libbun.encode.jvm.JavaTypeTable;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Type;
@@ -32,30 +35,28 @@ import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
-import zen.ast.ZBlockNode;
-import zen.ast.ZClassNode;
-import zen.ast.ZEmptyNode;
-import zen.ast.ZErrorNode;
-import zen.ast.ZFunctionNode;
-import zen.ast.ZInstanceOfNode;
-import zen.ast.ZLetNode;
-import zen.ast.ZNode;
-import zen.ast.ZReturnNode;
-import zen.ast.ZSugarNode;
-import zen.ast.ZThrowNode;
-import zen.ast.ZTopLevelNode;
-import zen.ast.ZVarNode;
-import zen.ast.sugar.ZContinueNode;
-import zen.codegen.jvm.JavaMethodTable;
-import zen.codegen.jvm.JavaTypeTable;
-import zen.util.LibZen;
-import zen.util.ZArray;
-import zen.parser.ZLogger;
-import zen.parser.ZToken;
-import zen.type.ZFuncType;
-import zen.type.ZGenericType;
-import zen.type.ZType;
-import zen.type.ZTypePool;
+import libbun.parser.ast.ZBlockNode;
+import libbun.parser.ast.ZClassNode;
+import libbun.parser.ast.ZEmptyNode;
+import libbun.parser.ast.ZErrorNode;
+import libbun.parser.ast.ZFunctionNode;
+import libbun.parser.ast.ZInstanceOfNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZReturnNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ast.ZThrowNode;
+import libbun.parser.ast.ZTopLevelNode;
+import libbun.parser.ast.ZVarBlockNode;
+import libbun.parser.sugar.ZContinueNode;
+import libbun.util.LibZen;
+import libbun.util.ZArray;
+import libbun.parser.ZLogger;
+import libbun.parser.ZToken;
+import libbun.type.ZFuncType;
+import libbun.type.ZGenericType;
+import libbun.type.ZType;
+import libbun.type.ZTypePool;
 
 public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private ZFunctionNode untypedMainNode = null;
@@ -287,10 +288,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.AsmBuilder.ContinueLabelStack.push(continueLabel);
 
 		if(Node.HasDeclNode()) {
-			Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
-			this.AsmBuilder.AddLocal(DeclClass, Node.GetName());
-			this.AsmBuilder.PushNode(DeclClass, Node.InitValueNode());
-			this.AsmBuilder.StoreLocal(Node.GetName());
+			this.VisitVarDeclNode(Node.VarDeclNode());
 		}
 		this.AsmBuilder.visitLabel(headLabel);
 		Node.CondNode().Accept(this);
@@ -303,8 +301,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.AsmBuilder.visitJumpInsn(GOTO, headLabel);
 		this.AsmBuilder.visitLabel(breakLabel);
 		if(Node.HasDeclNode()) {
-			Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
-			this.AsmBuilder.RemoveLocal(DeclClass, Node.GetName());
+			this.VisitVarDeclNode2(Node.VarDeclNode());
 		}
 
 		this.AsmBuilder.BreakLabelStack.pop();
@@ -391,7 +388,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetNode) {
+		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode) {
 			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
 			Node.Type = ZType.VoidType;
 			this.GenerateStatement(Node);
@@ -486,7 +483,10 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	}
 
 	private ZNode checkTopLevelSupport(ZNode Node) {
-		if(Node instanceof ZVarNode || Node instanceof ZReturnNode) {
+		if(Node instanceof ZVarBlockNode || Node instanceof ZReturnNode) {
+			Node = new ZErrorNode(Node, "only available inside function");
+		}
+		else if(Node instanceof ZLetVarNode && !((ZLetVarNode)Node).IsReadOnly()) {
 			Node = new ZErrorNode(Node, "only available inside function");
 		}
 		return Node;

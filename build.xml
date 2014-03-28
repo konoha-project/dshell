@@ -1,23 +1,23 @@
 <project name="dshell" default="jar">
 	<!-- directory / file definition -->
-	<property name="source_dir" value="src" />
+	<property name="dshell_source_dir" value="src" />
 	<property name="build_dir"  value="build" />
-	<property name="libzen_jar"  value="ext/libzen/libzen.jar" />
+	<property name="libbun_jar"  value="ext/libbun/libbun-0.1.jar" />
 
 	<!-- ================================== -->
 	<!--             PRE-BUILD              -->
 	<!-- ================================== -->
 
 	<target name="pre-build">
-		<ant antfile="build.xml" dir="ext/libzen/" target="jar" />
+		<ant antfile="build.xml" dir="ext/libbun/" target="jar" />
 	</target>
 	<!-- ================================== -->
 	<!--                BUILD               -->
 	<!-- ================================== -->
 	<target name="build" depends="pre-build">
 		<mkdir dir="${build_dir}" />
-		<javac srcdir="${source_dir}" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
-			<classpath path="${libzen_jar}" />
+		<javac srcdir="${dshell_source_dir}" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
+			<classpath path="${libbun_jar}" />
 			<classpath path="ext/jna-4.0.0.jar" />
 			<classpath path="ext/log4j-1.2.17.jar" />
 			<classpath path="ext/commons-codec-1.9.jar" />
@@ -41,7 +41,7 @@
 			<manifest>
 				<attribute name="Main-Class" value="dshell.DShell" />
 			</manifest>
-			<zipfileset src="${libzen_jar}" />
+			<zipfileset src="${libbun_jar}" />
 			<zipfileset src="ext/jna-4.0.0.jar" />
 			<zipfileset src="ext/log4j-1.2.17.jar" />
 			<zipfileset src="ext/commons-codec-1.9.jar" />
@@ -56,7 +56,7 @@
 	<!--               CLEAN                -->
 	<!-- ================================== -->
 	<target name="clean">
-		<ant antfile="build.xml" dir="ext/libzen/" target="clean" />
+		<ant antfile="build.xml" dir="ext/libbun/" target="clean" />
 		<delete>
 			<fileset dir="${build_dir}" includes="**/*.class"/>
 		</delete>

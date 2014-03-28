@@ -1,13 +1,13 @@
 package dshell.ast.sugar;
 
-import zen.ast.ZDesugarNode;
-import zen.ast.ZFuncCallNode;
-import zen.ast.ZGetNameNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.ast.ZSugarNode;
-import zen.parser.ZGenerator;
-import zen.parser.ZTypeChecker;
+import libbun.parser.ast.ZDesugarNode;
+import libbun.parser.ast.ZFuncCallNode;
+import libbun.parser.ast.ZGetNameNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ZGenerator;
+import libbun.parser.ZTypeChecker;
 
 public class DShellArgNode extends ZSugarNode {
 	public final static int _Expr = 0;

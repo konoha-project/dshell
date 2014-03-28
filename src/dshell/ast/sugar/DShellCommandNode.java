@@ -2,13 +2,13 @@ package dshell.ast.sugar;
 
 import java.util.ArrayList;
 
-import zen.ast.ZDesugarNode;
-import zen.ast.ZNode;
-import zen.ast.ZSugarNode;
-import zen.parser.ZGenerator;
-import zen.parser.ZToken;
-import zen.parser.ZTypeChecker;
-import zen.type.ZType;
+import libbun.parser.ast.ZDesugarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ZGenerator;
+import libbun.parser.ZToken;
+import libbun.parser.ZTypeChecker;
+import libbun.type.ZType;
 
 public class DShellCommandNode extends ZSugarNode {
 	private final ArrayList<ZNode> ArgList;

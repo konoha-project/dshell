@@ -1,11 +1,11 @@
 package dshell.grammar;
 
 import dshell.ast.sugar.DShellCommandNode;
-import zen.ast.ZNode;
-import zen.parser.ZToken;
-import zen.parser.ZTokenContext;
-import zen.type.ZType;
-import zen.util.ZMatchFunction;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ZToken;
+import libbun.parser.ZTokenContext;
+import libbun.type.ZType;
+import libbun.util.ZMatchFunction;
 
 public class SubstitutionPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$Substitution$";

@@ -1,7 +1,7 @@
 package dshell.grammar;
 
-import zen.util.ZTokenFunction;
-import zen.parser.ZSourceContext;
+import libbun.util.ZTokenFunction;
+import libbun.parser.ZSourceContext;
 
 public class ShellStyleCommentTokenFunc extends ZTokenFunction {
 	@Override

@@ -1,3 +1,6 @@
 [submodule "ext/libzen"]
 	path = ext/libzen
 	url = https://github.com/konoha-project/libzen.git
+[submodule "ext/libbun"]
+	path = ext/libbun
+	url = git@github.com:libbun/libbun.git

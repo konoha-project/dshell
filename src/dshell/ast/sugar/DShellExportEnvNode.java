@@ -1,14 +1,14 @@
 package dshell.ast.sugar;
 
-import zen.ast.ZFuncCallNode;
-import zen.ast.ZGetNameNode;
-import zen.ast.ZLetNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.ast.ZDesugarNode;
-import zen.ast.ZSugarNode;
-import zen.parser.ZGenerator;
-import zen.parser.ZTypeChecker;
+import libbun.parser.ast.ZFuncCallNode;
+import libbun.parser.ast.ZGetNameNode;
+import libbun.parser.ast.ZLetVarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.parser.ast.ZDesugarNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ZGenerator;
+import libbun.parser.ZTypeChecker;
 
 public class DShellExportEnvNode extends ZSugarNode {
 	public final static int _NameInfo = 0;
@@ -25,11 +25,11 @@ public class DShellExportEnvNode extends ZSugarNode {
 		SetEnvNode.SetNode(ZNode._AppendIndex, new ZStringNode(SetEnvNode, null, envName));
 		SetEnvNode.SetNode(ZNode._AppendIndex, this.AST[DShellExportEnvNode._EXPR]);
 
-		ZNode LetNode = new ZLetNode(this);
-		LetNode.SetNode(ZLetNode._NameInfo, this.AST[_NameInfo]);
+		ZNode LetNode = new ZLetVarNode(this, ZLetVarNode._IsReadOnly);
+		LetNode.SetNode(ZLetVarNode._NameInfo, this.AST[_NameInfo]);
 		ZNode FuncCallNode = new ZFuncCallNode(LetNode, new ZGetNameNode(LetNode, null, "getEnv"));
 		FuncCallNode.SetNode(ZNode._AppendIndex, new ZStringNode(FuncCallNode, null, envName));
-		LetNode.SetNode(ZLetNode._InitValue, FuncCallNode);
+		LetNode.SetNode(ZLetVarNode._InitValue, FuncCallNode);
 		return new ZDesugarNode(this, new ZNode[]{SetEnvNode, LetNode});
 	}
 }

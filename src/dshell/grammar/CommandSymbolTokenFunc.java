@@ -1,8 +1,8 @@
 package dshell.grammar;
 
 import dshell.lang.DShellGrammar;
-import zen.util.ZTokenFunction;
-import zen.parser.ZSourceContext;
+import libbun.util.ZTokenFunction;
+import libbun.parser.ZSourceContext;
 
 public class CommandSymbolTokenFunc extends ZTokenFunction {
 	@Override
@@ -17,7 +17,7 @@ public class CommandSymbolTokenFunc extends ZTokenFunction {
 			symbolBuilder.append(ch);
 			SourceContext.MoveNext();
 		}
-		if(SourceContext.TokenContext.NameSpace.GetSymbolNode(DShellGrammar.toCommandSymbol(symbolBuilder.toString())) != null) {
+		if(SourceContext.TokenContext.NameSpace.GetSymbol(DShellGrammar.toCommandSymbol(symbolBuilder.toString())) != null) {
 			SourceContext.Tokenize(CommandSymbolPatternFunc.PatternName, startIndex, SourceContext.GetPosition());
 			return true;
 		}

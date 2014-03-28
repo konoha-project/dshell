@@ -1,12 +1,12 @@
 package dshell.ast.sugar;
 
-import zen.ast.ZDesugarNode;
-import zen.ast.ZNode;
-import zen.ast.ZSugarNode;
-import zen.parser.ZGenerator;
-import zen.parser.ZMacroFunc;
-import zen.parser.ZTypeChecker;
-import zen.type.ZType;
+import libbun.parser.ast.ZDesugarNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZSugarNode;
+import libbun.parser.ZGenerator;
+import libbun.parser.ZMacroFunc;
+import libbun.parser.ZTypeChecker;
+import libbun.type.ZType;
 
 public class DShellAssertNode extends ZSugarNode {
 	public final static int _Expr = 0;

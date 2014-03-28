@@ -1,4 +1,4 @@
-import command ls, echo, dshell
+import command ls, echo, ./dshell
 import env TEST_DIR
 
 

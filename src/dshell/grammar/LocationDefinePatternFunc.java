@@ -1,11 +1,11 @@
 package dshell.grammar;
 
-import zen.ast.ZEmptyNode;
-import zen.ast.ZGetNameNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.util.ZMatchFunction;
-import zen.parser.ZTokenContext;
+import libbun.parser.ast.ZEmptyNode;
+import libbun.parser.ast.ZGetNameNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.util.ZMatchFunction;
+import libbun.parser.ZTokenContext;
 
 /*
  * location www = hoge@192.168.12.3, huge@192.168.2.4:567
@@ -25,7 +25,7 @@ public class LocationDefinePatternFunc extends ZMatchFunction {
 			if(!ValueNode.IsErrorNode()) {
 				String NameSymbol = ((ZGetNameNode)Node).GetName();
 				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
-				ParentNode.GetNameSpace().SetGlobalSymbol(NameSymbol, (ZStringNode)ValueNode);
+				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (ZStringNode)ValueNode);
 				return new ZEmptyNode(ParentNode, null);
 			}
 		}

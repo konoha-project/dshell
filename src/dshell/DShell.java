@@ -10,9 +10,9 @@ import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
-import zen.codegen.jvm.ModifiedAsmGenerator;
-import zen.util.LibZen;
-import zen.parser.ZGenerator;
+import libbun.util.LibZen;
+import libbun.encode.jvm.ModifiedAsmGenerator;
+import libbun.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {

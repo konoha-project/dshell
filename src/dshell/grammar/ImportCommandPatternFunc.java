@@ -4,15 +4,15 @@ import java.util.ArrayList;
 
 import dshell.lang.DShellGrammar;
 import dshell.lib.Utils;
-import zen.ast.ZEmptyNode;
-import zen.ast.ZNode;
-import zen.ast.ZStringNode;
-import zen.util.LibZen;
-import zen.util.ZMatchFunction;
-import zen.parser.ZNameSpace;
-import zen.parser.ZSyntax;
-import zen.parser.ZToken;
-import zen.parser.ZTokenContext;
+import libbun.parser.ast.ZEmptyNode;
+import libbun.parser.ast.ZNode;
+import libbun.parser.ast.ZStringNode;
+import libbun.util.LibZen;
+import libbun.util.ZMatchFunction;
+import libbun.parser.ZNameSpace;
+import libbun.parser.ZSyntax;
+import libbun.parser.ZToken;
+import libbun.parser.ZTokenContext;
 
 public class ImportCommandPatternFunc extends ZMatchFunction {
 	public final static String PatternName = "$ImportCommand$";
@@ -71,7 +71,7 @@ public class ImportCommandPatternFunc extends ZMatchFunction {
 			}
 			return;
 		}
-		NameSpace.SetLocalSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
+		NameSpace.SetSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 
 	@Override
