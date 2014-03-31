@@ -8,6 +8,7 @@ import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.INSTANCEOF;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -25,6 +26,7 @@ import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.sugar.DShellCommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
+import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -41,6 +43,7 @@ import libbun.parser.ast.ZClassNode;
 import libbun.parser.ast.ZEmptyNode;
 import libbun.parser.ast.ZErrorNode;
 import libbun.parser.ast.ZFunctionNode;
+import libbun.parser.ast.ZGetNameNode;
 import libbun.parser.ast.ZInstanceOfNode;
 import libbun.parser.ast.ZLetVarNode;
 import libbun.parser.ast.ZNode;
@@ -60,7 +63,7 @@ import libbun.type.ZGenericType;
 import libbun.type.ZType;
 import libbun.type.ZTypePool;
 
-public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisitor {
+public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private ZFunctionNode untypedMainNode = null;
 	private LinkedList<String> topLevelSymbolList;
 
@@ -72,7 +75,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
-	public ModifiedAsmGenerator() {
+	public DShellByteCodeGenerator() {
 		super();
 		this.topLevelSymbolList = new LinkedList<String>();
 		this.loadJavaClass(Task.class);
@@ -310,6 +313,27 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		this.AsmBuilder.ContinueLabelStack.pop();
 	}
 
+	private void VisitGlobalNameNode(ZGetNameNode Node) {
+		if(Node.ResolvedNode instanceof ZLetVarNode) {
+			ZLetVarNode letNode = (ZLetVarNode) Node.ResolvedNode;
+			Class<?> JavaClass = this.GetJavaClass(letNode.GetAstType(ZLetVarNode._NameInfo));
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, this.NameGlobalNameClass(letNode.GlobalName), "_", JavaClass);
+		}
+		else {
+			this.VisitErrorNode(new ZErrorNode(Node, "unimplemented ResolvedNode: " + Node.ResolvedNode.getClass().getName()));
+		}
+	}
+
+	@Override
+	public void VisitGetNameNode(ZGetNameNode Node) {
+		if(Node.IsGlobalName()) {
+			this.VisitGlobalNameNode(Node);
+			return;
+		}
+		this.AsmBuilder.LoadLocal(Node.GetName());
+		this.AsmBuilder.CheckReturnCast(Node, this.AsmBuilder.GetLocalType(Node.GetName()));
+	}
+
 	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
@@ -391,7 +415,8 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode || Node instanceof DShellExportEnvNode) {
+		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode || 
+				Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
 			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
 			Node.Type = ZType.VoidType;
 			this.GenerateStatement(Node);

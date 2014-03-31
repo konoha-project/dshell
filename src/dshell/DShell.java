@@ -5,13 +5,13 @@ import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
 import dshell.lang.DShellGrammar;
-import dshell.lang.ModifiedTypeSafer;
+import dshell.lang.DShellTypeChecker;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import libbun.util.LibZen;
-import libbun.encode.jvm.ModifiedAsmGenerator;
+import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
@@ -105,7 +105,7 @@ public class DShell {
 			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
 		}
 
-		ModifiedAsmGenerator generator = this.initGenerator(ModifiedAsmGenerator.class.getName(), DShellGrammar.class.getName());
+		DShellByteCodeGenerator generator = this.initGenerator(DShellByteCodeGenerator.class.getName(), DShellGrammar.class.getName());
 		if(this.interactiveMode) {
 			DShellConsole console = new DShellConsole();
 			String line = null;
@@ -185,12 +185,12 @@ public class DShell {
 		System.exit(status);
 	}
 
-	public final ModifiedAsmGenerator initGenerator(String ClassName, String GrammarClass) {
+	public final DShellByteCodeGenerator initGenerator(String ClassName, String GrammarClass) {
 		ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
 		LibZen._ImportGrammar(Generator.RootNameSpace, GrammarClass);
-		Generator.SetTypeChecker(new ModifiedTypeSafer((ModifiedAsmGenerator) Generator));
+		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
 		Generator.RequireLibrary("common", null);
-		return (ModifiedAsmGenerator) Generator;
+		return (DShellByteCodeGenerator) Generator;
 	}
 
 	public static void main(String[] args) {

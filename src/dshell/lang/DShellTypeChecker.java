@@ -1,7 +1,7 @@
 package dshell.lang;
 
 import libbun.encode.jvm.JavaTypeTable;
-import libbun.encode.jvm.ModifiedAsmGenerator;
+import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.parser.ast.ZBlockNode;
 import libbun.parser.ast.ZNode;
 import libbun.parser.ast.ZSugarNode;
@@ -22,8 +22,8 @@ import dshell.ast.sugar.DShellForeachNode;
 import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
 
-public class ModifiedTypeSafer extends BunTypeSafer implements DShellVisitor {
-	public ModifiedTypeSafer(ModifiedAsmGenerator Generator) {
+public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
+	public DShellTypeChecker(DShellByteCodeGenerator Generator) {
 		super(Generator);
 	}
 
