@@ -15,12 +15,12 @@ public class LocationPatternFunc extends ZMatchFunction {
 		DShellCommandNode Node = new DShellCommandNode(ParentNode, Token, DShellGrammar.location);
 		Node.AppendArgNode(ParentNode.GetNameSpace().GetSymbol(Token.GetText()));
 		// Match Prefix Option
-		ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
+		ZNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPatternFunc._PatternName, ZTokenContext._Optional);
 		if(PrefixOptionNode != null) {
 			return Node.AppendPipedNextNode((DShellCommandNode) PrefixOptionNode);
 		}
 		// Match Command Symbol
-		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
+		ZNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, ZTokenContext._Required);
 		if(!PipedNode.IsErrorNode()) {
 			return Node.AppendPipedNextNode((DShellCommandNode) PipedNode);
 		}

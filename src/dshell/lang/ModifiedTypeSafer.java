@@ -3,7 +3,6 @@ package dshell.lang;
 import libbun.encode.jvm.JavaTypeTable;
 import libbun.encode.jvm.ModifiedAsmGenerator;
 import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZLetVarNode;
 import libbun.parser.ast.ZNode;
 import libbun.parser.ast.ZSugarNode;
 import libbun.parser.ast.ZThrowNode;
@@ -11,18 +10,16 @@ import libbun.parser.ast.ZWhileNode;
 import libbun.parser.sugar.ZContinueNode;
 import libbun.lang.bun.BunTypeSafer;
 import libbun.parser.ZLogger;
-import libbun.parser.ZNameSpace;
 import libbun.type.ZGenericType;
 import libbun.type.ZType;
 import libbun.type.ZTypePool;
 import libbun.type.ZVarType;
-import libbun.util.Nullable;
-import libbun.util.Var;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.sugar.DShellCommandNode;
 import dshell.ast.sugar.DShellForeachNode;
+import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
 
 public class ModifiedTypeSafer extends BunTypeSafer implements DShellVisitor {
@@ -89,7 +86,7 @@ public class ModifiedTypeSafer extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override public void VisitThrowNode(ZThrowNode Node) {
-		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(Throwable.class));
+		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(DShellException.class));
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
@@ -138,19 +135,5 @@ public class ModifiedTypeSafer extends BunTypeSafer implements DShellVisitor {
 			ZLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.VarDeclNode().GetName());
 		}
 		this.ReturnTypeNode(Node, ZType.VoidType);
-	}
-	// copied from BunTypeSafer. Future may be removed
-	private void VisitVarDeclNode(ZNameSpace NameSpace, ZLetVarNode Node1) {
-		@Var @Nullable ZLetVarNode CurNode = Node1;
-		while(CurNode != null) {
-			CurNode.InitValueNode();
-			this.CheckTypeAt(CurNode, ZLetVarNode._InitValue, CurNode.DeclType());
-			if(CurNode.DeclType().IsVarType()) {
-				CurNode.SetDeclType(CurNode.GetAstType(ZLetVarNode._InitValue));
-			}
-			CurNode.SetDeclType(this.VarScope.NewVarType(CurNode.DeclType(), CurNode.GetName(), CurNode.SourceToken));
-			NameSpace.SetSymbol(CurNode.GetName(), CurNode);
-			CurNode = CurNode.NextVarNode();
-		}
 	}
 }

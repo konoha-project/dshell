@@ -1,46 +1,46 @@
 package dshell.grammar;
 
-import java.util.ArrayList;
-
 import dshell.ast.sugar.DShellArgNode;
 import dshell.ast.sugar.DShellCommandNode;
 import dshell.lang.DShellGrammar;
-import dshell.lang.InterStringLiteralToken;
+import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
 import libbun.parser.ast.ZNode;
 import libbun.parser.ast.ZStringNode;
 import libbun.type.ZType;
 import libbun.util.LibZen;
+import libbun.util.Var;
+import libbun.util.ZArray;
 import libbun.util.ZMatchFunction;
 import libbun.parser.ZPatternToken;
 import libbun.parser.ZToken;
 import libbun.parser.ZTokenContext;
 
 public class CommandArgPatternFunc extends ZMatchFunction {
-	public final static String PatternName = "$CommandArg$";
-	@Override
-	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
+	public final static String _PatternName = "$CommandArg$";
+
+	@Override public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		if(DShellGrammar.MatchStopToken(TokenContext)) {
 			return null;
 		}
-		boolean FoundSubstitution = false;
-		boolean FoundEscape = false;
-		ArrayList<ZNode> NodeList = new ArrayList<ZNode>();
-		StringNodeBuilder NodeBuilder = new StringNodeBuilder(ParentNode);
+		@Var boolean FoundSubstitution = false;
+		@Var boolean FoundEscape = false;
+		@Var ZArray<ZToken> TokenList = new ZArray<ZToken>(new ZToken[]{});
+		@Var ZArray<ZNode> NodeList = new ZArray<ZNode>(new ZNode[]{});
 		while(!DShellGrammar.MatchStopToken(TokenContext)) {
-			ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-			if(Token instanceof InterStringLiteralToken) {
-				NodeBuilder.Flush(NodeList);
-				InterStringLiteralToken InterStringToken = (InterStringLiteralToken) Token;
-				NodeList.add(InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
+			@Var ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
+			if(Token instanceof DShellStringLiteralToken) {
+				this.Flush(TokenContext, NodeList, TokenList);
+				@Var DShellStringLiteralToken InterStringToken = (DShellStringLiteralToken) Token;
+				NodeList.add(DShellGrammar.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
 			}
 			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
-				NodeBuilder.Flush(NodeList);
+				this.Flush(TokenContext, NodeList, TokenList);
 				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
-				NodeBuilder.Flush(NodeList);
-				ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
+				this.Flush(TokenContext, NodeList, TokenList);
+				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", ZTokenContext._Required);
 				Node = TokenContext.MatchToken(Node, "}", ZTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
@@ -49,9 +49,9 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 				NodeList.add(Node);
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.GetToken().IsNameSymbol()) {
-				NodeBuilder.Flush(NodeList);
+				this.Flush(TokenContext, NodeList, TokenList);
 				Token = TokenContext.GetToken();
-				ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
+				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
 				}
@@ -61,10 +61,10 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 //				
 //			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("(")) {
-				NodeBuilder.Flush(NodeList);
-				ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc.PatternName, ZTokenContext._Optional);
+				this.Flush(TokenContext, NodeList, TokenList);
+				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc._PatternName, ZTokenContext._Optional);
 				if(Node == null) {
-					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc.PatternName, ZTokenContext._Required);
+					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, ZTokenContext._Required);
 				}
 				Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
 				if(Node instanceof DShellCommandNode) {
@@ -75,16 +75,16 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 				FoundSubstitution = true;
 			}
 			else {
-				NodeBuilder.Append(Token);
+				TokenList.add(Token);
 			}
 			if(Token.IsNextWhiteSpace()) {
 				break;
 			}
 			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
-		NodeBuilder.Flush(NodeList);
-		ZNode ArgNode = new DShellArgNode(ParentNode, FoundSubstitution ? DShellArgNode.__substitution : DShellArgNode.__normal);
-		ArgNode.SetNode(DShellArgNode._Expr, InterStringLiteralPatternFunc.ToNode(ParentNode, TokenContext, NodeList));
+		this.Flush(TokenContext, NodeList, TokenList);
+		@Var ZNode ArgNode = new DShellArgNode(ParentNode, FoundSubstitution ? DShellArgNode._Substitution : DShellArgNode._Normal);
+		ArgNode.SetNode(DShellArgNode._Expr, DShellGrammar.ToNode(ParentNode, TokenContext, NodeList));
 		return ArgNode;
 	}
 
@@ -95,32 +95,27 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 		return false;
 	}
 
-	private class StringNodeBuilder { //FIXME
-		private final ZNode ParentNode;
-		private StringBuilder TokenBuffer;
-
-		public StringNodeBuilder(ZNode ParentNode) {
-			this.ParentNode = ParentNode;
-			this.TokenBuffer = null;
+	private void Flush(ZTokenContext TokenContext, ZArray<ZNode> NodeList, ZArray<ZToken> TokenList) {
+		@Var int size = TokenList.size();
+		if(size == 0) {
+			return;
 		}
-
-		public void Append(ZToken Token) {
-			if(this.TokenBuffer == null) {
-				this.TokenBuffer = new StringBuilder();
+		@Var int StartIndex = 0;
+		@Var int EndIndex = 0;
+		for(int i = 0; i < size; i++) {
+			if(i == 0) {
+				StartIndex = ZArray.GetIndex(TokenList, i).StartIndex;
 			}
-			this.TokenBuffer.append(Token.GetText());
-		}
-
-		public void Flush(ArrayList<ZNode> NodeList) {
-			if(this.TokenBuffer != null) {
-				String Value = this.ResolveHome(this.TokenBuffer.toString());
-				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Value)));
-				this.TokenBuffer = null;
+			if(i == size - 1) {
+				EndIndex = ZArray.GetIndex(TokenList, i).EndIndex;
 			}
 		}
+		@Var ZToken Token = new ZToken(TokenContext.Source, StartIndex, EndIndex);
+		NodeList.add(new ZStringNode(null, Token, LibZen._UnquoteString(this.ResolveHome(Token.GetText()))));
+		TokenList.clear(0);
+	}
 
-		public String ResolveHome(String Path) {
-			return Utils.resolveHome(Path);
-		}
+	public String ResolveHome(String Path) {
+		return Utils.resolveHome(Path);
 	}
 }

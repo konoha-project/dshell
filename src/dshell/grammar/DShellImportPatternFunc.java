@@ -11,7 +11,7 @@ public class DShellImportPatternFunc extends ZMatchFunction {
 		TokenContext.MoveNext();
 		ZToken Token = TokenContext.GetToken();
 		if(Token.EqualsText("command")) {
-			return TokenContext.ParsePattern(ParentNode, ImportCommandPatternFunc.PatternName, ZTokenContext._Required);
+			return TokenContext.ParsePattern(ParentNode, ImportCommandPatternFunc._PatternName, ZTokenContext._Required);
 		}
 		if(Token.EqualsText("env")) {
 			return TokenContext.ParsePattern(ParentNode, ImportEnvPatternFunc.PatternName, ZTokenContext._Required);

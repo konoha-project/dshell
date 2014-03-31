@@ -1,16 +1,16 @@
 package dshell.grammar;
 
 import dshell.lang.DShellGrammar;
+import libbun.util.Var;
 import libbun.util.ZTokenFunction;
 import libbun.parser.ZSourceContext;
 
 public class CommandSymbolTokenFunc extends ZTokenFunction {
-	@Override
-	public boolean Invoke(ZSourceContext SourceContext) {
-		int startIndex = SourceContext.GetPosition();
-		StringBuilder symbolBuilder = new StringBuilder();
+	@Override public boolean Invoke(ZSourceContext SourceContext) {
+		@Var int startIndex = SourceContext.GetPosition();
+		@Var StringBuilder symbolBuilder = new StringBuilder();
 		while(SourceContext.HasChar()) {
-			char ch = SourceContext.GetCurrentChar();
+			@Var char ch = SourceContext.GetCurrentChar();
 			if(!Character.isLetterOrDigit(ch) && ch != '-' && ch != '+' && ch != '_') {
 				break;
 			}
@@ -18,7 +18,7 @@ public class CommandSymbolTokenFunc extends ZTokenFunction {
 			SourceContext.MoveNext();
 		}
 		if(SourceContext.TokenContext.NameSpace.GetSymbol(DShellGrammar.toCommandSymbol(symbolBuilder.toString())) != null) {
-			SourceContext.Tokenize(CommandSymbolPatternFunc.PatternName, startIndex, SourceContext.GetPosition());
+			SourceContext.Tokenize(CommandSymbolPatternFunc._PatternName, startIndex, SourceContext.GetPosition());
 			return true;
 		}
 		return false;

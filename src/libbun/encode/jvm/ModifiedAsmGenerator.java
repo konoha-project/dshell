@@ -24,6 +24,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.sugar.DShellCommandNode;
+import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -52,6 +53,7 @@ import libbun.parser.sugar.ZContinueNode;
 import libbun.util.LibZen;
 import libbun.util.ZArray;
 import libbun.parser.ZLogger;
+import libbun.parser.ZMacroFunc;
 import libbun.parser.ZToken;
 import libbun.type.ZFuncType;
 import libbun.type.ZGenericType;
@@ -345,7 +347,8 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 		try {
 			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
 			ZFuncType macroType = (ZFuncType) ZTypePool._GetGenericType(ZFuncType._FuncType, typeList, true);
-			this.SetAsmMacro(this.RootNameSpace, macroSymbol, macroType, macroBuilder.toString());
+			ZMacroFunc macroFunc = new ZMacroFunc(macroSymbol, macroType, null, macroBuilder.toString());
+			this.SetDefinedFunc(macroFunc);
 		}
 		catch(Exception e) {
 			Utils.fatal(1, "load static method faild: " + e.getMessage());
@@ -388,7 +391,7 @@ public class ModifiedAsmGenerator extends AsmJavaGenerator implements DShellVisi
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode) {
+		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode || Node instanceof DShellExportEnvNode) {
 			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
 			Node.Type = ZType.VoidType;
 			this.GenerateStatement(Node);

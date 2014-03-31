@@ -21,10 +21,10 @@ public class DShell {
 	public final static int majorVersion = 0;
 	public final static int minerVersion = 1;
 	public final static int patchLevel   = 0;
-	public final static String version = "0.2";
+	public final static String version = "0.3-unstable";
 	public final static String copyright = "Copyright (c) 2013-2014, Konoha project authors";
 	public final static String license = "BSD-Style Open Source";
-	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ") powered by LibZen";
+	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ") powered by LibBun";
 
 	private boolean interactiveMode = true;
 	private boolean autoImportCommand = true;

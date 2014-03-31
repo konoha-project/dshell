@@ -9,11 +9,13 @@ import libbun.parser.ZGenerator;
 import libbun.parser.ZToken;
 import libbun.parser.ZTypeChecker;
 import libbun.type.ZType;
+import libbun.util.Field;
+import libbun.util.Var;
 
 public class DShellCommandNode extends ZSugarNode {
-	private final ArrayList<ZNode> ArgList;
-	private ZType RetType = ZType.VarType;
-	public ZNode PipedNextNode;
+	@Field private final ArrayList<ZNode> ArgList;
+	@Field private ZType RetType = ZType.VarType;
+	@Field public ZNode PipedNextNode;
 
 	public DShellCommandNode(ZNode ParentNode, ZToken Token, String Command) {
 		super(ParentNode, Token, 0);
@@ -27,7 +29,7 @@ public class DShellCommandNode extends ZSugarNode {
 	}
 
 	public ZNode AppendPipedNextNode(DShellCommandNode Node) {
-		DShellCommandNode CurrentNode = this;
+		@Var DShellCommandNode CurrentNode = this;
 		while(CurrentNode.PipedNextNode != null) {
 			CurrentNode = (DShellCommandNode) CurrentNode.PipedNextNode;
 		}

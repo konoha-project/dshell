@@ -1,8 +1,6 @@
 package dshell.grammar;
 
-import java.util.ArrayList;
-
-import dshell.lang.InterStringLiteralToken;
+import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
 
 import libbun.parser.ast.ZBlockNode;
@@ -12,12 +10,13 @@ import libbun.parser.ZSourceContext;
 import libbun.parser.ZToken;
 import libbun.parser.ZTokenContext;
 import libbun.util.LibZen;
+import libbun.util.ZArray;
 import libbun.util.ZTokenFunction;
 
-public class InterStringLiteralTokenFunc extends ZTokenFunction{
+public class DShellStringLiteralTokenFunc extends ZTokenFunction{
 	@Override
 	public boolean Invoke(ZSourceContext SourceContext) {
-		ArrayList<ZNode> NodeList = new ArrayList<ZNode>();
+		ZArray<ZNode> NodeList = new ZArray<ZNode>(new ZNode[]{});
 		boolean FoundExpr = false;
 		int StartIndex = SourceContext.GetPosition();
 		int CurrentIndex = StartIndex + 1;
@@ -57,7 +56,7 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 				ZTokenContext TokenContext = SourceContext.TokenContext;
 				int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 				int PrevSize = TokenContext.TokenList.size();
-				ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc.PatternName, ZTokenContext._Required);
+				ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc._PatternName, ZTokenContext._Required);
 				Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 				if(!Node.IsErrorNode()) {
 					TokenContext.TokenList.clear(PrevSize);
@@ -75,7 +74,7 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 		return false;
 	}
 
-	private void CreateAndAppendStringNode(ArrayList<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
+	private void CreateAndAppendStringNode(ZArray<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
 		if(StartIndex == EndIndex) {
 			return;
 		}
@@ -99,11 +98,11 @@ public class InterStringLiteralTokenFunc extends ZTokenFunction{
 		return null;
 	}
 
-	private void OverrideToken(ArrayList<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
+	private void OverrideToken(ZArray<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
 		ZTokenContext TokenContext = SourceContext.TokenContext;
 		int size = TokenContext.TokenList.size();
-		ZToken Token = new InterStringLiteralToken(SourceContext, StartIndex, EndIndex);
-		((InterStringLiteralToken)Token).SetNodeList(NodeList);
+		ZToken Token = new DShellStringLiteralToken(SourceContext, StartIndex, EndIndex);
+		((DShellStringLiteralToken)Token).SetNodeList(NodeList);
 		TokenContext.TokenList.clear(size - 1);
 		TokenContext.TokenList.add(Token);
 	}
