@@ -24,7 +24,6 @@ import org.objectweb.asm.Type;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
-import dshell.ast.sugar.DShellCommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.exception.DShellException;
@@ -38,6 +37,7 @@ import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
+import libbun.lang.bun.shell.CommandNode;
 import libbun.parser.ast.ZBlockNode;
 import libbun.parser.ast.ZClassNode;
 import libbun.parser.ast.ZEmptyNode;
@@ -116,13 +116,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	public void VisitCommandNode(DShellCommandNode Node) {
+	public void VisitCommandNode(CommandNode Node) {
 		this.AsmBuilder.SetLineNumber(Node);
-		ArrayList<DShellCommandNode> nodeList = new ArrayList<DShellCommandNode>();
-		DShellCommandNode node = Node;
+		ArrayList<CommandNode> nodeList = new ArrayList<CommandNode>();
+		CommandNode node = Node;
 		while(node != null) {
 			nodeList.add(node);
-			node = (DShellCommandNode) node.PipedNextNode;
+			node = (CommandNode) node.PipedNextNode;
 		}
 		// new String[n][]
 		int size = nodeList.size();
@@ -130,7 +130,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(CommandArg[].class));
 		for(int i = 0; i < size; i++) {
 			// new String[m];
-			DShellCommandNode currentNode = nodeList.get(i);
+			CommandNode currentNode = nodeList.get(i);
 			int listSize = currentNode.GetArgSize();
 			this.AsmBuilder.visitInsn(DUP);
 			this.AsmBuilder.visitLdcInsn(i);
@@ -270,8 +270,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		if(Node instanceof ZContinueNode) {
 			this.VisitContinueNode((ZContinueNode) Node);
 		}
-		else if(Node instanceof DShellCommandNode) {
-			this.VisitCommandNode((DShellCommandNode) Node);
+		else if(Node instanceof CommandNode) {
+			this.VisitCommandNode((CommandNode) Node);
 		}
 		else {
 			super.VisitSugarNode(Node);
@@ -326,6 +326,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	@Override
 	public void VisitGetNameNode(ZGetNameNode Node) {
+		if(Node.ResolvedNode == null) {
+			this.VisitErrorNode(new ZErrorNode(Node, "undefined symbol: " + Node.GetName()));
+		}
+		
 		if(Node.IsGlobalName()) {
 			this.VisitGlobalNameNode(Node);
 			return;

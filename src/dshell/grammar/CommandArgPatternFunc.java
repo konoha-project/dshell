@@ -1,10 +1,12 @@
 package dshell.grammar;
 
-import dshell.ast.sugar.DShellArgNode;
-import dshell.ast.sugar.DShellCommandNode;
-import dshell.lang.DShellGrammar;
 import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
+import libbun.lang.bun.shell.ArgumentNode;
+import libbun.lang.bun.shell.CommandNode;
+import libbun.lang.bun.shell.CommandSymbolPatternFunction;
+import libbun.lang.bun.shell.PrefixOptionPatternFunction;
+import libbun.lang.bun.shell.ShellUtils;
 import libbun.parser.ast.ZNode;
 import libbun.parser.ast.ZStringNode;
 import libbun.type.ZType;
@@ -20,19 +22,19 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 	public final static String _PatternName = "$CommandArg$";
 
 	@Override public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		if(DShellGrammar.MatchStopToken(TokenContext)) {
+		if(ShellUtils._MatchStopToken(TokenContext)) {
 			return null;
 		}
 		@Var boolean FoundSubstitution = false;
 		@Var boolean FoundEscape = false;
 		@Var ZArray<ZToken> TokenList = new ZArray<ZToken>(new ZToken[]{});
 		@Var ZArray<ZNode> NodeList = new ZArray<ZNode>(new ZNode[]{});
-		while(!DShellGrammar.MatchStopToken(TokenContext)) {
+		while(!ShellUtils._MatchStopToken(TokenContext)) {
 			@Var ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
 			if(Token instanceof DShellStringLiteralToken) {
 				this.Flush(TokenContext, NodeList, TokenList);
 				@Var DShellStringLiteralToken InterStringToken = (DShellStringLiteralToken) Token;
-				NodeList.add(DShellGrammar.ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
+				NodeList.add(ShellUtils._ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
 			}
 			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				this.Flush(TokenContext, NodeList, TokenList);
@@ -62,13 +64,13 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 //			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("(")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc._PatternName, ZTokenContext._Optional);
+				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, ZTokenContext._Optional);
 				if(Node == null) {
-					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, ZTokenContext._Required);
+					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, ZTokenContext._Required);
 				}
 				Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
-				if(Node instanceof DShellCommandNode) {
-					((DShellCommandNode)Node).SetType(ZType.StringType);
+				if(Node instanceof CommandNode) {
+					((CommandNode)Node).SetType(ZType.StringType);
 				}
 				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
@@ -83,8 +85,8 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
 		this.Flush(TokenContext, NodeList, TokenList);
-		@Var ZNode ArgNode = new DShellArgNode(ParentNode, FoundSubstitution ? DShellArgNode._Substitution : DShellArgNode._Normal);
-		ArgNode.SetNode(DShellArgNode._Expr, DShellGrammar.ToNode(ParentNode, TokenContext, NodeList));
+		@Var ZNode ArgNode = new ArgumentNode(ParentNode, FoundSubstitution ? ArgumentNode._Substitution : ArgumentNode._Normal);
+		ArgNode.SetNode(ArgumentNode._Expr, ShellUtils._ToNode(ParentNode, TokenContext, NodeList));
 		return ArgNode;
 	}
 

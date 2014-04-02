@@ -1,4 +1,4 @@
-import command ls, echo, ./dshell
+import command ls, echo, java
 import env TEST_DIR
 
 
@@ -16,9 +16,9 @@ echo > $LOG
 for(test_dir in $(ls $DIR)) {
 	for(test_file in $(ls $DIR/$test_dir)) {
 		echo "====== Test: ${test_file} ======" &>> $LOG
-		var prefix = "[fail:]"
-		if(dshell $REC $DIR/$test_dir/$test_file &>> $LOG) {
-			prefix = "[pass:]"
+		var prefix = "[fail]:"
+		if(java -jar -ea dshell.jar $REC $DIR/$test_dir/$test_file &>> $LOG) {
+			prefix = "[pass]:"
 		}
 		echo "${prefix} ${test_file}"
 		echo "${prefix} ${test_file}" &>> $LOG

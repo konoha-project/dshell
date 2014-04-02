@@ -6,6 +6,7 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import libbun.lang.bun.shell.ShellUtils;
 import libbun.util.ZStringArray;
 
 import dshell.lang.DShellGrammar;
@@ -81,7 +82,7 @@ public class TaskBuilder {
 	private ArrayList<ArrayList<CommandArg>> setInternalOption(ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<ArrayList<CommandArg>> newCmdsBuffer = new ArrayList<ArrayList<CommandArg>>();
 		for(ArrayList<CommandArg> currentCmds : cmdsList) {
-			if(currentCmds.get(0).eq(DShellGrammar.background)) {
+			if(currentCmds.get(0).eq(ShellUtils._background)) {
 				this.option.setFlag(background, this.option.isRetType(TaskType) || this.option.isRetType(VoidType));
 				continue;
 			}
@@ -139,11 +140,11 @@ public class TaskBuilder {
 				this.option.setFlag(background, false);
 				break;
 			}
-			else if(cmdSymbol.eq(DShellGrammar.trace)) {
+			else if(cmdSymbol.eq(ShellUtils._trace)) {
 				foundTraceOption = true;
 				continue;
 			}
-			else if(cmdSymbol.eq(DShellGrammar.timeout)) {
+			else if(cmdSymbol.eq(ShellUtils._timeout)) {
 				this.option.setTimeout(currentCmds.get(1));
 				continue;
 			}

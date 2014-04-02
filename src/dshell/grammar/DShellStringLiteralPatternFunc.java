@@ -1,7 +1,7 @@
 package dshell.grammar;
 
-import dshell.lang.DShellGrammar;
 import dshell.lang.DShellStringLiteralToken;
+import libbun.lang.bun.shell.ShellUtils;
 import libbun.parser.ast.ZNode;
 import libbun.parser.ZToken;
 import libbun.parser.ZTokenContext;
@@ -12,6 +12,6 @@ public class DShellStringLiteralPatternFunc extends ZMatchFunction {
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
-		return DShellGrammar.ToNode(ParentNode, TokenContext, ((DShellStringLiteralToken)Token).GetNodeList());
+		return ShellUtils._ToNode(ParentNode, TokenContext, ((DShellStringLiteralToken)Token).GetNodeList());
 	}
 }

@@ -9,6 +9,7 @@ import libbun.parser.ast.ZThrowNode;
 import libbun.parser.ast.ZWhileNode;
 import libbun.parser.sugar.ZContinueNode;
 import libbun.lang.bun.BunTypeSafer;
+import libbun.lang.bun.shell.CommandNode;
 import libbun.parser.ZLogger;
 import libbun.type.ZGenericType;
 import libbun.type.ZType;
@@ -17,7 +18,6 @@ import libbun.type.ZVarType;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
-import dshell.ast.sugar.DShellCommandNode;
 import dshell.ast.sugar.DShellForeachNode;
 import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
@@ -28,9 +28,9 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override
-	public void VisitCommandNode(DShellCommandNode Node) {	//FIXME
+	public void VisitCommandNode(CommandNode Node) {	//FIXME
 		ZType ContextType = this.GetContextType();
-		if(!(Node.ParentNode instanceof DShellCommandNode)) {
+		if(!(Node.ParentNode instanceof CommandNode)) {
 			if(Node.RetType().IsStringType() && Node.ParentNode instanceof DShellForeachNode) {
 				ContextType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType);
 			}
@@ -51,7 +51,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			Node.SetArgAt(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {
-			Node.PipedNextNode = this.CheckType(Node.PipedNextNode, ContextType);
+			Node.PipedNextNode = (CommandNode) this.CheckType(Node.PipedNextNode, ContextType);
 		}
 		this.ReturnTypeNode(Node, ContextType);
 	}
@@ -94,8 +94,8 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		if(Node instanceof ZContinueNode) {
 			this.VisitContinueNode((ZContinueNode) Node);
 		}
-		else if(Node instanceof DShellCommandNode) {
-			this.VisitCommandNode((DShellCommandNode) Node);
+		else if(Node instanceof CommandNode) {
+			this.VisitCommandNode((CommandNode) Node);
 		}
 		else {
 			super.VisitSugarNode(Node);
