@@ -47,6 +47,9 @@ public abstract class PseudoProcess {
 	}
 
 	protected final void addToCommandList(CommandArg arg) {
+		if(arg.eq("")) {
+			return;
+		}
 		if(arg instanceof SubstitutedArg) {
 			this.commandList.addAll(((SubstitutedArg)arg).getValueList());
 		}
