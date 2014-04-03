@@ -72,7 +72,11 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override
-	public void VisitCatchNode(DShellCatchNode Node) {	//FIXME
+	public void VisitCatchNode(DShellCatchNode Node) {
+		if(!this.CheckTypeRequirement(Node.ExceptionType())) {
+			this.ReturnErrorNode(Node, Node.GetAstToken(DShellCatchNode._TypeInfo), "require DShellException type");
+			return;
+		}
 		ZBlockNode BlockNode = Node.BlockNode();
 		if(!(Node.ExceptionType() instanceof ZVarType)) {
 			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
@@ -85,8 +89,23 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
+	private boolean CheckTypeRequirement(ZType ExceptionType) {
+		Class<?> JavaClass = ((DShellByteCodeGenerator)this.Generator).GetJavaClass(ExceptionType);
+		while(JavaClass != null) {
+			if(JavaClass.equals(DShellException.class)) {
+				return true;
+			}
+			JavaClass = JavaClass.getSuperclass();
+		}
+		return false;
+	}
+
 	@Override public void VisitThrowNode(ZThrowNode Node) {
-		this.CheckTypeAt(Node, ZThrowNode._Expr, JavaTypeTable.GetZenType(DShellException.class));
+		this.CheckTypeAt(Node, ZThrowNode._Expr, ZType.VarType);
+		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
+			this.ReturnErrorNode(Node, Node.GetAstToken(ZThrowNode._Expr), "require DShellException type");
+			return;
+		}
 		this.ReturnTypeNode(Node, ZType.VoidType);
 	}
 
@@ -105,15 +124,15 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitContinueNode(ZContinueNode Node) {
 		ZNode CurrentNode = Node;
-		boolean foundWhile = false;
+		boolean FoundWhile = false;
 		while(CurrentNode != null) {
 			if(CurrentNode instanceof ZWhileNode || CurrentNode instanceof DShellForNode) {
-				foundWhile = true;
+				FoundWhile = true;
 				break;
 			}
 			CurrentNode = CurrentNode.ParentNode;
 		}
-		if(!foundWhile) {
+		if(!FoundWhile) {
 			this.ReturnErrorNode(Node, Node.SourceToken, "only available inside loop statement");
 			return;
 		}

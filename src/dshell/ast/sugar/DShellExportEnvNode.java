@@ -12,7 +12,7 @@ import libbun.type.ZType;
 
 public class DShellExportEnvNode extends ZSugarNode {
 	public final static int _NameInfo = 0;
-	public final static int _EXPR = 1;
+	public final static int _Expr = 1;
 
 	public DShellExportEnvNode(ZNode ParentNode) {
 		super(ParentNode, null, 2);
@@ -24,7 +24,7 @@ public class DShellExportEnvNode extends ZSugarNode {
 		ZMacroFunc SetEnvFunc = Generator.GetMacroFunc("setEnv", ZType.StringType, 2);
 		ZNode SetEnvNode = TypeChecker.CreateDefinedFuncCallNode(this.ParentNode, this.SourceToken, SetEnvFunc);
 		SetEnvNode.SetNode(ZNode._AppendIndex, new ZStringNode(SetEnvNode, null, EnvName));
-		SetEnvNode.SetNode(ZNode._AppendIndex, this.AST[DShellExportEnvNode._EXPR]);
+		SetEnvNode.SetNode(ZNode._AppendIndex, this.AST[DShellExportEnvNode._Expr]);
 
 		ZNode LetNode = new ZLetVarNode(this, ZLetVarNode._IsReadOnly);
 		LetNode.SetNode(ZLetVarNode._NameInfo, this.AST[_NameInfo]);
