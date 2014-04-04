@@ -64,16 +64,28 @@ public class ImportCommandPatternFunc extends ZMatchFunction {
 			}
 			CommandPath = FullPath;
 		}
-		ZSyntax Syntax = NameSpace.GetSyntaxPattern(Command);
-		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPatternFunc)) {
-			if(LibZen.DebugMode) {
-				System.err.println("found duplicated syntax pattern: " + Syntax);
-			}
+		if(this.FoundDuplicatedSymbol(NameSpace, Command)) {
 			return;
 		}
 		NameSpace.SetLocalSymbol(DShellGrammar.toCommandSymbol(Command), new ZStringNode(ParentNode, null, CommandPath));
 	}
 
+	private boolean FoundDuplicatedSymbol(ZNameSpace NameSpace, String Command) {
+		ZSyntax Syntax = NameSpace.GetSyntaxPattern(Command);
+		if(Syntax != null && !(Syntax.MatchFunc instanceof CommandSymbolPatternFunc)) {
+			if(LibZen.DebugMode) {
+				System.err.println("found duplicated syntax pattern: " + Syntax);
+			}
+			return true;
+		}
+		if(NameSpace.GetSymbolNode(DShellGrammar.toCommandSymbol(Command)) != null) {
+			if(LibZen.DebugMode) {
+				System.err.println("found duplicated symbol: " + Command);
+			}
+			return true;
+		}
+		return false;
+	}
 	@Override
 	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
 		ArrayList<ZToken> TokenList = new ArrayList<ZToken>();

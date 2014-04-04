@@ -16,7 +16,8 @@ public class SuffixOptionPatternFunc extends ZMatchFunction {
 		TokenContext.MoveNext();
 		String OptionSymbol = Token.GetText();
 		if(Token.EqualsText(DShellGrammar.background)) {	// set background job
-			return this.CreateNodeAndMatchNextOption(ParentNode, TokenContext, OptionSymbol);
+			//return this.CreateNodeAndMatchNextOption(ParentNode, TokenContext, OptionSymbol);
+			return new DShellCommandNode(ParentNode, Token, OptionSymbol);
 		}
 		return null;
 	}
