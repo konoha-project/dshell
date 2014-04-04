@@ -1,6 +1,10 @@
 package dshell;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
 import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
@@ -26,16 +30,37 @@ public class DShell {
 	public final static String license = "BSD-Style Open Source";
 	public final static String shellInfo = progName + ", version " + version + " (" + BLib._GetPlatform() + ") powered by LibBun";
 
-	private boolean interactiveMode = true;
+	public static enum ExecutionMode {
+		interactiveMode,
+		scriptingMode,
+		inputEvalMode,
+		recSupportMode,
+		receiverMode,
+	}
+
+	private ExecutionMode mode;
 	private boolean autoImportCommand = true;
 	private boolean disableWelcomeMessage = false;
-	private boolean recSupport = false;
-	private String recURL = null;
+	private final boolean enableDummyTerminal;
+	private String specificArg = null;
 	private String[] scriptArgs;
 
 	private DShell(String[] args) {
+		this(args, false);
+	}
+
+	public DShell(String[] args, boolean enableDummyTerminal) {
+		this.enableDummyTerminal = enableDummyTerminal;
+		this.parseArguments(args);
+	}
+
+	private void parseArguments(String[] args) {
+		boolean foundScript = false;
+		boolean recSupport = false;
+		HashMap<String, Integer> foundArgMap = new HashMap<String, Integer>();
 		for(int i = 0; i < args.length; i++) {
 			String optionSymbol = args[i];
+			this.checkDuplicatedArg(foundArgMap, optionSymbol, i);
 			if(optionSymbol.startsWith("--")) {
 				if(optionSymbol.equals("--version")) {
 					showVersionInfo();
@@ -73,11 +98,24 @@ public class DShell {
 					}
 				}
 				else if(optionSymbol.equals("--rec") && i + 1 < args.length) {
-					this.recSupport = true;
-					this.recURL = args[++i];
+					recSupport = true;
+					this.specificArg = args[++i];
 				}
 				else if(optionSymbol.equals("--receive") && i + 1 < args.length && args.length == 2) {	// never return
-					RequestReceiver.invoke(args[++i]);
+					this.mode = ExecutionMode.receiverMode;
+					this.specificArg = args[++i];
+					return;
+				}
+				else {
+					System.err.println("dshell: " + optionSymbol + ": invalid option");
+					showHelpAndExit(1, System.err);
+				}
+			}
+			else if(optionSymbol.startsWith("-")) {
+				if(optionSymbol.equals("-c") && i + 1 == args.length - 1 && !recSupport) {
+					this.mode = ExecutionMode.inputEvalMode;
+					this.specificArg = args[++i];
+					return;
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
@@ -85,82 +123,155 @@ public class DShell {
 				}
 			}
 			else {
-				this.interactiveMode = false;
+				foundScript = true;
 				int size = args.length - i;
 				this.scriptArgs = new String[size];
 				System.arraycopy(args, i, this.scriptArgs, 0, size);
 				break;
 			}
 		}
-	}
-
-	private void execute() {
-		// init context
-		RuntimeContext.getContext();
-		if(this.recSupport) {
-			if(this.interactiveMode) {
+		if(recSupport) {
+			if(!foundScript) {
 				System.err.println("dshell: need script file");
 				showHelpAndExit(1, System.err);
 			}
-			RECWriter.invoke(this.recURL, this.scriptArgs);	// never return
+			this.mode = ExecutionMode.recSupportMode;
 		}
-
-		DShellByteCodeGenerator generator = this.initGenerator(DShellByteCodeGenerator.class.getName(), DShellGrammar.class.getName());
-		if(this.interactiveMode) {
-			DShellConsole console = new DShellConsole();
-			String line = null;
-			if(!this.disableWelcomeMessage) {
-				System.out.println(DShellConsole.welcomeMessage);
-			}
-			DShell.showVersionInfo();
-			if(this.autoImportCommand) {
-				StringBuilder importBuilder = new StringBuilder();
-				importBuilder.append("command ");
-				TreeSet<String> commandSet = Utils.getCommandSetFromPath();
-				int size = commandSet.size();
-				for(int i = 0; i < size; i++) {
-					if(i != 0) {
-						importBuilder.append(", ");
-					}
-					importBuilder.append(commandSet.pollFirst());
-				}
-				generator.LoadScript(importBuilder.toString(), "(stdin)", 0, true);
-			}
-			generator.Logger.OutputErrorsToStdErr();
-			while ((line = console.readLine()) != null) {
-				if(line.equals("")) {
-					continue;
-				}
-				if(generator.LoadScript(line, "(stdin)", console.getLineNumber(), true)) {
-					generator.EvalAndPrint();
-				}
-				console.incrementLineNum(line);
-			}
-			System.out.println("");
+		else if(foundScript) {
+			this.mode = ExecutionMode.scriptingMode;
+		}
+		else if(!this.enableDummyTerminal && System.console() == null) {
+			this.mode = ExecutionMode.inputEvalMode;
 		}
 		else {
-			String scriptName = this.scriptArgs[0];
-			// load script arguments
-			StringBuilder ARGVBuilder = new StringBuilder();
-			ARGVBuilder.append("let ARGV = [");
-			for(int i = 0; i < this.scriptArgs.length; i++) {
-				if(i != 0) {
-					ARGVBuilder.append(", ");
-				}
-				ARGVBuilder.append("\"");
-				ARGVBuilder.append(this.scriptArgs[i]);
-				ARGVBuilder.append("\"");
-			}
-			ARGVBuilder.append("]");
-			generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
-			// load script file
-			boolean status = generator.LoadFile(scriptName, null);
-			if(!status) {
-				System.err.println("abort loading: " + scriptName);
-				System.exit(1);
-			}
-			generator.InvokeMain(); // never return
+			this.mode = ExecutionMode.interactiveMode;
 		}
+	}
+
+	private void checkDuplicatedArg(HashMap<String, Integer> foundArgMap, String arg, int index) {
+		if(foundArgMap.containsKey(arg)) {
+			System.err.println("dshell: " + arg + ": duplicated option");
+			showHelpAndExit(1, System.err);
+		}
+		foundArgMap.put(arg, index);
+	}
+
+	public void execute() {
+		// init context
+		RuntimeContext.getContext();
+
+		switch(this.mode) {
+		case recSupportMode:
+			RECWriter.invoke(this.specificArg, this.scriptArgs);	// never return
+		case receiverMode:
+			RequestReceiver.invoke(this.specificArg);	// never return
+		case interactiveMode:
+			this.runInteractiveMode();	// never return
+		case scriptingMode:
+			this.runScriptingMode();	// never return
+		case inputEvalMode:
+			this.runInputEvalMode();	// never return
+		}
+	}
+
+	public void runInteractiveMode() {
+		DShellByteCodeGenerator generator = initGenerator();
+		DShellConsole console = new DShellConsole();
+		String line = null;
+		if(!this.disableWelcomeMessage) {
+			System.out.println(DShellConsole.welcomeMessage);
+		}
+		DShell.showVersionInfo();
+		if(this.autoImportCommand) {
+			StringBuilder importBuilder = new StringBuilder();
+			importBuilder.append("command ");
+			TreeSet<String> commandSet = Utils.getCommandSetFromPath();
+			int size = commandSet.size();
+			for(int i = 0; i < size; i++) {
+				if(i != 0) {
+					importBuilder.append(", ");
+				}
+				importBuilder.append(commandSet.pollFirst());
+			}
+			generator.LoadScript(importBuilder.toString(), "(stdin)", 0, true);
+		}
+		generator.Logger.OutputErrorsToStdErr();
+		while ((line = console.readLine()) != null) {
+			if(line.equals("")) {
+				continue;
+			}
+			if(generator.LoadScript(line, "(stdin)", console.getLineNumber(), true)) {
+				generator.EvalAndPrint();
+			}
+			console.incrementLineNum(line);
+		}
+		System.out.println("");
+		System.exit(0);
+	}
+
+	private void runScriptingMode() {
+		DShellByteCodeGenerator generator = initGenerator();
+		String scriptName = this.scriptArgs[0];
+		// load script arguments
+		StringBuilder ARGVBuilder = new StringBuilder();
+		ARGVBuilder.append("let ARGV = [");
+		for(int i = 0; i < this.scriptArgs.length; i++) {
+			if(i != 0) {
+				ARGVBuilder.append(", ");
+			}
+			ARGVBuilder.append("\"");
+			ARGVBuilder.append(this.scriptArgs[i]);
+			ARGVBuilder.append("\"");
+		}
+		ARGVBuilder.append("]");
+		generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
+		// load script file
+		boolean status = generator.LoadFile(scriptName, null);
+		if(!status) {
+			System.err.println("abort loading: " + scriptName);
+			System.exit(1);
+		}
+		generator.InvokeMain(); // never return
+	}
+
+	private void runInputEvalMode() {
+		DShellByteCodeGenerator generator = initGenerator();
+		String source = this.specificArg;
+		if(this.specificArg == null) {
+			source = readFromIntput();
+		}
+		boolean status = generator.LoadScript(source, "(stdin)", 1, false);
+		if(!status) {
+			System.err.println("abort loading input source");
+			System.exit(1);
+		}
+		generator.InvokeMain(); // never return
+	}
+
+	private static String readFromIntput() {
+		BufferedInputStream stream = new BufferedInputStream(System.in);
+		ByteArrayOutputStream streamBuffer = new ByteArrayOutputStream();
+		int bufferSize = 2048;
+		int read = 0;
+		byte[] buffer = new byte[bufferSize];
+		try {
+			while((read = stream.read(buffer, 0, bufferSize)) > -1) {
+				streamBuffer.write(buffer, 0, read);
+			}
+			return streamBuffer.toString();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+			Utils.fatal(1, "IO problem");
+		}
+		return null;
+	}
+	private final static DShellByteCodeGenerator initGenerator() {
+		BGenerator Generator = BLib._LoadGenerator(DShellByteCodeGenerator.class.getName(), null);
+		BLib._ImportGrammar(Generator.RootNameSpace, DShellGrammar.class.getName());
+		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
+		Generator.RequireLibrary("common", null);
+		return (DShellByteCodeGenerator) Generator;
 	}
 
 	public static void showVersionInfo() {
@@ -183,14 +294,6 @@ public class DShell {
 		stream.println("    --rec [rec URL]");
 		stream.println("    --version");
 		System.exit(status);
-	}
-
-	public final DShellByteCodeGenerator initGenerator(String ClassName, String GrammarClass) {
-		BGenerator Generator = BLib._LoadGenerator(ClassName, null);
-		BLib._ImportGrammar(Generator.RootNameSpace, GrammarClass);
-		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
-		Generator.RequireLibrary("common", null);
-		return (DShellByteCodeGenerator) Generator;
 	}
 
 	public static void main(String[] args) {
