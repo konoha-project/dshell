@@ -2,16 +2,16 @@ package dshell.lib;
 
 import libbun.encode.jvm.JavaTypeTable;
 import dshell.exception.DShellException;
-import libbun.type.ZGenericType;
-import libbun.type.ZType;
-import libbun.type.ZTypePool;
+import libbun.type.BGenericType;
+import libbun.type.BType;
+import libbun.type.BTypePool;
+import libbun.util.BStringArray;
 import libbun.util.ZObjectArray;
-import libbun.util.ZStringArray;
 
 public class ArrayUtils {
 	public static DShellExceptionArray createExceptionArray(DShellException[] exceptions) {
-		ZType exceptionType = JavaTypeTable.GetZenType(DShellException.class);
-		ZType exceptionArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, exceptionType);
+		BType exceptionType = JavaTypeTable.GetZenType(DShellException.class);
+		BType exceptionArrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, exceptionType);
 		return new DShellExceptionArray(exceptionArrayType.TypeId, exceptions);
 	}
 
@@ -37,8 +37,8 @@ public class ArrayUtils {
 	}
 
 	public static TaskArray createTaskArray(Task[] tasks) {
-		ZType taskType = JavaTypeTable.GetZenType(Task.class);
-		ZType taskArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, taskType);
+		BType taskType = JavaTypeTable.GetZenType(Task.class);
+		BType taskArrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, taskType);
 		return new TaskArray(taskArrayType.TypeId, tasks);
 	}
 
@@ -63,8 +63,8 @@ public class ArrayUtils {
 		}
 	}
 
-	public static ZStringArray createStringArray(String[] values) {
-		ZType stringArrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType);
-		return new ZStringArray(stringArrayType.TypeId, values);
+	public static BStringArray createStringArray(String[] values) {
+		BType stringArrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType);
+		return new BStringArray(stringArrayType.TypeId, values);
 	}
 }

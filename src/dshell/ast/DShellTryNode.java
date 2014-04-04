@@ -2,23 +2,23 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZListNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ZVisitor;
+import libbun.ast.BBlockNode;
+import libbun.ast.BListNode;
+import libbun.ast.BNode;
+import libbun.parser.BVisitor;
 
-public class DShellTryNode extends ZListNode {
+public class DShellTryNode extends BListNode {
 	public final static int _Try = 0;
 	public final static int _Finally = 1;
 
-	public DShellTryNode(ZNode ParentNode) {
+	public DShellTryNode(BNode ParentNode) {
 		super(ParentNode, null, 2);
 	}
 
-	public final ZBlockNode TryBlockNode() {
-		ZNode BlockNode = this.AST[_Try];
-		if(BlockNode instanceof ZBlockNode) {
-			return (ZBlockNode) BlockNode;
+	public final BBlockNode TryBlockNode() {
+		BNode BlockNode = this.AST[_Try];
+		if(BlockNode instanceof BBlockNode) {
+			return (BBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
@@ -28,16 +28,16 @@ public class DShellTryNode extends ZListNode {
 		return this.AST[_Finally] != null;
 	}
 
-	public final ZBlockNode FinallyBlockNode() {
-		ZNode BlockNode = this.AST[_Finally];
-		if(BlockNode instanceof ZBlockNode) {
-			return (ZBlockNode) BlockNode;
+	public final BBlockNode FinallyBlockNode() {
+		BNode BlockNode = this.AST[_Finally];
+		if(BlockNode instanceof BBlockNode) {
+			return (BBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
 	}
 
-	@Override public void Accept(ZVisitor Visitor) {
+	@Override public void Accept(BVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitTryNode(this);
 		}

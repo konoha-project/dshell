@@ -15,6 +15,21 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
+import libbun.ast.BBlockNode;
+import libbun.ast.BNode;
+import libbun.ast.BSugarNode;
+import libbun.ast.ZEmptyNode;
+import libbun.ast.binary.BInstanceOfNode;
+import libbun.ast.decl.BClassNode;
+import libbun.ast.decl.BFunctionNode;
+import libbun.ast.decl.BLetVarNode;
+import libbun.ast.decl.ZTopLevelNode;
+import libbun.ast.decl.ZVarBlockNode;
+import libbun.ast.error.BErrorNode;
+import libbun.ast.expression.BGetNameNode;
+import libbun.ast.statement.BReturnNode;
+import libbun.ast.statement.BThrowNode;
+import libbun.ast.sugar.ZContinueNode;
 import libbun.encode.jvm.JavaMethodTable;
 import libbun.encode.jvm.JavaTypeTable;
 
@@ -38,33 +53,18 @@ import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
 import libbun.lang.bun.shell.CommandNode;
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZClassNode;
-import libbun.parser.ast.ZEmptyNode;
-import libbun.parser.ast.ZErrorNode;
-import libbun.parser.ast.ZFunctionNode;
-import libbun.parser.ast.ZGetNameNode;
-import libbun.parser.ast.ZInstanceOfNode;
-import libbun.parser.ast.ZLetVarNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZReturnNode;
-import libbun.parser.ast.ZSugarNode;
-import libbun.parser.ast.ZThrowNode;
-import libbun.parser.ast.ZTopLevelNode;
-import libbun.parser.ast.ZVarBlockNode;
-import libbun.parser.sugar.ZContinueNode;
-import libbun.util.LibZen;
-import libbun.util.ZArray;
-import libbun.parser.ZLogger;
-import libbun.parser.ZMacroFunc;
-import libbun.parser.ZToken;
-import libbun.type.ZFuncType;
-import libbun.type.ZGenericType;
-import libbun.type.ZType;
-import libbun.type.ZTypePool;
+import libbun.parser.BLogger;
+import libbun.parser.BToken;
+import libbun.type.BFuncType;
+import libbun.type.BGenericType;
+import libbun.type.BMacroFunc;
+import libbun.type.BType;
+import libbun.type.BTypePool;
+import libbun.util.BArray;
+import libbun.util.BLib;
 
 public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
-	private ZFunctionNode untypedMainNode = null;
+	private BFunctionNode untypedMainNode = null;
 	private LinkedList<String> topLevelSymbolList;
 
 	private Method ExecCommandVoid;
@@ -100,8 +100,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			e.printStackTrace();
 			Utils.fatal(1, "method loading failed");
 		}
-		JavaMethodTable.Import(ZType.StringType, "=~", ZType.StringType, Utils.class, "matchRegex");
-		JavaMethodTable.Import(ZType.StringType, "!~", ZType.StringType, Utils.class, "unmatchRegex");
+		JavaMethodTable.Import(BType.StringType, "=~", BType.StringType, Utils.class, "matchRegex");
+		JavaMethodTable.Import(BType.StringType, "!~", BType.StringType, Utils.class, "unmatchRegex");
 
 		// load array class
 		this.loadArrayClass(DShellException.class, DShellExceptionArray.class);
@@ -154,13 +154,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		else if(Node.Type.IsStringType()) {
 			this.invokeStaticMethod(Node.Type, ExecCommandString);
 		}
-		else if(Node.Type.equals(ZTypePool._GetGenericType1(ZGenericType._ArrayType, ZType.StringType))) {
+		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandStringArray);
 		}
 		else if(Node.Type.equals(JavaTypeTable.GetZenType(Task.class))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTask);
 		}
-		else if(Node.Type.equals(ZTypePool._GetGenericType1(ZGenericType._ArrayType, JavaTypeTable.GetZenType(Task.class)))) {
+		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetZenType(Task.class)))) {
 			this.invokeStaticMethod(Node.Type, ExecCommandTaskArray);
 		}
 		else {
@@ -209,13 +209,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 	}
 
-	@Override public void VisitThrowNode(ZThrowNode Node) {
+	@Override public void VisitThrowNode(BThrowNode Node) {
 		Node.ExprNode().Accept(this);
 		this.AsmBuilder.visitInsn(ATHROW);
 	}
 
-	@Override public void VisitInstanceOfNode(ZInstanceOfNode Node) {
-		if(!(Node.LeftNode().Type instanceof ZGenericType)) {
+	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
+		if(!(Node.LeftNode().Type instanceof BGenericType)) {
 			this.VisitNativeInstanceOfNode(Node);
 			return;
 		}
@@ -223,11 +223,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.Pop(Node.LeftNode().Type);
 		this.AsmBuilder.PushLong(Node.LeftNode().Type.TypeId);
 		this.AsmBuilder.PushLong(Node.TargetType().TypeId);
-		Method method = JavaMethodTable.GetBinaryStaticMethod(ZType.IntType, "==", ZType.IntType);
+		Method method = JavaMethodTable.GetBinaryStaticMethod(BType.IntType, "==", BType.IntType);
 		this.invokeStaticMethod(null, method);
 	}
 
- 	private void VisitNativeInstanceOfNode(ZInstanceOfNode Node) {
+ 	private void VisitNativeInstanceOfNode(BInstanceOfNode Node) {
 		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
 		if(Node.TargetType().IsIntType()) {
 			JavaClass = Long.class;
@@ -242,7 +242,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
 	}
 
-	private void invokeBoxingMethod(ZNode TargetNode) {
+	private void invokeBoxingMethod(BNode TargetNode) {
 		Class<?> TargetClass = Object.class;
 		if(TargetNode.Type.IsIntType()) {
 			TargetClass = Long.class;
@@ -257,16 +257,16 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
 		TargetNode.Accept(this);
 		if(!TargetClass.equals(Object.class)) {
-			this.invokeStaticMethod(ZType.BooleanType, sMethod);
+			this.invokeStaticMethod(BType.BooleanType, sMethod);
 		}
 	}
 
-	@Override public void VisitErrorNode(ZErrorNode Node) {
-		ZLogger._LogError(Node.SourceToken, Node.ErrorMessage);
+	@Override public void VisitErrorNode(BErrorNode Node) {
+		BLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new ErrorNodeFoundException();
 	}
 
-	@Override public void VisitSugarNode(ZSugarNode Node) {
+	@Override public void VisitSugarNode(BSugarNode Node) {
 		if(Node instanceof ZContinueNode) {
 			this.VisitContinueNode((ZContinueNode) Node);
 		}
@@ -313,38 +313,38 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.ContinueLabelStack.pop();
 	}
 
-	private void VisitGlobalNameNode(ZGetNameNode Node) {
-		if(Node.ResolvedNode instanceof ZLetVarNode) {
-			ZLetVarNode letNode = (ZLetVarNode) Node.ResolvedNode;
-			Class<?> JavaClass = this.GetJavaClass(letNode.GetAstType(ZLetVarNode._NameInfo));
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, this.NameGlobalNameClass(letNode.GlobalName), "_", JavaClass);
+	private void VisitGlobalNameNode(BGetNameNode Node) {
+		if(Node.ResolvedNode instanceof BLetVarNode) {
+			BLetVarNode letNode = (BLetVarNode) Node.ResolvedNode;
+			Class<?> JavaClass = this.GetJavaClass(letNode.GetAstType(BLetVarNode._NameInfo));
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, this.NameGlobalNameClass(letNode.GetUniqueName(this)), "_", JavaClass);
 		}
 		else {
-			this.VisitErrorNode(new ZErrorNode(Node, "unimplemented ResolvedNode: " + Node.ResolvedNode.getClass().getName()));
+			this.VisitErrorNode(new BErrorNode(Node, "unimplemented ResolvedNode: " + Node.ResolvedNode.getClass().getName()));
 		}
 	}
 
 	@Override
-	public void VisitGetNameNode(ZGetNameNode Node) {
+	public void VisitGetNameNode(BGetNameNode Node) {
 		if(Node.ResolvedNode == null) {
-			this.VisitErrorNode(new ZErrorNode(Node, "undefined symbol: " + Node.GetName()));
+			this.VisitErrorNode(new BErrorNode(Node, "undefined symbol: " + Node.GetUniqueName(this)));
 		}
 		
-		if(Node.IsGlobalName()) {
+		if(Node.ResolvedNode.GetDefiningFunctionNode() == null) {
 			this.VisitGlobalNameNode(Node);
 			return;
 		}
-		this.AsmBuilder.LoadLocal(Node.GetName());
-		this.AsmBuilder.CheckReturnCast(Node, this.AsmBuilder.GetLocalType(Node.GetName()));
+		this.AsmBuilder.LoadLocal(Node.GetUniqueName(this));
+		this.AsmBuilder.CheckReturnCast(Node, this.AsmBuilder.GetLocalType(Node.GetUniqueName(this)));
 	}
 
-	private void invokeStaticMethod(ZType type, Method method) { //TODO: check return type cast
+	private void invokeStaticMethod(BType type, Method method) { //TODO: check return type cast
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 	}
 
 	private void loadJavaClass(Class<?> classObject) {
-		ZType type = JavaTypeTable.GetZenType(classObject);
+		BType type = JavaTypeTable.GetZenType(classObject);
 		this.RootNameSpace.SetTypeName(type, null);
 	}
 
@@ -361,7 +361,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
 		String macroSymbol = name;
 		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
-		ZArray<ZType> typeList = new ZArray<ZType>(new ZType[4]);
+		BArray<BType> typeList = new BArray<BType>(new BType[4]);
 		StringBuilder macroBuilder = new StringBuilder();
 		macroBuilder.append(holderClassPath + "." + internalName + "(");
 		for(int i = 0; i < paramClasses.length; i++) {
@@ -374,8 +374,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		macroBuilder.append(")");
 		try {
 			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
-			ZFuncType macroType = (ZFuncType) ZTypePool._GetGenericType(ZFuncType._FuncType, typeList, true);
-			ZMacroFunc macroFunc = new ZMacroFunc(macroSymbol, macroType, null, macroBuilder.toString());
+			BFuncType macroType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
+			BMacroFunc macroFunc = new BMacroFunc(macroSymbol, macroType, null, macroBuilder.toString());
 			this.SetDefinedFunc(macroFunc);
 		}
 		catch(Exception e) {
@@ -384,15 +384,15 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void loadArrayClass(Class<?> baseClass, Class<?> arrayClass) {
-		ZType baseType = JavaTypeTable.GetZenType(baseClass);
-		ZType arrayType = ZTypePool._GetGenericType1(ZGenericType._ArrayType, baseType);
+		BType baseType = JavaTypeTable.GetZenType(baseClass);
+		BType arrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, baseType);
 		JavaTypeTable.SetTypeTable(arrayType, arrayClass);
 		// define operator
-		JavaMethodTable.Import(arrayType, "[]", ZType.IntType, arrayClass, "GetIndex");
+		JavaMethodTable.Import(arrayType, "[]", BType.IntType, arrayClass, "GetIndex");
 	}
 
 	@Override
-	public void GenerateStatement(ZNode Node) {
+	public void GenerateStatement(BNode Node) {
 		try {
 			Node.Accept(this);
 		}
@@ -409,7 +409,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	protected boolean ExecStatement(ZNode Node, boolean IsInteractive) {
+	protected boolean ExecStatement(BNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
 		if(Node instanceof ZEmptyNode) {
 			return this.IsVisitable();
@@ -419,15 +419,15 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof ZFunctionNode || Node instanceof ZClassNode || Node instanceof ZLetVarNode || 
+		if(Node instanceof BFunctionNode || Node instanceof BClassNode || Node instanceof BLetVarNode || 
 				Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
-			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
-			Node.Type = ZType.VoidType;
+			Node = this.TypeChecker.CheckType(Node, BType.VarType);
+			Node.Type = BType.VoidType;
 			this.GenerateStatement(Node);
 		}
 		else if(IsInteractive) {
-			ZToken SourceToken = Node.SourceToken;
-			Node = this.TypeChecker.CheckType(Node, ZType.VarType);
+			BToken SourceToken = Node.SourceToken;
+			Node = this.TypeChecker.CheckType(Node, BType.VarType);
 			String FuncName = this.NameUniqueSymbol("Main");
 			Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
 			Node.SourceToken = SourceToken;
@@ -436,10 +436,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		else {
 			if(this.untypedMainNode == null) {
-				this.untypedMainNode = new ZFunctionNode(Node.ParentNode);
+				this.untypedMainNode = new BFunctionNode(Node.ParentNode);
 				this.untypedMainNode.GivenName = "main";
 				this.untypedMainNode.SourceToken = Node.SourceToken;
-				this.untypedMainNode.SetNode(ZFunctionNode._Block, new ZBlockNode(this.untypedMainNode, null));
+				this.untypedMainNode.SetNode(BFunctionNode._Block, new BBlockNode(this.untypedMainNode, null));
 			}
 			this.untypedMainNode.BlockNode().Append(Node);
 		}
@@ -447,7 +447,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private boolean EvalAndPrintEachNode(String Symbol) {
-		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, ZType.VoidType, 0);
+		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, BType.VoidType, 0);
 		try {
 			Method Method = FuncClass.getMethod("f");
 			Object Value = Method.invoke(null);
@@ -481,8 +481,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			System.exit(1);
 		}
 		try {
-			ZFunctionNode Node = (ZFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, ZType.VarType);
-			Node.Type = ZType.VoidType;
+			BFunctionNode Node = (BFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
+			Node.Type = BType.VoidType;
 			Node.IsExport = true;
 			Node.Accept(this);
 			this.Logger.OutputErrorsToStdErr();
@@ -514,12 +514,12 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	private ZNode checkTopLevelSupport(ZNode Node) {
-		if(Node instanceof ZVarBlockNode || Node instanceof ZReturnNode) {
-			Node = new ZErrorNode(Node, "only available inside function");
+	private BNode checkTopLevelSupport(BNode Node) {
+		if(Node instanceof ZVarBlockNode || Node instanceof BReturnNode) {
+			Node = new BErrorNode(Node, "only available inside function");
 		}
-		else if(Node instanceof ZLetVarNode && !((ZLetVarNode)Node).IsReadOnly()) {
-			Node = new ZErrorNode(Node, "only available inside function");
+		else if(Node instanceof BLetVarNode && !((BLetVarNode)Node).IsReadOnly()) {
+			Node = new BErrorNode(Node, "only available inside function");
 		}
 		return Node;
 	}
@@ -531,7 +531,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		else {
 			System.err.println(cause);
-			if(LibZen.DebugMode) {
+			if(BLib.DebugMode) {
 				cause.printStackTrace();
 			}
 		}

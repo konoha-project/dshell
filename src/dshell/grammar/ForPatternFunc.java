@@ -1,23 +1,23 @@
 package dshell.grammar;
 
+import libbun.ast.BNode;
+import libbun.parser.BTokenContext;
+import libbun.util.BMatchFunction;
 import dshell.ast.DShellForNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ZTokenContext;
-import libbun.util.ZMatchFunction;
 
-public class ForPatternFunc extends ZMatchFunction {
+public class ForPatternFunc extends BMatchFunction {
 	@Override
-	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZNode Node = new DShellForNode(ParentNode);
-		Node = TokenContext.MatchToken(Node, "for", ZTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, "(", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Init, "var", ZTokenContext._Optional);
-		Node = TokenContext.MatchToken(Node, ";", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Cond, "$Expression$", ZTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, ";", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Next, "$SymbolStatement$", ZTokenContext._Optional);
-		Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Block, "$Block$", ZTokenContext._Required);
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+		BNode Node = new DShellForNode(ParentNode);
+		Node = TokenContext.MatchToken(Node, "for", BTokenContext._Required);
+		Node = TokenContext.MatchToken(Node, "(", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForNode._Init, "var", BTokenContext._Optional);
+		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForNode._Cond, "$Expression$", BTokenContext._Required);
+		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForNode._Next, "$SymbolStatement$", BTokenContext._Optional);
+		Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForNode._Block, "$Block$", BTokenContext._Required);
 		return Node;
 	}
 

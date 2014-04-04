@@ -2,48 +2,48 @@ package dshell.grammar;
 
 import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
+import libbun.ast.BNode;
+import libbun.ast.literal.BStringNode;
 import libbun.lang.bun.shell.ArgumentNode;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.lang.bun.shell.CommandSymbolPatternFunction;
 import libbun.lang.bun.shell.PrefixOptionPatternFunction;
 import libbun.lang.bun.shell.ShellUtils;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZStringNode;
-import libbun.type.ZType;
-import libbun.util.LibZen;
+import libbun.parser.BPatternToken;
+import libbun.parser.BToken;
+import libbun.parser.BTokenContext;
+import libbun.type.BType;
+import libbun.util.BArray;
+import libbun.util.BLib;
+import libbun.util.BMatchFunction;
 import libbun.util.Var;
-import libbun.util.ZArray;
-import libbun.util.ZMatchFunction;
-import libbun.parser.ZPatternToken;
-import libbun.parser.ZToken;
-import libbun.parser.ZTokenContext;
 
-public class CommandArgPatternFunc extends ZMatchFunction {
+public class CommandArgPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$CommandArg$";
 
-	@Override public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
+	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		if(ShellUtils._MatchStopToken(TokenContext)) {
 			return null;
 		}
 		@Var boolean FoundSubstitution = false;
 		@Var boolean FoundEscape = false;
-		@Var ZArray<ZToken> TokenList = new ZArray<ZToken>(new ZToken[]{});
-		@Var ZArray<ZNode> NodeList = new ZArray<ZNode>(new ZNode[]{});
+		@Var BArray<BToken> TokenList = new BArray<BToken>(new BToken[]{});
+		@Var BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
 		while(!ShellUtils._MatchStopToken(TokenContext)) {
-			@Var ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
+			@Var BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
 			if(Token instanceof DShellStringLiteralToken) {
 				this.Flush(TokenContext, NodeList, TokenList);
 				@Var DShellStringLiteralToken InterStringToken = (DShellStringLiteralToken) Token;
 				NodeList.add(ShellUtils._ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
 			}
-			else if(Token instanceof ZPatternToken && ((ZPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
+			else if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				NodeList.add(new ZStringNode(ParentNode, null, LibZen._UnquoteString(Token.GetText())));
+				NodeList.add(new BStringNode(ParentNode, null, BLib._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", ZTokenContext._Required);
-				Node = TokenContext.MatchToken(Node, "}", ZTokenContext._Required);
+				@Var BNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", BTokenContext._Required);
+				Node = TokenContext.MatchToken(Node, "}", BTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
 				}
@@ -53,7 +53,7 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.GetToken().IsNameSymbol()) {
 				this.Flush(TokenContext, NodeList, TokenList);
 				Token = TokenContext.GetToken();
-				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", ZTokenContext._Required);
+				@Var BNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", BTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
 				}
@@ -64,13 +64,13 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 //			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("(")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, ZTokenContext._Optional);
+				@Var BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, BTokenContext._Optional);
 				if(Node == null) {
-					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, ZTokenContext._Required);
+					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, BTokenContext._Required);
 				}
-				Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
+				Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
 				if(Node instanceof CommandNode) {
-					((CommandNode)Node).SetType(ZType.StringType);
+					((CommandNode)Node).SetType(BType.StringType);
 				}
 				Token = TokenContext.LatestToken;
 				NodeList.add(Node);
@@ -85,19 +85,19 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
 		this.Flush(TokenContext, NodeList, TokenList);
-		@Var ZNode ArgNode = new ArgumentNode(ParentNode, FoundSubstitution ? ArgumentNode._Substitution : ArgumentNode._Normal);
+		@Var BNode ArgNode = new ArgumentNode(ParentNode, FoundSubstitution ? ArgumentNode._Substitution : ArgumentNode._Normal);
 		ArgNode.SetNode(ArgumentNode._Expr, ShellUtils._ToNode(ParentNode, TokenContext, NodeList));
 		return ArgNode;
 	}
 
-	private boolean CheckEscape(ZToken Token, boolean FoundEscape) {
+	private boolean CheckEscape(BToken Token, boolean FoundEscape) {
 		if(Token.EqualsText("\\") && !FoundEscape) {
 			return true;
 		}
 		return false;
 	}
 
-	private void Flush(ZTokenContext TokenContext, ZArray<ZNode> NodeList, ZArray<ZToken> TokenList) {
+	private void Flush(BTokenContext TokenContext, BArray<BNode> NodeList, BArray<BToken> TokenList) {
 		@Var int size = TokenList.size();
 		if(size == 0) {
 			return;
@@ -106,14 +106,14 @@ public class CommandArgPatternFunc extends ZMatchFunction {
 		@Var int EndIndex = 0;
 		for(int i = 0; i < size; i++) {
 			if(i == 0) {
-				StartIndex = ZArray.GetIndex(TokenList, i).StartIndex;
+				StartIndex = BArray.GetIndex(TokenList, i).StartIndex;
 			}
 			if(i == size - 1) {
-				EndIndex = ZArray.GetIndex(TokenList, i).EndIndex;
+				EndIndex = BArray.GetIndex(TokenList, i).EndIndex;
 			}
 		}
-		@Var ZToken Token = new ZToken(TokenContext.Source, StartIndex, EndIndex);
-		NodeList.add(new ZStringNode(null, Token, LibZen._UnquoteString(this.ResolveHome(Token.GetText()))));
+		@Var BToken Token = new BToken(TokenContext.Source, StartIndex, EndIndex);
+		NodeList.add(new BStringNode(null, Token, BLib._UnquoteString(this.ResolveHome(Token.GetText()))));
 		TokenList.clear(0);
 	}
 

@@ -2,25 +2,25 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZLetVarNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZVarBlockNode;
-import libbun.parser.ZVisitor;
+import libbun.ast.BNode;
+import libbun.ast.BBlockNode;
+import libbun.ast.decl.ZVarBlockNode;
+import libbun.ast.decl.BLetVarNode;
+import libbun.parser.BVisitor;
 
-public class DShellForNode extends ZNode {
+public class DShellForNode extends BNode {
 	public final static int _VarDecl = 0;	// LetVarNode
 	public final static int _Init  = 1;	// VarBlockNode
 	public final static int _Cond  = 2;
 	public final static int _Next  = 3;
 	public final static int _Block = 4;
 
-	public DShellForNode(ZNode ParentNode) {
+	public DShellForNode(BNode ParentNode) {
 		super(ParentNode, null, 5);
 	}
 
 	@Override
-	public void Accept(ZVisitor Visitor) {
+	public void Accept(BVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitForNode(this);
 		}
@@ -33,16 +33,16 @@ public class DShellForNode extends ZNode {
 		return this.AST[_Init] != null && this.AST[_Init] instanceof ZVarBlockNode;
 	}
 
-	public final ZLetVarNode VarDeclNode() {
+	public final BLetVarNode VarDeclNode() {
 		if(this.AST[_VarDecl] == null) {
 			this.AST[_VarDecl] = ((ZVarBlockNode)this.AST[_Init]).VarDeclNode();
 		}
-		return (ZLetVarNode) this.AST[_VarDecl];
+		return (BLetVarNode) this.AST[_VarDecl];
 	}
 
-	public final ZNode CondNode() {
-		ZNode CondNode = this.AST[_Cond];
-		if(!(CondNode.ParentNode instanceof ZBlockNode)) {
+	public final BNode CondNode() {
+		BNode CondNode = this.AST[_Cond];
+		if(!(CondNode.ParentNode instanceof BBlockNode)) {
 			CondNode.ParentNode = this.BlockNode();
 		}
 		return CondNode;
@@ -52,18 +52,18 @@ public class DShellForNode extends ZNode {
 		return this.NextNode() != null;
 	}
 
-	public final ZNode NextNode() {
-		ZNode NextNode = this.AST[_Next];
-		if(!(NextNode.ParentNode instanceof ZBlockNode)) {
+	public final BNode NextNode() {
+		BNode NextNode = this.AST[_Next];
+		if(!(NextNode.ParentNode instanceof BBlockNode)) {
 			NextNode.ParentNode = this.BlockNode();
 		}
 		return NextNode;
 	}
 
-	public final ZBlockNode BlockNode() {
-		ZNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof ZBlockNode) {
-			return (ZBlockNode) BlockNode;
+	public final BBlockNode BlockNode() {
+		BNode BlockNode = this.AST[_Block];
+		if(BlockNode instanceof BBlockNode) {
+			return (BBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need BlockNode");
 		return null;

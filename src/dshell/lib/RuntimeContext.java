@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import libbun.util.BLib;
+
 import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
@@ -16,8 +18,6 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.varia.NullAppender;
-
-import libbun.util.LibZen;
 
 public class RuntimeContext implements Serializable {
 	private static final long serialVersionUID = -2807505115721639912L;
@@ -111,7 +111,7 @@ public class RuntimeContext implements Serializable {
 
 	public void setDebugMode(boolean debugMode) {
 		this.debugMode = debugMode;
-		LibZen.DebugMode = debugMode;
+		BLib.DebugMode = debugMode;
 	}
 
 	public boolean isDebugMode() {

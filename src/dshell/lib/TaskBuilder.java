@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import libbun.lang.bun.shell.ShellUtils;
-import libbun.util.ZStringArray;
+import libbun.util.BStringArray;
 
 import dshell.lang.DShellGrammar;
 import dshell.lib.ArrayUtils.TaskArray;
@@ -194,7 +194,7 @@ public class TaskBuilder {
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static ZStringArray ExecCommandStringArray(CommandArg[][] cmds) {
+	public static BStringArray ExecCommandStringArray(CommandArg[][] cmds) {
 		return ArrayUtils.createStringArray(Utils.splitWithDelim(ExecCommandString(cmds)));
 	}
 

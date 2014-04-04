@@ -1,28 +1,28 @@
 package dshell.grammar;
 
-import libbun.parser.ast.ZNode;
-import libbun.parser.ZToken;
-import libbun.parser.ZTokenContext;
-import libbun.type.ZType;
+import libbun.type.BType;
+import libbun.util.BMatchFunction;
 import libbun.util.Var;
-import libbun.util.ZMatchFunction;
+import libbun.ast.BNode;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.lang.bun.shell.CommandSymbolPatternFunction;
 import libbun.lang.bun.shell.PrefixOptionPatternFunction;
+import libbun.parser.BToken;
+import libbun.parser.BTokenContext;
 
-public class SubstitutionPatternFunc extends ZMatchFunction {
+public class SubstitutionPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$Substitution$";
 
-	@Override public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		@Var ZToken Token = TokenContext.GetToken(ZTokenContext._MoveNext);
+	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+		@Var BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
 		if(Token.EqualsText("$") && TokenContext.MatchToken("(")) {
-			@Var ZNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, ZTokenContext._Optional);
+			@Var BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, BTokenContext._Optional);
 			if(Node == null) {
-				Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, ZTokenContext._Required);
+				Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, BTokenContext._Required);
 			}
-			Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
+			Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
 			if(Node instanceof CommandNode) {
-				((CommandNode)Node).SetType(ZType.StringType);
+				((CommandNode)Node).SetType(BType.StringType);
 			}
 			return Node;
 		}

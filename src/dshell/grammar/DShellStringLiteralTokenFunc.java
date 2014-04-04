@@ -1,22 +1,21 @@
 package dshell.grammar;
 
+import libbun.ast.BBlockNode;
+import libbun.ast.BNode;
+import libbun.ast.literal.BStringNode;
+import libbun.parser.BSourceContext;
+import libbun.parser.BToken;
+import libbun.parser.BTokenContext;
+import libbun.util.BArray;
+import libbun.util.BLib;
+import libbun.util.BTokenFunction;
 import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
 
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZStringNode;
-import libbun.parser.ZSourceContext;
-import libbun.parser.ZToken;
-import libbun.parser.ZTokenContext;
-import libbun.util.LibZen;
-import libbun.util.ZArray;
-import libbun.util.ZTokenFunction;
-
-public class DShellStringLiteralTokenFunc extends ZTokenFunction{
+public class DShellStringLiteralTokenFunc extends BTokenFunction{
 	@Override
-	public boolean Invoke(ZSourceContext SourceContext) {
-		ZArray<ZNode> NodeList = new ZArray<ZNode>(new ZNode[]{});
+	public boolean Invoke(BSourceContext SourceContext) {
+		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
 		boolean FoundExpr = false;
 		int StartIndex = SourceContext.GetPosition();
 		int CurrentIndex = StartIndex + 1;
@@ -41,7 +40,7 @@ public class DShellStringLiteralTokenFunc extends ZTokenFunction{
 			}
 			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '{') {
 				this.CreateAndAppendStringNode(NodeList, SourceContext, CurrentIndex, SourceContext.GetPosition());
-				ZNode Node = this.CreateExprNode(SourceContext);
+				BNode Node = this.CreateExprNode(SourceContext);
 				if(Node != null) {
 					FoundExpr = true;
 					NodeList.add(Node);
@@ -53,10 +52,10 @@ public class DShellStringLiteralTokenFunc extends ZTokenFunction{
 			}
 			//else if((ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') || ch == '`') {
 			else if(ch == '$' && SourceContext.GetCharAtFromCurrentPosition(1) == '(') {
-				ZTokenContext TokenContext = SourceContext.TokenContext;
+				BTokenContext TokenContext = SourceContext.TokenContext;
 				int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 				int PrevSize = TokenContext.TokenList.size();
-				ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc._PatternName, ZTokenContext._Required);
+				BNode Node = TokenContext.ParsePattern(new BBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc._PatternName, BTokenContext._Required);
 				Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 				if(!Node.IsErrorNode()) {
 					TokenContext.TokenList.clear(PrevSize);
@@ -74,21 +73,21 @@ public class DShellStringLiteralTokenFunc extends ZTokenFunction{
 		return false;
 	}
 
-	private void CreateAndAppendStringNode(ZArray<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
+	private void CreateAndAppendStringNode(BArray<BNode> NodeList, BSourceContext SourceContext, int StartIndex, int EndIndex) {
 		if(StartIndex == EndIndex) {
 			return;
 		}
-		ZToken Token = new ZToken(SourceContext, StartIndex, EndIndex);
-		NodeList.add(new ZStringNode(null, Token, LibZen._UnquoteString(Token.GetText())));
+		BToken Token = new BToken(SourceContext, StartIndex, EndIndex);
+		NodeList.add(new BStringNode(null, Token, BLib._UnquoteString(Token.GetText())));
 	}
 
-	private ZNode CreateExprNode(ZSourceContext SourceContext) {
+	private BNode CreateExprNode(BSourceContext SourceContext) {
 		SourceContext.MoveNext();
 		SourceContext.MoveNext();
-		ZTokenContext TokenContext = SourceContext.TokenContext;
+		BTokenContext TokenContext = SourceContext.TokenContext;
 		int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 		int PrevSize = TokenContext.TokenList.size();
-		ZNode Node = TokenContext.ParsePattern(new ZBlockNode(null, TokenContext.NameSpace), "$Expression$", ZTokenContext._Required);
+		BNode Node = TokenContext.ParsePattern(new BBlockNode(null, TokenContext.NameSpace), "$Expression$", BTokenContext._Required);
 		char ch = SourceContext.GetCharAt(SourceContext.GetPosition() - 1);
 		Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 		if(!Node.IsErrorNode() && ch == '}') {
@@ -98,10 +97,10 @@ public class DShellStringLiteralTokenFunc extends ZTokenFunction{
 		return null;
 	}
 
-	private void OverrideToken(ZArray<ZNode> NodeList, ZSourceContext SourceContext, int StartIndex, int EndIndex) {
-		ZTokenContext TokenContext = SourceContext.TokenContext;
+	private void OverrideToken(BArray<BNode> NodeList, BSourceContext SourceContext, int StartIndex, int EndIndex) {
+		BTokenContext TokenContext = SourceContext.TokenContext;
 		int size = TokenContext.TokenList.size();
-		ZToken Token = new DShellStringLiteralToken(SourceContext, StartIndex, EndIndex);
+		BToken Token = new DShellStringLiteralToken(SourceContext, StartIndex, EndIndex);
 		((DShellStringLiteralToken)Token).SetNodeList(NodeList);
 		TokenContext.TokenList.clear(size - 1);
 		TokenContext.TokenList.add(Token);

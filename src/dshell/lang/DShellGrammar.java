@@ -4,10 +4,12 @@ import java.util.ArrayList;
 
 import libbun.encode.jvm.JavaImportPattern;
 
-import libbun.util.ZMatchFunction;
+import libbun.type.BType;
+import libbun.util.BMatchFunction;
 import libbun.lang.bun.ComparatorPatternFunction;
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZStringNode;
+import libbun.ast.BBlockNode;
+import libbun.ast.decl.BLetVarNode;
+import libbun.ast.literal.BStringNode;
 import libbun.lang.konoha.ContinuePatternFunction;
 import libbun.lang.bun.BunPrecedence;
 import libbun.lang.bun.BunGrammar;
@@ -15,8 +17,8 @@ import libbun.lang.bun.shell.ImportCommandPatternFunction;
 import libbun.lang.bun.shell.ShellGrammar;
 import libbun.lang.bun.shell.ShellUtils;
 import libbun.lang.bun.shell.SimpleArgumentPatternFunction;
-import libbun.parser.ZNameSpace;
-import libbun.parser.ZSyntax;
+import libbun.parser.BNameSpace;
+import libbun.parser.BSyntax;
 import dshell.DShell;
 import dshell.grammar.AssertPatternFunc;
 import dshell.grammar.CommandArgPatternFunc;
@@ -41,7 +43,7 @@ public class DShellGrammar {
 		return "__@$" + Symbol;
 	}
 
-	public static void ImportGrammar(ZNameSpace NameSpace) {
+	public static void ImportGrammar(BNameSpace NameSpace) {
 		// import BunGrammer
 		BunGrammar.ImportGrammar(NameSpace);
 		// import ShellGrammar
@@ -83,12 +85,14 @@ public class DShellGrammar {
 		NameSpace.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
-	private static void setOptionalSymbol(ZNameSpace NameSpace, String symbol) { // FIXME: null
-		NameSpace.SetSymbol(ShellUtils._ToCommandSymbol(symbol), new ZStringNode(new ZBlockNode(null, NameSpace), null, symbol));
+	private static void setOptionalSymbol(BNameSpace NameSpace, String symbol) { // FIXME: null
+		BLetVarNode LetNode = new BLetVarNode(null, BLetVarNode._IsReadOnly, BType.StringType, symbol);
+		LetNode.SetNode(BLetVarNode._InitValue, new BStringNode(null, null, symbol));
+		NameSpace.SetSymbol(ShellUtils._ToCommandSymbol(symbol), LetNode);
 	}
 
-	private static void overrideSyntaxPattern(ZNameSpace NameSpace, String PatternName, ZMatchFunction MatchFunc, boolean isStatement) {
-		ZSyntax Pattern = new ZSyntax(NameSpace, PatternName, MatchFunc);
+	private static void overrideSyntaxPattern(BNameSpace NameSpace, String PatternName, BMatchFunction MatchFunc, boolean isStatement) {
+		BSyntax Pattern = new BSyntax(NameSpace, PatternName, MatchFunc);
 		Pattern.IsStatement = isStatement;
 		NameSpace.SetSyntaxPattern(PatternName, Pattern);
 	}

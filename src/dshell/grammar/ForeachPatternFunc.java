@@ -1,21 +1,21 @@
 package dshell.grammar;
 
+import libbun.ast.BNode;
+import libbun.parser.BTokenContext;
+import libbun.util.BMatchFunction;
 import dshell.ast.sugar.DShellForeachNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ZTokenContext;
-import libbun.util.ZMatchFunction;
 
-public class ForeachPatternFunc extends ZMatchFunction {
+public class ForeachPatternFunc extends BMatchFunction {
 	@Override
-	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZNode Node = new DShellForeachNode(ParentNode);
-		Node = TokenContext.MatchToken(Node, "for", ZTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, "(", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Value, "$Name$", ZTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, "in", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Expr, "$Expression$", ZTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, ")", ZTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Block, "$Block$", ZTokenContext._Required);
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+		BNode Node = new DShellForeachNode(ParentNode);
+		Node = TokenContext.MatchToken(Node, "for", BTokenContext._Required);
+		Node = TokenContext.MatchToken(Node, "(", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Value, "$Name$", BTokenContext._Required);
+		Node = TokenContext.MatchToken(Node, "in", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Expr, "$Expression$", BTokenContext._Required);
+		Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
+		Node = TokenContext.MatchPattern(Node, DShellForeachNode._Block, "$Block$", BTokenContext._Required);
 		return Node;
 	}
 }

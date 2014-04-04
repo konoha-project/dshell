@@ -1,32 +1,32 @@
 package dshell.grammar;
 
+import libbun.ast.BNode;
+import libbun.ast.error.BErrorNode;
+import libbun.parser.BTokenContext;
+import libbun.util.BMatchFunction;
 import dshell.ast.DShellTryNode;
-import libbun.parser.ast.ZErrorNode;
-import libbun.parser.ast.ZNode;
-import libbun.util.ZMatchFunction;
-import libbun.parser.ZTokenContext;
 
-public class DShellTryPatternFunc extends ZMatchFunction {
+public class DShellTryPatternFunc extends BMatchFunction {
 	public final static String CatchPatternName = "$Catch$";
 	@Override
-	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
-		ZNode TryNode = new DShellTryNode(ParentNode);
-		TryNode = TokenContext.MatchToken(TryNode, "try", ZTokenContext._Required);
-		TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode._Try, "$Block$", ZTokenContext._Required);
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+		BNode TryNode = new DShellTryNode(ParentNode);
+		TryNode = TokenContext.MatchToken(TryNode, "try", BTokenContext._Required);
+		TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode._Try, "$Block$", BTokenContext._Required);
 		boolean foundCatchBlock = false;
 		while(true) {
 			if(TokenContext.IsNewLineToken("catch")) {
-				TryNode = TokenContext.MatchPattern(TryNode, ZNode._AppendIndex, DShellTryPatternFunc.CatchPatternName, ZTokenContext._Required);
+				TryNode = TokenContext.MatchPattern(TryNode, BNode._AppendIndex, DShellTryPatternFunc.CatchPatternName, BTokenContext._Required);
 				foundCatchBlock = true;
 				continue;
 			}
 			if(TokenContext.MatchNewLineToken("finally")) {
-				TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode._Finally, "$Block$", ZTokenContext._Required);
+				TryNode = TokenContext.MatchPattern(TryNode, DShellTryNode._Finally, "$Block$", BTokenContext._Required);
 			}
 			break;
 		}
 		if(!foundCatchBlock) {
-			return new ZErrorNode(TryNode, "not found catch block");
+			return new BErrorNode(TryNode, "not found catch block");
 		}
 		return TryNode;
 	}

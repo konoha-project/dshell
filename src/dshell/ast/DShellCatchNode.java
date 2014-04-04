@@ -2,22 +2,22 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import libbun.parser.ast.ZBlockNode;
-import libbun.parser.ast.ZLetVarNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZTypeNode;
-import libbun.parser.ZVisitor;
-import libbun.type.ZType;
+import libbun.ast.BBlockNode;
+import libbun.ast.decl.BLetVarNode;
+import libbun.ast.BNode;
+import libbun.ast.literal.BTypeNode;
+import libbun.parser.BVisitor;
+import libbun.type.BType;
 
-public class DShellCatchNode extends ZNode {
+public class DShellCatchNode extends BNode {
 	public final static int _NameInfo = 0;
 	public final static int _TypeInfo = 1;
 	public final static int _Block = 2;
 
 	private String ExceptionName = null;
-	private ZType ExceptionType = null;
+	private BType ExceptionType = null;
 
-	public DShellCatchNode(ZNode ParentNode) {
+	public DShellCatchNode(BNode ParentNode) {
 		super(ParentNode, null, 3);
 	}
 
@@ -28,35 +28,35 @@ public class DShellCatchNode extends ZNode {
 		return this.ExceptionName;
 	}
 
-	public final ZType ExceptionType() {
+	public final BType ExceptionType() {
 		if(this.ExceptionType == null) {
-			this.ExceptionType = ((ZTypeNode) this.AST[_TypeInfo]).Type;
+			this.ExceptionType = ((BTypeNode) this.AST[_TypeInfo]).Type;
 		}
 		return this.ExceptionType;
 	}
 
-	public void SetExceptionType(ZType Type) {
+	public void SetExceptionType(BType Type) {
 		this.ExceptionType = Type;
 	}
 
-	public ZLetVarNode ToLetVarNode() {
-		ZLetVarNode Node = new ZLetVarNode(this.ParentNode, ZLetVarNode._IsReadOnly);
-		Node.SetNode(ZLetVarNode._NameInfo, this.AST[_NameInfo]);
-		Node.SetNode(ZLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+	public BLetVarNode ToLetVarNode() {
+		BLetVarNode Node = new BLetVarNode(this.ParentNode, BLetVarNode._IsReadOnly, null, null);
+		Node.SetNode(BLetVarNode._NameInfo, this.AST[_NameInfo]);
+		Node.SetNode(BLetVarNode._TypeInfo, this.AST[_TypeInfo]);
 		Node.SetDeclType(this.ExceptionType());
 		return Node;
 	}
 
-	public final ZBlockNode BlockNode() {
-		ZNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof ZBlockNode) {
-			return (ZBlockNode) BlockNode;
+	public final BBlockNode BlockNode() {
+		BNode BlockNode = this.AST[_Block];
+		if(BlockNode instanceof BBlockNode) {
+			return (BBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
 	}
 
-	@Override public void Accept(ZVisitor Visitor) {
+	@Override public void Accept(BVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitCatchNode(this);
 		}

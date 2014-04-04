@@ -1,31 +1,29 @@
 package dshell.grammar;
 
-import libbun.parser.ast.ZEmptyNode;
-import libbun.parser.ast.ZGetNameNode;
-import libbun.parser.ast.ZNode;
-import libbun.parser.ast.ZStringNode;
-import libbun.util.ZMatchFunction;
-import libbun.parser.ZTokenContext;
+import libbun.ast.BNode;
+import libbun.ast.ZEmptyNode;
+import libbun.parser.BTokenContext;
+import libbun.util.BMatchFunction;
 
 /*
  * location www = hoge@192.168.12.3, huge@192.168.2.4:567
  * */
-public class LocationDefinePatternFunc extends ZMatchFunction {
+public class LocationDefinePatternFunc extends BMatchFunction {	//TODO
 	private final LocationPatternFunc locationPattern;
 	public LocationDefinePatternFunc() {
 		this.locationPattern = new LocationPatternFunc();
 	}
 
 	@Override	//TODO: multiple host, ssh
-	public ZNode Invoke(ZNode ParentNode, ZTokenContext TokenContext, ZNode LeftNode) {
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		TokenContext.MoveNext();
-		ZNode Node = TokenContext.ParsePattern(ParentNode, "$Name$", ZTokenContext._Required);
+		BNode Node = TokenContext.ParsePattern(ParentNode, "$Name$", BTokenContext._Required);
 		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
-			ZNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", ZTokenContext._Required);
+			BNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", BTokenContext._Required);
 			if(!ValueNode.IsErrorNode()) {
-				String NameSymbol = ((ZGetNameNode)Node).GetName();
-				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
-				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (ZStringNode)ValueNode);
+//				String NameSymbol = ((BGetNameNode)Node).GetName();
+//				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
+//				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (BStringNode)ValueNode);
 				return new ZEmptyNode(ParentNode, null);
 			}
 		}

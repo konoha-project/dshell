@@ -10,9 +10,9 @@ import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
-import libbun.util.LibZen;
+import libbun.parser.BGenerator;
+import libbun.util.BLib;
 import libbun.encode.jvm.DShellByteCodeGenerator;
-import libbun.parser.ZGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {
@@ -24,7 +24,7 @@ public class DShell {
 	public final static String version = "0.3-unstable";
 	public final static String copyright = "Copyright (c) 2013-2014, Konoha project authors";
 	public final static String license = "BSD-Style Open Source";
-	public final static String shellInfo = progName + ", version " + version + " (" + LibZen._GetPlatform() + ") powered by LibBun";
+	public final static String shellInfo = progName + ", version " + version + " (" + BLib._GetPlatform() + ") powered by LibBun";
 
 	private boolean interactiveMode = true;
 	private boolean autoImportCommand = true;
@@ -186,8 +186,8 @@ public class DShell {
 	}
 
 	public final DShellByteCodeGenerator initGenerator(String ClassName, String GrammarClass) {
-		ZGenerator Generator = LibZen._LoadGenerator(ClassName, null);
-		LibZen._ImportGrammar(Generator.RootNameSpace, GrammarClass);
+		BGenerator Generator = BLib._LoadGenerator(ClassName, null);
+		BLib._ImportGrammar(Generator.RootNameSpace, GrammarClass);
 		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
 		Generator.RequireLibrary("common", null);
 		return (DShellByteCodeGenerator) Generator;

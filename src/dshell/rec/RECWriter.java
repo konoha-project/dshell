@@ -5,6 +5,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
+import libbun.util.BLib;
+
 import net.arnx.jsonic.JSON;
 
 import org.apache.http.HttpResponse;
@@ -14,7 +16,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-import libbun.util.LibZen;
 import dshell.lib.CommandArg;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
@@ -180,7 +181,7 @@ class RecAPI {
 		public String content;
 
 		public RecContext(String assertpoint, String fileName) {
-			String fileContent = LibZen._LoadTextFile(fileName);
+			String fileContent = BLib._LoadTextFile(fileName);
 			if(fileContent == null) {
 				fileContent = "";
 			}
