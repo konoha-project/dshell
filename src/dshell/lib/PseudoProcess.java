@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
+import libbun.util.BLib;
 import dshell.lib.CommandArg.SubstitutedArg;
 
 public abstract class PseudoProcess {
@@ -143,29 +144,64 @@ class PipeStreamHandler extends Thread {
 
 	@Override
 	public void run() {
-		try {
-			byte[] buffer = new byte[defaultBufferSize];
-			int read = 0;
-			while(read > -1) {
+		byte[] buffer = new byte[defaultBufferSize];
+		int read = 0;
+		while(read > -1) {
+			try {
 				read = this.input.read(buffer, 0, buffer.length);
-				if(read > -1) {
-					for(OutputStream output : this.outputs) {
+			}
+			catch(IOException e) {
+				if(BLib.DebugMode) {
+					System.err.println("debug print");
+					e.printStackTrace();
+				}
+				read = -1;
+			}
+			if(read > -1) {
+				for(OutputStream output : this.outputs) {
+					try {
 						output.write(buffer, 0, read);
+					}
+					catch(IOException e) {
+						if(BLib.DebugMode) {
+							System.err.println("debug print");
+							e.printStackTrace();
+						}
 					}
 				}
 			}
-			if(this.closeInput) {
+		}
+		this.closeInput();
+		this.closeOutputs();
+	}
+
+	private void closeInput() {
+		if(this.closeInput) {
+			try {
 				this.input.close();
 			}
-			for(int i = 0; i < this.outputs.length; i++) {
-				if(this.closeOutputs[i]) {
-					this.outputs[i].close();
+			catch (IOException e) {
+				if(BLib.DebugMode) {
+					System.err.println("debug print");
+					e.printStackTrace();
 				}
 			}
 		}
-		catch (IOException e) {
-			e.printStackTrace();
-			Utils.fatal(1, "IO problem");
+	}
+
+	private void closeOutputs() {
+		for(int i = 0; i < this.outputs.length; i++) {
+			if(this.closeOutputs[i]) {
+				try {
+					this.outputs[i].close();
+				}
+				catch (IOException e) {
+					if(BLib.DebugMode) {
+						System.err.println("debug print");
+						e.printStackTrace();
+					}
+				}
+			}
 		}
 	}
 
