@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import zen.util.LibZen;
 import dshell.lib.CommandArg.SubstitutedArg;
@@ -120,7 +122,6 @@ public abstract class PseudoProcess {
 	}
 }
 
-//copied from http://blog.art-of-coding.eu/piping-between-processes/
 class PipeStreamHandler extends Thread {
 	public final static int defaultBufferSize = 512;
 	private final InputStream input;
@@ -144,37 +145,46 @@ class PipeStreamHandler extends Thread {
 
 	@Override
 	public void run() {
+		ArrayList<OutputStream> targetOutputList = new ArrayList<OutputStream>();
+		targetOutputList.addAll(Arrays.asList(this.outputs));
 		byte[] buffer = new byte[defaultBufferSize];
 		int read = 0;
-		while(read > -1) {
-			try {
-				read = this.input.read(buffer, 0, buffer.length);
-			}
-			catch(IOException e) {
-				if(LibZen.DebugMode) {
-					System.err.println("debug print");
-					e.printStackTrace();
+		try {
+			while((read = this.input.read(buffer, 0, buffer.length)) > -1) {
+				if(!this.writeToStreams(targetOutputList, buffer, read)) {
+					break;
 				}
-				read = -1;
 			}
-			if(read > -1) {
-				for(OutputStream output : this.outputs) {
-					try {
-						output.write(buffer, 0, read);
-					}
-					catch(IOException e) {
-						if(LibZen.DebugMode) {
-							System.err.println("debug print");
-							e.printStackTrace();
-						}
-					}
-				}
+		}
+		catch (IOException e) {
+			if(LibZen.DebugMode) {
+				System.err.println("input problem");
+				e.printStackTrace();
 			}
 		}
 		this.closeInput();
 		this.closeOutputs();
 	}
 
+	private boolean writeToStreams(ArrayList<OutputStream> targetOutputList, byte[] buffer, int readSize) {
+		if(targetOutputList.size() == 0) {
+			return false;
+		}
+		for(Iterator<OutputStream> iterator = targetOutputList.iterator(); iterator.hasNext(); ) {
+			OutputStream output = iterator.next();
+			try {
+				output.write(buffer, 0, readSize);
+			}
+			catch(IOException e) {
+				iterator.remove();
+				if(LibZen.DebugMode) {
+					System.err.println("output problem");
+					e.printStackTrace();
+				}
+			}
+		}
+		return true;
+	}
 	private void closeInput() {
 		if(this.closeInput) {
 			try {
@@ -182,7 +192,7 @@ class PipeStreamHandler extends Thread {
 			}
 			catch (IOException e) {
 				if(LibZen.DebugMode) {
-					System.err.println("debug print");
+					System.err.println("close input problem");
 					e.printStackTrace();
 				}
 			}
@@ -197,7 +207,7 @@ class PipeStreamHandler extends Thread {
 				}
 				catch (IOException e) {
 					if(LibZen.DebugMode) {
-						System.err.println("debug print");
+						System.err.println("close output problem");
 						e.printStackTrace();
 					}
 				}
