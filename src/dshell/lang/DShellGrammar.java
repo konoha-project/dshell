@@ -7,7 +7,6 @@ import libbun.encode.jvm.JavaImportPattern;
 import libbun.type.BType;
 import libbun.util.BMatchFunction;
 import libbun.lang.bun.ComparatorPatternFunction;
-import libbun.ast.BBlockNode;
 import libbun.ast.decl.BLetVarNode;
 import libbun.ast.literal.BStringNode;
 import libbun.lang.konoha.ContinuePatternFunction;
@@ -22,6 +21,7 @@ import libbun.parser.BSyntax;
 import dshell.DShell;
 import dshell.grammar.AssertPatternFunc;
 import dshell.grammar.CommandArgPatternFunc;
+import dshell.grammar.DShellBlockPatternFunc;
 import dshell.grammar.DShellImportCommandPatternFunc;
 import dshell.grammar.ExportEnvPatternFunc;
 import dshell.grammar.ForPatternFunc;
@@ -76,6 +76,7 @@ public class DShellGrammar {
 		NameSpace.DefineExpression("$", substitutionPattern);
 		NameSpace.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
 		overrideSyntaxPattern(NameSpace, "assert", new AssertPatternFunc(), false);
+		overrideSyntaxPattern(NameSpace, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc(), false);
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
