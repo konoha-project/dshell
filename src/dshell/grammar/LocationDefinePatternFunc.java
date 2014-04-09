@@ -1,7 +1,7 @@
 package dshell.grammar;
 
 import libbun.ast.BNode;
-import libbun.ast.ZEmptyNode;
+import libbun.ast.EmptyNode;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;
 
@@ -24,10 +24,9 @@ public class LocationDefinePatternFunc extends BMatchFunction {	//TODO
 //				String NameSymbol = ((BGetNameNode)Node).GetName();
 //				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
 //				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (BStringNode)ValueNode);
-				return new ZEmptyNode(ParentNode, null);
+				return new EmptyNode(ParentNode, null);
 			}
 		}
 		return null;
 	}
-
 }

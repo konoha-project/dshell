@@ -3,4 +3,3 @@ import command cat grep echo
 let str : String = echo "hoge" | grep hoge
 assert(str == "hoge")
 
-

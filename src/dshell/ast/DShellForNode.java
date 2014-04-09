@@ -3,9 +3,9 @@ package dshell.ast;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.ast.BBlockNode;
-import libbun.ast.decl.ZVarBlockNode;
-import libbun.ast.decl.BLetVarNode;
+import libbun.ast.BunBlockNode;
+import libbun.ast.decl.BunLetVarNode;
+import libbun.ast.decl.BunVarBlockNode;
 import libbun.parser.BVisitor;
 
 public class DShellForNode extends BNode {
@@ -30,19 +30,19 @@ public class DShellForNode extends BNode {
 	}
 
 	public final boolean HasDeclNode() {
-		return this.AST[_Init] != null && this.AST[_Init] instanceof ZVarBlockNode;
+		return this.AST[_Init] != null && this.AST[_Init] instanceof BunVarBlockNode;
 	}
 
-	public final BLetVarNode VarDeclNode() {
+	public final BunLetVarNode VarDeclNode() {
 		if(this.AST[_VarDecl] == null) {
-			this.AST[_VarDecl] = ((ZVarBlockNode)this.AST[_Init]).VarDeclNode();
+			this.AST[_VarDecl] = ((BunVarBlockNode)this.AST[_Init]).VarDeclNode();
 		}
-		return (BLetVarNode) this.AST[_VarDecl];
+		return (BunLetVarNode) this.AST[_VarDecl];
 	}
 
 	public final BNode CondNode() {
 		BNode CondNode = this.AST[_Cond];
-		if(!(CondNode.ParentNode instanceof BBlockNode)) {
+		if(!(CondNode.ParentNode instanceof BunBlockNode)) {
 			CondNode.ParentNode = this.BlockNode();
 		}
 		return CondNode;
@@ -54,16 +54,16 @@ public class DShellForNode extends BNode {
 
 	public final BNode NextNode() {
 		BNode NextNode = this.AST[_Next];
-		if(!(NextNode.ParentNode instanceof BBlockNode)) {
+		if(!(NextNode.ParentNode instanceof BunBlockNode)) {
 			NextNode.ParentNode = this.BlockNode();
 		}
 		return NextNode;
 	}
 
-	public final BBlockNode BlockNode() {
+	public final BunBlockNode BlockNode() {
 		BNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof BBlockNode) {
-			return (BBlockNode) BlockNode;
+		if(BlockNode instanceof BunBlockNode) {
+			return (BunBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need BlockNode");
 		return null;

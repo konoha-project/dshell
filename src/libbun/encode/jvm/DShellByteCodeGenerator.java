@@ -8,28 +8,26 @@ import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.INSTANCEOF;
-import static org.objectweb.asm.Opcodes.GETSTATIC;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
-import libbun.ast.BBlockNode;
 import libbun.ast.BNode;
-import libbun.ast.BSugarNode;
-import libbun.ast.ZEmptyNode;
+import libbun.ast.BunBlockNode;
+import libbun.ast.EmptyNode;
+import libbun.ast.SyntaxSugarNode;
 import libbun.ast.binary.BInstanceOfNode;
-import libbun.ast.decl.BClassNode;
-import libbun.ast.decl.BFunctionNode;
-import libbun.ast.decl.BLetVarNode;
-import libbun.ast.decl.ZTopLevelNode;
-import libbun.ast.decl.ZVarBlockNode;
-import libbun.ast.error.BErrorNode;
-import libbun.ast.expression.BGetNameNode;
-import libbun.ast.statement.BReturnNode;
-import libbun.ast.statement.BThrowNode;
-import libbun.ast.sugar.ZContinueNode;
+import libbun.ast.decl.BunClassNode;
+import libbun.ast.decl.BunFunctionNode;
+import libbun.ast.decl.BunLetVarNode;
+import libbun.ast.decl.BunVarBlockNode;
+import libbun.ast.decl.TopLevelNode;
+import libbun.ast.error.ErrorNode;
+import libbun.ast.statement.BunReturnNode;
+import libbun.ast.statement.BunThrowNode;
+import libbun.ast.sugar.BunContinueNode;
 import libbun.encode.jvm.JavaMethodTable;
 import libbun.encode.jvm.JavaTypeTable;
 
@@ -64,7 +62,7 @@ import libbun.util.BArray;
 import libbun.util.BLib;
 
 public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
-	private BFunctionNode untypedMainNode = null;
+	private BunFunctionNode untypedMainNode = null;
 	private LinkedList<String> topLevelSymbolList;
 
 	private Method ExecCommandVoid;
@@ -209,7 +207,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 	}
 
-	@Override public void VisitThrowNode(BThrowNode Node) {
+	@Override public void VisitThrowNode(BunThrowNode Node) {
 		Node.ExprNode().Accept(this);
 		this.AsmBuilder.visitInsn(ATHROW);
 	}
@@ -227,7 +225,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.invokeStaticMethod(null, method);
 	}
 
- 	private void VisitNativeInstanceOfNode(BInstanceOfNode Node) {
+	private void VisitNativeInstanceOfNode(BInstanceOfNode Node) {
+		if(!Node.TargetType().Equals(JavaTypeTable.GetZenType(this.GetJavaClass(Node.TargetType())))) {
+			Node.LeftNode().Accept(this);
+			this.AsmBuilder.Pop(Node.LeftNode().Type);
+			this.AsmBuilder.PushBoolean(false);
+			return;
+		}
 		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
 		if(Node.TargetType().IsIntType()) {
 			JavaClass = Long.class;
@@ -261,25 +265,25 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	@Override public void VisitErrorNode(BErrorNode Node) {
+	@Override public void VisitErrorNode(ErrorNode Node) {
 		BLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new ErrorNodeFoundException();
 	}
 
-	@Override public void VisitSugarNode(BSugarNode Node) {
-		if(Node instanceof ZContinueNode) {
-			this.VisitContinueNode((ZContinueNode) Node);
+	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
+		if(Node instanceof BunContinueNode) {
+			this.VisitContinueNode((BunContinueNode) Node);
 		}
 		else if(Node instanceof CommandNode) {
 			this.VisitCommandNode((CommandNode) Node);
 		}
 		else {
-			super.VisitSugarNode(Node);
+			super.VisitSyntaxSugarNode(Node);
 		}
 	}
 
 	@Override
-	public void VisitContinueNode(ZContinueNode Node) {
+	public void VisitContinueNode(BunContinueNode Node) {
 		Label l = this.AsmBuilder.ContinueLabelStack.peek();
 		this.AsmBuilder.visitJumpInsn(GOTO, l);
 	}
@@ -311,31 +315,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 		this.AsmBuilder.BreakLabelStack.pop();
 		this.AsmBuilder.ContinueLabelStack.pop();
-	}
-
-	private void VisitGlobalNameNode(BGetNameNode Node) {
-		if(Node.ResolvedNode instanceof BLetVarNode) {
-			BLetVarNode letNode = (BLetVarNode) Node.ResolvedNode;
-			Class<?> JavaClass = this.GetJavaClass(letNode.GetAstType(BLetVarNode._NameInfo));
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, this.NameGlobalNameClass(letNode.GetUniqueName(this)), "_", JavaClass);
-		}
-		else {
-			this.VisitErrorNode(new BErrorNode(Node, "unimplemented ResolvedNode: " + Node.ResolvedNode.getClass().getName()));
-		}
-	}
-
-	@Override
-	public void VisitGetNameNode(BGetNameNode Node) {
-		if(Node.ResolvedNode == null) {
-			this.VisitErrorNode(new BErrorNode(Node, "undefined symbol: " + Node.GetUniqueName(this)));
-		}
-		
-		if(Node.ResolvedNode.GetDefiningFunctionNode() == null) {
-			this.VisitGlobalNameNode(Node);
-			return;
-		}
-		this.AsmBuilder.LoadLocal(Node.GetUniqueName(this));
-		this.AsmBuilder.CheckReturnCast(Node, this.AsmBuilder.GetLocalType(Node.GetUniqueName(this)));
 	}
 
 	private void invokeStaticMethod(BType type, Method method) { //TODO: check return type cast
@@ -411,15 +390,15 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	@Override
 	protected boolean ExecStatement(BNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
-		if(Node instanceof ZEmptyNode) {
+		if(Node instanceof EmptyNode) {
 			return this.IsVisitable();
 		}
-		if(Node instanceof ZTopLevelNode) {
-			((ZTopLevelNode)Node).Perform(this.RootNameSpace);
+		if(Node instanceof TopLevelNode) {
+			((TopLevelNode)Node).Perform(this.RootNameSpace);
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof BFunctionNode || Node instanceof BClassNode || Node instanceof BLetVarNode || 
+		if(Node instanceof BunFunctionNode || Node instanceof BunClassNode || Node instanceof BunLetVarNode || 
 				Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
 			Node = this.TypeChecker.CheckType(Node, BType.VarType);
 			Node.Type = BType.VoidType;
@@ -436,10 +415,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		else {
 			if(this.untypedMainNode == null) {
-				this.untypedMainNode = new BFunctionNode(Node.ParentNode);
+				this.untypedMainNode = new BunFunctionNode(Node.ParentNode);
 				this.untypedMainNode.GivenName = "main";
 				this.untypedMainNode.SourceToken = Node.SourceToken;
-				this.untypedMainNode.SetNode(BFunctionNode._Block, new BBlockNode(this.untypedMainNode, null));
+				this.untypedMainNode.SetNode(BunFunctionNode._Block, new BunBlockNode(this.untypedMainNode, null));
 			}
 			this.untypedMainNode.BlockNode().Append(Node);
 		}
@@ -481,7 +460,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			System.exit(1);
 		}
 		try {
-			BFunctionNode Node = (BFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
+			BunFunctionNode Node = (BunFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
 			Node.Type = BType.VoidType;
 			Node.IsExport = true;
 			Node.Accept(this);
@@ -515,11 +494,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private BNode checkTopLevelSupport(BNode Node) {
-		if(Node instanceof ZVarBlockNode || Node instanceof BReturnNode) {
-			Node = new BErrorNode(Node, "only available inside function");
+		if(Node instanceof BunVarBlockNode || Node instanceof BunReturnNode) {
+			Node = new ErrorNode(Node, "only available inside function");
 		}
-		else if(Node instanceof BLetVarNode && !((BLetVarNode)Node).IsReadOnly()) {
-			Node = new BErrorNode(Node, "only available inside function");
+		else if(Node instanceof BunLetVarNode && !((BunLetVarNode)Node).IsReadOnly()) {
+			Node = new ErrorNode(Node, "only available inside function");
 		}
 		return Node;
 	}

@@ -2,13 +2,12 @@ package dshell.lang;
 
 import java.util.ArrayList;
 
+import libbun.ast.decl.BunLetVarNode;
+import libbun.ast.literal.BunStringNode;
 import libbun.encode.jvm.JavaImportPattern;
 
 import libbun.type.BType;
 import libbun.util.BMatchFunction;
-import libbun.lang.bun.ComparatorPatternFunction;
-import libbun.ast.decl.BLetVarNode;
-import libbun.ast.literal.BStringNode;
 import libbun.lang.konoha.ContinuePatternFunction;
 import libbun.lang.bun.BunPrecedence;
 import libbun.lang.bun.BunGrammar;
@@ -36,7 +35,7 @@ import dshell.grammar.LocationDefinePatternFunc;
 import dshell.grammar.SubstitutionPatternFunc;
 import dshell.lib.BuiltinCommand;
 
-public class DShellGrammar {
+public class DShellGrammar {	//FIXME
 	public final static String location = "location";
 
 	public static String toLocationSymbol(String Symbol) {
@@ -50,7 +49,7 @@ public class DShellGrammar {
 		ShellGrammar.ImportGrammar(NameSpace);
 		// import DShell Specific Grammar
 		ImportCommandPatternFunction importCommandPattern = new DShellImportCommandPatternFunc();
-		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
+//		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 
 		NameSpace.AppendTokenFunc("\"", new DShellStringLiteralTokenFunc());
@@ -63,8 +62,8 @@ public class DShellGrammar {
 		overrideSyntaxPattern(NameSpace, ImportCommandPatternFunction._PatternName, importCommandPattern, false);
 		overrideSyntaxPattern(NameSpace, SimpleArgumentPatternFunction._PatternName, new CommandArgPatternFunc(), false);
 
-		NameSpace.DefineRightExpression("=~", BunPrecedence._CStyleEquals, comparatorPattern);
-		NameSpace.DefineRightExpression("!~", BunPrecedence._CStyleEquals, comparatorPattern);
+//		NameSpace.DefineRightExpression("=~", BunPrecedence._CStyleEquals, comparatorPattern);
+//		NameSpace.DefineRightExpression("!~", BunPrecedence._CStyleEquals, comparatorPattern);
 		overrideSyntaxPattern(NameSpace, "try", new DShellTryPatternFunc(), true);
 		overrideSyntaxPattern(NameSpace, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc(), true);
 		NameSpace.DefineStatement(location, new LocationDefinePatternFunc());
@@ -87,8 +86,8 @@ public class DShellGrammar {
 	}
 
 	private static void setOptionalSymbol(BNameSpace NameSpace, String symbol) { // FIXME: null
-		BLetVarNode LetNode = new BLetVarNode(null, BLetVarNode._IsReadOnly, BType.StringType, symbol);
-		LetNode.SetNode(BLetVarNode._InitValue, new BStringNode(null, null, symbol));
+		BunLetVarNode LetNode = new BunLetVarNode(null, BunLetVarNode._IsReadOnly, BType.StringType, symbol);
+		LetNode.SetNode(BunLetVarNode._InitValue, new BunStringNode(null, null, symbol));
 		NameSpace.SetSymbol(ShellUtils._ToCommandSymbol(symbol), LetNode);
 	}
 

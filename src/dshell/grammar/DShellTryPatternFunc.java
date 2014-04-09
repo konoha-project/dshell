@@ -1,7 +1,7 @@
 package dshell.grammar;
 
 import libbun.ast.BNode;
-import libbun.ast.error.BErrorNode;
+import libbun.ast.error.ErrorNode;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;
 import dshell.ast.DShellTryNode;
@@ -26,9 +26,8 @@ public class DShellTryPatternFunc extends BMatchFunction {
 			break;
 		}
 		if(!foundCatchBlock) {
-			return new BErrorNode(TryNode, "not found catch block");
+			return new ErrorNode(TryNode, "not found catch block");
 		}
 		return TryNode;
 	}
-
 }

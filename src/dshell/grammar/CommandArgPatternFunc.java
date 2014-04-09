@@ -3,7 +3,7 @@ package dshell.grammar;
 import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.ast.literal.BStringNode;
+import libbun.ast.literal.BunStringNode;
 import libbun.lang.bun.shell.ArgumentNode;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.lang.bun.shell.CommandSymbolPatternFunction;
@@ -38,7 +38,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			}
 			else if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				NodeList.add(new BStringNode(ParentNode, null, BLib._UnquoteString(Token.GetText())));
+				NodeList.add(new BunStringNode(ParentNode, null, BLib._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);
@@ -113,7 +113,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			}
 		}
 		@Var BToken Token = new BToken(TokenContext.Source, StartIndex, EndIndex);
-		NodeList.add(new BStringNode(null, Token, BLib._UnquoteString(this.ResolveHome(Token.GetText()))));
+		NodeList.add(new BunStringNode(null, Token, BLib._UnquoteString(this.ResolveHome(Token.GetText()))));
 		TokenList.clear(0);
 	}
 

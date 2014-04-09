@@ -1,11 +1,13 @@
 package dshell.lang;
 
-import libbun.ast.BBlockNode;
+import libbun.ast.BunBlockNode;
 import libbun.ast.BNode;
-import libbun.ast.BSugarNode;
-import libbun.ast.statement.BThrowNode;
-import libbun.ast.statement.BWhileNode;
-import libbun.ast.sugar.ZContinueNode;
+import libbun.ast.SyntaxSugarNode;
+import libbun.ast.binary.BInstanceOfNode;
+import libbun.ast.binary.BinaryOperatorNode;
+import libbun.ast.statement.BunThrowNode;
+import libbun.ast.statement.BunWhileNode;
+import libbun.ast.sugar.BunContinueNode;
 import libbun.encode.jvm.JavaTypeTable;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.BunTypeSafer;
@@ -37,7 +39,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			else if(Node.RetType().IsStringType()) {
 				ContextType = BType.StringType;
 			}
-			else if(ContextType.IsVarType() && Node.ParentNode instanceof BBlockNode) {
+			else if(ContextType.IsVarType() && Node.ParentNode instanceof BunBlockNode) {
 				ContextType = BType.VoidType;
 			}
 			else if(ContextType.IsVarType()) {
@@ -77,7 +79,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			this.ReturnErrorNode(Node, Node.GetAstToken(DShellCatchNode._TypeInfo), "require DShellException type");
 			return;
 		}
-		BBlockNode BlockNode = Node.BlockNode();
+		BunBlockNode BlockNode = Node.BlockNode();
 		if(!(Node.ExceptionType() instanceof BVarType)) {
 			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
 			BlockNode.GetBlockNameSpace().SetSymbol(Node.ExceptionName(), Node.ToLetVarNode());
@@ -100,33 +102,38 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		return false;
 	}
 
-	@Override public void VisitThrowNode(BThrowNode Node) {
-		this.CheckTypeAt(Node, BThrowNode._Expr, BType.VarType);
+	@Override public void VisitThrowNode(BunThrowNode Node) {
+		this.CheckTypeAt(Node, BunThrowNode._Expr, BType.VarType);
 		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
-			this.ReturnErrorNode(Node, Node.GetAstToken(BThrowNode._Expr), "require DShellException type");
+			this.ReturnErrorNode(Node, Node.GetAstToken(BunThrowNode._Expr), "require DShellException type");
 			return;
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);
 	}
 
-	@Override public void VisitSugarNode(BSugarNode Node) {
-		if(Node instanceof ZContinueNode) {
-			this.VisitContinueNode((ZContinueNode) Node);
+	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
+		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.VarType);
+		this.ReturnTypeNode(Node, BType.BooleanType);
+	}
+
+	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
+		if(Node instanceof BunContinueNode) {
+			this.VisitContinueNode((BunContinueNode) Node);
 		}
 		else if(Node instanceof CommandNode) {
 			this.VisitCommandNode((CommandNode) Node);
 		}
 		else {
-			super.VisitSugarNode(Node);
+			super.VisitSyntaxSugarNode(Node);
 		}
 	}
 
 	@Override
-	public void VisitContinueNode(ZContinueNode Node) {
+	public void VisitContinueNode(BunContinueNode Node) {
 		BNode CurrentNode = Node;
 		boolean FoundWhile = false;
 		while(CurrentNode != null) {
-			if(CurrentNode instanceof BWhileNode || CurrentNode instanceof DShellForNode) {
+			if(CurrentNode instanceof BunWhileNode || CurrentNode instanceof DShellForNode) {
 				FoundWhile = true;
 				break;
 			}

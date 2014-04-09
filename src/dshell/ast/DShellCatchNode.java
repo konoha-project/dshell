@@ -2,10 +2,10 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import libbun.ast.BBlockNode;
-import libbun.ast.decl.BLetVarNode;
+import libbun.ast.BunBlockNode;
+import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.BNode;
-import libbun.ast.literal.BTypeNode;
+import libbun.ast.literal.BunTypeNode;
 import libbun.parser.BVisitor;
 import libbun.type.BType;
 
@@ -30,7 +30,7 @@ public class DShellCatchNode extends BNode {
 
 	public final BType ExceptionType() {
 		if(this.ExceptionType == null) {
-			this.ExceptionType = ((BTypeNode) this.AST[_TypeInfo]).Type;
+			this.ExceptionType = ((BunTypeNode) this.AST[_TypeInfo]).Type;
 		}
 		return this.ExceptionType;
 	}
@@ -39,18 +39,18 @@ public class DShellCatchNode extends BNode {
 		this.ExceptionType = Type;
 	}
 
-	public BLetVarNode ToLetVarNode() {
-		BLetVarNode Node = new BLetVarNode(this.ParentNode, BLetVarNode._IsReadOnly, null, null);
-		Node.SetNode(BLetVarNode._NameInfo, this.AST[_NameInfo]);
-		Node.SetNode(BLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+	public BunLetVarNode ToLetVarNode() {
+		BunLetVarNode Node = new BunLetVarNode(this.ParentNode, BunLetVarNode._IsReadOnly, null, null);
+		Node.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
+		Node.SetNode(BunLetVarNode._TypeInfo, this.AST[_TypeInfo]);
 		Node.SetDeclType(this.ExceptionType());
 		return Node;
 	}
 
-	public final BBlockNode BlockNode() {
+	public final BunBlockNode BlockNode() {
 		BNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof BBlockNode) {
-			return (BBlockNode) BlockNode;
+		if(BlockNode instanceof BunBlockNode) {
+			return (BunBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;

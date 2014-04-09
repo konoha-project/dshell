@@ -2,12 +2,12 @@ package dshell.ast;
 
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
-import libbun.ast.BBlockNode;
-import libbun.ast.BListNode;
+import libbun.ast.AbstractListNode;
 import libbun.ast.BNode;
+import libbun.ast.BunBlockNode;
 import libbun.parser.BVisitor;
 
-public class DShellTryNode extends BListNode {
+public class DShellTryNode extends AbstractListNode {
 	public final static int _Try = 0;
 	public final static int _Finally = 1;
 
@@ -15,10 +15,10 @@ public class DShellTryNode extends BListNode {
 		super(ParentNode, null, 2);
 	}
 
-	public final BBlockNode TryBlockNode() {
+	public final BunBlockNode TryBlockNode() {
 		BNode BlockNode = this.AST[_Try];
-		if(BlockNode instanceof BBlockNode) {
-			return (BBlockNode) BlockNode;
+		if(BlockNode instanceof BunBlockNode) {
+			return (BunBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
@@ -28,10 +28,10 @@ public class DShellTryNode extends BListNode {
 		return this.AST[_Finally] != null;
 	}
 
-	public final BBlockNode FinallyBlockNode() {
+	public final BunBlockNode FinallyBlockNode() {
 		BNode BlockNode = this.AST[_Finally];
-		if(BlockNode instanceof BBlockNode) {
-			return (BBlockNode) BlockNode;
+		if(BlockNode instanceof BunBlockNode) {
+			return (BunBlockNode) BlockNode;
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;

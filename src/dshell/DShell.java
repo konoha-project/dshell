@@ -14,8 +14,8 @@ import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
-import libbun.parser.BGenerator;
 import libbun.util.BLib;
+import libbun.encode.AbstractGenerator;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
 
@@ -267,8 +267,8 @@ public class DShell {
 		return null;
 	}
 	private final static DShellByteCodeGenerator initGenerator() {
-		BGenerator Generator = BLib._LoadGenerator(DShellByteCodeGenerator.class.getName(), null);
-		BLib._ImportGrammar(Generator.RootNameSpace, DShellGrammar.class.getName());
+		AbstractGenerator Generator = new DShellByteCodeGenerator();
+		DShellGrammar.ImportGrammar(Generator.RootNameSpace);
 		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
 		Generator.RequireLibrary("common", null);
 		return (DShellByteCodeGenerator) Generator;
@@ -282,6 +282,7 @@ public class DShell {
 	public static void showHelpAndExit(int status, PrintStream stream) {
 		stream.println(shellInfo);
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
+		stream.println("Usage: dshell [<options>] -c [<command>]");
 		stream.println("Options:");
 		stream.println("    --debug");
 		stream.println("    --disable-auto-import");
