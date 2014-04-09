@@ -1,4 +1,4 @@
-package dshell.grammar;
+package libbun.lang.bun.shell;
 
 import libbun.ast.BunBlockNode;
 import libbun.ast.BNode;

@@ -1,6 +1,5 @@
-package dshell.grammar;
+package libbun.lang.bun.shell;
 
-import dshell.lang.DShellGrammar;
 import libbun.ast.BNode;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.lang.bun.shell.CommandSymbolPatternFunction;

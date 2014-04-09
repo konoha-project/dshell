@@ -1,4 +1,4 @@
-package dshell.lang;
+package libbun.lang.bun.shell;
 
 import java.util.ArrayList;
 
@@ -18,21 +18,6 @@ import libbun.lang.bun.shell.SimpleArgumentPatternFunction;
 import libbun.parser.BNameSpace;
 import libbun.parser.BSyntax;
 import dshell.DShell;
-import dshell.grammar.AssertPatternFunc;
-import dshell.grammar.CommandArgPatternFunc;
-import dshell.grammar.DShellBlockPatternFunc;
-import dshell.grammar.DShellImportCommandPatternFunc;
-import dshell.grammar.ExportEnvPatternFunc;
-import dshell.grammar.ForPatternFunc;
-import dshell.grammar.DShellCatchPatternFunc;
-import dshell.grammar.DShellImportPatternFunc;
-import dshell.grammar.DShellTryPatternFunc;
-import dshell.grammar.ImportEnvPatternFunc;
-import dshell.grammar.ForeachPatternFunc;
-import dshell.grammar.DShellStringLiteralPatternFunc;
-import dshell.grammar.DShellStringLiteralTokenFunc;
-import dshell.grammar.LocationDefinePatternFunc;
-import dshell.grammar.SubstitutionPatternFunc;
 import dshell.lib.BuiltinCommand;
 
 public class DShellGrammar {	//FIXME

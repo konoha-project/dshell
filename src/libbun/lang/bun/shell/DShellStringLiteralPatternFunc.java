@@ -1,4 +1,4 @@
-package dshell.grammar;
+package libbun.lang.bun.shell;
 
 import dshell.lang.DShellStringLiteralToken;
 import libbun.ast.BNode;

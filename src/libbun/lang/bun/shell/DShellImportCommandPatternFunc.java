@@ -1,4 +1,4 @@
-package dshell.grammar;
+package libbun.lang.bun.shell;
 
 import dshell.lib.Utils;
 import libbun.lang.bun.shell.ImportCommandPatternFunction;

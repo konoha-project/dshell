@@ -1,11 +1,11 @@
 package dshell.lang;
 
 import libbun.ast.BNode;
+import libbun.lang.bun.shell.DShellStringLiteralPatternFunc;
 import libbun.parser.BPatternToken;
 import libbun.parser.BSource;
 import libbun.parser.BSyntax;
 import libbun.util.BArray;
-import dshell.grammar.DShellStringLiteralPatternFunc;
 import dshell.lib.Utils;
 
 public class DShellStringLiteralToken extends BPatternToken {

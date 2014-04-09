@@ -1,4 +1,4 @@
-package dshell.grammar;
+package libbun.lang.bun.shell;
 
 import libbun.ast.BNode;
 import libbun.ast.error.ErrorNode;

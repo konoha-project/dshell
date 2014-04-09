@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
-import dshell.lang.DShellGrammar;
 import dshell.lang.DShellTypeChecker;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
@@ -17,6 +16,7 @@ import dshell.remote.RequestReceiver;
 import libbun.util.BLib;
 import libbun.encode.AbstractGenerator;
 import libbun.encode.jvm.DShellByteCodeGenerator;
+import libbun.lang.bun.shell.DShellGrammar;
 import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {
