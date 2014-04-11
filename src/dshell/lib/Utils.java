@@ -96,9 +96,9 @@ public class Utils {
 		return env == null ? "" : env;
 	}
 
-	public static boolean setEnv(String key, String env) {
+	public static String setEnv(String key, String env) {
 		int ret = RuntimeContext.getContext().setenv(key, env, true);
-		return ret == 0;
+		return ret == 0 ? env : "";
 	}
 
 	public static void setValue(Object targetObject, String fieldName, Object value) {
@@ -174,5 +174,17 @@ public class Utils {
 		public AssertionError(String message) {
 			super(message);
 		}
+	}
+
+	public static void declareGlobalVar(String varName, Object value, boolean isReadOnly) {
+		RuntimeContext.getContext().getVarTable().addEntry(varName, value, isReadOnly);
+	}
+
+	public static void updateGlobalVar(String varName, Object latestValue) {
+		RuntimeContext.getContext().getVarTable().updateEntry(varName, latestValue);
+	}
+
+	public static Object getGlobalVar(String varName) {
+		return RuntimeContext.getContext().getVarTable().getValueOfEntry(varName);
 	}
 }

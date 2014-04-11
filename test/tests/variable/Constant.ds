@@ -6,3 +6,4 @@ function func() {
 }
 
 assert(func() == "green")
+assert(color == "red")

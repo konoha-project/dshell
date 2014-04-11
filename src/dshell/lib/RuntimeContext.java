@@ -45,6 +45,9 @@ public class RuntimeContext implements Serializable {
 	// environmental variable
 	transient private final TreeSet<String> envSet;
 
+	// global variable table
+	transient private final GlobalVariableTable varTable;
+
 	private RuntimeContext(){
 		if(System.getProperty("os.name").startsWith("Windows")) {
 			Utils.fatal(1, "Windows is Not Supported");
@@ -62,6 +65,8 @@ public class RuntimeContext implements Serializable {
 		for(Map.Entry<String, String> entry : envMap.entrySet()) {
 			this.envSet.add(entry.getKey());
 		}
+		// init global varTable
+		this.varTable = new GlobalVariableTable();
 	}
 
 	public Logger getLogger() {
@@ -174,6 +179,10 @@ public class RuntimeContext implements Serializable {
 
 	public String getenv(String key) {
 		return CLibraryWrapper.INSTANCE.getenv(key);
+	}
+
+	public GlobalVariableTable getVarTable() {
+		return this.varTable;
 	}
 
 	private static class ContextHolder {

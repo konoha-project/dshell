@@ -20,6 +20,7 @@ import libbun.type.BVarType;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
+import dshell.ast.DShellWrapperNode;
 import dshell.ast.sugar.DShellForeachNode;
 import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
@@ -161,5 +162,15 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			BLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.VarDeclNode().GetGivenName());
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);
+	}
+
+	@Override
+	public void VisitWrapperNode(DShellWrapperNode Node) {
+		Node.Type = BType.VoidType;
+		BNode TargetNode = Node.getTargetNode();
+		TargetNode = this.CheckType(TargetNode, BType.VarType);
+		TargetNode.Type = BType.VoidType;
+		Node.setTargetNode(TargetNode);
+		this.ReturnNode(Node);
 	}
 }

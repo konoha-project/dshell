@@ -25,6 +25,8 @@ import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.decl.BunVarBlockNode;
 import libbun.ast.decl.TopLevelNode;
 import libbun.ast.error.ErrorNode;
+import libbun.ast.expression.GetNameNode;
+import libbun.ast.expression.SetNameNode;
 import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.sugar.BunContinueNode;
@@ -37,8 +39,7 @@ import org.objectweb.asm.Type;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
-import dshell.ast.sugar.DShellExportEnvNode;
-import dshell.ast.sugar.DShellImportEnvNode;
+import dshell.ast.DShellWrapperNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -73,6 +74,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
+	private Method declareGlobalVar;
+	private Method updateGlobalVar;
+	private Method getGlobalVar;
+
 	public DShellByteCodeGenerator() {
 		super();
 		this.topLevelSymbolList = new LinkedList<String>();
@@ -86,13 +91,17 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaClass(SubstitutedArg.class);
 
 		try {
-			ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
-			ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", CommandArg[][].class);
-			ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", CommandArg[][].class);
-			ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", CommandArg[][].class);
-			ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
-			ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
-			ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
+			this.ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
+			this.ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", CommandArg[][].class);
+			this.ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", CommandArg[][].class);
+			this.ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", CommandArg[][].class);
+			this.ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
+			this.ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
+			this.ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
+
+			this.declareGlobalVar = Utils.class.getMethod("declareGlobalVar", String.class, Object.class, boolean.class);
+			this.updateGlobalVar = Utils.class.getMethod("updateGlobalVar", String.class, Object.class);
+			this.getGlobalVar = Utils.class.getMethod("getGlobalVar", String.class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -144,25 +153,25 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 
 		if(Node.Type.IsBooleanType()) {
-			this.invokeStaticMethod(Node.Type, ExecCommandBool);
+			this.invokeStaticMethod(Node, this.ExecCommandBool);
 		}
 		else if(Node.Type.IsIntType()) {
-			this.invokeStaticMethod(Node.Type, ExecCommandInt);
+			this.invokeStaticMethod(Node, this.ExecCommandInt);
 		}
 		else if(Node.Type.IsStringType()) {
-			this.invokeStaticMethod(Node.Type, ExecCommandString);
+			this.invokeStaticMethod(Node, this.ExecCommandString);
 		}
 		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
-			this.invokeStaticMethod(Node.Type, ExecCommandStringArray);
+			this.invokeStaticMethod(Node, this.ExecCommandStringArray);
 		}
 		else if(Node.Type.equals(JavaTypeTable.GetZenType(Task.class))) {
-			this.invokeStaticMethod(Node.Type, ExecCommandTask);
+			this.invokeStaticMethod(Node, this.ExecCommandTask);
 		}
 		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetZenType(Task.class)))) {
-			this.invokeStaticMethod(Node.Type, ExecCommandTaskArray);
+			this.invokeStaticMethod(Node, this.ExecCommandTaskArray);
 		}
 		else {
-			this.invokeStaticMethod(Node.Type, ExecCommandVoid);
+			this.invokeStaticMethod(Node, this.ExecCommandVoid);
 		}
 	}
 
@@ -261,7 +270,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
 		TargetNode.Accept(this);
 		if(!TargetClass.equals(Object.class)) {
-			this.invokeStaticMethod(BType.BooleanType, sMethod);
+			this.invokeStaticMethod(null, sMethod);
 		}
 	}
 
@@ -317,9 +326,54 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.ContinueLabelStack.pop();
 	}
 
-	private void invokeStaticMethod(BType type, Method method) { //TODO: check return type cast
+	@Override
+	public void VisitWrapperNode(DShellWrapperNode Node) {
+		Node.getTargetNode().Accept(this);
+	}
+
+	@Override
+	public void VisitLetNode(BunLetVarNode Node) {
+		this.AsmBuilder.PushConst(Node.GetGivenName());
+		this.invokeBoxingMethod(Node.InitValueNode());
+		this.AsmBuilder.PushBoolean(Node.IsReadOnly());
+		this.invokeStaticMethod(null, this.declareGlobalVar);
+	}
+
+	@Override
+	protected void VisitGlobalNameNode(GetNameNode Node) {
+		BunLetVarNode LetNode = Node.ResolvedNode;
+		this.AsmBuilder.PushConst(LetNode.GetGivenName());
+		this.invokeStaticMethod(Node, this.getGlobalVar);
+	}
+
+	@Override
+	public void VisitSetNameNode(SetNameNode Node) {
+		GetNameNode NameNode = Node.NameNode();
+		if(NameNode.ResolvedNode == null) {
+			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + NameNode.GivenName));
+			return;
+		}
+		if(NameNode.ResolvedNode.IsReadOnly()) {
+			this.VisitErrorNode(new ErrorNode(Node, "read only variable: " + NameNode.GivenName));
+			return;
+		}
+		if(NameNode.ResolvedNode.GetDefiningFunctionNode() == null) {
+			this.AsmBuilder.PushConst(NameNode.ResolvedNode.GetGivenName());
+			this.invokeBoxingMethod(Node.ExprNode());
+			this.invokeStaticMethod(null, this.updateGlobalVar);
+			return;
+		}
+		String Name = NameNode.GetUniqueName(this);
+		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(Name), Node.ExprNode());
+		this.AsmBuilder.StoreLocal(Name);
+	}
+
+	private void invokeStaticMethod(BNode Node, Method method) {
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
+		if(Node != null) {
+			this.AsmBuilder.CheckReturnCast(Node, method.getReturnType());
+		}
 	}
 
 	private void loadJavaClass(Class<?> classObject) {
@@ -398,10 +452,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(Node instanceof BunFunctionNode || Node instanceof BunClassNode || Node instanceof BunLetVarNode || 
-				Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
-			Node = this.TypeChecker.CheckType(Node, BType.VarType);
-			Node.Type = BType.VoidType;
+		if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
+			Node = this.TypeChecker.CheckType(Node, BType.VoidType);
 			this.GenerateStatement(Node);
 		}
 		else if(IsInteractive) {
@@ -495,10 +547,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	private BNode checkTopLevelSupport(BNode Node) {
 		if(Node instanceof BunVarBlockNode || Node instanceof BunReturnNode) {
-			Node = new ErrorNode(Node, "only available inside function");
+			return new ErrorNode(Node, "only available inside function");
 		}
-		else if(Node instanceof BunLetVarNode && !((BunLetVarNode)Node).IsReadOnly()) {
-			Node = new ErrorNode(Node, "only available inside function");
+		else if(Node instanceof BunClassNode || Node instanceof BunFunctionNode || Node instanceof BunLetVarNode) {
+			return new DShellWrapperNode(Node);
 		}
 		return Node;
 	}

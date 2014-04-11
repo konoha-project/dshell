@@ -36,6 +36,7 @@ public class DShellGrammar {	//FIXME
 		ImportCommandPatternFunction importCommandPattern = new DShellImportCommandPatternFunc();
 //		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
+		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
 		NameSpace.AppendTokenFunc("\"", new DShellStringLiteralTokenFunc());
 
@@ -61,6 +62,8 @@ public class DShellGrammar {	//FIXME
 		NameSpace.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
 		overrideSyntaxPattern(NameSpace, "assert", new AssertPatternFunc(), false);
 		overrideSyntaxPattern(NameSpace, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc(), false);
+		overrideSyntaxPattern(NameSpace, "var", varPattern, true);
+		overrideSyntaxPattern(NameSpace, "let", varPattern, true);
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();

@@ -1,6 +1,9 @@
 package libbun.lang.bun.shell;
 
 import libbun.ast.BNode;
+import libbun.ast.SyntaxSugarNode;
+import libbun.ast.decl.BunLetVarNode;
+import libbun.ast.decl.BunVarBlockNode;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;
 import dshell.ast.sugar.DShellExportEnvNode;
@@ -15,6 +18,13 @@ public class ExportEnvPatternFunc extends BMatchFunction {
 		Node = TokenContext.MatchPattern(Node, DShellExportEnvNode._NameInfo, "$Name$", BTokenContext._Required);
 		Node = TokenContext.MatchToken(Node, "=", BTokenContext._Required);
 		Node = TokenContext.MatchPattern(Node, DShellExportEnvNode._Expr, "$Expression$", BTokenContext._Required);
-		return Node;
+		if(Node.IsErrorNode()) {
+			return Node;
+		}
+		BNode LetNode = ((SyntaxSugarNode)Node).DeSugar(TokenContext.Generator, TokenContext.Generator.TypeChecker).AST[0];
+		if(LetNode instanceof BunLetVarNode && !ParentNode.IsTopLevel()) {
+			return new BunVarBlockNode(ParentNode, (BunLetVarNode) LetNode);
+		}
+		return LetNode;
 	}
 }
