@@ -2,7 +2,6 @@ package libbun.lang.bun.shell;
 
 import libbun.ast.BNode;
 import libbun.ast.decl.BunLetVarNode;
-import libbun.ast.decl.BunVarBlockNode;
 import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;
@@ -21,9 +20,6 @@ public class DShellVarPatternFunc extends BMatchFunction {
 		VarNode = TokenContext.MatchPattern(VarNode, BunLetVarNode._TypeInfo, "$TypeAnnotation$", BTokenContext._Optional);
 		VarNode = TokenContext.MatchToken(VarNode, "=", BTokenContext._Required);
 		VarNode = TokenContext.MatchPattern(VarNode, BunLetVarNode._InitValue, "$Expression$", BTokenContext._Required);
-		if((VarNode instanceof BunLetVarNode) && !ParentNode.IsTopLevel()) {
-			return new BunVarBlockNode(ParentNode, (BunLetVarNode)VarNode);
-		}
 		return VarNode;
 	}
 }

@@ -30,12 +30,21 @@ public class DShellForNode extends BNode {
 	}
 
 	public final boolean HasDeclNode() {
-		return this.AST[_Init] != null && this.AST[_Init] instanceof BunVarBlockNode;
+		return this.AST[_Init] != null;
 	}
 
 	public final BunLetVarNode VarDeclNode() {
 		if(this.AST[_VarDecl] == null) {
-			this.AST[_VarDecl] = ((BunVarBlockNode)this.AST[_Init]).VarDeclNode();
+			BNode Node = this.AST[_Init];
+			if(Node instanceof BunLetVarNode) {
+				this.AST[_VarDecl] = Node;
+			}
+			else if(Node instanceof BunVarBlockNode) {
+				this.AST[_VarDecl] = ((BunVarBlockNode)this.AST[_Init]).VarDeclNode();
+			}
+			else {
+				Utils.fatal(1, "invalid type: " + Node.getClass().getSimpleName());
+			}
 		}
 		return (BunLetVarNode) this.AST[_VarDecl];
 	}

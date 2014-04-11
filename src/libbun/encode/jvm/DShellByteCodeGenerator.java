@@ -222,7 +222,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
-		if(!(Node.LeftNode().Type instanceof BGenericType)) {
+		if(!(Node.LeftNode().Type instanceof BGenericType) && !(Node.LeftNode().Type instanceof BFuncType)) {
 			this.VisitNativeInstanceOfNode(Node);
 			return;
 		}
