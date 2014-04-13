@@ -3,10 +3,10 @@ package dshell.ast.sugar;
 import libbun.ast.BNode;
 import libbun.ast.DesugarNode;
 import libbun.ast.SyntaxSugarNode;
+import libbun.ast.expression.FuncCallNode;
+import libbun.ast.expression.GetNameNode;
 import libbun.encode.AbstractGenerator;
 import libbun.parser.BTypeChecker;
-import libbun.type.BMacroFunc;
-import libbun.type.BType;
 
 public class DShellAssertNode extends SyntaxSugarNode {
 	public final static int _Expr = 0;
@@ -17,9 +17,10 @@ public class DShellAssertNode extends SyntaxSugarNode {
 
 	@Override
 	public DesugarNode DeSugar(AbstractGenerator Generator, BTypeChecker TypeChecker) {
-		BMacroFunc Func = Generator.GetMacroFunc("assertDShell", BType.BooleanType, 1);
-		BNode FuncNode = TypeChecker.CreateDefinedFuncCallNode(this.ParentNode, this.SourceToken, Func);
-		FuncNode.SetNode(BNode._AppendIndex, this.AST[_Expr]);
-		return new DesugarNode(this, FuncNode);
+		GetNameNode FuncNameNode = new GetNameNode(this, this.SourceToken, "assertDShell");
+		FuncCallNode Node = new FuncCallNode(this.ParentNode, FuncNameNode);
+		Node.SourceToken = this.SourceToken;
+		Node.SetNode(BNode._AppendIndex, this.AST[_Expr]);
+		return new DesugarNode(this, Node);
 	}
 }

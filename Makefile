@@ -8,7 +8,7 @@ TOOLS_DIR="./tools"
 all: build
 
 build:
-	cd ./ext/libbun && git checkout master && git checkout 7a4c8cead75071d2ff0b34566e18dfd2ee6ea5a3
+	cd ./ext/libbun && git checkout master && git checkout c10a10787cb5f7d7b7385fefe1be87c01b1a33bc
 	cd ../../
 	ant
 	cd ./ext/libbun && git checkout master

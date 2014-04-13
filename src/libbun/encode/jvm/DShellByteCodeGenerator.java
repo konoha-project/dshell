@@ -120,6 +120,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaStaticMethod(CommandArg.class, "createCommandArg", String.class);
 		this.loadJavaStaticMethod(CommandArg.class, "createSubstitutedArg", String.class);
 		this.loadJavaStaticMethod(Utils.class, "assertDShell", boolean.class);
+		this.loadJavaStaticMethod(JavaCommonApi.class, "_", "ObjectToString", Object.class);
 	}
 
 	@Override
@@ -409,7 +410,12 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
 			BFuncType macroType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
 			BMacroFunc macroFunc = new BMacroFunc(macroSymbol, macroType, null, macroBuilder.toString());
-			this.SetDefinedFunc(macroFunc);
+			if(name.equals("_")) {
+				this.SetConverterFunc(macroType.GetRecvType(), macroType.GetReturnType(), macroFunc);
+			}
+			else {
+				this.SetDefinedFunc(macroFunc);
+			}
 		}
 		catch(Exception e) {
 			Utils.fatal(1, "load static method faild: " + e.getMessage());
