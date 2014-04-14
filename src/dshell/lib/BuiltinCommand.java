@@ -163,6 +163,11 @@ class Command_log extends BuiltinCommand {
 	@Override
 	public void start() {
 		int size = this.commandList.size();
+		if(size == 1) {
+			Utils.log("");
+			this.retValue = 0;
+			return;
+		}
 		if(size != 2) {
 			this.printArgumentErrorAndSetStatus(BuiltinSymbol.log);
 			return;

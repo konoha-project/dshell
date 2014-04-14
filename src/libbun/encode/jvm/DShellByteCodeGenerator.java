@@ -354,7 +354,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + NameNode.GivenName));
 			return;
 		}
-		if(NameNode.ResolvedNode.IsReadOnly()) {
+		if(NameNode.ResolvedNode.IsReadOnly() && !(NameNode.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
 			this.VisitErrorNode(new ErrorNode(Node, "read only variable: " + NameNode.GivenName));
 			return;
 		}

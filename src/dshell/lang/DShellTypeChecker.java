@@ -5,6 +5,7 @@ import libbun.ast.BNode;
 import libbun.ast.SyntaxSugarNode;
 import libbun.ast.binary.BInstanceOfNode;
 import libbun.ast.binary.BinaryOperatorNode;
+import libbun.ast.decl.BunFunctionNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunWhileNode;
 import libbun.ast.sugar.BunContinueNode;
@@ -104,6 +105,13 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override public void VisitThrowNode(BunThrowNode Node) {
+		if(Node.ParentNode != null && Node.ParentNode.ParentNode != null && 
+				Node.ParentNode.ParentNode instanceof BunFunctionNode) {
+			BunFunctionNode FuncNode = (BunFunctionNode) Node.ParentNode.ParentNode;
+			if(FuncNode == Node.GetDefiningFunctionNode()) {
+				this.CurrentFunctionNode.SetReturnType(BType.VoidType);
+			}
+		}
 		this.CheckTypeAt(Node, BunThrowNode._Expr, BType.VarType);
 		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
 			this.ReturnErrorNode(Node, Node.GetAstToken(BunThrowNode._Expr), "require DShellException type");
