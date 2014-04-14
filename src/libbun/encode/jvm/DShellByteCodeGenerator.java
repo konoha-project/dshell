@@ -46,6 +46,7 @@ import dshell.exception.MultipleException;
 import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
+import dshell.lib.GlobalVariableTable;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -74,9 +75,17 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
-	private Method declareGlobalVar;
-	private Method updateGlobalVar;
-	private Method getGlobalVar;
+	private Method setLongVariable;
+	private Method getLongVariable;
+
+	private Method setDoubleVariable;
+	private Method getDoubleVariable;
+
+	private Method setBooleanVariable;
+	private Method getBooleanVariable;
+
+	private Method setObjectVariable;
+	private Method getObjectVariable;
 
 	public DShellByteCodeGenerator() {
 		super();
@@ -99,9 +108,17 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
 			this.ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
 
-			this.declareGlobalVar = Utils.class.getMethod("declareGlobalVar", String.class, Object.class, boolean.class);
-			this.updateGlobalVar = Utils.class.getMethod("updateGlobalVar", String.class, Object.class);
-			this.getGlobalVar = Utils.class.getMethod("getGlobalVar", String.class);
+			this.setLongVariable = GlobalVariableTable.class.getMethod("setLongVariable", int.class, long.class);
+			this.getLongVariable = GlobalVariableTable.class.getMethod("getLongVariable", int.class);
+
+			this.setDoubleVariable = GlobalVariableTable.class.getMethod("setDoubleVariable", int.class, double.class);
+			this.getDoubleVariable = GlobalVariableTable.class.getMethod("getDoubleVariable", int.class);
+
+			this.setBooleanVariable = GlobalVariableTable.class.getMethod("setBooleanVariable", int.class, boolean.class);
+			this.getBooleanVariable = GlobalVariableTable.class.getMethod("getBooleanVariable", int.class);
+
+			this.setObjectVariable = GlobalVariableTable.class.getMethod("setObjectVariable", int.class, Object.class);
+			this.getObjectVariable = GlobalVariableTable.class.getMethod("getObjectVariable", int.class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -332,19 +349,83 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		Node.getTargetNode().Accept(this);
 	}
 
+	private int getTypeId(BType type) {
+		if(type.IsIntType()) {
+			return GlobalVariableTable.LONG_TYPE;
+		}
+		else if(type.IsFloatType()) {
+			return GlobalVariableTable.DOUBLE_TYPE;
+		}
+		else if(type.IsBooleanType()) {
+			return GlobalVariableTable.BOOLEAN_TYPE;
+		}
+		else {
+			return GlobalVariableTable.OBJECT_TYPE;
+		}
+	}
+
+	private void setVariable(int varIndex, int typeId, BNode valueNode) {
+		this.AsmBuilder.PushInt(varIndex);
+		switch(typeId) {
+		case GlobalVariableTable.LONG_TYPE:
+			this.AsmBuilder.PushNode(long.class, valueNode);
+			this.invokeStaticMethod(null, this.setLongVariable);
+			break;
+		case GlobalVariableTable.DOUBLE_TYPE:
+			this.AsmBuilder.PushNode(double.class, valueNode);
+			this.invokeStaticMethod(null, this.setDoubleVariable);
+			break;
+		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.AsmBuilder.PushNode(boolean.class, valueNode);
+			this.invokeStaticMethod(null, this.setBooleanVariable);
+			break;
+		case GlobalVariableTable.OBJECT_TYPE:
+			this.AsmBuilder.PushNode(null, valueNode);
+			this.invokeStaticMethod(null, this.setObjectVariable);
+			break;
+		}
+	}
+
 	@Override
 	public void VisitLetNode(BunLetVarNode Node) {
-		this.AsmBuilder.PushConst(Node.GetGivenName());
-		this.invokeBoxingMethod(Node.InitValueNode());
-		this.AsmBuilder.PushBoolean(Node.IsReadOnly());
-		this.invokeStaticMethod(null, this.declareGlobalVar);
+		String varName = Node.GetGivenName();
+		if(GlobalVariableTable.getVarTable().existEntry(varName)) {
+			this.VisitErrorNode(new ErrorNode(Node, varName + " is already defined"));
+			return;
+		}
+		int typeId = this.getTypeId(Node.DeclType());
+		int varIndex = GlobalVariableTable.getVarTable().addEntry(varName, typeId, Node.IsReadOnly());
+		this.setVariable(varIndex, typeId, Node.InitValueNode());
 	}
 
 	@Override
 	protected void VisitGlobalNameNode(GetNameNode Node) {
 		BunLetVarNode LetNode = Node.ResolvedNode;
-		this.AsmBuilder.PushConst(LetNode.GetGivenName());
-		this.invokeStaticMethod(Node, this.getGlobalVar);
+		String varName = LetNode.GetGivenName();
+		int typeId = this.getTypeId(LetNode.DeclType());
+		int varIndex = GlobalVariableTable.getVarTable().getVarIndex(varName, typeId);
+		if(varIndex == -1) {
+			this.VisitErrorNode(new ErrorNode(Node, "undefiend varibale: " + varName));
+			return;
+		}
+		switch(typeId) {
+		case GlobalVariableTable.LONG_TYPE:
+			this.AsmBuilder.PushInt(varIndex);
+			this.invokeStaticMethod(null, this.getLongVariable);
+			break;
+		case GlobalVariableTable.DOUBLE_TYPE:
+			this.AsmBuilder.PushInt(varIndex);
+			this.invokeStaticMethod(null, this.getDoubleVariable);
+			break;
+		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.AsmBuilder.PushInt(varIndex);
+			this.invokeStaticMethod(null, this.getBooleanVariable);
+			break;
+		case GlobalVariableTable.OBJECT_TYPE:
+			this.AsmBuilder.PushInt(varIndex);
+			this.invokeStaticMethod(Node, this.getObjectVariable);
+			break;
+		}
 	}
 
 	@Override
@@ -359,9 +440,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			return;
 		}
 		if(NameNode.ResolvedNode.GetDefiningFunctionNode() == null) {
-			this.AsmBuilder.PushConst(NameNode.ResolvedNode.GetGivenName());
-			this.invokeBoxingMethod(Node.ExprNode());
-			this.invokeStaticMethod(null, this.updateGlobalVar);
+			int typeId = this.getTypeId(Node.ExprNode().Type);
+			int varIndex = GlobalVariableTable.getVarTable().getVarIndex(NameNode.ResolvedNode.GetGivenName(), typeId);
+			this.setVariable(varIndex, typeId, Node.ExprNode());
 			return;
 		}
 		String Name = NameNode.GetUniqueName(this);

@@ -175,16 +175,4 @@ public class Utils {
 			super(message);
 		}
 	}
-
-	public static void declareGlobalVar(String varName, Object value, boolean isReadOnly) {
-		RuntimeContext.getContext().getVarTable().addEntry(varName, value, isReadOnly);
-	}
-
-	public static void updateGlobalVar(String varName, Object latestValue) {
-		RuntimeContext.getContext().getVarTable().updateEntry(varName, latestValue);
-	}
-
-	public static Object getGlobalVar(String varName) {
-		return RuntimeContext.getContext().getVarTable().getValueOfEntry(varName);
-	}
 }
