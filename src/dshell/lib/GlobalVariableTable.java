@@ -12,61 +12,61 @@ public class GlobalVariableTable {
 	public final static int OBJECT_TYPE  = 3;
 	private final static int TYPE_ID_SIZE = 4;
 
-	private final HashMap<String, TableEntry> varIndexMap;
-	private final int[] varIndexCounter;
-	private long[] longVarTable;
-	private double[] doubleVarTable;
-	private boolean[] booleanVarTable;
-	private Object[] objectVarTable;
+	private static final HashMap<String, TableEntry> varIndexMap;
+	private static final int[] varIndexCounter;
+	public static long[] longVarTable;
+	public static double[] doubleVarTable;
+	public static boolean[] booleanVarTable;
+	public static Object[] objectVarTable;
 
-	protected GlobalVariableTable() {
-		this.varIndexMap = new HashMap<String, TableEntry>();
-		this.varIndexCounter = new int[TYPE_ID_SIZE];
-		this.longVarTable = new long[defaultTableSize];
-		this.doubleVarTable = new double[defaultTableSize];
-		this.booleanVarTable = new boolean[defaultTableSize];
-		this.objectVarTable = new Object[defaultTableSize];
+	static {
+		varIndexMap = new HashMap<String, TableEntry>();
+		varIndexCounter = new int[TYPE_ID_SIZE];
+		longVarTable = new long[defaultTableSize];
+		doubleVarTable = new double[defaultTableSize];
+		booleanVarTable = new boolean[defaultTableSize];
+		objectVarTable = new Object[defaultTableSize];
 	}
 
-	public int addEntry(String varName, int typeId, boolean isReadOnly) {
-		if(this.existEntry(varName)) {
+	public static int addEntry(String varName, int typeId, boolean isReadOnly) {
+		if(existEntry(varName)) {
 			return -1;
 		}
 		int varIndex;
 		switch(typeId) {
 		case LONG_TYPE:
-			varIndex = this.reserveLongVarTable();
+			varIndex = reserveLongVarTable();
 			break;
 		case DOUBLE_TYPE:
-			varIndex = this.reserveDoubleVarTable();
+			varIndex = reserveDoubleVarTable();
 			break;
 		case BOOLEAN_TYPE:
-			varIndex = this.reserveBooleanVarTable();
+			varIndex = reserveBooleanVarTable();
 			break;
 		case OBJECT_TYPE:
-			varIndex = this.reserveObjectVarTable();
+			varIndex = reserveObjectVarTable();
 			break;
 		default:
 			throw new RuntimeException("invalid type id: " + typeId);
 		}
-		this.varIndexMap.put(varName, new TableEntry(typeId, varIndex, isReadOnly));
+		varIndexMap.put(varName, new TableEntry(typeId, varIndex, isReadOnly));
 		return varIndex;
 	}
 
-	public boolean existEntry(String varName) {
-		return this.varIndexMap.containsKey(varName);
+	public static boolean existEntry(String varName) {
+		return varIndexMap.containsKey(varName);
 	}
 
-	public boolean isReadOnlyEntry(String varName) {
-		TableEntry entry = this.varIndexMap.get(varName);
+	public static boolean isReadOnlyEntry(String varName) {
+		TableEntry entry = varIndexMap.get(varName);
 		if(entry == null) {
 			throw new IllegalArgumentException("not found entry: " + varName);
 		}
 		return entry.isReadOnly;
 	}
 
-	public int getVarIndex(String varName, int typeId) {
-		TableEntry entry = this.varIndexMap.get(varName);
+	public static int getVarIndex(String varName, int typeId) {
+		TableEntry entry = varIndexMap.get(varName);
 		if(entry != null && entry.typeId == typeId) {
 			return entry.varIndex;
 		}
@@ -74,83 +74,81 @@ public class GlobalVariableTable {
 	}
 
 	// reserve variable table
-	private int reserveLongVarTable() {
-		final int size = this.longVarTable.length;
-		if(++this.varIndexCounter[LONG_TYPE] == size) {
-			this.checkIndexRange(size);
-			this.longVarTable = Arrays.copyOf(this.longVarTable, size * 2);
+	private static int reserveLongVarTable() {
+		final int size = longVarTable.length;
+		if(++varIndexCounter[LONG_TYPE] == size) {
+			checkIndexRange(size);
+			longVarTable = Arrays.copyOf(longVarTable, size * 2);
 		}
-		return this.varIndexCounter[LONG_TYPE];
+		return varIndexCounter[LONG_TYPE];
 	}
 
-	private int reserveDoubleVarTable() {
-		final int size = this.doubleVarTable.length;
-		if(++this.varIndexCounter[DOUBLE_TYPE] == size) {
-			this.checkIndexRange(size);
-			this.doubleVarTable = Arrays.copyOf(this.doubleVarTable, size * 2);
+	private static int reserveDoubleVarTable() {
+		final int size = doubleVarTable.length;
+		if(++varIndexCounter[DOUBLE_TYPE] == size) {
+			checkIndexRange(size);
+			doubleVarTable = Arrays.copyOf(doubleVarTable, size * 2);
 		}
-		return this.varIndexCounter[DOUBLE_TYPE];
+		return varIndexCounter[DOUBLE_TYPE];
 	}
 
-	private int reserveBooleanVarTable() {
-		final int size = this.booleanVarTable.length;
-		if(++this.varIndexCounter[BOOLEAN_TYPE] == size) {
-			this.checkIndexRange(size);
-			this.booleanVarTable = Arrays.copyOf(this.booleanVarTable, size * 2);
+	private static int reserveBooleanVarTable() {
+		final int size =booleanVarTable.length;
+		if(++varIndexCounter[BOOLEAN_TYPE] == size) {
+			checkIndexRange(size);
+			booleanVarTable = Arrays.copyOf(booleanVarTable, size * 2);
 		}
-		return this.varIndexCounter[BOOLEAN_TYPE];
+		return varIndexCounter[BOOLEAN_TYPE];
 	}
 
-	private int reserveObjectVarTable() {
-		final int size = this.objectVarTable.length;
-		if(++this.varIndexCounter[OBJECT_TYPE] == size) {
-			this.checkIndexRange(size);
-			this.objectVarTable = Arrays.copyOf(this.objectVarTable, size * 2);
+	private static int reserveObjectVarTable() {
+		final int size = objectVarTable.length;
+		if(++varIndexCounter[OBJECT_TYPE] == size) {
+			checkIndexRange(size);
+			objectVarTable = Arrays.copyOf(objectVarTable, size * 2);
 		}
-		return this.varIndexCounter[OBJECT_TYPE];
+		return varIndexCounter[OBJECT_TYPE];
 	}
 
-	private void checkIndexRange(int size) {
+	private static void checkIndexRange(int size) {
 		if(size >= MAX_INDEX) {
 			throw new RuntimeException("too many global variable");
 		}
 	}
 
-	// called by DShellByteCodeGenerator
-	// for long variable
 	public static void setLongVariable(int index, long value) {
-		TableHolder.table.longVarTable[index] = value;
+		longVarTable[index] = value;
 	}
 
 	public static long getLongVariable(int index) {
-		return TableHolder.table.longVarTable[index];
+		return longVarTable[index];
 	}
 
 	// for double variable
 	public static void setDoubleVariable(int index, double value) {
-		TableHolder.table.doubleVarTable[index] = value;
+		doubleVarTable[index] = value;
 	}
 
 	public static double getDoubleVariable(int index) {
-		return TableHolder.table.doubleVarTable[index];
+		return doubleVarTable[index];
 	}
 
 	// for boolean variable
 	public static void setBooleanVariable(int index, boolean value) {
-		TableHolder.table.booleanVarTable[index] = value;
+		booleanVarTable[index] = value;
 	}
 
 	public static boolean getBooleanVariable(int index) {
-		return TableHolder.table.booleanVarTable[index];
+		return booleanVarTable[index];
 	}
 
 	// for object variable
 	public static void setObjectVariable(int index, Object value) {
-		TableHolder.table.objectVarTable[index] = value;
+		objectVarTable[index] = value;
 	}
 
 	public static Object getObjectVariable(int index) {
-		return TableHolder.table.objectVarTable[index];
+		return objectVarTable[index];
 	}
 
 	private static class TableEntry {
@@ -163,13 +161,5 @@ public class GlobalVariableTable {
 			this.varIndex = varIndex;
 			this.isReadOnly = isReadOnly;
 		}
-	}
-
-	private static class TableHolder {
-		private final static GlobalVariableTable table = new GlobalVariableTable();
-	}
-
-	public static GlobalVariableTable getVarTable() {
-		return TableHolder.table;
 	}
 }

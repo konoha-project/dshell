@@ -8,6 +8,7 @@ import static org.objectweb.asm.Opcodes.IFEQ;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
 import static org.objectweb.asm.Opcodes.ATHROW;
 import static org.objectweb.asm.Opcodes.INSTANCEOF;
+import static org.objectweb.asm.Opcodes.GETSTATIC;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -34,6 +35,7 @@ import libbun.encode.jvm.JavaMethodTable;
 import libbun.encode.jvm.JavaTypeTable;
 
 import org.objectweb.asm.Label;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import dshell.ast.DShellCatchNode;
@@ -75,18 +77,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
-	private Method setLongVariable;
-	private Method getLongVariable;
-
-	private Method setDoubleVariable;
-	private Method getDoubleVariable;
-
-	private Method setBooleanVariable;
-	private Method getBooleanVariable;
-
-	private Method setObjectVariable;
-	private Method getObjectVariable;
-
 	public DShellByteCodeGenerator() {
 		super();
 		this.topLevelSymbolList = new LinkedList<String>();
@@ -107,18 +97,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
 			this.ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
 			this.ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
-
-			this.setLongVariable = GlobalVariableTable.class.getMethod("setLongVariable", int.class, long.class);
-			this.getLongVariable = GlobalVariableTable.class.getMethod("getLongVariable", int.class);
-
-			this.setDoubleVariable = GlobalVariableTable.class.getMethod("setDoubleVariable", int.class, double.class);
-			this.getDoubleVariable = GlobalVariableTable.class.getMethod("getDoubleVariable", int.class);
-
-			this.setBooleanVariable = GlobalVariableTable.class.getMethod("setBooleanVariable", int.class, boolean.class);
-			this.getBooleanVariable = GlobalVariableTable.class.getMethod("getBooleanVariable", int.class);
-
-			this.setObjectVariable = GlobalVariableTable.class.getMethod("setObjectVariable", int.class, Object.class);
-			this.getObjectVariable = GlobalVariableTable.class.getMethod("getObjectVariable", int.class);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -365,23 +343,31 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void setVariable(int varIndex, int typeId, BNode valueNode) {
-		this.AsmBuilder.PushInt(varIndex);
+		String owner = Type.getInternalName(GlobalVariableTable.class);
 		switch(typeId) {
 		case GlobalVariableTable.LONG_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
+			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(long.class, valueNode);
-			this.invokeStaticMethod(null, this.setLongVariable);
+			this.AsmBuilder.visitInsn(Opcodes.LASTORE);
 			break;
 		case GlobalVariableTable.DOUBLE_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
+			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(double.class, valueNode);
-			this.invokeStaticMethod(null, this.setDoubleVariable);
+			this.AsmBuilder.visitInsn(Opcodes.DASTORE);
 			break;
 		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
+			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(boolean.class, valueNode);
-			this.invokeStaticMethod(null, this.setBooleanVariable);
+			this.AsmBuilder.visitInsn(Opcodes.BASTORE);
 			break;
 		case GlobalVariableTable.OBJECT_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
+			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(null, valueNode);
-			this.invokeStaticMethod(null, this.setObjectVariable);
+			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
 			break;
 		}
 	}
@@ -389,12 +375,12 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	@Override
 	public void VisitLetNode(BunLetVarNode Node) {
 		String varName = Node.GetGivenName();
-		if(GlobalVariableTable.getVarTable().existEntry(varName)) {
+		if(GlobalVariableTable.existEntry(varName)) {
 			this.VisitErrorNode(new ErrorNode(Node, varName + " is already defined"));
 			return;
 		}
 		int typeId = this.getTypeId(Node.DeclType());
-		int varIndex = GlobalVariableTable.getVarTable().addEntry(varName, typeId, Node.IsReadOnly());
+		int varIndex = GlobalVariableTable.addEntry(varName, typeId, Node.IsReadOnly());
 		this.setVariable(varIndex, typeId, Node.InitValueNode());
 	}
 
@@ -403,27 +389,33 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		BunLetVarNode LetNode = Node.ResolvedNode;
 		String varName = LetNode.GetGivenName();
 		int typeId = this.getTypeId(LetNode.DeclType());
-		int varIndex = GlobalVariableTable.getVarTable().getVarIndex(varName, typeId);
+		int varIndex = GlobalVariableTable.getVarIndex(varName, typeId);
 		if(varIndex == -1) {
 			this.VisitErrorNode(new ErrorNode(Node, "undefiend varibale: " + varName));
 			return;
 		}
+		String owner = Type.getInternalName(GlobalVariableTable.class);
 		switch(typeId) {
 		case GlobalVariableTable.LONG_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
 			this.AsmBuilder.PushInt(varIndex);
-			this.invokeStaticMethod(null, this.getLongVariable);
+			this.AsmBuilder.visitInsn(Opcodes.LALOAD);
 			break;
 		case GlobalVariableTable.DOUBLE_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
 			this.AsmBuilder.PushInt(varIndex);
-			this.invokeStaticMethod(null, this.getDoubleVariable);
+			this.AsmBuilder.visitInsn(Opcodes.DALOAD);
 			break;
 		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
 			this.AsmBuilder.PushInt(varIndex);
-			this.invokeStaticMethod(null, this.getBooleanVariable);
+			this.AsmBuilder.visitInsn(Opcodes.BALOAD);
 			break;
 		case GlobalVariableTable.OBJECT_TYPE:
+			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
 			this.AsmBuilder.PushInt(varIndex);
-			this.invokeStaticMethod(Node, this.getObjectVariable);
+			this.AsmBuilder.visitInsn(Opcodes.AALOAD);
+			this.AsmBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.GetJavaClass(Node.Type));
 			break;
 		}
 	}
@@ -441,7 +433,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		if(NameNode.ResolvedNode.GetDefiningFunctionNode() == null) {
 			int typeId = this.getTypeId(Node.ExprNode().Type);
-			int varIndex = GlobalVariableTable.getVarTable().getVarIndex(NameNode.ResolvedNode.GetGivenName(), typeId);
+			int varIndex = GlobalVariableTable.getVarIndex(NameNode.ResolvedNode.GetGivenName(), typeId);
 			this.setVariable(varIndex, typeId, Node.ExprNode());
 			return;
 		}
