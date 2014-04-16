@@ -45,6 +45,9 @@ public class RuntimeContext implements Serializable {
 	// environmental variable
 	transient private final TreeSet<String> envSet;
 
+	// interactiveMode
+	transient private boolean isInteractiveMode = false;
+
 	private RuntimeContext(){
 		if(System.getProperty("os.name").startsWith("Windows")) {
 			Utils.fatal(1, "Windows is Not Supported");
@@ -174,6 +177,14 @@ public class RuntimeContext implements Serializable {
 
 	public String getenv(String key) {
 		return CLibraryWrapper.INSTANCE.getenv(key);
+	}
+
+	public void setInteractiveMode(boolean isInteractive) {
+		this.isInteractiveMode = isInteractive;
+	}
+
+	public boolean isInteractiveMode() {
+		return this.isInteractiveMode;
 	}
 
 	private static class ContextHolder {

@@ -1,15 +1,5 @@
 package libbun.encode.jvm;
 
-import static org.objectweb.asm.Opcodes.AASTORE;
-import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.GOTO;
-import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.ATHROW;
-import static org.objectweb.asm.Opcodes.INSTANCEOF;
-import static org.objectweb.asm.Opcodes.GETSTATIC;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -49,6 +39,7 @@ import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.GlobalVariableTable;
+import dshell.lib.RuntimeContext;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -57,9 +48,9 @@ import dshell.lib.ArrayUtils.TaskArray;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.parser.BLogger;
 import libbun.parser.BToken;
+import libbun.type.BFormFunc;
 import libbun.type.BFuncType;
 import libbun.type.BGenericType;
-import libbun.type.BMacroFunc;
 import libbun.type.BType;
 import libbun.type.BTypePool;
 import libbun.util.BArray;
@@ -130,22 +121,22 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		// new String[n][]
 		int size = nodeList.size();
 		this.AsmBuilder.visitLdcInsn(size);
-		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(CommandArg[].class));
+		this.AsmBuilder.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(CommandArg[].class));
 		for(int i = 0; i < size; i++) {
 			// new String[m];
 			CommandNode currentNode = nodeList.get(i);
 			int listSize = currentNode.GetArgSize();
-			this.AsmBuilder.visitInsn(DUP);
+			this.AsmBuilder.visitInsn(Opcodes.DUP);
 			this.AsmBuilder.visitLdcInsn(i);
 			this.AsmBuilder.visitLdcInsn(listSize);
-			this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(CommandArg.class));
+			this.AsmBuilder.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(CommandArg.class));
 			for(int j = 0; j < listSize; j++ ) {
-				this.AsmBuilder.visitInsn(DUP);
+				this.AsmBuilder.visitInsn(Opcodes.DUP);
 				this.AsmBuilder.visitLdcInsn(j);
 				currentNode.GetArgAt(j).Accept(this);
-				this.AsmBuilder.visitInsn(AASTORE);
+				this.AsmBuilder.visitInsn(Opcodes.AASTORE);
 			}
-			this.AsmBuilder.visitInsn(AASTORE);
+			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
 		}
 
 		if(Node.Type.IsBooleanType()) {
@@ -179,7 +170,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.visitLabel(Label.BeginTryLabel);
 		Node.TryBlockNode().Accept(this);
 		this.AsmBuilder.visitLabel(Label.EndTryLabel);
-		this.AsmBuilder.visitJumpInsn(GOTO, Label.FinallyLabel);
+		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
 		// catch block
 		int size = Node.GetListSize();
 		for(int i = 0; i < size; i++) {
@@ -207,14 +198,14 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.visitLabel(catchLabel);
 		this.AsmBuilder.StoreLocal(Node.ExceptionName());
 		Node.BlockNode().Accept(this);
-		this.AsmBuilder.visitJumpInsn(GOTO, Label.FinallyLabel);
+		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
 
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 	}
 
 	@Override public void VisitThrowNode(BunThrowNode Node) {
 		Node.ExprNode().Accept(this);
-		this.AsmBuilder.visitInsn(ATHROW);
+		this.AsmBuilder.visitInsn(Opcodes.ATHROW);
 	}
 
 	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
@@ -248,7 +239,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			JavaClass = Boolean.class;
 		}
 		this.invokeBoxingMethod(Node.LeftNode());
-		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+		this.AsmBuilder.visitTypeInsn(Opcodes.INSTANCEOF, JavaClass);
 	}
 
 	private void invokeBoxingMethod(BNode TargetNode) {
@@ -290,7 +281,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	@Override
 	public void VisitContinueNode(BunContinueNode Node) {
 		Label l = this.AsmBuilder.ContinueLabelStack.peek();
-		this.AsmBuilder.visitJumpInsn(GOTO, l);
+		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, l);
 	}
 
 	@Override
@@ -306,13 +297,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		this.AsmBuilder.visitLabel(headLabel);
 		Node.CondNode().Accept(this);
-		this.AsmBuilder.visitJumpInsn(IFEQ, breakLabel);
+		this.AsmBuilder.visitJumpInsn(Opcodes.IFEQ, breakLabel);
 		Node.BlockNode().Accept(this);
 		this.AsmBuilder.visitLabel(continueLabel);
 		if(Node.HasNextNode()) {
 			Node.NextNode().Accept(this);
 		}
-		this.AsmBuilder.visitJumpInsn(GOTO, headLabel);
+		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, headLabel);
 		this.AsmBuilder.visitLabel(breakLabel);
 		if(Node.HasDeclNode()) {
 			this.VisitVarDeclNode2(Node.VarDeclNode());
@@ -346,25 +337,25 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		String owner = Type.getInternalName(GlobalVariableTable.class);
 		switch(typeId) {
 		case GlobalVariableTable.LONG_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(long.class, valueNode);
 			this.AsmBuilder.visitInsn(Opcodes.LASTORE);
 			break;
 		case GlobalVariableTable.DOUBLE_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(double.class, valueNode);
 			this.AsmBuilder.visitInsn(Opcodes.DASTORE);
 			break;
 		case GlobalVariableTable.BOOLEAN_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(boolean.class, valueNode);
 			this.AsmBuilder.visitInsn(Opcodes.BASTORE);
 			break;
 		case GlobalVariableTable.OBJECT_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.PushNode(null, valueNode);
 			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
@@ -397,22 +388,22 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		String owner = Type.getInternalName(GlobalVariableTable.class);
 		switch(typeId) {
 		case GlobalVariableTable.LONG_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.visitInsn(Opcodes.LALOAD);
 			break;
 		case GlobalVariableTable.DOUBLE_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.visitInsn(Opcodes.DALOAD);
 			break;
 		case GlobalVariableTable.BOOLEAN_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.visitInsn(Opcodes.BALOAD);
 			break;
 		case GlobalVariableTable.OBJECT_TYPE:
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
+			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.visitInsn(Opcodes.AALOAD);
 			this.AsmBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.GetJavaClass(Node.Type));
@@ -444,7 +435,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	private void invokeStaticMethod(BNode Node, Method method) {
 		String owner = Type.getInternalName(method.getDeclaringClass());
-		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
+		this.AsmBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 		if(Node != null) {
 			this.AsmBuilder.CheckReturnCast(Node, method.getReturnType());
 		}
@@ -482,7 +473,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		try {
 			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
 			BFuncType macroType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
-			BMacroFunc macroFunc = new BMacroFunc(macroSymbol, macroType, null, macroBuilder.toString());
+			BFormFunc macroFunc = new BFormFunc(macroSymbol, macroType, null, macroBuilder.toString());
 			if(name.equals("_")) {
 				this.SetConverterFunc(macroType.GetRecvType(), macroType.GetReturnType(), macroFunc);
 			}
@@ -521,7 +512,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	protected boolean ExecStatement(BNode Node, boolean IsInteractive) {
+	protected boolean ExecStatement(BNode Node) {
+		boolean IsInteractive = RuntimeContext.getContext().isInteractiveMode();
 		this.EnableVisitor();
 		if(Node instanceof EmptyNode) {
 			return this.IsVisitable();

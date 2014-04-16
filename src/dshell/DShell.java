@@ -175,6 +175,7 @@ public class DShell {
 	}
 
 	public void runInteractiveMode() {
+		RuntimeContext.getContext().setInteractiveMode(true);
 		DShellByteCodeGenerator generator = initGenerator();
 		DShellConsole console = new DShellConsole();
 		String line = null;
@@ -193,14 +194,14 @@ public class DShell {
 				}
 				importBuilder.append(commandSet.pollFirst());
 			}
-			generator.LoadScript(importBuilder.toString(), "(stdin)", 0, true);
+			generator.LoadScript(importBuilder.toString(), "(stdin)", 0);
 		}
 		generator.Logger.OutputErrorsToStdErr();
 		while ((line = console.readLine()) != null) {
 			if(line.equals("")) {
 				continue;
 			}
-			if(generator.LoadScript(line, "(stdin)", console.getLineNumber(), true)) {
+			if(generator.LoadScript(line, "(stdin)", console.getLineNumber())) {
 				generator.EvalAndPrint();
 			}
 			console.incrementLineNum(line);
@@ -224,7 +225,7 @@ public class DShell {
 			ARGVBuilder.append("\"");
 		}
 		ARGVBuilder.append("]");
-		generator.LoadScript(ARGVBuilder.toString(), scriptName, 0, false);
+		generator.LoadScript(ARGVBuilder.toString(), scriptName, 0);
 		// load script file
 		boolean status = generator.LoadFile(scriptName, null);
 		if(!status) {
@@ -240,7 +241,7 @@ public class DShell {
 		if(this.specificArg == null) {
 			source = readFromIntput();
 		}
-		boolean status = generator.LoadScript(source, "(stdin)", 1, false);
+		boolean status = generator.LoadScript(source, "(stdin)", 1);
 		if(!status) {
 			System.err.println("abort loading input source");
 			System.exit(1);

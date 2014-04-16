@@ -61,38 +61,35 @@ public class DShellConsole {
 		String[] prompts = this.getPrompts();
 		String prompt = prompts[0];
 		String prompt2 = prompts[1];
-		String line;
+		StringBuilder lineBuilder = new StringBuilder();
+		// load jLine ttyConfig
+		this.ttyConfig.loadJlineConfig();
+		String line = this.readLine(prompt);
+		lineBuilder.append(line);
+		int level = 0;
+		while((level = checkBraceLevel(line, level)) > 0) {
+			line = this.readLine(prompt2);
+			lineBuilder.append("\n");
+			lineBuilder.append(line);
+		}
+		if(level < 0) {
+			System.out.println(" .. canceled");
+			return "";
+		}
+		// load original ttyConfig
+		this.ttyConfig.loadOriginalConfig();
+		line = lineBuilder.toString().trim();
+		this.consoleReader.getHistory().addToHistory(line);
+		return line;
+	}
+
+	private String readLine(String prompt) {
 		try {
-			this.ttyConfig.loadJlineConfig();
-			line = this.consoleReader.readLine(prompt);
+			return this.consoleReader.readLine(prompt);
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		if(line == null) {
-			System.exit(0);
-		}
-		if(prompt2 != null) {
-			int level = 0;
-			while((level = checkBraceLevel(line)) > 0) {
-				String Line2;
-				try {
-					Line2 = this.consoleReader.readLine(prompt2);
-				}
-				catch (IOException e) {
-					throw new RuntimeException(e);
-				}
-				line += "\n" + Line2;
-			}
-			if(level < 0) {
-				line = "";
-				System.out.println(" .. canceled");
-			}
-		}
-		line = line.trim();
-		this.consoleReader.getHistory().addToHistory(line);
-		this.ttyConfig.loadOriginalConfig();
-		return line;
 	}
 
 	private String[] getPrompts() {
@@ -114,11 +111,13 @@ public class DShellConsole {
 		return prompts;
 	}
 
-	private static int checkBraceLevel(String Text) {
-		int level = 0;
-		int size = Text.length();
+	private static int checkBraceLevel(String text, int level) {
+		if(text == null) {
+			return -1;
+		}
+		int size = text.length();
 		for(int i = 0; i < size; i++) {
-			char ch = Text.charAt(i);
+			char ch = text.charAt(i);
 			if(ch == '{' || ch == '[') {
 				level++;
 			}
