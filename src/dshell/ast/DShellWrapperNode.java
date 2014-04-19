@@ -6,14 +6,15 @@ import libbun.ast.BNode;
 import libbun.ast.decl.BunClassNode;
 import libbun.ast.decl.BunFunctionNode;
 import libbun.ast.decl.BunLetVarNode;
-import libbun.parser.BVisitor;
+import libbun.parser.LibBunVisitor;
 
 public class DShellWrapperNode extends BNode {
 	private BNode TargetNode;
 	private boolean isVarTarget = false;
 
 	public DShellWrapperNode(BNode TargetNode) {
-		super(TargetNode.ParentNode, TargetNode.SourceToken, 1);
+		super(TargetNode.ParentNode, 1);
+		this.SourceToken = TargetNode.SourceToken;
 		if(TargetNode instanceof BunClassNode || TargetNode instanceof BunFunctionNode) {
 			this.TargetNode = TargetNode;
 			return;
@@ -39,7 +40,7 @@ public class DShellWrapperNode extends BNode {
 	}
 
 	@Override
-	public void Accept(BVisitor Visitor) {
+	public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitWrapperNode(this);
 		}

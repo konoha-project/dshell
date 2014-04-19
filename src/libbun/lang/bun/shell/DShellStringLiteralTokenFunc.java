@@ -55,7 +55,7 @@ public class DShellStringLiteralTokenFunc extends BTokenFunction{
 				BTokenContext TokenContext = SourceContext.TokenContext;
 				int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 				int PrevSize = TokenContext.TokenList.size();
-				BNode Node = TokenContext.ParsePattern(new BunBlockNode(null, TokenContext.NameSpace), SubstitutionPatternFunc._PatternName, BTokenContext._Required);
+				BNode Node = TokenContext.ParsePattern(new BunBlockNode(null, TokenContext.Gamma), SubstitutionPatternFunc._PatternName, BTokenContext._Required);
 				Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 				if(!Node.IsErrorNode()) {
 					TokenContext.TokenList.clear(PrevSize);
@@ -87,7 +87,7 @@ public class DShellStringLiteralTokenFunc extends BTokenFunction{
 		BTokenContext TokenContext = SourceContext.TokenContext;
 		int RollBackPos = (Integer) Utils.getValue(TokenContext, "CurrentPosition");
 		int PrevSize = TokenContext.TokenList.size();
-		BNode Node = TokenContext.ParsePattern(new BunBlockNode(null, TokenContext.NameSpace), "$Expression$", BTokenContext._Required);
+		BNode Node = TokenContext.ParsePattern(new BunBlockNode(null, TokenContext.Gamma), "$Expression$", BTokenContext._Required);
 		char ch = SourceContext.GetCharAt(SourceContext.GetPosition() - 1);
 		Utils.setValue(TokenContext, "CurrentPosition", RollBackPos);
 		if(!Node.IsErrorNode() && ch == '}') {

@@ -6,7 +6,7 @@ import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.decl.BunVarBlockNode;
-import libbun.parser.BVisitor;
+import libbun.parser.LibBunVisitor;
 
 public class DShellForNode extends BNode {
 	public final static int _VarDecl = 0;	// LetVarNode
@@ -16,11 +16,11 @@ public class DShellForNode extends BNode {
 	public final static int _Block = 4;
 
 	public DShellForNode(BNode ParentNode) {
-		super(ParentNode, null, 5);
+		super(ParentNode, 5);
 	}
 
 	@Override
-	public void Accept(BVisitor Visitor) {
+	public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitForNode(this);
 		}

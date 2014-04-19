@@ -14,7 +14,7 @@ public class LocationPatternFunc extends BMatchFunction {	//TODO
 		BToken Token = TokenContext.GetToken();
 		TokenContext.MoveNext();
 		CommandNode Node = new CommandNode(ParentNode, Token, DShellGrammar.location);
-		Node.AppendArgNode(ParentNode.GetNameSpace().GetSymbol(Token.GetText()));
+		Node.AppendArgNode(ParentNode.GetGamma().GetSymbol(Token.GetText()));
 		// Match Prefix Option
 		BNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPatternFunction._PatternName, BTokenContext._Optional);
 		if(PrefixOptionNode != null) {

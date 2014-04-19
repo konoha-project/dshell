@@ -73,6 +73,9 @@ public class DShellConsole {
 			lineBuilder.append(line);
 		}
 		if(level < 0) {
+			if(line == null) {
+				return null;
+			}
 			System.out.println(" .. canceled");
 			return "";
 		}

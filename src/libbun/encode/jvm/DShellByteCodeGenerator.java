@@ -9,7 +9,7 @@ import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
 import libbun.ast.EmptyNode;
 import libbun.ast.SyntaxSugarNode;
-import libbun.ast.binary.BInstanceOfNode;
+import libbun.ast.binary.BunInstanceOfNode;
 import libbun.ast.decl.BunClassNode;
 import libbun.ast.decl.BunFunctionNode;
 import libbun.ast.decl.BunLetVarNode;
@@ -39,15 +39,15 @@ import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.GlobalVariableTable;
-import dshell.lib.RuntimeContext;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
 import libbun.lang.bun.shell.CommandNode;
-import libbun.parser.BLogger;
 import libbun.parser.BToken;
+import libbun.parser.BTokenContext;
+import libbun.parser.LibBunLogger;
 import libbun.type.BFormFunc;
 import libbun.type.BFuncType;
 import libbun.type.BGenericType;
@@ -208,7 +208,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.AsmBuilder.visitInsn(Opcodes.ATHROW);
 	}
 
-	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
+	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
 		if(!(Node.LeftNode().Type instanceof BGenericType) && !(Node.LeftNode().Type instanceof BFuncType)) {
 			this.VisitNativeInstanceOfNode(Node);
 			return;
@@ -221,7 +221,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.invokeStaticMethod(null, method);
 	}
 
-	private void VisitNativeInstanceOfNode(BInstanceOfNode Node) {
+	private void VisitNativeInstanceOfNode(BunInstanceOfNode Node) {
 		if(!Node.TargetType().Equals(JavaTypeTable.GetZenType(this.GetJavaClass(Node.TargetType())))) {
 			Node.LeftNode().Accept(this);
 			this.AsmBuilder.Pop(Node.LeftNode().Type);
@@ -262,7 +262,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override public void VisitErrorNode(ErrorNode Node) {
-		BLogger._LogError(Node.SourceToken, Node.ErrorMessage);
+		assert Node.SourceToken != null;
+		LibBunLogger._LogError(Node.SourceToken, Node.ErrorMessage);
 		throw new ErrorNodeFoundException();
 	}
 
@@ -443,7 +444,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	private void loadJavaClass(Class<?> classObject) {
 		BType type = JavaTypeTable.GetZenType(classObject);
-		this.RootNameSpace.SetTypeName(type, null);
+		this.RootGamma.SetTypeName(type, null);
 	}
 
 	private void loadJavaClassList(ArrayList<Class<?>> classObjList) {
@@ -494,8 +495,60 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		JavaMethodTable.Import(arrayType, "[]", BType.IntType, arrayClass, "GetIndex");
 	}
 
-	@Override
-	public void GenerateStatement(BNode Node) {
+	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
+		boolean result = true;
+		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
+		BTokenContext tokenContext = new BTokenContext(this, this.RootGamma, fileName, lineNumber, script);
+		tokenContext.SkipEmptyStatement();
+		BToken skipToken = tokenContext.GetToken();
+		while(tokenContext.HasNext()) {
+			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
+			topBlockNode.ClearListToSize(0);
+			skipToken = tokenContext.GetToken();
+			BNode stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
+			if(stmtNode.IsErrorNode()) {
+				tokenContext.SkipError(skipToken);
+			}
+			if(!this.execStatement(stmtNode, isInteractive)) {
+				result = false;
+				break;
+			}
+			tokenContext.SkipEmptyStatement();
+			tokenContext.Vacume();
+		}
+		this.Logger.OutputErrorsToStdErr();
+		return result;
+	}
+
+	public boolean loadLine(String line, int lineNumber, boolean isInteractive) {
+		return this.loadScript(line, "(stdin)", lineNumber, isInteractive);
+	}
+
+	public void loadArg(String[] scriptArgs) {
+		StringBuilder ARGVBuilder = new StringBuilder();
+		ARGVBuilder.append("let ARGV = [");
+		for(int i = 0; i < scriptArgs.length; i++) {
+			if(i != 0) {
+				ARGVBuilder.append(", ");
+			}
+			ARGVBuilder.append("\"");
+			ARGVBuilder.append(scriptArgs[i]);
+			ARGVBuilder.append("\"");
+		}
+		ARGVBuilder.append("]");
+		this.loadScript(ARGVBuilder.toString(), scriptArgs[0], 0, false);
+	}
+
+	public boolean loadFile(String fileName) {
+		String script = BLib._LoadTextFile(fileName);
+		if(script == null) {
+			System.err.println("file not found: " + fileName);
+			System.exit(1);
+		}
+		return this.loadScript(script, fileName, 1, false);
+	}
+
+	protected void generateStatement(BNode Node) {
 		try {
 			Node.Accept(this);
 		}
@@ -511,21 +564,19 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	@Override
-	protected boolean ExecStatement(BNode Node) {
-		boolean IsInteractive = RuntimeContext.getContext().isInteractiveMode();
+	protected boolean execStatement(BNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
 		if(Node instanceof EmptyNode) {
 			return this.IsVisitable();
 		}
 		if(Node instanceof TopLevelNode) {
-			((TopLevelNode)Node).Perform(this.RootNameSpace);
+			((TopLevelNode)Node).Perform(this.RootGamma);
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
 		if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
 			Node = this.TypeChecker.CheckType(Node, BType.VoidType);
-			this.GenerateStatement(Node);
+			this.generateStatement(Node);
 		}
 		else if(IsInteractive) {
 			BToken SourceToken = Node.SourceToken;
@@ -534,7 +585,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
 			Node.SourceToken = SourceToken;
 			this.topLevelSymbolList.add(FuncName);
-			this.GenerateStatement(Node);
+			this.generateStatement(Node);
 		}
 		else {
 			if(this.untypedMainNode == null) {
@@ -548,7 +599,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return this.IsVisitable();
 	}
 
-	private boolean EvalAndPrintEachNode(String Symbol) {
+	private boolean evalAndPrintEachNode(String Symbol) {
 		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, BType.VoidType, 0);
 		try {
 			Method Method = FuncClass.getMethod("f");
@@ -568,16 +619,16 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return false;
 	}
 
-	public void EvalAndPrint() {
+	public void evalAndPrint() {
 		while(!this.topLevelSymbolList.isEmpty()) {
 			String Symbol = this.topLevelSymbolList.remove();
-			if(!this.EvalAndPrintEachNode(Symbol)) {
+			if(!this.evalAndPrintEachNode(Symbol)) {
 				this.topLevelSymbolList.clear();
 			}
 		}
 	}
 
-	public void InvokeMain() {	//TODO
+	public void invokeMain() {
 		if(this.untypedMainNode == null) {
 			System.err.println("not found main");
 			System.exit(1);

@@ -3,17 +3,17 @@ package dshell.lang;
 import libbun.ast.BNode;
 import libbun.lang.bun.shell.DShellStringLiteralPatternFunc;
 import libbun.parser.BPatternToken;
-import libbun.parser.BSource;
-import libbun.parser.BSyntax;
+import libbun.parser.LibBunSource;
+import libbun.parser.LibBunSyntax;
 import libbun.util.BArray;
 import dshell.lib.Utils;
 
 public class DShellStringLiteralToken extends BPatternToken {
 	private BArray<BNode> NodeList;
 
-	public DShellStringLiteralToken(BSource Source, int StartIndex, int EndIndex) {
+	public DShellStringLiteralToken(LibBunSource Source, int StartIndex, int EndIndex) {
 		super(Source, StartIndex, EndIndex, null);
-		BSyntax Pattern = Source.TokenContext.NameSpace.GetSyntaxPattern(DShellStringLiteralPatternFunc.PatternName);
+		LibBunSyntax Pattern = Source.TokenContext.Gamma.GetSyntaxPattern(DShellStringLiteralPatternFunc.PatternName);
 		if(Pattern == null) {
 			Utils.fatal(1, "Pattern is Null");
 		}

@@ -2,9 +2,9 @@ package libbun.lang.bun.shell;
 
 import libbun.ast.BunBlockNode;
 import libbun.ast.BNode;
-import libbun.parser.BNameSpace;
 import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
+import libbun.parser.LibBunGamma;
 import libbun.util.BMatchFunction;
 
 public class DShellBlockPatternFunc extends BMatchFunction {
@@ -13,8 +13,8 @@ public class DShellBlockPatternFunc extends BMatchFunction {
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BNode BlockNode = new BunBlockNode(ParentNode, null);
-		BNameSpace CurrentNameSpace = TokenContext.NameSpace;
-		TokenContext.NameSpace = ((BunBlockNode)BlockNode).GetBlockNameSpace();
+		LibBunGamma CurrentNameSpace = TokenContext.Gamma;
+		TokenContext.Gamma = ((BunBlockNode)BlockNode).GetBlockGamma();
 		BToken SkipToken = TokenContext.GetToken();
 		BlockNode = TokenContext.MatchToken(BlockNode, "{", BTokenContext._Required);
 		if(!BlockNode.IsErrorNode()) {
@@ -32,7 +32,7 @@ public class DShellBlockPatternFunc extends BMatchFunction {
 			}
 			TokenContext.SetParseFlag(Remembered);
 		}
-		TokenContext.NameSpace = CurrentNameSpace;
+		TokenContext.Gamma = CurrentNameSpace;
 		return BlockNode;
 	}
 }

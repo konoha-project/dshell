@@ -14,7 +14,6 @@ import dshell.lib.Utils;
 import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import libbun.util.BLib;
-import libbun.encode.AbstractGenerator;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.shell.DShellGrammar;
 import static dshell.lib.RuntimeContext.AppenderType;
@@ -194,15 +193,15 @@ public class DShell {
 				}
 				importBuilder.append(commandSet.pollFirst());
 			}
-			generator.LoadScript(importBuilder.toString(), "(stdin)", 0);
+			generator.loadLine(importBuilder.toString(), 0, false);
 		}
 		generator.Logger.OutputErrorsToStdErr();
 		while ((line = console.readLine()) != null) {
 			if(line.equals("")) {
 				continue;
 			}
-			if(generator.LoadScript(line, "(stdin)", console.getLineNumber())) {
-				generator.EvalAndPrint();
+			if(generator.loadLine(line, console.getLineNumber(), true)) {
+				generator.evalAndPrint();
 			}
 			console.incrementLineNum(line);
 		}
@@ -213,26 +212,13 @@ public class DShell {
 	private void runScriptingMode() {
 		DShellByteCodeGenerator generator = initGenerator();
 		String scriptName = this.scriptArgs[0];
-		// load script arguments
-		StringBuilder ARGVBuilder = new StringBuilder();
-		ARGVBuilder.append("let ARGV = [");
-		for(int i = 0; i < this.scriptArgs.length; i++) {
-			if(i != 0) {
-				ARGVBuilder.append(", ");
-			}
-			ARGVBuilder.append("\"");
-			ARGVBuilder.append(this.scriptArgs[i]);
-			ARGVBuilder.append("\"");
-		}
-		ARGVBuilder.append("]");
-		generator.LoadScript(ARGVBuilder.toString(), scriptName, 0);
-		// load script file
-		boolean status = generator.LoadFile(scriptName, null);
+		generator.loadArg(this.scriptArgs);
+		boolean status = generator.loadFile(scriptName);
 		if(!status) {
 			System.err.println("abort loading: " + scriptName);
 			System.exit(1);
 		}
-		generator.InvokeMain(); // never return
+		generator.invokeMain(); // never return
 	}
 
 	private void runInputEvalMode() {
@@ -241,12 +227,12 @@ public class DShell {
 		if(this.specificArg == null) {
 			source = readFromIntput();
 		}
-		boolean status = generator.LoadScript(source, "(stdin)", 1);
+		boolean status = generator.loadLine(source, 1, false);
 		if(!status) {
 			System.err.println("abort loading input source");
 			System.exit(1);
 		}
-		generator.InvokeMain(); // never return
+		generator.invokeMain(); // never return
 	}
 
 	private static String readFromIntput() {
@@ -268,8 +254,8 @@ public class DShell {
 		return null;
 	}
 	private final static DShellByteCodeGenerator initGenerator() {
-		AbstractGenerator Generator = new DShellByteCodeGenerator();
-		DShellGrammar.ImportGrammar(Generator.RootNameSpace);
+		DShellByteCodeGenerator Generator = new DShellByteCodeGenerator();
+		DShellGrammar.ImportGrammar(Generator.RootGamma);
 		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
 		Generator.RequireLibrary("common", null);
 		return (DShellByteCodeGenerator) Generator;

@@ -4,9 +4,9 @@ import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
-import libbun.ast.BNode;
 import libbun.ast.literal.BunTypeNode;
-import libbun.parser.BVisitor;
+import libbun.ast.BNode;
+import libbun.parser.LibBunVisitor;
 import libbun.type.BType;
 
 public class DShellCatchNode extends BNode {
@@ -18,7 +18,7 @@ public class DShellCatchNode extends BNode {
 	private BType ExceptionType = null;
 
 	public DShellCatchNode(BNode ParentNode) {
-		super(ParentNode, null, 3);
+		super(ParentNode, 3);
 	}
 
 	public final String ExceptionName() {
@@ -56,7 +56,7 @@ public class DShellCatchNode extends BNode {
 		return null;
 	}
 
-	@Override public void Accept(BVisitor Visitor) {
+	@Override public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitCatchNode(this);
 		}

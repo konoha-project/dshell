@@ -24,7 +24,7 @@ public class LocationDefinePatternFunc extends BMatchFunction {	//TODO
 //				String NameSymbol = ((BGetNameNode)Node).GetName();
 //				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
 //				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (BStringNode)ValueNode);
-				return new EmptyNode(ParentNode, null);
+				return new EmptyNode(ParentNode);
 			}
 		}
 		return null;

@@ -5,14 +5,14 @@ import dshell.lib.Utils;
 import libbun.ast.AbstractListNode;
 import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
-import libbun.parser.BVisitor;
+import libbun.parser.LibBunVisitor;
 
 public class DShellTryNode extends AbstractListNode {
 	public final static int _Try = 0;
 	public final static int _Finally = 1;
 
 	public DShellTryNode(BNode ParentNode) {
-		super(ParentNode, null, 2);
+		super(ParentNode, 2);
 	}
 
 	public final BunBlockNode TryBlockNode() {
@@ -37,7 +37,7 @@ public class DShellTryNode extends AbstractListNode {
 		return null;
 	}
 
-	@Override public void Accept(BVisitor Visitor) {
+	@Override public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
 			((DShellVisitor)Visitor).VisitTryNode(this);
 		}

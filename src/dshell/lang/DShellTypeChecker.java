@@ -3,8 +3,8 @@ package dshell.lang;
 import libbun.ast.BunBlockNode;
 import libbun.ast.BNode;
 import libbun.ast.SyntaxSugarNode;
-import libbun.ast.binary.BInstanceOfNode;
 import libbun.ast.binary.BinaryOperatorNode;
+import libbun.ast.binary.BunInstanceOfNode;
 import libbun.ast.decl.BunFunctionNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunWhileNode;
@@ -13,7 +13,7 @@ import libbun.encode.jvm.JavaTypeTable;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.BunTypeSafer;
 import libbun.lang.bun.shell.CommandNode;
-import libbun.parser.BLogger;
+import libbun.parser.LibBunLogger;
 import libbun.type.BGenericType;
 import libbun.type.BType;
 import libbun.type.BTypePool;
@@ -84,11 +84,11 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		BunBlockNode BlockNode = Node.BlockNode();
 		if(!(Node.ExceptionType() instanceof BVarType)) {
 			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
-			BlockNode.GetBlockNameSpace().SetSymbol(Node.ExceptionName(), Node.ToLetVarNode());
+			BlockNode.GetBlockGamma().SetSymbol(Node.ExceptionName(), Node.ToLetVarNode());
 		}
 		this.VisitBlockNode(BlockNode);
 		if(BlockNode.GetListSize() == 0) {
-			BLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
+			LibBunLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);
 	}
@@ -120,7 +120,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		this.ReturnTypeNode(Node, BType.VoidType);
 	}
 
-	@Override public void VisitInstanceOfNode(BInstanceOfNode Node) {
+	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
 		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.VarType);
 		this.ReturnTypeNode(Node, BType.BooleanType);
 	}
@@ -159,7 +159,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	public void VisitForNode(DShellForNode Node) {	//FIXME
 		Node.PrepareTypeCheck();
 		if(Node.HasDeclNode()) {
-			this.VisitVarDeclNode(Node.BlockNode().GetBlockNameSpace(), Node.VarDeclNode());
+			this.VisitVarDeclNode(Node.BlockNode().GetBlockGamma(), Node.VarDeclNode());
 		}
 		this.CheckTypeAt(Node, DShellForNode._Block, BType.VoidType);
 		this.CheckTypeAt(Node, DShellForNode._Cond, BType.BooleanType);
@@ -167,7 +167,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			this.CheckTypeAt(Node, DShellForNode._Next, BType.VoidType);
 		}
 		if(Node.BlockNode().GetListSize() == 0) {
-			BLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.VarDeclNode().GetGivenName());
+			LibBunLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.VarDeclNode().GetGivenName());
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);
 	}

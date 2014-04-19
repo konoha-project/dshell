@@ -18,10 +18,8 @@ import libbun.ast.expression.SetNameNode;
 import libbun.ast.literal.BunBooleanNode;
 import libbun.ast.literal.BunIntNode;
 import libbun.ast.statement.BunIfNode;
-import libbun.encode.AbstractGenerator;
-import libbun.parser.BSource;
-import libbun.parser.BToken;
-import libbun.parser.BTypeChecker;
+import libbun.encode.LibBunGenerator;
+import libbun.parser.LibBunTypeChecker;
 import libbun.type.BType;
 import dshell.ast.DShellForNode;
 import dshell.lib.Utils;
@@ -47,11 +45,11 @@ public class DShellForeachNode extends SyntaxSugarNode {
 	public final static int _Block = 2;
 
 	public DShellForeachNode(BNode ParentNode) {
-		super(ParentNode, null, 3);
+		super(ParentNode, 3);
 	}
 
 	@Override
-	public DesugarNode DeSugar(AbstractGenerator Generator, BTypeChecker TypeChecker) {
+	public DesugarNode DeSugar(LibBunGenerator Generator, LibBunTypeChecker TypeChecker) {
 		TypeChecker.CheckTypeAt(this, _Expr, BType.VarType);
 		if(!this.AST[_Expr].Type.IsArrayType()) {
 			return new DesugarNode(this, new ErrorNode(this.ParentNode, this.SourceToken, "require array type"));
@@ -79,12 +77,10 @@ public class DShellForeachNode extends SyntaxSugarNode {
 		return new DesugarNode(this, Node);
 	}
 
-	private BunVarBlockNode CreateSizeDeclNode(BNode ParentNode, String SizeSymbol, String ValuesSymbol, BTypeChecker TypeChekcer) {
+	private BunVarBlockNode CreateSizeDeclNode(BNode ParentNode, String SizeSymbol, String ValuesSymbol, LibBunTypeChecker TypeChekcer) {
 		BunVarBlockNode Node = TypeChekcer.CreateVarNode(ParentNode, SizeSymbol, BType.IntType, new BunIntNode(ParentNode, null, 0));
-		MethodCallNode SizeNode = new MethodCallNode(Node, new GetNameNode(ParentNode, null, ValuesSymbol));
+		MethodCallNode SizeNode = new MethodCallNode(ParentNode, new GetNameNode(ParentNode, null, ValuesSymbol), "Size");
 		SizeNode.SourceToken = this.SourceToken; // for line number
-		SizeNode.SetNode(MethodCallNode._NameInfo, new GetNameNode(SizeNode, null, "Size"));
-		SizeNode.GivenName = "Size";
 		Node.VarDeclNode().SetNode(BunLetVarNode._InitValue, SizeNode);
 		return Node;
 	}
@@ -92,29 +88,26 @@ public class DShellForeachNode extends SyntaxSugarNode {
 	private ComparatorNode CreateCondNode(BNode ParentNode, String IndexSymbol, String SizeSymbol) {
 		BNode LeftNode = new GetNameNode(ParentNode, null, IndexSymbol);
 		BNode RightNode = new GetNameNode(ParentNode, null, SizeSymbol);
-		String Operator = "<";
-		BSource Source = new BSource(this.SourceToken.GetFileName(), this.SourceToken.GetLineNumber(), Operator, this.SourceToken.Source.TokenContext);
-		BToken Token = new BToken(Source, 0, Operator.length());
-		BunLessThanNode Node = new BunLessThanNode(ParentNode, Token, LeftNode);
-		Node.SetNode(BinaryOperatorNode._Right, RightNode);
+		BunLessThanNode Node = new BunLessThanNode(ParentNode);
+		Node.SetLeftNode(LeftNode);
+		Node.SetRightNode(RightNode);
 		return Node;
 	}
 
 	private SetNameNode CreateIncrementNode(BNode ParentNode, String IndexSymbol) {
-		BSource AddOpSource = new BSource(this.SourceToken.GetFileName(), this.SourceToken.GetLineNumber(), "+", this.SourceToken.Source.TokenContext);
-		BToken OpToken = new BToken(AddOpSource, 0, "+".length());
-		BNode BinaryNode = new BunAddNode(ParentNode, OpToken, new GetNameNode(null, null, IndexSymbol));
-		BinaryNode.SetNode(BinaryOperatorNode._Right, new BunIntNode(BinaryNode, null, 1));
+		BinaryOperatorNode BinaryNode = new BunAddNode(ParentNode);
+		BinaryNode.SetLeftNode(new GetNameNode(BinaryNode, null, IndexSymbol));
+		BinaryNode.SetRightNode(new BunIntNode(BinaryNode, null, 1));
 		return new SetNameNode(IndexSymbol, BinaryNode);
 	}
 
-	private BunVarBlockNode CreateValueDeclNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol, BTypeChecker TypeChekcer) {
+	private BunVarBlockNode CreateValueDeclNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol, LibBunTypeChecker TypeChekcer) {
 		BNode IndexNode = new GetIndexNode(ParentNode, new GetNameNode(ParentNode, null, ValuesSymbol));
 		IndexNode.SetNode(GetIndexNode._Index, new GetNameNode(IndexNode, null, IndexSymbol));
 		return TypeChekcer.CreateVarNode(ParentNode, this.GetName(), BType.VarType, IndexNode);
 	}
 
-	private BunBlockNode CreateForBlockNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol, BTypeChecker TypeChekcer) {
+	private BunBlockNode CreateForBlockNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol, LibBunTypeChecker TypeChekcer) {
 		BunVarBlockNode ForBlockNode = this.CreateValueDeclNode(ParentNode, ValuesSymbol, IndexSymbol, TypeChekcer);
 		BunBlockNode OldBlockNode = this.BlockNode();
 		int size = OldBlockNode.GetListSize();
