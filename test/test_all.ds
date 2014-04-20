@@ -10,7 +10,7 @@ else {
 }
 
 let LOG = "./test-result.log"
-let DIR = "${TEST_DIR}/tests"
+let DIR = "${TEST_DIR}/test-case"
 
 echo > $LOG
 for(test_dir in $(ls $DIR)) {
@@ -20,7 +20,7 @@ for(test_dir in $(ls $DIR)) {
 		if(java -jar -ea dshell.jar $REC $DIR/$test_dir/$test_file &>> $LOG) {
 			prefix = "[pass]:"
 		}
-		echo "${prefix} ${test_file}"
-		echo "${prefix} ${test_file}" &>> $LOG
+		echo "${prefix} ${test_dir}/${test_file}"
+		echo "${prefix} ${test_dir}/${test_file}" &>> $LOG
 	}
 }

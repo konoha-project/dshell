@@ -35,6 +35,7 @@ import dshell.ast.DShellWrapperNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
+import dshell.lang.DShellTypeChecker;
 import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
@@ -107,6 +108,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaStaticMethod(CommandArg.class, "createSubstitutedArg", String.class);
 		this.loadJavaStaticMethod(Utils.class, "assertDShell", boolean.class);
 		this.loadJavaStaticMethod(JavaCommonApi.class, "_", "ObjectToString", Object.class);
+		this.loadJavaStaticMethod(Utils.class, "_", "stringToLong", String.class);
+		this.loadJavaStaticMethod(Utils.class, "_", "stringToDouble", String.class);
 	}
 
 	@Override
@@ -509,7 +512,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			if(stmtNode.IsErrorNode()) {
 				tokenContext.SkipError(skipToken);
 			}
-			if(!this.execStatement(stmtNode, isInteractive)) {
+			if(!this.generateStatement(stmtNode, isInteractive)) {
 				result = false;
 				break;
 			}
@@ -548,7 +551,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return this.loadScript(script, fileName, 1, false);
 	}
 
-	protected void generateStatement(BNode Node) {
+	protected void generateByteCode(BNode Node) {
 		try {
 			Node.Accept(this);
 		}
@@ -564,7 +567,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	protected boolean execStatement(BNode Node, boolean IsInteractive) {
+	protected boolean generateStatement(BNode Node, boolean IsInteractive) {
 		this.EnableVisitor();
 		if(Node instanceof EmptyNode) {
 			return this.IsVisitable();
@@ -576,16 +579,12 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		Node = this.checkTopLevelSupport(Node);
 		if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
 			Node = this.TypeChecker.CheckType(Node, BType.VoidType);
-			this.generateStatement(Node);
+			this.generateByteCode(Node);
 		}
 		else if(IsInteractive) {
-			BToken SourceToken = Node.SourceToken;
-			Node = this.TypeChecker.CheckType(Node, BType.VarType);
-			String FuncName = this.NameUniqueSymbol("Main");
-			Node = this.TypeChecker.CreateFunctionNode(Node.ParentNode, FuncName, Node);
-			Node.SourceToken = SourceToken;
-			this.topLevelSymbolList.add(FuncName);
-			this.generateStatement(Node);
+			BunFunctionNode FuncNode = ((DShellTypeChecker)this.TypeChecker).VisitTopLevelStatementNode(Node);
+			this.topLevelSymbolList.add(FuncNode.GivenName);
+			this.generateByteCode(FuncNode);
 		}
 		else {
 			if(this.untypedMainNode == null) {

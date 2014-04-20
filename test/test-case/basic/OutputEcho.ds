@@ -1,0 +1,12 @@
+import command echo
+
+function func() {
+  var str = "Hello, World"
+  var num = 123
+  var str2 = echo ${str}
+  var num2 = echo ${num}
+  assert(str == str2)
+  assert("123" == num2)
+}
+
+func()

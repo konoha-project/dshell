@@ -1,7 +1,7 @@
 function func() {
   var a: int = 123
   var b: float = 2.0
-  var c: String = "45.67"
+  var c: String = "4567"
 
   // int -> float
   var d = (float)a

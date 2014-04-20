@@ -175,4 +175,12 @@ public class Utils {
 			super(message);
 		}
 	}
+
+	public static long stringToLong(String value) {
+		return Long.parseLong(value);
+	}
+
+	public static double stringToDouble(String value) {
+		return Double.parseDouble(value);
+	}
 }

@@ -13,6 +13,7 @@ import libbun.encode.jvm.JavaTypeTable;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.BunTypeSafer;
 import libbun.lang.bun.shell.CommandNode;
+import libbun.parser.BToken;
 import libbun.parser.LibBunLogger;
 import libbun.type.BGenericType;
 import libbun.type.BType;
@@ -180,5 +181,30 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		TargetNode.Type = BType.VoidType;
 		Node.setTargetNode(TargetNode);
 		this.ReturnNode(Node);
+	}
+
+	public BunFunctionNode VisitTopLevelStatementNode(BNode Node) {
+		BNode ParentNode = Node.ParentNode;
+		BToken SourceToken = Node.SourceToken;
+		String FuncName = this.Generator.NameUniqueSymbol("topLevel");
+		BunFunctionNode FuncNode = new BunFunctionNode(ParentNode);
+		FuncNode.Type = BType.VoidType;
+		FuncNode.GivenName = FuncName;
+		FuncNode.SourceToken = SourceToken;
+		BunBlockNode BlockNode = this.CreateBlockNode(FuncNode);
+		FuncNode.SetNode(BunFunctionNode._Block, BlockNode);
+		Node.ParentNode = BlockNode;
+		this.CurrentFunctionNode = FuncNode;
+		Node = this.CheckType(Node, BType.VarType);
+		this.CurrentFunctionNode = null;
+		if(Node.Type.IsVoidType()) {
+			BlockNode.Append(Node);
+			BlockNode.Append(this.CreateReturnNode(BlockNode));
+		}
+		else {
+			BlockNode.Append(this.CreateReturnNode(BlockNode, Node));
+		}
+		FuncNode.SetReturnType(Node.Type);
+		return FuncNode;
 	}
 }
