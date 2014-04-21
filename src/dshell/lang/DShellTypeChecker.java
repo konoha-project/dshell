@@ -52,7 +52,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		int size = Node.GetArgSize();
 		for(int i = 0; i < size; i++) {
 			BNode SubNode = Node.GetArgAt(i);
-			SubNode = this.CheckType(SubNode, JavaTypeTable.GetZenType(CommandArg.class));
+			SubNode = this.CheckType(SubNode, JavaTypeTable.GetBunType(CommandArg.class));
 			Node.SetArgAt(i, SubNode);
 		}
 		if(Node.PipedNextNode != null) {

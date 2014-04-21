@@ -1,0 +1,7 @@
+function f() {
+	for(arg in ARGV) {
+		log $arg
+	}
+}
+
+f()

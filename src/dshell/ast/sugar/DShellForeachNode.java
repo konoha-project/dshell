@@ -4,6 +4,7 @@ import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
 import libbun.ast.DesugarNode;
 import libbun.ast.SyntaxSugarNode;
+import libbun.ast.binary.AssignNode;
 import libbun.ast.binary.BinaryOperatorNode;
 import libbun.ast.binary.BunAddNode;
 import libbun.ast.binary.BunLessThanNode;
@@ -13,7 +14,6 @@ import libbun.ast.error.ErrorNode;
 import libbun.ast.expression.GetIndexNode;
 import libbun.ast.expression.GetNameNode;
 import libbun.ast.expression.MethodCallNode;
-import libbun.ast.expression.SetNameNode;
 import libbun.ast.literal.BunBooleanNode;
 import libbun.ast.literal.BunIntNode;
 import libbun.ast.statement.BunIfNode;
@@ -104,11 +104,11 @@ public class DShellForeachNode extends SyntaxSugarNode {
 		return Node;
 	}
 
-	private SetNameNode CreateIncrementNode(BNode ParentNode, String IndexSymbol) {
+	private AssignNode CreateIncrementNode(BNode ParentNode, String IndexSymbol) {
 		BinaryOperatorNode BinaryNode = new BunAddNode(ParentNode);
 		BinaryNode.SetLeftNode(new GetNameNode(BinaryNode, null, IndexSymbol));
 		BinaryNode.SetRightNode(new BunIntNode(BinaryNode, null, 1));
-		return new SetNameNode(IndexSymbol, BinaryNode);
+		return new AssignNode(IndexSymbol, BinaryNode);
 	}
 
 	private BunLetVarNode CreateValueDeclNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol) {

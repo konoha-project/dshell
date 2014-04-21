@@ -14,8 +14,8 @@ import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.type.BType;
 import libbun.util.BArray;
-import libbun.util.BLib;
 import libbun.util.BMatchFunction;
+import libbun.util.LibBunSystem;
 import libbun.util.Var;
 
 public class CommandArgPatternFunc extends BMatchFunction {
@@ -38,7 +38,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			}
 			else if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				NodeList.add(new BunStringNode(ParentNode, null, BLib._UnquoteString(Token.GetText())));
+				NodeList.add(new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);
@@ -112,8 +112,8 @@ public class CommandArgPatternFunc extends BMatchFunction {
 				EndIndex = BArray.GetIndex(TokenList, i).EndIndex;
 			}
 		}
-		@Var BToken Token = new BToken(TokenContext.Source, StartIndex, EndIndex);
-		NodeList.add(new BunStringNode(null, Token, BLib._UnquoteString(this.ResolveHome(Token.GetText()))));
+		@Var BToken Token = new BToken(TokenContext.SourceContext, StartIndex, EndIndex);
+		NodeList.add(new BunStringNode(null, Token, LibBunSystem._UnquoteString(this.ResolveHome(Token.GetText()))));
 		TokenList.clear(0);
 	}
 

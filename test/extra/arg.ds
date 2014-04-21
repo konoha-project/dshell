@@ -1,0 +1,7 @@
+function f(n : int) {
+	n = n + 10
+	n = n + 20
+	return n
+}
+
+log ${f(12)}

@@ -1,0 +1,9 @@
+import command ls;
+
+function f() {
+	var a = ls;
+	var b = a;
+	log $a
+}
+
+f();

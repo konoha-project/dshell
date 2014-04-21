@@ -1,0 +1,16 @@
+import command ls, grep
+
+function f() {
+	try {
+		ls /root | grep huga
+	}
+	catch(e : MultipleException) {
+		var a = e.getExceptions()
+		assert(e instanceof DShellException)
+		assert(e instanceof MultipleException)
+		assert(a instanceof DShellException[])
+		assert(!(a instanceof Task[]))
+	}
+}
+
+f()

@@ -1,0 +1,16 @@
+function f() {
+	var a = 3
+	var i = 0
+	var c = 12
+	while(i < a) {
+		var b = 5
+		var j = 0 
+		while(j < b) {
+			log ${i * 10 + j}
+			j = j + 1
+		}
+		i = i + 1
+	}
+}
+
+f()

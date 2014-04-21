@@ -2,10 +2,7 @@ package libbun.lang.bun.shell;
 
 import java.util.ArrayList;
 
-import libbun.ast.decl.BunLetVarNode;
-import libbun.ast.literal.BunStringNode;
 import libbun.encode.jvm.JavaImportPattern;
-import libbun.type.BType;
 import libbun.util.BMatchFunction;
 import libbun.lang.konoha.ContinuePatternFunction;
 import libbun.lang.bun.BunPrecedence;
@@ -28,29 +25,29 @@ public class DShellGrammar {	//FIXME
 
 	public static void ImportGrammar(LibBunGamma Gamma) {
 		// import BunGrammer
-		BunGrammar.ImportGrammar(Gamma);
+		BunGrammar.LoadGrammar(Gamma);
 		// import ShellGrammar
-		ShellGrammar.ImportGrammar(Gamma);
+		ShellGrammar.LoadGrammar(Gamma);
 		// import DShell Specific Grammar
 		ImportCommandPatternFunction importCommandPattern = new DShellImportCommandPatternFunc();
 //		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
-		Gamma.AppendTokenFunc("\"", new DShellStringLiteralTokenFunc());
+		//Gamma.DefineToken("\"", new DShellStringLiteralTokenFunc());
 
-		overrideSyntaxPattern(Gamma, "import", new JavaImportPattern(), true);
-		overrideSyntaxPattern(Gamma, "continue", new ContinuePatternFunction(), true);
+		overrideStatement(Gamma, "import", new JavaImportPattern());
+		overrideStatement(Gamma, "continue", new ContinuePatternFunction());
 		Gamma.DefineStatement("import", new DShellImportPatternFunc());
 		Gamma.DefineExpression(ImportEnvPatternFunc.PatternName, new ImportEnvPatternFunc());
 		Gamma.DefineStatement("command", importCommandPattern);
-		overrideSyntaxPattern(Gamma, ImportCommandPatternFunction._PatternName, importCommandPattern, false);
-		overrideSyntaxPattern(Gamma, SimpleArgumentPatternFunction._PatternName, new CommandArgPatternFunc(), false);
+		overrideExpression(Gamma, ImportCommandPatternFunction._PatternName, importCommandPattern);
+		overrideExpression(Gamma, SimpleArgumentPatternFunction._PatternName, new CommandArgPatternFunc());
 
 //		NameSpace.DefineRightExpression("=~", BunPrecedence._CStyleEquals, comparatorPattern);
 //		NameSpace.DefineRightExpression("!~", BunPrecedence._CStyleEquals, comparatorPattern);
-		overrideSyntaxPattern(Gamma, "try", new DShellTryPatternFunc(), true);
-		overrideSyntaxPattern(Gamma, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc(), true);
+		overrideStatement(Gamma, "try", new DShellTryPatternFunc());
+		overrideStatement(Gamma, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc());
 		Gamma.DefineStatement(location, new LocationDefinePatternFunc());
 		Gamma.DefineStatement("for", new ForPatternFunc());
 		Gamma.DefineStatement("for", new ForeachPatternFunc());
@@ -59,10 +56,10 @@ public class DShellGrammar {	//FIXME
 //		NameSpace.DefineExpression("$( `", substitutionPattern);
 		Gamma.DefineExpression("$", substitutionPattern);
 		Gamma.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
-		overrideSyntaxPattern(Gamma, "assert", new AssertPatternFunc(), false);
-		overrideSyntaxPattern(Gamma, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc(), false);
-		overrideSyntaxPattern(Gamma, "var", varPattern, true);
-		overrideSyntaxPattern(Gamma, "let", varPattern, true);
+		overrideExpression(Gamma, "assert", new AssertPatternFunc());
+		overrideExpression(Gamma, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc());
+		overrideStatement(Gamma, "var", varPattern);
+		overrideStatement(Gamma, "let", varPattern);
 
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
@@ -72,15 +69,31 @@ public class DShellGrammar {	//FIXME
 		Gamma.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
-	private static void setOptionalSymbol(LibBunGamma Gamma, String symbol) { // FIXME: null
-		BunLetVarNode LetNode = new BunLetVarNode(null, BunLetVarNode._IsReadOnly, BType.StringType, symbol);
-		LetNode.SetNode(BunLetVarNode._InitValue, new BunStringNode(null, null, symbol));
-		Gamma.SetSymbol(ShellUtils._ToCommandSymbol(symbol), LetNode);
+	private static void setOptionalSymbol(LibBunGamma Gamma, String symbol) {
+		ShellUtils.SetCommand(symbol, symbol);
 	}
 
-	private static void overrideSyntaxPattern(LibBunGamma Gamma, String PatternName, BMatchFunction MatchFunc, boolean isStatement) {
-		LibBunSyntax Pattern = new LibBunSyntax(Gamma, PatternName, MatchFunc);
-		Pattern.IsStatement = isStatement;
-		Gamma.SetSyntaxPattern(PatternName, Pattern);
+	private static void overrideStatement(LibBunGamma Gamma, String PatternName, BMatchFunction MatchFunc) {
+		LibBunSyntax oldSyntaxPattern = Gamma.GetSyntaxPattern(PatternName);	//FIXME
+		if(oldSyntaxPattern == null) {
+			Gamma.DefineStatement(PatternName, MatchFunc);
+		}
+		else {
+			oldSyntaxPattern.MatchFunc = MatchFunc;
+			oldSyntaxPattern.ParentPattern = null;
+			oldSyntaxPattern.SyntaxFlag = LibBunSyntax._Statement;
+		}
+	}
+
+	private static void overrideExpression(LibBunGamma Gamma, String PatternName, BMatchFunction MatchFunc) {
+		LibBunSyntax oldSyntaxPattern = Gamma.GetSyntaxPattern(PatternName);	//FIXME
+		if(oldSyntaxPattern == null) {
+			Gamma.DefineExpression(PatternName, MatchFunc);
+		}
+		else {
+			oldSyntaxPattern.MatchFunc = MatchFunc;
+			oldSyntaxPattern.ParentPattern = null;
+			oldSyntaxPattern.SyntaxFlag = 0;
+		}
 	}
 }

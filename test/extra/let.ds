@@ -1,0 +1,7 @@
+let a = "fhre"
+
+function f() {
+	log $a
+}
+
+f()

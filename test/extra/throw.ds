@@ -1,0 +1,10 @@
+function f() {
+	try {
+		throw new NotPermittedException("hello");
+	}
+	catch(e : DShellException) {
+		log  $e
+	}
+}
+
+f()

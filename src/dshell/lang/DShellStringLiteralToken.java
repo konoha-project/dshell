@@ -13,7 +13,8 @@ public class DShellStringLiteralToken extends BPatternToken {
 
 	public DShellStringLiteralToken(LibBunSource Source, int StartIndex, int EndIndex) {
 		super(Source, StartIndex, EndIndex, null);
-		LibBunSyntax Pattern = Source.TokenContext.Gamma.GetSyntaxPattern(DShellStringLiteralPatternFunc.PatternName);
+		//LibBunSyntax Pattern = Source.TokenContext.Gamma.GetSyntaxPattern(DShellStringLiteralPatternFunc.PatternName);
+		LibBunSyntax Pattern = null;
 		if(Pattern == null) {
 			Utils.fatal(1, "Pattern is Null");
 		}

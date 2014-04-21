@@ -10,7 +10,7 @@ import libbun.util.ZObjectArray;
 
 public class ArrayUtils {
 	public static DShellExceptionArray createExceptionArray(DShellException[] exceptions) {
-		BType exceptionType = JavaTypeTable.GetZenType(DShellException.class);
+		BType exceptionType = JavaTypeTable.GetBunType(DShellException.class);
 		BType exceptionArrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, exceptionType);
 		return new DShellExceptionArray(exceptionArrayType.TypeId, exceptions);
 	}
@@ -37,7 +37,7 @@ public class ArrayUtils {
 	}
 
 	public static TaskArray createTaskArray(Task[] tasks) {
-		BType taskType = JavaTypeTable.GetZenType(Task.class);
+		BType taskType = JavaTypeTable.GetBunType(Task.class);
 		BType taskArrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, taskType);
 		return new TaskArray(taskArrayType.TypeId, tasks);
 	}

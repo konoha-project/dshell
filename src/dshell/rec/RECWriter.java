@@ -5,7 +5,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 
-import libbun.util.BLib;
+import libbun.util.LibBunSystem;
 
 import net.arnx.jsonic.JSON;
 
@@ -181,7 +181,7 @@ class RecAPI {
 		public String content;
 
 		public RecContext(String assertpoint, String fileName) {
-			String fileContent = BLib._LoadTextFile(fileName);
+			String fileContent = LibBunSystem._LoadTextFile(fileName);
 			if(fileContent == null) {
 				fileContent = "";
 			}

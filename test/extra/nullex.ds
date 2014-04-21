@@ -1,0 +1,20 @@
+import command ls, grep
+
+function f() {
+	try {
+		ls -la | grep hfiru
+	}
+	catch(e : MultipleException) {
+		for(a in e.getExceptions()) {
+			log ${a}
+			if(a instanceof NullException) {
+				log "catch NullException"
+			}
+			else {
+				log "catch DShellException"
+			}
+		}
+	}
+}
+
+f()

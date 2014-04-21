@@ -1,0 +1,6 @@
+function f() {
+	assert(true)
+	assert(false)
+}
+
+f()

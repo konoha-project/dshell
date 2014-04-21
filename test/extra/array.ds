@@ -1,0 +1,8 @@
+let array = [["a1", "b1"], ["a2", "b2"]]
+
+for(array2 in array) {
+	for(a in array2) {
+		log $a
+	}
+}
+

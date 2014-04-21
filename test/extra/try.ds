@@ -1,0 +1,28 @@
+#!~/bin/dshell
+
+import command ls, grep
+function f() {
+	try {
+		ls /root | grep huga;
+		ls /root
+	}
+	catch(e : MultipleException) {
+		log "in multiple catch block"
+		for(a in e.getExceptions()) {
+			log "===================="
+		    log "${a.getCommand()}"
+		    log "${a.getErrorMessage()}"
+		}
+	}
+	catch(e : DShellException) {
+		log "in catch block"
+		log "===================="
+		log "${e.getCommand()}"
+		log "${e.getErrorMessage()}"
+	}
+	finally {
+		log "in finally"
+	}
+}
+
+f();

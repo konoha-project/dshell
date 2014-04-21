@@ -1,0 +1,13 @@
+import command ls;
+#import java.lang.System;
+
+function f() {
+	try {
+		ls /root;
+	} catch(e : DShellException) {
+		#log $e;
+		log $ARGV
+	}
+}
+
+f();

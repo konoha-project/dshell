@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import libbun.util.BLib;
+import libbun.util.LibBunSystem;
 
 import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
@@ -114,7 +114,7 @@ public class RuntimeContext implements Serializable {
 
 	public void setDebugMode(boolean debugMode) {
 		this.debugMode = debugMode;
-		BLib.DebugMode = debugMode;
+		LibBunSystem.DebugMode = debugMode;
 	}
 
 	public boolean isDebugMode() {

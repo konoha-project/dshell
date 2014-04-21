@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
-import libbun.util.BLib;
 import dshell.lib.CommandArg.SubstitutedArg;
 
 public abstract class PseudoProcess {
@@ -157,7 +156,7 @@ class PipeStreamHandler extends Thread {
 			}
 		}
 		catch (IOException e) {
-			if(BLib.DebugMode) {
+			if(RuntimeContext.getContext().isDebugMode()) {
 				System.err.println("input problem");
 				e.printStackTrace();
 			}
@@ -177,7 +176,7 @@ class PipeStreamHandler extends Thread {
 			}
 			catch(IOException e) {
 				iterator.remove();
-				if(BLib.DebugMode) {
+				if(RuntimeContext.getContext().isDebugMode()) {
 					System.err.println("output problem");
 					e.printStackTrace();
 				}
@@ -191,7 +190,7 @@ class PipeStreamHandler extends Thread {
 				this.input.close();
 			}
 			catch (IOException e) {
-				if(BLib.DebugMode) {
+				if(RuntimeContext.getContext().isDebugMode()) {
 					System.err.println("close input problem");
 					e.printStackTrace();
 				}
@@ -206,7 +205,7 @@ class PipeStreamHandler extends Thread {
 					this.outputs[i].close();
 				}
 				catch (IOException e) {
-					if(BLib.DebugMode) {
+					if(RuntimeContext.getContext().isDebugMode()) {
 						System.err.println("close output problem");
 						e.printStackTrace();
 					}

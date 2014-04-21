@@ -1,0 +1,11 @@
+import command ls
+
+try {
+	ls /root
+}
+catch(e : DShellException) {
+	log "fr"
+}
+catch(e : FileNotFoundException) {
+	log "frfrr"
+}

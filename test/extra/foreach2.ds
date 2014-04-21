@@ -1,0 +1,11 @@
+function f() {
+	var ary = ["hello", "world"]
+	for(a in ary) {
+		log $a
+		for(b in ary) {
+			log $b
+		}
+	}
+}
+
+f()

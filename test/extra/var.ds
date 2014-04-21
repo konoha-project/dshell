@@ -1,0 +1,8 @@
+var a = 12
+function f() {
+	var a = 144
+	return a
+}
+
+assert(f() == 144)
+assert(a == 12)

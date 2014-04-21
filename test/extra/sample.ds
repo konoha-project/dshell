@@ -1,0 +1,13 @@
+import command cat, grep, sed
+
+function f() {
+	var i = 2;
+	var size = ARGV.Size()
+	var target = ARGV[1]
+	while(i < size) {
+		cat ${ARGV[i]} | sed -e "s/public class/public static class/g" | grep -v "import" | grep -v "package" >> $target
+		i = i + 1
+	}
+}
+
+f()

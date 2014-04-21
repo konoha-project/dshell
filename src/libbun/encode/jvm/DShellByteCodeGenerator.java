@@ -17,7 +17,6 @@ import libbun.ast.decl.BunVarBlockNode;
 import libbun.ast.decl.TopLevelNode;
 import libbun.ast.error.ErrorNode;
 import libbun.ast.expression.GetNameNode;
-import libbun.ast.expression.SetNameNode;
 import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.sugar.BunContinueNode;
@@ -46,7 +45,6 @@ import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
 import libbun.lang.bun.shell.CommandNode;
-import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.parser.LibBunLogger;
 import libbun.type.BFormFunc;
@@ -55,7 +53,7 @@ import libbun.type.BGenericType;
 import libbun.type.BType;
 import libbun.type.BTypePool;
 import libbun.util.BArray;
-import libbun.util.BLib;
+import libbun.util.LibBunSystem;
 
 public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private BunFunctionNode untypedMainNode = null;
@@ -154,10 +152,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
 			this.invokeStaticMethod(Node, this.ExecCommandStringArray);
 		}
-		else if(Node.Type.equals(JavaTypeTable.GetZenType(Task.class))) {
+		else if(Node.Type.equals(JavaTypeTable.GetBunType(Task.class))) {
 			this.invokeStaticMethod(Node, this.ExecCommandTask);
 		}
-		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetZenType(Task.class)))) {
+		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetBunType(Task.class)))) {
 			this.invokeStaticMethod(Node, this.ExecCommandTaskArray);
 		}
 		else {
@@ -225,7 +223,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void VisitNativeInstanceOfNode(BunInstanceOfNode Node) {
-		if(!Node.TargetType().Equals(JavaTypeTable.GetZenType(this.GetJavaClass(Node.TargetType())))) {
+		if(!Node.TargetType().Equals(JavaTypeTable.GetBunType(this.GetJavaClass(Node.TargetType())))) {
 			Node.LeftNode().Accept(this);
 			this.AsmBuilder.Pop(Node.LeftNode().Type);
 			this.AsmBuilder.PushBoolean(false);
@@ -416,24 +414,23 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	public void VisitSetNameNode(SetNameNode Node) {
-		GetNameNode NameNode = Node.NameNode();
-		if(NameNode.ResolvedNode == null) {
-			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + NameNode.GivenName));
+	protected void GenerateAssignNode(GetNameNode Node, BNode ExprNode) {
+		if(Node.ResolvedNode == null) {
+			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + Node.GivenName));
 			return;
 		}
-		if(NameNode.ResolvedNode.IsReadOnly() && !(NameNode.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
-			this.VisitErrorNode(new ErrorNode(Node, "read only variable: " + NameNode.GivenName));
+		if(Node.ResolvedNode.IsReadOnly() && !(Node.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
+			this.VisitErrorNode(new ErrorNode(Node, "read only variable: " + Node.GivenName));
 			return;
 		}
-		if(NameNode.ResolvedNode.GetDefiningFunctionNode() == null) {
-			int typeId = this.getTypeId(Node.ExprNode().Type);
-			int varIndex = GlobalVariableTable.getVarIndex(NameNode.ResolvedNode.GetGivenName(), typeId);
-			this.setVariable(varIndex, typeId, Node.ExprNode());
+		if(Node.ResolvedNode.GetDefiningFunctionNode() == null) {
+			int typeId = this.getTypeId(ExprNode.Type);
+			int varIndex = GlobalVariableTable.getVarIndex(Node.ResolvedNode.GetGivenName(), typeId);
+			this.setVariable(varIndex, typeId, ExprNode);
 			return;
 		}
-		String Name = NameNode.GetUniqueName(this);
-		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(Name), Node.ExprNode());
+		String Name = Node.GetUniqueName(this);
+		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(Name), ExprNode);
 		this.AsmBuilder.StoreLocal(Name);
 	}
 
@@ -446,7 +443,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void loadJavaClass(Class<?> classObject) {
-		BType type = JavaTypeTable.GetZenType(classObject);
+		BType type = JavaTypeTable.GetBunType(classObject);
 		this.RootGamma.SetTypeName(type, null);
 	}
 
@@ -471,11 +468,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 				macroBuilder.append(",");
 			}
 			macroBuilder.append("$[" + i + "]");
-			typeList.add(JavaTypeTable.GetZenType(paramClasses[i]));
+			typeList.add(JavaTypeTable.GetBunType(paramClasses[i]));
 		}
 		macroBuilder.append(")");
 		try {
-			typeList.add(JavaTypeTable.GetZenType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
+			typeList.add(JavaTypeTable.GetBunType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
 			BFuncType macroType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
 			BFormFunc macroFunc = new BFormFunc(macroSymbol, macroType, null, macroBuilder.toString());
 			if(name.equals("_")) {
@@ -491,7 +488,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void loadArrayClass(Class<?> baseClass, Class<?> arrayClass) {
-		BType baseType = JavaTypeTable.GetZenType(baseClass);
+		BType baseType = JavaTypeTable.GetBunType(baseClass);
 		BType arrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, baseType);
 		JavaTypeTable.SetTypeTable(arrayType, arrayClass);
 		// define operator
@@ -501,13 +498,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
 		boolean result = true;
 		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
-		BTokenContext tokenContext = new BTokenContext(this, this.RootGamma, fileName, lineNumber, script);
+		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, fileName, lineNumber, script);
 		tokenContext.SkipEmptyStatement();
-		BToken skipToken = tokenContext.GetToken();
+		//BToken skipToken = tokenContext.GetToken();
 		while(tokenContext.HasNext()) {
 			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
 			topBlockNode.ClearListToSize(0);
-			skipToken = tokenContext.GetToken();
+			//skipToken = tokenContext.GetToken();
 			BNode stmtNode;
 			try {
 				stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
@@ -518,9 +515,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 				this.topLevelSymbolList.clear();
 				return false;
 			}
-			if(stmtNode.IsErrorNode()) {
-				tokenContext.SkipError(skipToken);
-			}
+//			if(stmtNode.IsErrorNode()) {
+//				tokenContext.SkipError(skipToken);
+//			}
 			if(!this.generateStatement(stmtNode, isInteractive)) {
 				result = false;
 				break;
@@ -552,7 +549,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	public boolean loadFile(String fileName) {
-		String script = BLib._LoadTextFile(fileName);
+		String script = LibBunSystem._LoadTextFile(fileName);
 		if(script == null) {
 			System.err.println("file not found: " + fileName);
 			System.exit(1);
@@ -723,7 +720,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		else {
 			System.err.println(cause);
-			if(BLib.DebugMode) {
+			if(LibBunSystem.DebugMode) {
 				cause.printStackTrace();
 			}
 		}

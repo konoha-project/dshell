@@ -12,6 +12,7 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
+		Token.IsNextWhiteSpace();
 		return ShellUtils._ToNode(ParentNode, TokenContext, ((DShellStringLiteralToken)Token).GetNodeList());
 	}
 }
