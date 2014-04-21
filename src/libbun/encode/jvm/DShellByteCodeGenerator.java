@@ -508,7 +508,16 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
 			topBlockNode.ClearListToSize(0);
 			skipToken = tokenContext.GetToken();
-			BNode stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
+			BNode stmtNode;
+			try {
+				stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
+			}
+			catch(Exception e) {
+				System.err.println("Parsing Problem");
+				e.printStackTrace();
+				this.topLevelSymbolList.clear();
+				return false;
+			}
 			if(stmtNode.IsErrorNode()) {
 				tokenContext.SkipError(skipToken);
 			}
@@ -667,13 +676,44 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private BNode checkTopLevelSupport(BNode Node) {
-		if(Node instanceof BunVarBlockNode || Node instanceof BunReturnNode) {
+		if(Node instanceof BunVarBlockNode) {
 			return new ErrorNode(Node, "only available inside function");
 		}
 		else if(Node instanceof BunClassNode || Node instanceof BunFunctionNode || Node instanceof BunLetVarNode) {
 			return new DShellWrapperNode(Node);
 		}
+		BunReturnNode ReturnNode = this.findReturnNode(Node);
+		if(ReturnNode != null) {
+			return new ErrorNode(ReturnNode, "only available inside function");
+		}
 		return Node;
+	}
+
+	private BunReturnNode findReturnNode(BNode Node) {
+		if(Node == null) {
+			return null;
+		}
+		else if(Node instanceof BunReturnNode) {
+			return (BunReturnNode) Node;
+		}
+		else if(Node instanceof BunBlockNode) {
+			BunBlockNode BlockNode = (BunBlockNode) Node;
+			int size = BlockNode.GetListSize();
+			for(int i = 0; i < size; i++) {
+				BunReturnNode ReturnNode = this.findReturnNode(BlockNode.GetListAt(i));
+				if(ReturnNode != null) {
+					return ReturnNode;
+				}
+			}
+		}
+		int size = Node.GetAstSize();
+		for(int i = 0; i < size; i++) {
+			BunReturnNode ReturnNode = this.findReturnNode(Node.AST[i]);
+			if(ReturnNode != null) {
+				return ReturnNode;
+			}
+		}
+		return null;
 	}
 
 	private void printException(InvocationTargetException e) {
