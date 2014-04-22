@@ -31,6 +31,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
+import dshell.ast.MatchRegexNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -432,6 +433,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		String Name = Node.GetUniqueName(this);
 		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(Name), ExprNode);
 		this.AsmBuilder.StoreLocal(Name);
+	}
+
+	@Override
+	public void VisitMatchRegxNode(MatchRegexNode Node) {
+		this.VisitBinaryNode(Node);
 	}
 
 	private void invokeStaticMethod(BNode Node, Method method) {

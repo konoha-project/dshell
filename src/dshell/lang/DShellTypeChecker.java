@@ -23,6 +23,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
+import dshell.ast.MatchRegexNode;
 import dshell.ast.sugar.DShellForeachNode;
 import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
@@ -181,6 +182,13 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		TargetNode.Type = BType.VoidType;
 		Node.setTargetNode(TargetNode);
 		this.ReturnNode(Node);
+	}
+
+	@Override
+	public void VisitMatchRegxNode(MatchRegexNode Node) {
+		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.StringType);
+		this.CheckTypeAt(Node, BinaryOperatorNode._Right, BType.StringType);
+		this.ReturnBinaryTypeNode(Node, BType.BooleanType);
 	}
 
 	public BunFunctionNode VisitTopLevelStatementNode(BNode Node) {

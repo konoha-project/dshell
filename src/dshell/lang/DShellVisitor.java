@@ -6,6 +6,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
+import dshell.ast.MatchRegexNode;
 
 public interface DShellVisitor {
 	public void VisitCommandNode(CommandNode Node);
@@ -14,4 +15,5 @@ public interface DShellVisitor {
 	public void VisitContinueNode(BunContinueNode Node);
 	public void VisitForNode(DShellForNode Node);
 	public void VisitWrapperNode(DShellWrapperNode Node);
+	public void VisitMatchRegxNode(MatchRegexNode Node);
 }

@@ -9,7 +9,7 @@ function func() {
     log ${val}
   }
   # 連想配列の場合
-  for(key in map) {
+  for(key in map.keys()) {
     log "${key} => ${map[key]}"
   }
   assert(true)

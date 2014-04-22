@@ -30,7 +30,7 @@ public class DShellGrammar {	//FIXME
 		ShellGrammar.LoadGrammar(Gamma);
 		// import DShell Specific Grammar
 		ImportCommandPatternFunction importCommandPattern = new DShellImportCommandPatternFunc();
-//		ComparatorPatternFunction comparatorPattern = new ComparatorPatternFunction();
+		MatchRegxPatternFunc matchRegxPattern = new MatchRegxPatternFunc();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
@@ -44,8 +44,9 @@ public class DShellGrammar {	//FIXME
 		overrideExpression(Gamma, ImportCommandPatternFunction._PatternName, importCommandPattern);
 		overrideExpression(Gamma, SimpleArgumentPatternFunction._PatternName, new CommandArgPatternFunc());
 
-//		NameSpace.DefineRightExpression("=~", BunPrecedence._CStyleEquals, comparatorPattern);
-//		NameSpace.DefineRightExpression("!~", BunPrecedence._CStyleEquals, comparatorPattern);
+		Gamma.DefineBinaryOperator("=~", matchRegxPattern);
+		Gamma.DefineBinaryOperator("!~", matchRegxPattern);
+
 		overrideStatement(Gamma, "try", new DShellTryPatternFunc());
 		overrideStatement(Gamma, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc());
 		Gamma.DefineStatement(location, new LocationDefinePatternFunc());
