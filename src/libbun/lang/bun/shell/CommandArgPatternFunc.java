@@ -1,6 +1,5 @@
 package libbun.lang.bun.shell;
 
-import dshell.lang.DShellStringLiteralToken;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
 import libbun.ast.literal.BunStringNode;
@@ -31,14 +30,13 @@ public class CommandArgPatternFunc extends BMatchFunction {
 		@Var BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
 		while(!ShellUtils._MatchStopToken(TokenContext)) {
 			@Var BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
-			if(Token instanceof DShellStringLiteralToken) {
+			if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.PatternName.equals(DShellStringLiteralPatternFunc.PatternName)) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var DShellStringLiteralToken InterStringToken = (DShellStringLiteralToken) Token;
-				NodeList.add(ShellUtils._ToNode(ParentNode, TokenContext, InterStringToken.GetNodeList()));
-			}
-			else if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.equals("$StringLiteral$")) {
-				this.Flush(TokenContext, NodeList, TokenList);
-				NodeList.add(new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText())));
+				BNode Node = DShellStringLiteralPatternFunc.Interpolate(ParentNode, TokenContext, Token);
+				if(Node == null) {
+					Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText()));
+				}
+				NodeList.add(Node);
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);

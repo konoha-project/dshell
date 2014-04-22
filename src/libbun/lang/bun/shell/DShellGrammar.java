@@ -34,7 +34,7 @@ public class DShellGrammar {	//FIXME
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
-		//Gamma.DefineToken("\"", new DShellStringLiteralTokenFunc());
+		Gamma.DefineToken("\"", new DShellStringLiteralTokenFunc());
 
 		overrideStatement(Gamma, "import", new JavaImportPattern());
 		overrideStatement(Gamma, "continue", new ContinuePatternFunction());
