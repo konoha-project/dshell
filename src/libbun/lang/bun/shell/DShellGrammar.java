@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import libbun.encode.jvm.JavaImportPattern;
 import libbun.util.BMatchFunction;
 import libbun.lang.konoha.ContinuePatternFunction;
-import libbun.lang.bun.BunPrecedence;
 import libbun.lang.bun.BunGrammar;
 import libbun.lang.bun.shell.ImportCommandPatternFunction;
 import libbun.lang.bun.shell.ShellGrammar;

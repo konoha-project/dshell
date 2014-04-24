@@ -3,28 +3,21 @@ package dshell.ast;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.ast.decl.BunClassNode;
-import libbun.ast.decl.BunFunctionNode;
-import libbun.ast.decl.BunLetVarNode;
 import libbun.parser.LibBunVisitor;
 
 public class DShellWrapperNode extends BNode {
 	private BNode TargetNode;
-	private boolean isVarTarget = false;
+	private final boolean isVarTarget;
 
 	public DShellWrapperNode(BNode TargetNode) {
+		this(TargetNode, false);
+	}
+
+	public DShellWrapperNode(BNode TargetNode, boolean isVarTarget) {
 		super(TargetNode.ParentNode, 1);
 		this.SourceToken = TargetNode.SourceToken;
-		if(TargetNode instanceof BunClassNode || TargetNode instanceof BunFunctionNode) {
-			this.TargetNode = TargetNode;
-			return;
-		}
-		if(TargetNode instanceof BunLetVarNode) {
-			this.TargetNode = TargetNode;
-			this.isVarTarget = true;
-			return;
-		}
-		Utils.fatal(1, TargetNode.getClass().getName() + " is unsupported Node");
+		this.TargetNode = TargetNode;
+		this.isVarTarget = isVarTarget;
 	}
 
 	public BNode getTargetNode() {

@@ -7,8 +7,8 @@ import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.expression.FuncCallNode;
 import libbun.ast.expression.GetNameNode;
 import libbun.ast.literal.BunStringNode;
-import libbun.encode.LibBunGenerator;
 import libbun.parser.LibBunTypeChecker;
+import libbun.type.BType;
 
 public class DShellImportEnvNode extends SyntaxSugarNode {
 	public final static int _NameInfo = 0;
@@ -18,7 +18,11 @@ public class DShellImportEnvNode extends SyntaxSugarNode {
 	}
 
 	@Override
-	public DesugarNode DeSugar(LibBunGenerator Generator, LibBunTypeChecker TypeChecker) {
+	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
+	}	// do nothing
+
+	@Override
+	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
 		String EnvName = this.AST[_NameInfo].SourceToken.GetText();
 		BNode LetNode = new BunLetVarNode(this, BunLetVarNode._IsReadOnly, null, null);
 		LetNode.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);

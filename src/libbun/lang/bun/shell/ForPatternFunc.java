@@ -15,7 +15,7 @@ public class ForPatternFunc extends BMatchFunction {
 		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
 		Node = TokenContext.MatchPattern(Node, DShellForNode._Cond, "$Expression$", BTokenContext._Required);
 		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Next, "$SymbolStatement$", BTokenContext._Optional);
+		Node = TokenContext.MatchPattern(Node, DShellForNode._Next, "$Expression$", BTokenContext._Optional);
 		Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
 		Node = TokenContext.MatchPattern(Node, DShellForNode._Block, "$Block$", BTokenContext._Required);
 		return Node;

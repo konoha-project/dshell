@@ -2,10 +2,9 @@ package libbun.lang.bun.shell;
 
 import libbun.ast.BNode;
 import libbun.ast.literal.BunStringNode;
-import libbun.encode.LibBunGenerator;
 import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
-import libbun.parser.LibBunParser;
+import libbun.parser.LibBunSource;
 import libbun.util.BArray;
 import libbun.util.BMatchFunction;
 import libbun.util.LibBunSystem;
@@ -24,67 +23,59 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 
 	public static BNode Interpolate(BNode ParentNode, BTokenContext TokenContext, BToken Token) {
 		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
-		String TokenText = Token.GetText();
-		String SourceText = TokenText.substring(1, TokenText.length() - 1);
-		int StartIndex = 0;
-		int CurrentIndex = 0;
-		int Size = SourceText.length();
-		while(CurrentIndex < Size) {
-			char ch = SourceText.charAt(CurrentIndex);
-			switch(ch) {
-			case '\\':
+		int StartIndex = Token.StartIndex + 1;
+		final int EndIndex = Token.EndIndex - 1;
+		int CurrentIndex = StartIndex;
+		LibBunSource Source = TokenContext.SourceContext.Source;
+		while(CurrentIndex < EndIndex) {
+			char ch = Source.GetCharAt(CurrentIndex);
+			if(ch == '\\') {
 				CurrentIndex++;
-				break;
-			case '$':{
-				char next = SourceText.charAt(CurrentIndex + 1);
+			}
+			else if(ch == '$') {
+				char next = Source.GetCharAt(CurrentIndex + 1);
 				if(next == '(' || next == '{') {
-					CreateStringNode(NodeList, SourceText, ParentNode, StartIndex, CurrentIndex);
-					StartIndex = CurrentIndex = CreateExprNode(NodeList, ParentNode, TokenContext, SourceText, Token, CurrentIndex);
+					CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
+					StartIndex = CurrentIndex = CreateExprNode(NodeList, ParentNode, TokenContext, CurrentIndex, EndIndex);
 					if(CurrentIndex == -1) {
 						return null;
 					}
 					continue;
 				}
 			}
-				break;
-			}
 			CurrentIndex++;
 		}
-		CreateStringNode(NodeList, SourceText, ParentNode, StartIndex, CurrentIndex);
+		CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
 		return ShellUtils._ToNode(ParentNode, TokenContext, NodeList);
 	}
 
-	private static int CreateExprNode(BArray<BNode> NodeList, BNode ParentNode, BTokenContext TokenContext, String SourceText, BToken Token, int CurrentIndex) {
-		String FileName = Token.GetFileName();
-		int LineNumber = Token.GetLineNumber();
-		LibBunParser Parser = TokenContext.Parser;
-		LibBunGenerator Generator = TokenContext.Generator;
-		char ch = SourceText.charAt(CurrentIndex + 1);
+	private static int CreateExprNode(BArray<BNode> NodeList, BNode ParentNode, BTokenContext TokenContext, int CurrentIndex, int EndIndex) {
+		char ch = TokenContext.SourceContext.Source.GetCharAt(CurrentIndex + 1);
 		if(ch == '{') {
-			BTokenContext LocalContext = new BTokenContext(Parser, Generator, FileName, LineNumber, SourceText.substring(CurrentIndex + 2));
+			BTokenContext LocalContext = TokenContext.SubContext(CurrentIndex + 2, EndIndex);
 			BNode Node = LocalContext.ParsePattern(ParentNode, "$Expression$", BTokenContext._Required);
 			BToken CloseToken = LocalContext.GetToken();
 			if(!Node.IsErrorNode() && CloseToken.EqualsText("}")) {
 				NodeList.add(Node);
-				return CloseToken.EndIndex + CurrentIndex + 2;
+				return CloseToken.EndIndex;
 			}
 		}
 		else {
-			BTokenContext LocalContext = new BTokenContext(Parser, Generator, FileName, LineNumber, SourceText.substring(CurrentIndex));
+			BTokenContext LocalContext = TokenContext.SubContext(CurrentIndex, EndIndex);
 			BNode Node = LocalContext.ParsePattern(ParentNode, SubstitutionPatternFunc._PatternName, BTokenContext._Required);
 			if(!Node.IsErrorNode()) {
 				NodeList.add(Node);
-				return LocalContext.LatestToken.EndIndex + CurrentIndex;
+				return LocalContext.LatestToken.EndIndex;
 			}
 		}
 		return -1;
 	}
 
-	private static void CreateStringNode(BArray<BNode> NodeList, String SourceText, BNode ParentNode, int StartIndex, int CurrentIndex) {
+	private static void CreateStringNode(BArray<BNode> NodeList, BNode ParentNode, BTokenContext TokenContext, int StartIndex, int CurrentIndex) {
 		if(StartIndex == CurrentIndex) {
 			return;
 		}
-		BNode Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(SourceText.substring(StartIndex, CurrentIndex)));
+		BNode Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(new BToken(TokenContext.SourceContext.Source, StartIndex, CurrentIndex).GetText()));
 		NodeList.add(Node);
 	}
 }

@@ -24,12 +24,12 @@ public class CommandArgPatternFunc extends BMatchFunction {
 		if(ShellUtils._MatchStopToken(TokenContext)) {
 			return null;
 		}
-		@Var boolean FoundSubstitution = false;
-		@Var boolean FoundEscape = false;
-		@Var BArray<BToken> TokenList = new BArray<BToken>(new BToken[]{});
-		@Var BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
+		boolean FoundSubstitution = false;
+		boolean FoundEscape = false;
+		BArray<BToken> TokenList = new BArray<BToken>(new BToken[]{});
+		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
 		while(!ShellUtils._MatchStopToken(TokenContext)) {
-			@Var BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
+			BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
 			if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.PatternName.equals(DShellStringLiteralPatternFunc.PatternName)) {
 				this.Flush(TokenContext, NodeList, TokenList);
 				BNode Node = DShellStringLiteralPatternFunc.Interpolate(ParentNode, TokenContext, Token);
@@ -40,7 +40,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var BNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", BTokenContext._Required);
+				BNode Node = TokenContext.ParsePattern(ParentNode, "$Expression$", BTokenContext._Required);
 				Node = TokenContext.MatchToken(Node, "}", BTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
@@ -51,7 +51,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.GetToken().IsNameSymbol()) {
 				this.Flush(TokenContext, NodeList, TokenList);
 				Token = TokenContext.GetToken();
-				@Var BNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", BTokenContext._Required);
+				BNode Node = TokenContext.ParsePattern(ParentNode, "$SymbolExpression$", BTokenContext._Required);
 				if(Node.IsErrorNode()) {
 					return Node;
 				}
@@ -62,7 +62,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 //			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("(")) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				@Var BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, BTokenContext._Optional);
+				BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunction._PatternName, BTokenContext._Optional);
 				if(Node == null) {
 					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunction._PatternName, BTokenContext._Required);
 				}
@@ -83,7 +83,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 			FoundEscape = this.CheckEscape(Token, FoundEscape);
 		}
 		this.Flush(TokenContext, NodeList, TokenList);
-		@Var BNode ArgNode = new ArgumentNode(ParentNode, FoundSubstitution ? ArgumentNode._Substitution : ArgumentNode._Normal);
+		BNode ArgNode = new ArgumentNode(ParentNode, FoundSubstitution ? ArgumentNode._Substitution : ArgumentNode._Normal);
 		ArgNode.SetNode(ArgumentNode._Expr, ShellUtils._ToNode(ParentNode, TokenContext, NodeList));
 		return ArgNode;
 	}
@@ -110,7 +110,7 @@ public class CommandArgPatternFunc extends BMatchFunction {
 				EndIndex = BArray.GetIndex(TokenList, i).EndIndex;
 			}
 		}
-		@Var BToken Token = new BToken(TokenContext.SourceContext, StartIndex, EndIndex);
+		BToken Token = new BToken(TokenContext.SourceContext.Source, StartIndex, EndIndex);
 		NodeList.add(new BunStringNode(null, Token, LibBunSystem._UnquoteString(this.ResolveHome(Token.GetText()))));
 		TokenList.clear(0);
 	}

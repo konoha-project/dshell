@@ -32,6 +32,8 @@ import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
 import dshell.ast.MatchRegexNode;
+import dshell.ast.sugar.DShellExportEnvNode;
+import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -46,6 +48,7 @@ import dshell.lib.Utils;
 import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
 import libbun.lang.bun.shell.CommandNode;
+import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.parser.LibBunLogger;
 import libbun.type.BFormFunc;
@@ -506,11 +509,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
 		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, fileName, lineNumber, script);
 		tokenContext.SkipEmptyStatement();
-		//BToken skipToken = tokenContext.GetToken();
 		while(tokenContext.HasNext()) {
 			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
 			topBlockNode.ClearListToSize(0);
-			//skipToken = tokenContext.GetToken();
 			BNode stmtNode;
 			try {
 				stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
@@ -521,9 +522,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 				this.topLevelSymbolList.clear();
 				return false;
 			}
-//			if(stmtNode.IsErrorNode()) {
-//				tokenContext.SkipError(skipToken);
-//			}
 			if(!this.generateStatement(stmtNode, isInteractive)) {
 				result = false;
 				break;
@@ -589,7 +587,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			return this.IsVisitable();
 		}
 		Node = this.checkTopLevelSupport(Node);
-		if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
+		if(Node.IsErrorNode()) {
+			this.generateByteCode(Node);
+		}
+		else if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
 			Node = this.TypeChecker.CheckType(Node, BType.VoidType);
 			this.generateByteCode(Node);
 		}
@@ -682,8 +683,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		if(Node instanceof BunVarBlockNode) {
 			return new ErrorNode(Node, "only available inside function");
 		}
-		else if(Node instanceof BunClassNode || Node instanceof BunFunctionNode || Node instanceof BunLetVarNode) {
+		else if(Node instanceof BunClassNode || Node instanceof BunFunctionNode) {
 			return new DShellWrapperNode(Node);
+		}
+		else if(Node instanceof BunLetVarNode || Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
+			return new DShellWrapperNode(Node, true);
 		}
 		BunReturnNode ReturnNode = this.findReturnNode(Node);
 		if(ReturnNode != null) {

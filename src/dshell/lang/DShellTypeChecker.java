@@ -6,12 +6,16 @@ import libbun.ast.SyntaxSugarNode;
 import libbun.ast.binary.BinaryOperatorNode;
 import libbun.ast.binary.BunInstanceOfNode;
 import libbun.ast.decl.BunFunctionNode;
+import libbun.ast.expression.FuncCallNode;
+import libbun.ast.expression.GetNameNode;
+import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunWhileNode;
 import libbun.ast.sugar.BunContinueNode;
 import libbun.encode.jvm.JavaTypeTable;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.BunTypeSafer;
+import libbun.lang.bun.shell.ArgumentNode;
 import libbun.lang.bun.shell.CommandNode;
 import libbun.parser.BToken;
 import libbun.parser.LibBunLogger;
@@ -29,6 +33,8 @@ import dshell.exception.DShellException;
 import dshell.lib.CommandArg;
 
 public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
+	private final static String[] funcNames = {"createCommandArg", "createSubstitutedArg"};
+
 	public DShellTypeChecker(DShellByteCodeGenerator Generator) {
 		super(Generator);
 	}
@@ -52,7 +58,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		}
 		int size = Node.GetArgSize();
 		for(int i = 0; i < size; i++) {
-			BNode SubNode = Node.GetArgAt(i);
+			BNode SubNode = this.ToFuncCallNode((ArgumentNode) Node.GetArgAt(i));
 			SubNode = this.CheckType(SubNode, JavaTypeTable.GetBunType(CommandArg.class));
 			Node.SetArgAt(i, SubNode);
 		}
@@ -60,6 +66,13 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			Node.PipedNextNode = (CommandNode) this.CheckType(Node.PipedNextNode, ContextType);
 		}
 		this.ReturnTypeNode(Node, ContextType);
+	}
+
+	private FuncCallNode ToFuncCallNode(ArgumentNode ArgNode) {
+		ArgNode.PerformTyping(this, this.GetContextType());
+		FuncCallNode Node = new FuncCallNode(ArgNode.ParentNode, new GetNameNode(ArgNode.ParentNode, null, funcNames[ArgNode.ArgType]));
+		Node.SetNode(BNode._AppendIndex, ArgNode.AST[ArgumentNode._Expr]);
+		return Node;
 	}
 
 	@Override
@@ -199,19 +212,20 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		FuncNode.Type = BType.VoidType;
 		FuncNode.GivenName = FuncName;
 		FuncNode.SourceToken = SourceToken;
-		BunBlockNode BlockNode = this.CreateBlockNode(FuncNode);
+		BunBlockNode BlockNode = new BunBlockNode(ParentNode, null);
 		FuncNode.SetNode(BunFunctionNode._Block, BlockNode);
 		Node.ParentNode = BlockNode;
 		this.CurrentFunctionNode = FuncNode;
 		Node = this.CheckType(Node, BType.VarType);
 		this.CurrentFunctionNode = null;
+		BunReturnNode ReturnNode = new BunReturnNode(ParentNode);
 		if(Node.Type.IsVoidType()) {
 			BlockNode.Append(Node);
-			BlockNode.Append(this.CreateReturnNode(BlockNode));
 		}
 		else {
-			BlockNode.Append(this.CreateReturnNode(BlockNode, Node));
+			ReturnNode.SetNode(BunReturnNode._Expr, Node);
 		}
+		BlockNode.Append(ReturnNode);
 		FuncNode.SetReturnType(Node.Type);
 		return FuncNode;
 	}

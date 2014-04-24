@@ -17,7 +17,6 @@ import libbun.ast.expression.MethodCallNode;
 import libbun.ast.literal.BunBooleanNode;
 import libbun.ast.literal.BunIntNode;
 import libbun.ast.statement.BunIfNode;
-import libbun.encode.LibBunGenerator;
 import libbun.parser.LibBunTypeChecker;
 import libbun.type.BType;
 import dshell.ast.DShellForNode;
@@ -48,14 +47,18 @@ public class DShellForeachNode extends SyntaxSugarNode {
 	}
 
 	@Override
-	public DesugarNode DeSugar(LibBunGenerator Generator, LibBunTypeChecker TypeChecker) {
+	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
 		TypeChecker.CheckTypeAt(this, _Expr, BType.VarType);
 		if(!this.AST[_Expr].Type.IsArrayType()) {
-			return new DesugarNode(this, new ErrorNode(this.ParentNode, this.SourceToken, "require array type"));
+			this.SetNode(_Expr, new ErrorNode(this.ParentNode, this.SourceToken, "require array type"));
 		}
-		String ValuesSymbol = Generator.NameUniqueSymbol("values");
-		String SizeSymbol = Generator.NameUniqueSymbol("size");
-		String IndexSymbol = Generator.NameUniqueSymbol("index");
+	}
+
+	@Override
+	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
+		String ValuesSymbol = TypeChekcer.Generator.NameUniqueSymbol("values");
+		String SizeSymbol = TypeChekcer.Generator.NameUniqueSymbol("size");
+		String IndexSymbol = TypeChekcer.Generator.NameUniqueSymbol("index");
 		// create if
 		BNode Node = new BunIfNode(this.ParentNode);
 		Node.SetNode(BunIfNode._Cond, new BunBooleanNode(true));

@@ -144,23 +144,6 @@ public class Utils {
 		return defaultDelimPattern.matcher(targetValue).replaceAll(" ").split(" ");
 	}
 
-	public static String removeNewLine(String targetValue) {
-		StringBuilder sBuilder = new StringBuilder();
-		int size = targetValue.length();
-		boolean foundValue = false;
-		for(int i = size - 1; i > -1; i--) {
-			char ch = targetValue.charAt(i);
-			if(ch == '\n' && !foundValue) {
-				continue;
-			}
-			else if(ch != '\n' && !foundValue) {
-				foundValue = true;
-			}
-			sBuilder.append(ch);
-		}
-		return sBuilder.reverse().toString();
-	}
-
 	public static void assertDShell(boolean result) {	//TODO
 		if(!result) {
 			new AssertionError("").printStackTrace();
