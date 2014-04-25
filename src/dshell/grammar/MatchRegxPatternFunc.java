@@ -1,4 +1,4 @@
-package libbun.lang.bun.shell;
+package dshell.grammar;
 
 import dshell.ast.MatchRegexNode;
 import libbun.ast.BNode;

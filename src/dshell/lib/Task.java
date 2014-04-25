@@ -8,8 +8,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
-import libbun.lang.bun.shell.ShellUtils;
-
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
@@ -275,7 +273,7 @@ class MessageStreamHandler {
 				Utils.fatal(1, "interrupt problem");
 			}
 		}
-		return ShellUtils.RemoveNewLine(this.messageBuffer.toString());
+		return Utils.removeNewLine(this.messageBuffer.toString());
 	}
 
 	public ByteArrayOutputStream[] getEachBuffers() {

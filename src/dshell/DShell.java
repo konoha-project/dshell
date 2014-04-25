@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.TreeSet;
 
 import dshell.console.DShellConsole;
+import dshell.grammar.DShellGrammar;
 import dshell.lang.DShellTypeChecker;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
@@ -15,7 +16,6 @@ import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
 import libbun.util.LibBunSystem;
 import libbun.encode.jvm.DShellByteCodeGenerator;
-import libbun.lang.bun.shell.DShellGrammar;
 import static dshell.lib.RuntimeContext.AppenderType;
 
 public class DShell {
@@ -174,7 +174,6 @@ public class DShell {
 	}
 
 	public void runInteractiveMode() {
-		RuntimeContext.getContext().setInteractiveMode(true);
 		DShellByteCodeGenerator generator = initGenerator();
 		DShellConsole console = new DShellConsole();
 		String line = null;
@@ -184,7 +183,7 @@ public class DShell {
 		DShell.showVersionInfo();
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
-			importBuilder.append("command ");
+			importBuilder.append("import command ");
 			TreeSet<String> commandSet = Utils.getCommandSetFromPath();
 			int size = commandSet.size();
 			for(int i = 0; i < size; i++) {

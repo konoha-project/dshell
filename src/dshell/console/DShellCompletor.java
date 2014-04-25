@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
+import dshell.grammar.ShellGrammar;
 import dshell.lib.BuiltinCommand;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import jline.Completor;
-import libbun.lang.bun.shell.ShellUtils;
 
 public class DShellCompletor implements Completor {
 	private jline.SimpleCompletor commandCompletor;
@@ -73,7 +73,7 @@ public class DShellCompletor implements Completor {
 			return true;
 		}
 		String prevArg = args[argIndex - 1];
-		if(prevArg.equals(ShellUtils._timeout) || prevArg.equals(ShellUtils._trace) 
+		if(prevArg.equals(ShellGrammar.timeout) || prevArg.equals(ShellGrammar.trace) 
 				|| prevArg.equals("command")) {
 			return true;
 		}

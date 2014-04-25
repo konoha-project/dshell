@@ -1,4 +1,4 @@
-package libbun.lang.bun.shell;
+package dshell.grammar;
 
 import libbun.ast.BNode;
 import libbun.ast.EmptyNode;

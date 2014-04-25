@@ -6,10 +6,10 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import libbun.lang.bun.shell.DShellGrammar;
-import libbun.lang.bun.shell.ShellUtils;
 import libbun.util.BStringArray;
 
+import dshell.grammar.DShellGrammar;
+import dshell.grammar.ShellGrammar;
 import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 import static dshell.lib.TaskOption.Behavior.returnable;
@@ -82,7 +82,7 @@ public class TaskBuilder {
 	private ArrayList<ArrayList<CommandArg>> setInternalOption(ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<ArrayList<CommandArg>> newCmdsBuffer = new ArrayList<ArrayList<CommandArg>>();
 		for(ArrayList<CommandArg> currentCmds : cmdsList) {
-			if(currentCmds.get(0).eq(ShellUtils._background)) {
+			if(currentCmds.get(0).eq(ShellGrammar.background)) {
 				this.option.setFlag(background, this.option.isRetType(TaskType) || this.option.isRetType(VoidType));
 				continue;
 			}
@@ -140,11 +140,11 @@ public class TaskBuilder {
 				this.option.setFlag(background, false);
 				break;
 			}
-			else if(cmdSymbol.eq(ShellUtils._trace)) {
+			else if(cmdSymbol.eq(ShellGrammar.trace)) {
 				foundTraceOption = true;
 				continue;
 			}
-			else if(cmdSymbol.eq(ShellUtils._timeout)) {
+			else if(cmdSymbol.eq(ShellGrammar.timeout)) {
 				this.option.setTimeout(currentCmds.get(1));
 				continue;
 			}

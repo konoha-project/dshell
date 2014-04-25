@@ -45,8 +45,8 @@ public class RuntimeContext implements Serializable {
 	// environmental variable
 	transient private final TreeSet<String> envSet;
 
-	// interactiveMode
-	transient private boolean isInteractiveMode = false;
+	// commandscope
+	transient public final CommandScope commandScope;
 
 	private RuntimeContext(){
 		if(System.getProperty("os.name").startsWith("Windows")) {
@@ -65,6 +65,7 @@ public class RuntimeContext implements Serializable {
 		for(Map.Entry<String, String> entry : envMap.entrySet()) {
 			this.envSet.add(entry.getKey());
 		}
+		this.commandScope = new CommandScope();
 	}
 
 	public Logger getLogger() {
@@ -177,14 +178,6 @@ public class RuntimeContext implements Serializable {
 
 	public String getenv(String key) {
 		return CLibraryWrapper.INSTANCE.getenv(key);
-	}
-
-	public void setInteractiveMode(boolean isInteractive) {
-		this.isInteractiveMode = isInteractive;
-	}
-
-	public boolean isInteractiveMode() {
-		return this.isInteractiveMode;
 	}
 
 	private static class ContextHolder {

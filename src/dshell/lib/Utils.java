@@ -166,4 +166,17 @@ public class Utils {
 	public static double stringToDouble(String value) {
 		return Double.parseDouble(value);
 	}
+
+	public static String removeNewLine(String Value) {
+		int Size = Value.length();
+		int EndIndex = Size;
+		for(int i = Size - 1; i > -1; i--) {
+			char ch = Value.charAt(i);
+			if(ch != '\n') {
+				EndIndex = i + 1;
+				break;
+			}
+		}
+		return EndIndex == Size ? Value : Value.substring(0, EndIndex);
+	}
 }

@@ -1,4 +1,4 @@
-package libbun.lang.bun.shell;
+package dshell.grammar;
 
 import libbun.parser.BSourceContext;
 import libbun.util.BTokenFunction;
