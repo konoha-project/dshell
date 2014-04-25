@@ -26,7 +26,7 @@ import dshell.ast.DShellWrapperNode;
 import dshell.ast.MatchRegexNode;
 import dshell.ast.sugar.CommandNode;
 import dshell.ast.sugar.DShellForeachNode;
-import dshell.exception.DShellException;
+import dshell.exception.Exception;
 import dshell.lib.CommandArg;
 
 public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
@@ -82,7 +82,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	@Override
 	public void VisitCatchNode(DShellCatchNode Node) {
 		if(!this.CheckTypeRequirement(Node.ExceptionType())) {
-			this.ReturnErrorNode(Node, Node.GetAstToken(DShellCatchNode._TypeInfo), "require DShellException type");
+			this.ReturnErrorNode(Node, Node.GetAstToken(DShellCatchNode._TypeInfo), "require Exception type");
 			return;
 		}
 		BunBlockNode BlockNode = Node.BlockNode();
@@ -100,7 +100,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	private boolean CheckTypeRequirement(BType ExceptionType) {
 		Class<?> JavaClass = ((DShellByteCodeGenerator)this.Generator).GetJavaClass(ExceptionType);
 		while(JavaClass != null) {
-			if(JavaClass.equals(DShellException.class)) {
+			if(JavaClass.equals(Exception.class)) {
 				return true;
 			}
 			JavaClass = JavaClass.getSuperclass();
@@ -118,7 +118,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		}
 		this.CheckTypeAt(Node, BunThrowNode._Expr, BType.VarType);
 		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
-			this.ReturnErrorNode(Node, Node.GetAstToken(BunThrowNode._Expr), "require DShellException type");
+			this.ReturnErrorNode(Node, Node.GetAstToken(BunThrowNode._Expr), "require Exception type");
 			return;
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);

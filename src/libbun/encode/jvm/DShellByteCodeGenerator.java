@@ -38,6 +38,7 @@ import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
+import dshell.exception.NativeException;
 import dshell.lang.DShellTypeChecker;
 import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
@@ -70,10 +71,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private Method ExecCommandTask;
 	private Method ExecCommandTaskArray;
 
+	private Method wrapException;
+
 	public DShellByteCodeGenerator() {
 		super();
 		this.topLevelSymbolList = new LinkedList<String>();
 		this.loadJavaClass(Task.class);
+		this.loadJavaClass(dshell.exception.Exception.class);
 		this.loadJavaClass(DShellException.class);
 		this.loadJavaClass(MultipleException.class);
 		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
@@ -90,8 +94,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
 			this.ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
 			this.ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
+
+			this.wrapException = NativeException.class.getMethod("wrapException", Throwable.class);
 		}
-		catch(Exception e) {
+		catch(Throwable e) {
 			e.printStackTrace();
 			Utils.fatal(1, "method loading failed");
 		}
@@ -194,17 +200,31 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		AsmTryCatchLabel Label = this.TryCatchLabel.peek();
 
 		// prepare
-		String throwType = this.AsmType(Node.ExceptionType()).getInternalName();
+		String throwType = this.resolveExceptionType(Node);
 		this.AsmBuilder.visitTryCatchBlock(Label.BeginTryLabel, Label.EndTryLabel, catchLabel, throwType);
 
 		// catch block
 		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
 		this.AsmBuilder.visitLabel(catchLabel);
-		this.AsmBuilder.StoreLocal(Node.ExceptionName());
+		this.invokeExceptionWrapper(Node);
 		Node.BlockNode().Accept(this);
 		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
 
 		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
+	}
+
+	private String resolveExceptionType(DShellCatchNode Node) {
+		if(!Node.HasTypeInfo()) {
+			return Type.getType(Throwable.class).getInternalName();
+		}
+		return this.AsmType(Node.ExceptionType()).getInternalName();
+	}
+
+	private void invokeExceptionWrapper(DShellCatchNode Node) {
+		if(!Node.HasTypeInfo()) {
+			this.invokeStaticMethod(null, this.wrapException);
+		}
+		this.AsmBuilder.StoreLocal(Node.ExceptionName());
 	}
 
 	@Override public void VisitThrowNode(BunThrowNode Node) {
@@ -490,7 +510,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 				this.SetDefinedFunc(macroFunc);
 			}
 		}
-		catch(Exception e) {
+		catch(Throwable e) {
 			Utils.fatal(1, "load static method faild: " + e.getMessage());
 		}
 	}
@@ -515,7 +535,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			try {
 				stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
 			}
-			catch(Exception e) {
+			catch(Throwable e) {
 				System.err.println("Parsing Problem");
 				e.printStackTrace();
 				this.topLevelSymbolList.clear();
@@ -568,7 +588,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.topLevelSymbolList.clear();
 			this.StopVisitor();
 		}
-		catch(Exception e) {
+		catch(Throwable e) {
 			System.err.println("Code Generation Failed");
 			e.printStackTrace();
 			this.topLevelSymbolList.clear();
@@ -623,7 +643,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		catch(InvocationTargetException e) {
 			this.printException(e);
 		}
-		catch(Exception e) {
+		catch(Throwable e) {
 			e.printStackTrace();
 			Utils.fatal(1, "invocation problem");
 		}
@@ -655,7 +675,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.Logger.OutputErrorsToStdErr();
 			System.exit(1);
 		}
-		catch(Exception e) {
+		catch(Throwable e) {
 			e.printStackTrace();
 			System.err.println("Code Generation Failed");
 			System.exit(1);
@@ -671,7 +691,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 				this.printException(e);
 				System.exit(1);
 			}
-			catch(Exception e) {
+			catch(Throwable e) {
 				e.printStackTrace();
 				Utils.fatal(1, "invocation problem");
 			}
@@ -723,16 +743,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void printException(InvocationTargetException e) {
-		Throwable cause = e.getCause();
-		if(cause instanceof DShellException) {
-			cause.printStackTrace();
-		}
-		else {
-			System.err.println(cause);
-			if(LibBunSystem.DebugMode) {
-				cause.printStackTrace();
-			}
-		}
+		NativeException.wrapException(e.getCause()).printStackTrace();
 	}
 
 	private static class ErrorNodeFoundException extends RuntimeException {

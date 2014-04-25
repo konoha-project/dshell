@@ -1,11 +1,13 @@
 package dshell.ast;
 
+import dshell.exception.Exception;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.literal.BunTypeNode;
 import libbun.ast.BNode;
+import libbun.encode.jvm.JavaTypeTable;
 import libbun.parser.LibBunVisitor;
 import libbun.type.BType;
 
@@ -29,8 +31,11 @@ public class DShellCatchNode extends BNode {
 	}
 
 	public final BType ExceptionType() {
-		if(this.ExceptionType == null) {
+		if(this.ExceptionType == null && this.HasTypeInfo()) {
 			this.ExceptionType = ((BunTypeNode) this.AST[_TypeInfo]).Type;
+		}
+		if(this.ExceptionType == null) {
+			this.ExceptionType = JavaTypeTable.GetBunType(Exception.class);
 		}
 		return this.ExceptionType;
 	}
@@ -42,7 +47,9 @@ public class DShellCatchNode extends BNode {
 	public BunLetVarNode ToLetVarNode() {
 		BunLetVarNode Node = new BunLetVarNode(this.ParentNode, BunLetVarNode._IsReadOnly, null, null);
 		Node.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
-		Node.SetNode(BunLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+		if(this.HasTypeInfo()) {
+			Node.SetNode(BunLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+		}
 		Node.SetDeclType(this.ExceptionType());
 		return Node;
 	}
@@ -54,6 +61,10 @@ public class DShellCatchNode extends BNode {
 		}
 		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
 		return null;
+	}
+
+	public boolean HasTypeInfo() {
+		return this.AST[_TypeInfo] != null;
 	}
 
 	@Override public void Accept(LibBunVisitor Visitor) {
