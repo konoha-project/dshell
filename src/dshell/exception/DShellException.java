@@ -12,7 +12,7 @@ public class DShellException extends Exception {
 	}
 
 	public DShellException() {
-		this("");
+		super();
 	}
 
 	public void setCommand(String commandName) {

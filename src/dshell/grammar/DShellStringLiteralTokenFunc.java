@@ -40,73 +40,39 @@ public class DShellStringLiteralTokenFunc extends BTokenFunction {
 		throw new RuntimeException("unclosed \"");
 	}
 
-	private void MatchExpression(BSourceContext SourceContext) {
+	private void MatchExpression(BSourceContext SourceContext, final char openChar, final char closeChar) {
 		int braceCount = 1;
 		while(SourceContext.HasChar()) {
 			char ch = SourceContext.GetCurrentChar();
-			switch(ch) {
-			case '\"':
+			if(ch == '\"') {
 				this.MatchStringLiteral(SourceContext);
 				continue;
-			case '{':
+			}
+			else if(ch == openChar) {
 				braceCount++;
-				break;
-			case '}':
+			}
+			else if(ch == closeChar) {
 				if(--braceCount == 0) {
 					return;
 				}
-				break;
-			case '\\':
+			}
+			else if(ch == '\\') {
 				SourceContext.MoveNext();
-				break;
-			case '$':
+			}
+			else if(ch == '$') {
 				this.MatchDollar(SourceContext);
-				break;
 			}
 			SourceContext.MoveNext();
 		}
-		throw new RuntimeException("unclosed }");
-	}
-
-	private void MatchCommandSubstitution(BSourceContext SourceContext) {
-		int braceCount = 1;
-		while(SourceContext.HasChar()) {
-			char ch = SourceContext.GetCurrentChar();
-			switch(ch) {
-			case '\"':
-				this.MatchStringLiteral(SourceContext);
-				continue;
-			case '(':
-				braceCount++;
-				break;
-			case ')':
-				if(--braceCount == 0) {
-					return;
-				}
-				break;
-			case '\\':
-				SourceContext.MoveNext();
-				break;
-			case '$':
-				this.MatchDollar(SourceContext);
-				break;
-			}
-			SourceContext.MoveNext();
-		}
-		throw new RuntimeException("unclosed )");
+		throw new RuntimeException("unclosed " + closeChar);
 	}
 
 	private void MatchDollar(BSourceContext SourceContext) {
 		char ch = SourceContext.GetCharAtFromCurrentPosition(1);
-		if(ch == '{') {
+		if(ch == '{' || ch == '(') {
 			SourceContext.MoveNext();
 			SourceContext.MoveNext();
-			this.MatchExpression(SourceContext);
-		}
-		else if(ch == '(') {
-			SourceContext.MoveNext();
-			SourceContext.MoveNext();
-			this.MatchCommandSubstitution(SourceContext);
+			this.MatchExpression(SourceContext, ch, ch == '{' ? '}' : ')');
 		}
 	}
 }

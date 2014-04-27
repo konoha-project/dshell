@@ -8,6 +8,7 @@ import dshell.ast.DShellTryNode;
 
 public class DShellTryPatternFunc extends BMatchFunction {
 	public final static String CatchPatternName = "$Catch$";
+
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BNode TryNode = new DShellTryNode(ParentNode);

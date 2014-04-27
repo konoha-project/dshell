@@ -125,18 +125,18 @@ class PipeStreamHandler extends Thread {
 	public final static int defaultBufferSize = 512;
 	private final InputStream input;
 	private final OutputStream[] outputs;
-	private final boolean closeInput;
-	private final boolean[] closeOutputs;
+	private final boolean closeableInput;
+	private final boolean[] closeableOutputs;
 
-	public PipeStreamHandler(InputStream input, OutputStream output, boolean closeStream) {
-		this(input, new OutputStream[] {output}, closeStream, new boolean[]{closeStream});
+	public PipeStreamHandler(InputStream input, OutputStream output, boolean closeableStream) {
+		this(input, new OutputStream[] {output}, closeableStream, new boolean[]{closeableStream});
 	}
 
-	public PipeStreamHandler(InputStream input, OutputStream[] outputs, boolean closeInput, boolean[] closeOutputs) {
+	public PipeStreamHandler(InputStream input, OutputStream[] outputs, boolean closeableInput, boolean[] closeableOutputs) {
 		this.input = (input == null) ? new NullInputStream() : input;
 		this.outputs = new OutputStream[outputs.length];
-		this.closeInput = closeInput;
-		this.closeOutputs = closeOutputs;
+		this.closeableInput = closeableInput;
+		this.closeableOutputs = closeableOutputs;
 		for(int i = 0; i < this.outputs.length; i++) {
 			this.outputs[i] = (outputs[i] == null) ? new NullOutputStream() : outputs[i];
 		}
@@ -185,30 +185,32 @@ class PipeStreamHandler extends Thread {
 		return true;
 	}
 	private void closeInput() {
-		if(this.closeInput) {
-			try {
-				this.input.close();
-			}
-			catch (IOException e) {
-				if(RuntimeContext.getContext().isDebugMode()) {
-					System.err.println("close input problem");
-					e.printStackTrace();
-				}
+		if(!this.closeableInput) {
+			return;
+		}
+		try {
+			this.input.close();
+		}
+		catch (IOException e) {
+			if(RuntimeContext.getContext().isDebugMode()) {
+				System.err.println("close input problem");
+				e.printStackTrace();
 			}
 		}
 	}
 
 	private void closeOutputs() {
 		for(int i = 0; i < this.outputs.length; i++) {
-			if(this.closeOutputs[i]) {
-				try {
-					this.outputs[i].close();
-				}
-				catch (IOException e) {
-					if(RuntimeContext.getContext().isDebugMode()) {
-						System.err.println("close output problem");
-						e.printStackTrace();
-					}
+			if(!this.closeableOutputs[i]) {
+				continue;
+			}
+			try {
+				this.outputs[i].close();
+			}
+			catch (IOException e) {
+				if(RuntimeContext.getContext().isDebugMode()) {
+					System.err.println("close output problem");
+					e.printStackTrace();
 				}
 			}
 		}

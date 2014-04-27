@@ -187,7 +187,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override
-	public void VisitMatchRegxNode(MatchRegexNode Node) {
+	public void VisitMatchRegexNode(MatchRegexNode Node) {
 		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.StringType);
 		this.CheckTypeAt(Node, BinaryOperatorNode._Right, BType.StringType);
 		this.ReturnBinaryTypeNode(Node, BType.BooleanType);

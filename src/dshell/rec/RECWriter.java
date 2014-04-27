@@ -82,21 +82,20 @@ public class RECWriter {
 	private static String[] parseErrorMessage(String errorMessage) {	// status, failpoint
 		String[] lines = errorMessage.split("\n");
 		for(String line : lines) {
-			if(line.startsWith("REC assert")) {
-				line = line.trim();
-				String[] splittedLine = line.split(" ");
-				if(splittedLine.length == 4) {
-					String statusString = splittedLine[2];
-					String failPoint = splittedLine[3];
-					try {
-						int status = Integer.parseInt(statusString);
-						if((status == asseetError || status == assertSuccess) && failPoint.startsWith("@(") && failPoint.endsWith(")")) {
-							return new String[] {statusString, failPoint.substring(2, failPoint.length() - 1)};
-						}
-					}
-					catch(Exception e) {
-					}
+			if(!line.startsWith("REC assert")) {
+				continue;
+			}
+			line = line.trim();
+			String[] splittedLine = line.split(" ");
+			try {
+				String statusString = splittedLine[2];
+				String failPoint = splittedLine[3];
+				int status = Integer.parseInt(statusString);
+				if((status == asseetError || status == assertSuccess) && failPoint.startsWith("@(") && failPoint.endsWith(")")) {
+					return new String[] {statusString, failPoint.substring(2, failPoint.length() - 1)};
 				}
+			}
+			catch(Exception e) {
 				Utils.fatal(1, "invalid assertion message: " + line);
 			}
 		}

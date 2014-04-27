@@ -44,6 +44,7 @@ import dshell.lang.DShellVisitor;
 import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.GlobalVariableTable;
+import dshell.lib.RuntimeContext;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -51,6 +52,7 @@ import dshell.lib.ArrayUtils.DShellExceptionArray;
 import dshell.lib.ArrayUtils.TaskArray;
 import libbun.parser.BTokenContext;
 import libbun.parser.LibBunLogger;
+import libbun.parser.LibBunSource;
 import libbun.type.BFormFunc;
 import libbun.type.BFuncType;
 import libbun.type.BGenericType;
@@ -458,7 +460,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	public void VisitMatchRegxNode(MatchRegexNode Node) {
+	public void VisitMatchRegexNode(MatchRegexNode Node) {
 		this.VisitBinaryNode(Node);
 	}
 
@@ -486,28 +488,28 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
-		String macroSymbol = name;
+		String formSymbol = name;
 		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
 		BArray<BType> typeList = new BArray<BType>(new BType[4]);
-		StringBuilder macroBuilder = new StringBuilder();
-		macroBuilder.append(holderClassPath + "." + internalName + "(");
+		StringBuilder formBuilder = new StringBuilder();
+		formBuilder.append(holderClassPath + "." + internalName + "(");
 		for(int i = 0; i < paramClasses.length; i++) {
 			if(i != 0) {
-				macroBuilder.append(",");
+				formBuilder.append(",");
 			}
-			macroBuilder.append("$[" + i + "]");
+			formBuilder.append("$[" + i + "]");
 			typeList.add(JavaTypeTable.GetBunType(paramClasses[i]));
 		}
-		macroBuilder.append(")");
+		formBuilder.append(")");
 		try {
 			typeList.add(JavaTypeTable.GetBunType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
-			BFuncType macroType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
-			BFormFunc macroFunc = new BFormFunc(macroSymbol, macroType, null, macroBuilder.toString());
+			BFuncType funcType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
+			BFormFunc formFunc = new BFormFunc(formSymbol, funcType, null, formBuilder.toString());
 			if(name.equals("_")) {
-				this.SetConverterFunc(macroType.GetRecvType(), macroType.GetReturnType(), macroFunc);
+				this.SetConverterFunc(funcType.GetRecvType(), funcType.GetReturnType(), formFunc);
 			}
 			else {
-				this.SetDefinedFunc(macroFunc);
+				this.SetDefinedFunc(formFunc);
 			}
 		}
 		catch(Throwable e) {
@@ -526,7 +528,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
 		boolean result = true;
 		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
-		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, fileName, lineNumber, script);
+		LibBunSource source = new LibBunSource(fileName, lineNumber, script, this.Logger);
+		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, source, 0, script.length());
 		tokenContext.SkipEmptyStatement();
 		while(tokenContext.HasNext()) {
 			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
@@ -586,6 +589,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		catch(ErrorNodeFoundException e) {
 			this.topLevelSymbolList.clear();
+			if(RuntimeContext.getContext().isDebugMode()) {
+				e.printStackTrace();
+			}
 			this.StopVisitor();
 		}
 		catch(Throwable e) {
@@ -673,6 +679,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		catch(ErrorNodeFoundException e) {
 			this.Logger.OutputErrorsToStdErr();
+			if(RuntimeContext.getContext().isDebugMode()) {
+				e.printStackTrace();
+			}
 			System.exit(1);
 		}
 		catch(Throwable e) {
@@ -716,7 +725,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	private BunReturnNode findReturnNode(BNode Node) {
-		if(Node == null) {
+		if(Node == null || Node.IsErrorNode()) {
 			return null;
 		}
 		else if(Node instanceof BunReturnNode) {

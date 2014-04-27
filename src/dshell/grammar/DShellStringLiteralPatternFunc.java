@@ -75,7 +75,8 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 		if(StartIndex == CurrentIndex) {
 			return;
 		}
-		BNode Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(new BToken(TokenContext.SourceContext.Source, StartIndex, CurrentIndex).GetText()));
+		BToken Token = new BToken(TokenContext.SourceContext.Source, StartIndex, CurrentIndex);
+		BNode Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText()));
 		NodeList.add(Node);
 	}
 }

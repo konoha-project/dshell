@@ -249,7 +249,7 @@ public enum Errno {
 		protected String errno;
 
 		public DerivedFromErrnoException() {
-			this("");
+			super();
 		}
 
 		public DerivedFromErrnoException(String message) {

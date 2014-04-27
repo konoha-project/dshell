@@ -20,5 +20,4 @@ public class ForPatternFunc extends BMatchFunction {
 		Node = TokenContext.MatchPattern(Node, DShellForNode._Block, "$Block$", BTokenContext._Required);
 		return Node;
 	}
-
 }

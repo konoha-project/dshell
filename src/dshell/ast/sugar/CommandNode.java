@@ -11,13 +11,11 @@ import libbun.parser.BToken;
 import libbun.parser.LibBunTypeChecker;
 import libbun.type.BType;
 import libbun.util.BArray;
-import libbun.util.BField;
-import libbun.util.Var;
 
 public class CommandNode extends SyntaxSugarNode {
-	@BField private final BArray<BNode> ArgList;
-	@BField private BType RetType = BType.VarType;
-	@BField public CommandNode PipedNextNode;
+	private final BArray<BNode> ArgList;
+	private BType RetType = BType.VarType;
+	public CommandNode PipedNextNode;
 
 	public CommandNode(BNode ParentNode, BToken Token, String Command) {
 		super(ParentNode, 0);
@@ -32,7 +30,7 @@ public class CommandNode extends SyntaxSugarNode {
 	}
 
 	public BNode AppendPipedNextNode(CommandNode Node) {
-		@Var CommandNode CurrentNode = this;
+		CommandNode CurrentNode = this;
 		while(CurrentNode.PipedNextNode != null) {
 			CurrentNode = CurrentNode.PipedNextNode;
 		}
@@ -60,7 +58,8 @@ public class CommandNode extends SyntaxSugarNode {
 		return this.RetType;
 	}
 
-	@Override public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
+	@Override
+	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
 		if(this.RetType().IsVarType()) {
 			if(ContextType.IsBooleanType() || ContextType.IsIntType() || ContextType.IsStringType()) {
 				this.SetType(ContextType);
@@ -74,20 +73,21 @@ public class CommandNode extends SyntaxSugarNode {
 		}
 	}
 
-	@Override public DesugarNode PerformDesugar(LibBunTypeChecker TypeChecker) {
-		@Var String FuncName = "ExecCommandInt";
+	@Override
+	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChecker) {
+		String FuncName = "ExecCommandInt";
 		if(this.RetType().IsBooleanType()) {
 			FuncName = "ExecCommandBoolean";
 		}
 		else if(this.RetType().IsStringType()) {
 			FuncName = "ExecCommandString";
 		}
-		@Var BunArrayLiteralNode ArrayNode = new BunArrayLiteralNode(this.ParentNode);
-		@Var CommandNode CurrentNode = this;
+		BunArrayLiteralNode ArrayNode = new BunArrayLiteralNode(this.ParentNode);
+		CommandNode CurrentNode = this;
 		while(CurrentNode != null) {
-			@Var BunArrayLiteralNode SubArrayNode = new BunArrayLiteralNode(ArrayNode);
-			@Var int size = CurrentNode.GetArgSize();
-			@Var int i = 0;
+			BunArrayLiteralNode SubArrayNode = new BunArrayLiteralNode(ArrayNode);
+			int size = CurrentNode.GetArgSize();
+			int i = 0;
 			while(i < size) {
 				SubArrayNode.Append(CurrentNode.GetArgAt(i));
 				i = i + 1;
@@ -95,7 +95,7 @@ public class CommandNode extends SyntaxSugarNode {
 			ArrayNode.Append(SubArrayNode);
 			CurrentNode = CurrentNode.PipedNextNode;
 		}
-		@Var FuncCallNode Node = new FuncCallNode(this.ParentNode, new GetNameNode(this.ParentNode, null, FuncName));
+		FuncCallNode Node = new FuncCallNode(this.ParentNode, new GetNameNode(this.ParentNode, null, FuncName));
 		Node.Append(ArrayNode);
 		return new DesugarNode(this, Node);
 	}

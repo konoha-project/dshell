@@ -27,11 +27,11 @@ import libbun.util.BArray;
 import libbun.util.BMatchFunction;
 import libbun.util.BTokenFunction;
 import libbun.util.LibBunSystem;
-import libbun.util.Var;
 
 // Token
 class ShellStyleCommentTokenFunc extends BTokenFunction {
-	@Override public boolean Invoke(BSourceContext SourceContext) {
+	@Override
+	public boolean Invoke(BSourceContext SourceContext) {
 		while(SourceContext.HasChar()) {
 			char ch = SourceContext.GetCurrentChar();
 			if(ch == '\n') {
@@ -43,8 +43,9 @@ class ShellStyleCommentTokenFunc extends BTokenFunction {
 	}
 }
 
-class CommandSymbolTokenFunc extends BTokenFunction {
-	@Override public boolean Invoke(BSourceContext SourceContext) {
+class CommandTokenFunc extends BTokenFunction {
+	@Override
+	public boolean Invoke(BSourceContext SourceContext) {
 		int StartIndex = SourceContext.GetPosition();
 		StringBuilder SymbolBuilder = new StringBuilder();
 		while(SourceContext.HasChar()) {
@@ -56,7 +57,7 @@ class CommandSymbolTokenFunc extends BTokenFunction {
 			SourceContext.MoveNext();
 		}
 		if(RuntimeContext.getContext().commandScope.isCommand(SymbolBuilder.toString())) {
-			SourceContext.Tokenize(CommandSymbolPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
+			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
 		return false;
@@ -156,10 +157,11 @@ class ImportCommandPatternFunc extends BMatchFunction {
 	}
 }
 
-class CommandSymbolPatternFunc extends BMatchFunction {
+class CommandPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$CommandSymbol$";
 
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+	@Override
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken CommandToken = TokenContext.GetToken(BTokenContext._MoveNext);
 		String Command = RuntimeContext.getContext().commandScope.getCommand(CommandToken.GetText());
 		if(Command == null) {
@@ -174,7 +176,7 @@ class CommandSymbolPatternFunc extends BMatchFunction {
 					return CommandNode.AppendPipedNextNode((CommandNode)PrefixOptionNode);
 				}
 				// Match Command Symbol
-				BNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, BTokenContext._Required);
+				BNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 				if(PipedNode.IsErrorNode()) {
 					return PipedNode;
 				}
@@ -208,7 +210,8 @@ class CommandSymbolPatternFunc extends BMatchFunction {
 class CommandArgPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$CommandArg$";
 
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+	@Override
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		if(ShellGrammar.matchStopToken(TokenContext)) {
 			return null;
 		}
@@ -252,7 +255,7 @@ class CommandArgPatternFunc extends BMatchFunction {
 				this.Flush(TokenContext, NodeList, TokenList);
 				BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
 				if(Node == null) {
-					Node = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, BTokenContext._Required);
+					Node = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 				}
 				Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
 				if(Node instanceof CommandNode) {
@@ -284,7 +287,7 @@ class CommandArgPatternFunc extends BMatchFunction {
 	}
 
 	private void Flush(BTokenContext TokenContext, BArray<BNode> NodeList, BArray<BToken> TokenList) {
-		@Var int size = TokenList.size();
+		int size = TokenList.size();
 		if(size == 0) {
 			return;
 		}
@@ -308,7 +311,8 @@ class RedirectPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$Redirect$";
 
 	// <, >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+	@Override
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
 		String RedirectSymbol = Token.GetText();
 		if(Token.EqualsText(">>") || Token.EqualsText("<")) {
@@ -365,11 +369,12 @@ class RedirectPatternFunc extends BMatchFunction {
 class PrefixOptionPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$PrefixOption$";
 
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+	@Override
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
 		String Symbol = Token.GetText();
 		if(Symbol.equals(ShellGrammar.trace)) {
-			BNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, BTokenContext._Required);
+			BNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
@@ -381,7 +386,7 @@ class PrefixOptionPatternFunc extends BMatchFunction {
 			if(TimeNode.IsErrorNode()) {
 				return TimeNode;
 			}
-			BNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, BTokenContext._Required);
+			BNode CommandNode = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 			if(CommandNode.IsErrorNode()) {
 				return CommandNode;
 			}
@@ -423,7 +428,8 @@ class PrefixOptionPatternFunc extends BMatchFunction {
 class SuffixOptionPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$SuffixOption$";
 
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
+	@Override
+	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken Token = TokenContext.GetToken();
 		TokenContext.MoveNext();
 		String OptionSymbol = Token.GetText();
@@ -436,6 +442,7 @@ class SuffixOptionPatternFunc extends BMatchFunction {
 
 class ImportEnvPatternFunc extends BMatchFunction {
 	public final static String PatternName = "$ImportEnv$";
+
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BNode Node = new DShellImportEnvNode(ParentNode);
@@ -447,6 +454,7 @@ class ImportEnvPatternFunc extends BMatchFunction {
 
 class ExportEnvPatternFunc extends BMatchFunction {
 	public final static String PatternName = "export";
+
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		TokenContext.MoveNext();
@@ -466,7 +474,6 @@ class DShellBlockPatternFunc extends BMatchFunction {
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BNode BlockNode = new BunBlockNode(ParentNode, null);
 		RuntimeContext.getContext().commandScope.createNewScope();
-		//BToken SkipToken = TokenContext.GetToken();
 		BlockNode = TokenContext.MatchToken(BlockNode, "{", BTokenContext._Required);
 		if(!BlockNode.IsErrorNode()) {
 			boolean Remembered = TokenContext.SetParseFlag(BTokenContext._AllowSkipIndent); // init
@@ -476,7 +483,6 @@ class DShellBlockPatternFunc extends BMatchFunction {
 				}
 				BlockNode = TokenContext.MatchPattern(BlockNode, BNode._AppendIndex, "$Statement$", BTokenContext._Required);
 				if(BlockNode.IsErrorNode()) {
-//					TokenContext.SkipError(SkipToken);
 					TokenContext.MatchToken("}");
 					break;
 				}
@@ -524,7 +530,7 @@ public class ShellGrammar {
 	}
 
 	public static void LoadGrammar(LibBunGamma Gamma) {
-		final BTokenFunction commandSymbolToken = new CommandSymbolTokenFunc();
+		final BTokenFunction commandSymbolToken = new CommandTokenFunc();
 		final BMatchFunction prefixOptionPattern = new PrefixOptionPatternFunc();
 
 		Gamma.DefineToken("#", new ShellStyleCommentTokenFunc());
@@ -533,7 +539,7 @@ public class ShellGrammar {
 
 		Gamma.DefineStatement("import", new ImportPatternFunc());
 		Gamma.DefineExpression(ImportCommandPatternFunc._PatternName, new ImportCommandPatternFunc());
-		Gamma.DefineExpression(CommandSymbolPatternFunc._PatternName, new CommandSymbolPatternFunc());
+		Gamma.DefineExpression(CommandPatternFunc._PatternName, new CommandPatternFunc());
 		Gamma.DefineExpression(CommandArgPatternFunc._PatternName, new CommandArgPatternFunc());
 		Gamma.DefineExpression(RedirectPatternFunc._PatternName, new RedirectPatternFunc());
 		Gamma.DefineExpression(ShellGrammar.timeout, prefixOptionPattern);

@@ -17,5 +17,4 @@ public class DShellCatchPatternFunc extends BMatchFunction {
 		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._Block, "$Block$", BTokenContext._Required);
 		return CatchNode;
 	}
-
 }

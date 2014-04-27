@@ -55,10 +55,10 @@ public class DShellForeachNode extends SyntaxSugarNode {
 	}
 
 	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
-		String ValuesSymbol = TypeChekcer.Generator.NameUniqueSymbol("values");
-		String SizeSymbol = TypeChekcer.Generator.NameUniqueSymbol("size");
-		String IndexSymbol = TypeChekcer.Generator.NameUniqueSymbol("index");
+	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChecker) {
+		String ValuesSymbol = TypeChecker.Generator.NameUniqueSymbol("values");
+		String SizeSymbol = TypeChecker.Generator.NameUniqueSymbol("size");
+		String IndexSymbol = TypeChecker.Generator.NameUniqueSymbol("index");
 		// create if
 		BNode Node = new BunIfNode(this.ParentNode);
 		Node.SetNode(BunIfNode._Cond, new BunBooleanNode(true));

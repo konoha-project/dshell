@@ -1,6 +1,6 @@
 package dshell.grammar;
 
-import dshell.grammar.CommandSymbolPatternFunc;
+import dshell.grammar.CommandPatternFunc;
 import dshell.grammar.PrefixOptionPatternFunc;
 import libbun.ast.BNode;
 import dshell.ast.sugar.CommandNode;
@@ -21,7 +21,7 @@ public class LocationPatternFunc extends BMatchFunction {	//TODO
 			return Node.AppendPipedNextNode((CommandNode) PrefixOptionNode);
 		}
 		// Match Command Symbol
-		BNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandSymbolPatternFunc._PatternName, BTokenContext._Required);
+		BNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 		if(!PipedNode.IsErrorNode()) {
 			return Node.AppendPipedNextNode((CommandNode) PipedNode);
 		}

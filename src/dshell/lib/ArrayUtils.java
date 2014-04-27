@@ -20,7 +20,8 @@ public class ArrayUtils {
 			super(TypeId, Values);
 		}
 
-		@Override protected void Stringfy(StringBuilder sb) {
+		@Override
+		protected void Stringfy(StringBuilder sb) {
 			sb.append("[");
 			for(int i = 0; i < this.Size(); i++) {
 				if(i > 0) {
@@ -47,7 +48,8 @@ public class ArrayUtils {
 			super(TypeId, Values);
 		}
 
-		@Override protected void Stringfy(StringBuilder sb) {
+		@Override
+		protected void Stringfy(StringBuilder sb) {
 			sb.append("[");
 			for(int i = 0; i < this.Size(); i++) {
 				if(i > 0) {

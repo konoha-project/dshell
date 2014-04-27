@@ -7,7 +7,7 @@ import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;
 
-public class MatchRegxPatternFunc extends BMatchFunction {
+public class MatchRegexPatternFunc extends BMatchFunction {
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken Token = TokenContext.GetToken();

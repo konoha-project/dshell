@@ -21,7 +21,7 @@ public class DShellGrammar {	//FIXME
 		// import ShellGrammar
 		ShellGrammar.LoadGrammar(Gamma);
 		// import DShell Specific Grammar
-		MatchRegxPatternFunc matchRegxPattern = new MatchRegxPatternFunc();
+		MatchRegexPatternFunc matchRegxPattern = new MatchRegexPatternFunc();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 

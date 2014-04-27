@@ -28,11 +28,13 @@ public class ArgumentNode extends SyntaxSugarNode {
 		this.SetNode(_Expr, new BunStringNode(this, null, Value));
 	}
 
-	@Override public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
+	@Override
+	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
 		TypeChecker.CheckTypeAt(this, _Expr, BType.StringType);
 	}
 
-	@Override public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
+	@Override
+	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
 		BNode Node = new FuncCallNode(this, new GetNameNode(this, null, _funcNames[this.ArgType]));
 		Node.SetNode(BNode._AppendIndex, this.AST[_Expr]);
 		return new DesugarNode(this, Node);

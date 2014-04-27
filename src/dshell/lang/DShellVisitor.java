@@ -15,5 +15,5 @@ public interface DShellVisitor {
 	public void VisitContinueNode(BunContinueNode Node);
 	public void VisitForNode(DShellForNode Node);
 	public void VisitWrapperNode(DShellWrapperNode Node);
-	public void VisitMatchRegxNode(MatchRegexNode Node);
+	public void VisitMatchRegexNode(MatchRegexNode Node);
 }

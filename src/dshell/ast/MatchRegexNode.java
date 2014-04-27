@@ -23,7 +23,7 @@ public class MatchRegexNode extends ComparatorNode {
 	@Override
 	public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitMatchRegxNode(this);
+			((DShellVisitor)Visitor).VisitMatchRegexNode(this);
 		}
 		else {
 			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
