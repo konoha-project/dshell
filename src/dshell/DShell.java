@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.TreeSet;
 
@@ -12,8 +13,8 @@ import dshell.grammar.DShellGrammar;
 import dshell.lang.DShellTypeChecker;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
-import dshell.rec.RECWriter;
 import dshell.remote.RequestReceiver;
+import libbun.parser.LibBunTypeChecker;
 import libbun.util.LibBunSystem;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import static dshell.lib.RuntimeContext.AppenderType;
@@ -33,7 +34,6 @@ public class DShell {
 		interactiveMode,
 		scriptingMode,
 		inputEvalMode,
-		recSupportMode,
 		receiverMode,
 	}
 
@@ -96,10 +96,6 @@ public class DShell {
 						RuntimeContext.getContext().changeAppender(AppenderType.syslog);
 					}
 				}
-				else if(optionSymbol.equals("--rec") && i + 1 < args.length) {
-					recSupport = true;
-					this.specificArg = args[++i];
-				}
 				else if(optionSymbol.equals("--receive") && i + 1 < args.length && args.length == 2) {	// never return
 					this.mode = ExecutionMode.receiverMode;
 					this.specificArg = args[++i];
@@ -129,14 +125,7 @@ public class DShell {
 				break;
 			}
 		}
-		if(recSupport) {
-			if(!foundScript) {
-				System.err.println("dshell: need script file");
-				showHelpAndExit(1, System.err);
-			}
-			this.mode = ExecutionMode.recSupportMode;
-		}
-		else if(foundScript) {
+		if(foundScript) {
 			this.mode = ExecutionMode.scriptingMode;
 		}
 		else if(!this.enableDummyTerminal && System.console() == null) {
@@ -158,10 +147,7 @@ public class DShell {
 	public void execute() {
 		// init context
 		RuntimeContext.getContext();
-
 		switch(this.mode) {
-		case recSupportMode:
-			RECWriter.invoke(this.specificArg, this.scriptArgs);	// never return
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return
 		case interactiveMode:
@@ -174,7 +160,7 @@ public class DShell {
 	}
 
 	public void runInteractiveMode() {
-		DShellByteCodeGenerator generator = initGenerator();
+		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
 		DShellConsole console = new DShellConsole();
 		String line = null;
 		if(!this.disableWelcomeMessage) {
@@ -195,7 +181,7 @@ public class DShell {
 			generator.loadLine(importBuilder.toString(), 0, false);
 		}
 		generator.Logger.OutputErrorsToStdErr();
-		while ((line = console.readLine()) != null) {
+		while((line = console.readLine()) != null) {
 			if(line.equals("")) {
 				continue;
 			}
@@ -209,7 +195,7 @@ public class DShell {
 	}
 
 	private void runScriptingMode() {
-		DShellByteCodeGenerator generator = initGenerator();
+		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
 		String scriptName = this.scriptArgs[0];
 		generator.loadArg(this.scriptArgs);
 		boolean status = generator.loadFile(scriptName);
@@ -221,7 +207,7 @@ public class DShell {
 	}
 
 	private void runInputEvalMode() {
-		DShellByteCodeGenerator generator = initGenerator();
+		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
 		String source = this.specificArg;
 		if(this.specificArg == null) {
 			source = readFromIntput();
@@ -246,18 +232,11 @@ public class DShell {
 			}
 			return streamBuffer.toString();
 		}
-		catch (IOException e) {
+		catch(IOException e) {
 			e.printStackTrace();
 			Utils.fatal(1, "IO problem");
 		}
 		return null;
-	}
-	private final static DShellByteCodeGenerator initGenerator() {
-		DShellByteCodeGenerator Generator = new DShellByteCodeGenerator();
-		DShellGrammar.ImportGrammar(Generator.RootGamma);
-		Generator.SetTypeChecker(new DShellTypeChecker((DShellByteCodeGenerator) Generator));
-		Generator.RequireLibrary("common", null);
-		return (DShellByteCodeGenerator) Generator;
 	}
 
 	public static void showVersionInfo() {
@@ -278,12 +257,49 @@ public class DShell {
 		stream.println("    --logging:stdout");
 		stream.println("    --logging:stderr");
 		stream.println("    --logging:syslog [host address]");
-		stream.println("    --rec [rec URL]");
 		stream.println("    --version");
 		System.exit(status);
 	}
 
 	public static void main(String[] args) {
 		new DShell(args).execute();
+	}
+
+	public static class GeneratorFactory {
+		public static DShellByteCodeGenerator createGenerator() {
+			return createGenerator(DShellByteCodeGenerator.class, DShellTypeChecker.class);
+		}
+
+		public static DShellByteCodeGenerator createGenerator(Class<?> generatorClass, Class<?> typeCheckerClass) {
+			DShellByteCodeGenerator generator = newGenerator(generatorClass);
+			DShellGrammar.ImportGrammar(generator.RootGamma);
+			generator.SetTypeChecker(newTypeChecker(typeCheckerClass, generator));
+			generator.RequireLibrary("common", null);
+			return generator;
+		}
+
+		private static DShellByteCodeGenerator newGenerator(Class<?> generatorClass) {
+			try {
+				return (DShellByteCodeGenerator) generatorClass.newInstance();
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				Utils.fatal(1, "cannot loading generator: " + generatorClass.getSimpleName());
+			}
+			return null;
+		}
+
+		private static LibBunTypeChecker newTypeChecker(Class<?> typeCheckerClass, DShellByteCodeGenerator generator) {
+			try {
+				Constructor<?> constructor = typeCheckerClass.getConstructor(DShellByteCodeGenerator.class);
+				DShellTypeChecker typeChecker = (DShellTypeChecker) constructor.newInstance(new Object[] {generator});
+				return typeChecker;
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				Utils.fatal(1, "cannot loading typechecker: " + typeCheckerClass.getSimpleName());
+			}
+			return null;
+		}
 	}
 }

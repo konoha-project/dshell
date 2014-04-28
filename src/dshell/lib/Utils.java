@@ -142,15 +142,14 @@ public class Utils {
 		return defaultDelimPattern.matcher(targetValue).replaceAll(" ").split(" ");
 	}
 
-	public static void assertDShell(boolean result) {	//TODO
+	public static void assertDShell(boolean result) {
 		if(!result) {
 			new AssertionError("").printStackTrace();
-			System.err.println("REC assert 0 @" + "dummy");
 			System.exit(1);
 		}
 	}
 
-	private static class AssertionError extends dshell.exception.Exception {
+	public static class AssertionError extends dshell.exception.Exception {
 		private static final long serialVersionUID = 1160350956527375486L;
 		public AssertionError(String message) {
 			super(message);

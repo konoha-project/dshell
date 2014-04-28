@@ -4,6 +4,9 @@
 	<property name="build_dir"  value="build" />
 	<property name="libbun_jar"  value="ext/libbun/libbun-0.1.jar" />
 	<property name="dshell_jar" value="dshell.jar" />
+	<property name="rec_src_dir" value="tools/rec/src" />
+	<property name="rec_build_dir" value="tools/rec/build" />
+	<property name="rec_jar" value="rec.jar" />
 
 	<!-- ================================== -->
 	<!--             PRE-BUILD              -->
@@ -22,10 +25,6 @@
 			<classpath path="ext/jna-4.0.0.jar" />
 			<classpath path="ext/log4j-1.2.17.jar" />
 			<classpath path="ext/commons-codec-1.9.jar" />
-			<classpath path="ext/httpclient-4.3.1.jar" />
-			<classpath path="ext/httpcore-4.3.jar" />
-			<classpath path="ext/commons-logging-1.1.3.jar" />
-			<classpath path="ext/jsonic-1.3.1.jar" />
 			<include name="**/*.java" />
 			<compilerarg value="-Xlint:deprecation" />
 			<compilerarg value="-Xlint:unchecked" />
@@ -46,19 +45,51 @@
 			<zipfileset src="ext/jna-4.0.0.jar" />
 			<zipfileset src="ext/log4j-1.2.17.jar" />
 			<zipfileset src="ext/commons-codec-1.9.jar" />
-			<zipfileset src="ext/httpclient-4.3.1.jar" />
-			<zipfileset src="ext/httpcore-4.3.jar" />
-			<zipfileset src="ext/commons-logging-1.1.3.jar" />
-			<zipfileset src="ext/jsonic-1.3.1.jar" />
 		</jar>
 	</target>
 
 	<!-- ================================== -->
 	<!--               CLEAN                -->
 	<!-- ================================== -->
-	<target name="clean">
+	<target name="clean" depends="rec-clean">
 		<ant antfile="build.xml" dir="ext/libbun/" target="clean" />
 		<delete dir="${build_dir}"/>
 		<delete file="${dshell_jar}" />
+	</target>
+
+	<!-- ================================== -->
+	<!--             REC Test               -->
+	<!-- ================================== -->
+	<target name="rec-build" depends="jar">
+		<mkdir dir="${rec_build_dir}" />
+		<javac srcdir="${rec_src_dir}" destdir="${rec_build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
+			<classpath path="${dshell_jar}" />
+			<classpath path="tools/rec/ext/httpclient-4.3.1.jar" />
+			<classpath path="tools/rec/ext/httpcore-4.3.jar" />
+			<classpath path="tools/rec/ext/commons-logging-1.1.3.jar" />
+			<classpath path="tools/rec/ext/jsonic-1.3.1.jar" />
+			<include name="**/*.java" />
+			<compilerarg value="-Xlint:deprecation" />
+			<compilerarg value="-Xlint:unchecked" />
+		</javac>
+	</target>
+
+	<target name="rec" depends="rec-build">
+		<jar jarfile="${rec_jar}">
+			<fileset dir="${rec_build_dir}" includes="**/*.class" />
+			<manifest>
+				<attribute name="Main-Class" value="dshell.rec.RECWriter" />
+			</manifest>
+			<zipfileset src="${dshell_jar}" />
+			<zipfileset src="tools/rec/ext/httpclient-4.3.1.jar" />
+			<zipfileset src="tools/rec/ext/httpcore-4.3.jar" />
+			<zipfileset src="tools/rec/ext/commons-logging-1.1.3.jar" />
+			<zipfileset src="tools/rec/ext/jsonic-1.3.1.jar" />
+		</jar>
+	</target>
+
+	<target name="rec-clean">
+		<delete dir="${rec_build_dir}"/>
+		<delete file="${rec_jar}" />
 	</target>
 </project>

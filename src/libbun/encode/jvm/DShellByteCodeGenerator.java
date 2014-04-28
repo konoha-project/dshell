@@ -464,7 +464,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.VisitBinaryNode(Node);
 	}
 
-	private void invokeStaticMethod(BNode Node, Method method) {
+	protected void invokeStaticMethod(BNode Node, Method method) {
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.AsmBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
 		if(Node != null) {

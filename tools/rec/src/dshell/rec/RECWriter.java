@@ -1,10 +1,16 @@
 package dshell.rec;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ProcessBuilder.Redirect;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
+import libbun.encode.jvm.DShellByteCodeGenerator;
+import libbun.encode.jvm.Generator4REC;
 import libbun.util.LibBunSystem;
 
 import net.arnx.jsonic.JSON;
@@ -16,14 +22,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-import dshell.lib.CommandArg;
-import dshell.lib.Task;
-import dshell.lib.TaskBuilder;
-import dshell.lib.TaskOption;
+import dshell.DShell.GeneratorFactory;
 import dshell.lib.Utils;
-import static dshell.lib.TaskOption.Behavior.returnable;
-import static dshell.lib.TaskOption.Behavior.printable ;
-import static dshell.lib.TaskOption.RetType.TaskType   ;
 
 /**
 params: {
@@ -37,6 +37,7 @@ params: {
   }
 } 
 **/
+
 public class RECWriter {
 	// data definition
 	public final static int asseetError    = 0;
@@ -45,41 +46,118 @@ public class RECWriter {
 	public final static int fileNotFound   = 3;
 	public final static int assertNotFound = 4;
 
-	public static void invoke(String RECServerURL, String[] scriptArgs) {
+	private boolean isWriterMode = true;
+	private String recURL;
+	private String[] scriptArgs;
+
+	public static void main(String[] args) {
+		new RECWriter(args).execute();
+	}
+
+	public RECWriter(String[] args) {
+		for(int i = 0; i < args.length; i++) {
+			String option = args[i];
+			if(option.startsWith("--")) {
+				if(option.equals("--writer") && i + 1 < args.length) {
+					this.isWriterMode = true;
+					this.recURL = args[++i];
+				}
+				else if(option.equals("--executor")) {
+					this.isWriterMode = false;
+				}
+				else {
+					System.err.println("invalid option: " + option);
+				}
+			}
+			else {
+				int size = args.length - i;
+				this.scriptArgs = new String[size];
+				System.arraycopy(args, i, this.scriptArgs, 0, size);
+				return;
+			}
+		}
+		System.err.println("not found script");
+		System.exit(1);
+	}
+
+	public void execute() {
+		if(this.isWriterMode) {
+			this.invoke(this.recURL, this.scriptArgs);
+		}
+		else {
+			DShellByteCodeGenerator generator = GeneratorFactory.createGenerator(Generator4REC.class, TypeChecker4REC.class);
+			String scriptName = this.scriptArgs[0];
+			generator.loadArg(this.scriptArgs);
+			boolean status = generator.loadFile(scriptName);
+			if(!status) {
+				System.err.println("abort loading: " + scriptName);
+				System.exit(1);
+			}
+			generator.invokeMain(); // never return
+		}
+	}
+
+	private void invoke(String RECServerURL, String[] scriptArgs) {
 		String type = scriptArgs[0];
 		String localtion = "";
 		String authid = "xyx@gmail.com";
 		try {
 			localtion = InetAddress.getLocalHost().getHostAddress();
 		}
-		catch (UnknownHostException e) {
+		catch(UnknownHostException e) {
 			e.printStackTrace();
 			Utils.fatal(1, "Host Problem");
 		}
 		// execute script file
-		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
-		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
-		cmdList.add(CommandArg.createCommandArg("dshell"));
-		for(int i = 0; i < scriptArgs.length; i++) {
-			cmdList.add(CommandArg.createCommandArg(scriptArgs[i]));
+		ArrayList<String> argList = new ArrayList<String>();
+		argList.addAll(Arrays.asList("java", "-jar", "rec.jar", "--executor"));
+		argList.addAll(Arrays.asList(this.scriptArgs));
+
+		final ByteArrayOutputStream streamBuffer = new ByteArrayOutputStream();
+		ProcessBuilder procBuilder = new ProcessBuilder(argList);
+		procBuilder.inheritIO();
+		procBuilder.redirectError(Redirect.PIPE);
+		try {
+			final Process proc = procBuilder.start();
+			Thread streamHandler = new Thread() {
+				@Override public void run() {
+					InputStream input = proc.getErrorStream();
+					byte[] buffer = new byte[512];
+					int ReadSize = 0;
+					try {
+						while((ReadSize = input.read(buffer, 0, buffer.length)) > -1) {
+							streamBuffer.write(buffer, 0, ReadSize);
+							System.err.write(buffer, 0, ReadSize);
+						}
+						input.close();
+					}
+					catch (IOException e) {
+						return;
+					}
+				}
+			};
+			streamHandler.start();
+			streamHandler.join();
+			int exitStatus = proc.waitFor();
+			// send to REC
+			String[] parsedData = this.parseErrorMessage(streamBuffer.toString());
+			if(parsedData != null) {
+				int data = Integer.parseInt(parsedData[0]);
+				RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext(parsedData[1], type));
+			}
+			else {
+				int data = this.resolveData(exitStatus, type);
+				RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext("", type));
+			}
+			System.exit(0);
 		}
-		cmdsList.add(cmdList);
-		TaskOption option = TaskOption.of(TaskType, returnable, printable);
-		Task task = (Task) new TaskBuilder(cmdsList, option).invoke();
-		// send to REC
-		String[] parsedData = parseErrorMessage(task.getErrorMessage());
-		if(parsedData != null) {
-			int data = Integer.parseInt(parsedData[0]);
-			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext(parsedData[1], type));
+		catch(Exception e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
-		else {
-			int data = resolveData(task.getExitStatus(), type);
-			RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext("", type));
-		}
-		System.exit(0);
 	}
 
-	private static String[] parseErrorMessage(String errorMessage) {	// status, failpoint
+	private String[] parseErrorMessage(String errorMessage) {	// status, failpoint
 		String[] lines = errorMessage.split("\n");
 		for(String line : lines) {
 			if(!line.startsWith("REC assert")) {
@@ -102,7 +180,7 @@ public class RECWriter {
 		return null;
 	}
 
-	private static int resolveData(int exitStatus, String fileName) {
+	private int resolveData(int exitStatus, String fileName) {
 		if(exitStatus == 0) {
 			return assertNotFound;
 		}
