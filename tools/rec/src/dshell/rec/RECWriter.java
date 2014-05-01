@@ -85,7 +85,7 @@ public class RECWriter {
 			this.invoke(this.recURL, this.scriptArgs);
 		}
 		else {
-			DShellByteCodeGenerator generator = GeneratorFactory.createGenerator(Generator4REC.class, TypeChecker4REC.class);
+			DShellByteCodeGenerator generator = new GeneratorFactory(Generator4REC.class, TypeChecker4REC.class).createGenerator();
 			String scriptName = this.scriptArgs[0];
 			generator.loadArg(this.scriptArgs);
 			boolean status = generator.loadFile(scriptName);

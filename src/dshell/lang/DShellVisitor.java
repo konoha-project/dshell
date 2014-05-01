@@ -1,7 +1,7 @@
 package dshell.lang;
 
 import libbun.ast.sugar.BunContinueNode;
-import dshell.ast.sugar.CommandNode;
+import dshell.ast.CommandNode;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;

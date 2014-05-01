@@ -27,12 +27,12 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
+import dshell.ast.CommandNode;
 import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
 import dshell.ast.MatchRegexNode;
-import dshell.ast.sugar.CommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.exception.DShellException;
@@ -63,7 +63,7 @@ import libbun.util.LibBunSystem;
 
 public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private BunFunctionNode untypedMainNode = null;
-	private LinkedList<String> topLevelSymbolList;
+	protected LinkedList<String> topLevelSymbolList;
 
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
@@ -633,7 +633,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return this.IsVisitable();
 	}
 
-	private boolean evalAndPrintEachNode(String Symbol) {
+	protected boolean evalAndPrintEachNode(String Symbol) {
 		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, BType.VoidType, 0);
 		try {
 			Method Method = FuncClass.getMethod("f");

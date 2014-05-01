@@ -3,7 +3,7 @@ package dshell.grammar;
 import dshell.grammar.CommandPatternFunc;
 import dshell.grammar.PrefixOptionPatternFunc;
 import libbun.ast.BNode;
-import dshell.ast.sugar.CommandNode;
+import dshell.ast.CommandNode;
 import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
 import libbun.util.BMatchFunction;

@@ -1,26 +1,27 @@
 import command ls, echo, java
 import env TEST_DIR
 
-
-if(ARGV.size() == 2) {
-	let REC = "--rec ${ARGV[1]}"
-}
-else {
-	let REC = ""
-}
-
 let LOG = "./test-result.log"
 let DIR = "${TEST_DIR}/test-case"
 
 echo > $LOG
 for(test_dir in $(ls $DIR)) {
 	for(test_file in $(ls $DIR/$test_dir)) {
-		echo "====== Test: ${test_file} ======" &>> $LOG
-		var prefix = "[fail]:"
-		if(java -jar -ea dshell.jar $REC $DIR/$test_dir/$test_file &>> $LOG) {
-			prefix = "[pass]:"
+		for(var i : int = 0; i < 2; i = i + 1) {
+			var mode = "[s]"
+			var option = ""
+			if(i == 1) {
+				mode = "[i]"
+				option = "-i"
+			}
+			echo "====== Test: ${mode} ${test_file} ======" &>> $LOG
+			var prefix = "[fail]:"
+			if(java -jar -ea test-dshell.jar $option $DIR/$test_dir/$test_file &>> $LOG) {
+				prefix = "[pass]:"
+			}
+			var msg = "${prefix} ${mode} ${test_dir}/${test_file}"
+			echo $msg
+			echo $msg &>> $LOG
 		}
-		echo "${prefix} ${test_dir}/${test_file}"
-		echo "${prefix} ${test_dir}/${test_file}" &>> $LOG
 	}
 }

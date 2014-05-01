@@ -1,0 +1,49 @@
+<project name="rec" default="jar">
+	<!-- directory / file definition -->
+	<property name="dshell_jar" value="../../dshell.jar" />
+	<property name="rec_src_dir" value="src" />
+	<property name="rec_build_dir" value="build" />
+	<property name="rec_jar" value="rec.jar" />
+
+	<!-- ================================== -->
+	<!--               BUILD                -->
+	<!-- ================================== -->
+	<target name="build">
+		<mkdir dir="${rec_build_dir}" />
+		<javac srcdir="${rec_src_dir}" destdir="${rec_build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
+			<classpath path="${dshell_jar}" />
+			<classpath path="ext/httpclient-4.3.1.jar" />
+			<classpath path="ext/httpcore-4.3.jar" />
+			<classpath path="ext/commons-logging-1.1.3.jar" />
+			<classpath path="ext/jsonic-1.3.1.jar" />
+			<include name="**/*.java" />
+			<compilerarg value="-Xlint:deprecation" />
+			<compilerarg value="-Xlint:unchecked" />
+		</javac>
+	</target>
+
+	<!-- ================================== -->
+	<!--            GENERATE JAR            -->
+	<!-- ================================== -->
+	<target name="jar" depends="build">
+		<jar jarfile="${rec_jar}">
+			<fileset dir="${rec_build_dir}" includes="**/*.class" />
+			<manifest>
+				<attribute name="Main-Class" value="dshell.rec.RECWriter" />
+			</manifest>
+			<zipfileset src="${dshell_jar}" />
+			<zipfileset src="ext/httpclient-4.3.1.jar" />
+			<zipfileset src="ext/httpcore-4.3.jar" />
+			<zipfileset src="ext/commons-logging-1.1.3.jar" />
+			<zipfileset src="ext/jsonic-1.3.1.jar" />
+		</jar>
+	</target>
+
+	<!-- ================================== -->
+	<!--               CLEAN                -->
+	<!-- ================================== -->
+	<target name="clean">
+		<delete dir="${rec_build_dir}"/>
+		<delete file="${rec_jar}" />
+	</target>
+</project>

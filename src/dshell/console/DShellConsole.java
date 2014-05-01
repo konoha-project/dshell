@@ -14,7 +14,7 @@ import jline.UnixTerminal;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.RetType.StringType;
 
-public class DShellConsole {
+public class DShellConsole implements AbstractConsole {
 	private final jline.ConsoleReader consoleReader;
 	private String userName = System.getProperty("user.name");
 	private final TTYConfigurator ttyConfig;

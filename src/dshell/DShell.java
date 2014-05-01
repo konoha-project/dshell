@@ -8,6 +8,7 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.TreeSet;
 
+import dshell.console.AbstractConsole;
 import dshell.console.DShellConsole;
 import dshell.grammar.DShellGrammar;
 import dshell.lang.DShellTypeChecker;
@@ -37,23 +38,23 @@ public class DShell {
 		receiverMode,
 	}
 
-	private ExecutionMode mode;
-	private boolean autoImportCommand = true;
-	private boolean disableWelcomeMessage = false;
-	private final boolean enableDummyTerminal;
+	protected ExecutionMode mode;
+	protected boolean autoImportCommand = true;
+	protected boolean disableWelcomeMessage = false;
+	private final boolean enableTerminal;
 	private String specificArg = null;
-	private String[] scriptArgs;
+	protected String[] scriptArgs;
 
-	private DShell(String[] args) {
+	public DShell(String[] args) {
 		this(args, false);
 	}
 
 	public DShell(String[] args, boolean enableDummyTerminal) {
-		this.enableDummyTerminal = enableDummyTerminal;
+		this.enableTerminal = enableDummyTerminal;
 		this.parseArguments(args);
 	}
 
-	private void parseArguments(String[] args) {
+	protected void parseArguments(String[] args) {
 		boolean foundScript = false;
 		HashMap<String, Integer> foundArgMap = new HashMap<String, Integer>();
 		for(int i = 0; i < args.length; i++) {
@@ -102,7 +103,7 @@ public class DShell {
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
-					showHelpAndExit(1, System.err);
+					this.showHelpAndExit(1, System.err);
 				}
 			}
 			else if(optionSymbol.startsWith("-")) {
@@ -113,7 +114,7 @@ public class DShell {
 				}
 				else {
 					System.err.println("dshell: " + optionSymbol + ": invalid option");
-					showHelpAndExit(1, System.err);
+					this.showHelpAndExit(1, System.err);
 				}
 			}
 			else {
@@ -127,7 +128,7 @@ public class DShell {
 		if(foundScript) {
 			this.mode = ExecutionMode.scriptingMode;
 		}
-		else if(!this.enableDummyTerminal && System.console() == null) {
+		else if(!this.enableTerminal && System.console() == null) {
 			this.mode = ExecutionMode.inputEvalMode;
 		}
 		else {
@@ -146,26 +147,26 @@ public class DShell {
 	public void execute() {
 		// init context
 		RuntimeContext.getContext();
+		GeneratorFactory gFactory = new GeneratorFactory();
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return
 		case interactiveMode:
-			this.runInteractiveMode();	// never return
+			this.runInteractiveMode(gFactory, new DShellConsole());	// never return
 		case scriptingMode:
-			this.runScriptingMode();	// never return
+			this.runScriptingMode(gFactory);	// never return
 		case inputEvalMode:
-			this.runInputEvalMode();	// never return
+			this.runInputEvalMode(gFactory);	// never return
 		}
 	}
 
-	public void runInteractiveMode() {
-		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
-		DShellConsole console = new DShellConsole();
+	protected void runInteractiveMode(GeneratorFactory gFactory, AbstractConsole console) {
+		DShellByteCodeGenerator generator = gFactory.createGenerator();
 		String line = null;
 		if(!this.disableWelcomeMessage) {
 			System.out.println(DShellConsole.welcomeMessage);
 		}
-		DShell.showVersionInfo();
+		this.showVersionInfo();
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
 			importBuilder.append("import command ");
@@ -193,8 +194,8 @@ public class DShell {
 		System.exit(0);
 	}
 
-	private void runScriptingMode() {
-		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
+	protected void runScriptingMode(GeneratorFactory gFactory) {
+		DShellByteCodeGenerator generator = gFactory.createGenerator();
 		String scriptName = this.scriptArgs[0];
 		generator.loadArg(this.scriptArgs);
 		boolean status = generator.loadFile(scriptName);
@@ -205,8 +206,8 @@ public class DShell {
 		generator.invokeMain(); // never return
 	}
 
-	private void runInputEvalMode() {
-		DShellByteCodeGenerator generator = GeneratorFactory.createGenerator();
+	protected void runInputEvalMode(GeneratorFactory gFactory) {
+		DShellByteCodeGenerator generator = gFactory.createGenerator();
 		String source = this.specificArg;
 		if(this.specificArg == null) {
 			source = readFromIntput();
@@ -219,7 +220,7 @@ public class DShell {
 		generator.invokeMain(); // never return
 	}
 
-	private static String readFromIntput() {
+	protected String readFromIntput() {
 		BufferedInputStream stream = new BufferedInputStream(System.in);
 		ByteArrayOutputStream streamBuffer = new ByteArrayOutputStream();
 		int bufferSize = 2048;
@@ -238,12 +239,12 @@ public class DShell {
 		return null;
 	}
 
-	public static void showVersionInfo() {
+	protected void showVersionInfo() {
 		System.out.println(shellInfo);
 		System.out.println(copyright);
 	}
 
-	public static void showHelpAndExit(int status, PrintStream stream) {
+	protected void showHelpAndExit(int status, PrintStream stream) {
 		stream.println(shellInfo);
 		stream.println("Usage: dshell [<options>] [<script-file> <argument> ...]");
 		stream.println("Usage: dshell [<options>] -c [<command>]");
@@ -265,19 +266,27 @@ public class DShell {
 	}
 
 	public static class GeneratorFactory {
-		public static DShellByteCodeGenerator createGenerator() {
-			return createGenerator(DShellByteCodeGenerator.class, DShellTypeChecker.class);
+		private final Class<?> generatorClass;
+		private final Class<?> typeCheckerClass;
+
+		public GeneratorFactory() {
+			this(DShellByteCodeGenerator.class, DShellTypeChecker.class);
 		}
 
-		public static DShellByteCodeGenerator createGenerator(Class<?> generatorClass, Class<?> typeCheckerClass) {
-			DShellByteCodeGenerator generator = newGenerator(generatorClass);
+		public GeneratorFactory(Class<?> generatorClass, Class<?> typeCheckerClass) {
+			this.generatorClass = generatorClass;
+			this.typeCheckerClass = typeCheckerClass;
+		}
+
+		public DShellByteCodeGenerator createGenerator() {
+			DShellByteCodeGenerator generator = newGenerator(this.generatorClass);
 			DShellGrammar.ImportGrammar(generator.RootGamma);
-			generator.SetTypeChecker(newTypeChecker(typeCheckerClass, generator));
+			generator.SetTypeChecker(newTypeChecker(this.typeCheckerClass, generator));
 			generator.RequireLibrary("common", null);
 			return generator;
 		}
 
-		private static DShellByteCodeGenerator newGenerator(Class<?> generatorClass) {
+		private DShellByteCodeGenerator newGenerator(Class<?> generatorClass) {
 			try {
 				return (DShellByteCodeGenerator) generatorClass.newInstance();
 			}
@@ -288,7 +297,7 @@ public class DShell {
 			return null;
 		}
 
-		private static LibBunTypeChecker newTypeChecker(Class<?> typeCheckerClass, DShellByteCodeGenerator generator) {
+		private LibBunTypeChecker newTypeChecker(Class<?> typeCheckerClass, DShellByteCodeGenerator generator) {
 			try {
 				Constructor<?> constructor = typeCheckerClass.getConstructor(DShellByteCodeGenerator.class);
 				DShellTypeChecker typeChecker = (DShellTypeChecker) constructor.newInstance(new Object[] {generator});
@@ -301,4 +310,5 @@ public class DShell {
 			return null;
 		}
 	}
+
 }

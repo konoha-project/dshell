@@ -1,5 +1,6 @@
-package dshell.ast.sugar;
+package dshell.ast;
 
+import dshell.ast.sugar.ArgumentNode;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BNode;

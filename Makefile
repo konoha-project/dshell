@@ -31,6 +31,8 @@ test:
 	TEST_DIR=./test ./test/test_all.sh
 
 self-test:
+	cd ./tools/test-dshell/ && ant clean && ant && cp ./test-dshell.jar ../../
+	cd ../../
 	TEST_DIR=./test dshell ./test/test_all.ds
 
 test-rec:

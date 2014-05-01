@@ -2,12 +2,12 @@ package dshell.grammar;
 
 import java.util.ArrayList;
 
+import dshell.ast.CommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.ast.sugar.DShellImportEnvNode;
 import dshell.lib.BuiltinCommand;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
-import dshell.ast.sugar.CommandNode;
 import dshell.ast.sugar.ArgumentNode;
 
 import libbun.ast.BNode;

@@ -1,0 +1,41 @@
+<project name="dshell-test" default="jar">
+	<!-- ditest_dshelltory / file definition -->
+	<property name="dshell_jar" value="../../dshell.jar" />
+	<property name="test_dshell_src_dir" value="src" />
+	<property name="test_dshell_build_dir" value="build" />
+	<property name="test_dshell_jar" value="test-dshell.jar" />
+
+	<!-- ================================== -->
+	<!--               BUILD                -->
+	<!-- ================================== -->
+	<target name="build">
+		<mkdir dir="${test_dshell_build_dir}" />
+		<javac srcdir="${test_dshell_src_dir}" destdir="${test_dshell_build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
+			<classpath path="${dshell_jar}" />
+			<include name="**/*.java" />
+			<compilerarg value="-Xlint:deprecation" />
+			<compilerarg value="-Xlint:unchecked" />
+		</javac>
+	</target>
+
+	<!-- ================================== -->
+	<!--            GENERATE JAR            -->
+	<!-- ================================== -->
+	<target name="jar" depends="build">
+		<jar jarfile="${test_dshell_jar}">
+			<fileset dir="${test_dshell_build_dir}" includes="**/*.class" />
+			<manifest>
+				<attribute name="Main-Class" value="dshell.DShellTest" />
+			</manifest>
+			<zipfileset src="${dshell_jar}" />
+		</jar>
+	</target>
+
+	<!-- ================================== -->
+	<!--               CLEAN                -->
+	<!-- ================================== -->
+	<target name="clean">
+		<delete dir="${test_dshell_build_dir}"/>
+		<delete file="${test_dshell_jar}" />
+	</target>
+</project>
