@@ -297,9 +297,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		if(Node instanceof BunContinueNode) {
 			this.VisitContinueNode((BunContinueNode) Node);
 		}
-		else if(Node instanceof CommandNode) {
-			this.VisitCommandNode((CommandNode) Node);
-		}
 		else {
 			super.VisitSyntaxSugarNode(Node);
 		}

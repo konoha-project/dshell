@@ -55,7 +55,6 @@ public class DShell {
 
 	private void parseArguments(String[] args) {
 		boolean foundScript = false;
-		boolean recSupport = false;
 		HashMap<String, Integer> foundArgMap = new HashMap<String, Integer>();
 		for(int i = 0; i < args.length; i++) {
 			String optionSymbol = args[i];
@@ -107,7 +106,7 @@ public class DShell {
 				}
 			}
 			else if(optionSymbol.startsWith("-")) {
-				if(optionSymbol.equals("-c") && i + 1 == args.length - 1 && !recSupport) {
+				if(optionSymbol.equals("-c") && i + 1 == args.length - 1) {
 					this.mode = ExecutionMode.inputEvalMode;
 					this.specificArg = args[++i];
 					return;

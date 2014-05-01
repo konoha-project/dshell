@@ -1,18 +1,14 @@
 package dshell.ast.sugar;
 
+import dshell.lang.DShellVisitor;
+import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.ast.BunBlockNode;
-import libbun.ast.DesugarNode;
-import libbun.ast.SyntaxSugarNode;
-import libbun.ast.expression.FuncCallNode;
-import libbun.ast.expression.GetNameNode;
-import libbun.ast.literal.BunArrayLiteralNode;
 import libbun.parser.BToken;
-import libbun.parser.LibBunTypeChecker;
+import libbun.parser.LibBunVisitor;
 import libbun.type.BType;
 import libbun.util.BArray;
 
-public class CommandNode extends SyntaxSugarNode {
+public class CommandNode extends BNode {
 	private final BArray<BNode> ArgList;
 	private BType RetType = BType.VarType;
 	public CommandNode PipedNextNode;
@@ -59,44 +55,12 @@ public class CommandNode extends SyntaxSugarNode {
 	}
 
 	@Override
-	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
-		if(this.RetType().IsVarType()) {
-			if(ContextType.IsBooleanType() || ContextType.IsIntType() || ContextType.IsStringType()) {
-				this.SetType(ContextType);
-			}
-			else if(ContextType.IsVarType() && !(this.ParentNode instanceof BunBlockNode)) {
-				this.SetType(BType.StringType);
-			}
-			else {
-				this.SetType(BType.IntType);
-			}
+	public void Accept(LibBunVisitor Visitor) {
+		if(Visitor instanceof DShellVisitor) {
+			((DShellVisitor)Visitor).VisitCommandNode(this);
 		}
-	}
-
-	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChecker) {
-		String FuncName = "ExecCommandInt";
-		if(this.RetType().IsBooleanType()) {
-			FuncName = "ExecCommandBoolean";
+		else {
+			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
 		}
-		else if(this.RetType().IsStringType()) {
-			FuncName = "ExecCommandString";
-		}
-		BunArrayLiteralNode ArrayNode = new BunArrayLiteralNode(this.ParentNode);
-		CommandNode CurrentNode = this;
-		while(CurrentNode != null) {
-			BunArrayLiteralNode SubArrayNode = new BunArrayLiteralNode(ArrayNode);
-			int size = CurrentNode.GetArgSize();
-			int i = 0;
-			while(i < size) {
-				SubArrayNode.Append(CurrentNode.GetArgAt(i));
-				i = i + 1;
-			}
-			ArrayNode.Append(SubArrayNode);
-			CurrentNode = CurrentNode.PipedNextNode;
-		}
-		FuncCallNode Node = new FuncCallNode(this.ParentNode, new GetNameNode(this.ParentNode, null, FuncName));
-		Node.Append(ArrayNode);
-		return new DesugarNode(this, Node);
 	}
 }

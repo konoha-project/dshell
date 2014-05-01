@@ -36,7 +36,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override
-	public void VisitCommandNode(CommandNode Node) {	//FIXME
+	public void VisitCommandNode(CommandNode Node) {
 		BType ContextType = this.GetContextType();
 		if(!(Node.ParentNode instanceof CommandNode)) {
 			if(Node.RetType().IsStringType() && Node.ParentNode instanceof DShellForeachNode) {
@@ -132,9 +132,6 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
 		if(Node instanceof BunContinueNode) {
 			this.VisitContinueNode((BunContinueNode) Node);
-		}
-		else if(Node instanceof CommandNode) {
-			this.VisitCommandNode((CommandNode) Node);
 		}
 		else {
 			super.VisitSyntaxSugarNode(Node);

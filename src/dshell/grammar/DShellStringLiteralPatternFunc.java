@@ -23,6 +23,7 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 
 	public static BNode Interpolate(BNode ParentNode, BTokenContext TokenContext, BToken Token) {
 		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
+		boolean FoundExpr = false;
 		int StartIndex = Token.StartIndex + 1;
 		final int EndIndex = Token.EndIndex - 1;
 		int CurrentIndex = StartIndex;
@@ -35,6 +36,7 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 			else if(ch == '$') {
 				char next = Source.GetCharAt(CurrentIndex + 1);
 				if(next == '(' || next == '{') {
+					FoundExpr = true;
 					CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
 					StartIndex = CurrentIndex = CreateExprNode(NodeList, ParentNode, TokenContext, CurrentIndex, EndIndex);
 					if(CurrentIndex == -1) {
@@ -44,6 +46,9 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 				}
 			}
 			CurrentIndex++;
+		}
+		if(!FoundExpr) {
+			return null;
 		}
 		CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
 		return ShellGrammar._ToNode(ParentNode, TokenContext, NodeList);

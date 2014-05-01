@@ -3,6 +3,7 @@ package dshell.grammar;
 import libbun.util.BMatchFunction;
 import libbun.lang.konoha.ContinuePatternFunction;
 import libbun.lang.bun.BunGrammar;
+import libbun.lang.bun.extra.BunExtraGrammar;
 import libbun.parser.LibBunGamma;
 import libbun.parser.LibBunSyntax;
 import dshell.DShell;
@@ -46,6 +47,20 @@ public class DShellGrammar {	//FIXME
 		overrideExpression(Gamma, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc());
 		overrideStatement(Gamma, "var", varPattern);
 		overrideStatement(Gamma, "let", varPattern);
+
+		Gamma.DefineExpressionSuffix("++", BunExtraGrammar.IncSuffixPattern);
+		Gamma.DefineExpressionSuffix("--", BunExtraGrammar.DecSuffixPattern);
+
+		Gamma.DefineBinaryOperator("+", BunExtraGrammar.SelfAddPattern);
+		Gamma.DefineBinaryOperator("-", BunExtraGrammar.SelfSubPattern);
+		Gamma.DefineBinaryOperator("*", BunExtraGrammar.SelfMulPattern);
+		Gamma.DefineBinaryOperator("/", BunExtraGrammar.SelfDivPattern);
+		Gamma.DefineBinaryOperator("%", BunExtraGrammar.SelfModPattern);
+		Gamma.DefineBinaryOperator("&", BunExtraGrammar.SelfBitwiseAndPattern);
+		Gamma.DefineBinaryOperator("|", BunExtraGrammar.SelfBitwiseOrPattern);
+		Gamma.DefineBinaryOperator("^", BunExtraGrammar.SelfBitwiseXorPattern);
+		Gamma.DefineBinaryOperator("<<", BunExtraGrammar.SelfLeftShiftPattern);
+		Gamma.DefineBinaryOperator(">>", BunExtraGrammar.SelfRightShiftPattern);
 
 		Gamma.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
 	}
