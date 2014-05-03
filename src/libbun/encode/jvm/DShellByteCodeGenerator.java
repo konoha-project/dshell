@@ -48,11 +48,9 @@ import dshell.lib.RuntimeContext;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
-import dshell.lib.ArrayUtils.DShellExceptionArray;
-import dshell.lib.ArrayUtils.TaskArray;
 import libbun.parser.BTokenContext;
 import libbun.parser.LibBunLogger;
-import libbun.parser.LibBunSource;
+import libbun.parser.ParserSource;
 import libbun.type.BFormFunc;
 import libbun.type.BFuncType;
 import libbun.type.BGenericType;
@@ -63,7 +61,7 @@ import libbun.util.LibBunSystem;
 
 public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellVisitor {
 	private BunFunctionNode untypedMainNode = null;
-	protected LinkedList<String> topLevelSymbolList;
+	protected final LinkedList<TopLevelStatementInfo> topLevelStatementList;
 
 	private Method ExecCommandVoid;
 	private Method ExecCommandBool;
@@ -77,7 +75,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	public DShellByteCodeGenerator() {
 		super();
-		this.topLevelSymbolList = new LinkedList<String>();
+		this.topLevelStatementList = new LinkedList<TopLevelStatementInfo>();
 		this.loadJavaClass(Task.class);
 		this.loadJavaClass(dshell.exception.Exception.class);
 		this.loadJavaClass(DShellException.class);
@@ -105,10 +103,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		JavaMethodTable.Import(BType.StringType, "=~", BType.StringType, Utils.class, "matchRegex");
 		JavaMethodTable.Import(BType.StringType, "!~", BType.StringType, Utils.class, "unmatchRegex");
-
-		// load array class
-		this.loadArrayClass(DShellException.class, DShellExceptionArray.class);
-		this.loadArrayClass(Task.class, TaskArray.class);
 
 		// load static method
 		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
@@ -514,18 +508,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	private void loadArrayClass(Class<?> baseClass, Class<?> arrayClass) {
-		BType baseType = JavaTypeTable.GetBunType(baseClass);
-		BType arrayType = BTypePool._GetGenericType1(BGenericType._ArrayType, baseType);
-		JavaTypeTable.SetTypeTable(arrayType, arrayClass);
-		// define operator
-		JavaMethodTable.Import(arrayType, "[]", BType.IntType, arrayClass, "GetIndex");
-	}
-
 	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
 		boolean result = true;
 		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
-		LibBunSource source = new LibBunSource(fileName, lineNumber, script, this.Logger);
+		ParserSource source = new ParserSource(fileName, lineNumber, script, this.Logger);
 		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, source, 0, script.length());
 		tokenContext.SkipEmptyStatement();
 		while(tokenContext.HasNext()) {
@@ -538,7 +524,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			catch(Throwable e) {
 				System.err.println("Parsing Problem");
 				e.printStackTrace();
-				this.topLevelSymbolList.clear();
+				this.topLevelStatementList.clear();
 				return false;
 			}
 			if(!this.generateStatement(stmtNode, isInteractive)) {
@@ -585,7 +571,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			Node.Accept(this);
 		}
 		catch(ErrorNodeFoundException e) {
-			this.topLevelSymbolList.clear();
+			this.topLevelStatementList.clear();
 			if(RuntimeContext.getContext().isDebugMode()) {
 				e.printStackTrace();
 			}
@@ -594,7 +580,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		catch(Throwable e) {
 			System.err.println("Code Generation Failed");
 			e.printStackTrace();
-			this.topLevelSymbolList.clear();
+			this.topLevelStatementList.clear();
 			this.StopVisitor();
 		}
 	}
@@ -618,7 +604,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		else if(IsInteractive) {
 			BunFunctionNode FuncNode = ((DShellTypeChecker)this.TypeChecker).VisitTopLevelStatementNode(Node);
-			this.topLevelSymbolList.add(FuncNode.GivenName);
+			this.topLevelStatementList.add(new TopLevelStatementInfo(FuncNode.GivenName, FuncNode.ReturnType()));
 			this.generateByteCode(FuncNode);
 		}
 		else {
@@ -633,13 +619,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return this.IsVisitable();
 	}
 
-	protected boolean evalAndPrintEachNode(String Symbol) {
-		Class<?> FuncClass = this.GetDefinedFunctionClass(Symbol, BType.VoidType, 0);
+	protected boolean evalAndPrintEachNode(TopLevelStatementInfo info) {
+		Class<?> FuncClass = this.GetDefinedFunctionClass(info.funcName, BType.VoidType, 0);
 		try {
 			Method Method = FuncClass.getMethod("f");
 			Object Value = Method.invoke(null);
-			if(Method.getReturnType() != void.class) {
-				System.out.println(" (" + Method.getReturnType().getSimpleName() + ") " + Value);
+			if(!info.returnType.IsVoidType()) {
+				System.out.println(" (" + info.returnType + ") " + Value);
 			}
 			return true;
 		}
@@ -654,10 +640,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	public void evalAndPrint() {
-		while(!this.topLevelSymbolList.isEmpty()) {
-			String Symbol = this.topLevelSymbolList.remove();
-			if(!this.evalAndPrintEachNode(Symbol)) {
-				this.topLevelSymbolList.clear();
+		while(!this.topLevelStatementList.isEmpty()) {
+			TopLevelStatementInfo info = this.topLevelStatementList.remove();
+			if(!this.evalAndPrintEachNode(info)) {
+				this.topLevelStatementList.clear();
 			}
 		}
 	}
@@ -754,5 +740,15 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 	private static class ErrorNodeFoundException extends RuntimeException {
 		private static final long serialVersionUID = -2465006344250569543L;
+	}
+}
+
+class TopLevelStatementInfo {
+	public final String funcName;
+	public final BType returnType;
+
+	public TopLevelStatementInfo(String funcName, BType returnType) {
+		this.funcName = funcName;
+		this.returnType = returnType;
 	}
 }

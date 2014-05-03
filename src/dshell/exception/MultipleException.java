@@ -1,12 +1,11 @@
 package dshell.exception;
 
-import dshell.lib.ArrayUtils;
-import dshell.lib.ArrayUtils.DShellExceptionArray;
+import libbun.util.BArray;
 
 public class MultipleException extends DShellException {
 	private static final long serialVersionUID = 164898266354483402L;
 	private DShellException[] exceptions;
-	transient private DShellExceptionArray exceptionArray;
+	transient private BArray<DShellException> exceptionArray;
 
 	public MultipleException(String message, DShellException[] exceptions) {
 		super(message);
@@ -17,9 +16,9 @@ public class MultipleException extends DShellException {
 		}
 	}
 
-	public DShellExceptionArray getExceptions() {
-		if(exceptionArray == null) {
-			this.exceptionArray = ArrayUtils.createExceptionArray(exceptions);
+	public BArray<DShellException> getExceptions() {
+		if(this.exceptionArray == null) {
+			this.exceptionArray = new BArray<DShellException>(0, exceptions);
 		}
 		return this.exceptionArray;
 	}

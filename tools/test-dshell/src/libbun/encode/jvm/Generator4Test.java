@@ -3,10 +3,10 @@ package libbun.encode.jvm;
 public class Generator4Test extends DShellByteCodeGenerator {
 	@Override
 	public void evalAndPrint() {
-		while(!this.topLevelSymbolList.isEmpty()) {
-			String Symbol = this.topLevelSymbolList.remove();
-			if(!this.evalAndPrintEachNode(Symbol)) {
-				this.topLevelSymbolList.clear();
+		while(!this.topLevelStatementList.isEmpty()) {
+			TopLevelStatementInfo info = this.topLevelStatementList.remove();
+			if(!this.evalAndPrintEachNode(info)) {
+				this.topLevelStatementList.clear();
 				System.exit(1);
 			}
 		}

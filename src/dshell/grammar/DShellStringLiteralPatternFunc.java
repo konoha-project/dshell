@@ -4,7 +4,7 @@ import libbun.ast.BNode;
 import libbun.ast.literal.BunStringNode;
 import libbun.parser.BToken;
 import libbun.parser.BTokenContext;
-import libbun.parser.LibBunSource;
+import libbun.parser.ParserSource;
 import libbun.util.BArray;
 import libbun.util.BMatchFunction;
 import libbun.util.LibBunSystem;
@@ -27,7 +27,7 @@ public class DShellStringLiteralPatternFunc extends BMatchFunction {
 		int StartIndex = Token.StartIndex + 1;
 		final int EndIndex = Token.EndIndex - 1;
 		int CurrentIndex = StartIndex;
-		LibBunSource Source = TokenContext.SourceContext.Source;
+		ParserSource Source = TokenContext.SourceContext.Source;
 		while(CurrentIndex < EndIndex) {
 			char ch = Source.GetCharAt(CurrentIndex);
 			if(ch == '\\') {

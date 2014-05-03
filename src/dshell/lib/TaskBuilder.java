@@ -6,11 +6,10 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import libbun.util.BStringArray;
+import libbun.util.BArray;
 
 import dshell.grammar.DShellGrammar;
 import dshell.grammar.ShellGrammar;
-import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 import static dshell.lib.TaskOption.Behavior.returnable;
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -194,8 +193,8 @@ public class TaskBuilder {
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static BStringArray ExecCommandStringArray(CommandArg[][] cmds) {
-		return ArrayUtils.createStringArray(Utils.splitWithDelim(ExecCommandString(cmds)));
+	public static BArray<String> ExecCommandStringArray(CommandArg[][] cmds) {
+		return new BArray<String>(0, Utils.splitWithDelim(ExecCommandString(cmds)));
 	}
 
 	public static Task ExecCommandTask(CommandArg[][] cmds) {
@@ -203,9 +202,10 @@ public class TaskBuilder {
 		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static TaskArray ExecCommandTaskArray(CommandArg[][] cmds) {
+	@SuppressWarnings("unchecked")
+	public static BArray<Task> ExecCommandTaskArray(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
-		return (TaskArray)new TaskBuilder(toCmdsList(cmds), option).invoke();
+		return (BArray<Task>)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	private static ArrayList<ArrayList<CommandArg>> toCmdsList(CommandArg[][] cmds) {

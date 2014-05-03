@@ -8,10 +8,11 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
+import libbun.util.BArray;
+
 import dshell.exception.DShellException;
 import dshell.exception.Errno;
 import dshell.exception.MultipleException;
-import dshell.lib.ArrayUtils.TaskArray;
 import dshell.remote.RequestSender;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -226,12 +227,12 @@ public class Task implements Serializable {
 		}
 	}
 
-	public static TaskArray getTaskArray(Task task) {
+	public static BArray<Task> getTaskArray(Task task) {
 		Task[] values = new Task[task.taskList.size()];
 		for(int i = 0; i < values.length; i++) {
 			values[i] = task.taskList.get(i);
 		}
-		return ArrayUtils.createTaskArray(values);
+		return new BArray<Task>(0, values);
 	}
 }
 
