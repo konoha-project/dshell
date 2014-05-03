@@ -9,7 +9,7 @@ import libbun.util.BArray;
 import libbun.util.BMatchFunction;
 import libbun.util.LibBunSystem;
 
-public class DShellStringLiteralPatternFunc extends BMatchFunction {
+public class DoubleQuoteStringLiteralPatternFunc extends BMatchFunction {
 	public final static String PatternName = "$InterStringLiteral$";
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {

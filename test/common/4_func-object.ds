@@ -1,0 +1,11 @@
+let func = function(x: int) {
+	return x * 2
+}
+
+function call() {
+	var sub: Func<int, int> = func
+	assert(func(3) == 6)
+	assert(sub(3) == 6)
+}
+
+call()

@@ -1,0 +1,12 @@
+function func(num : int) {
+  if (num > 2) {
+    return true
+  }
+  else {
+    return false
+  }
+}
+
+assert(!func(1))
+assert(!func(2))
+assert(func(3))

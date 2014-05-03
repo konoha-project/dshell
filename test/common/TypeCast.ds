@@ -1,0 +1,21 @@
+function func() {
+  var a: int = 123
+  var b: float = 2.0
+  var c: String = "4567"
+
+  // int -> float
+  var d = (float)a
+
+  // String -> int
+  var e = (int)c
+
+  // float -> String
+  var f = (String)b
+
+  assert(d instanceof float)
+  assert(e instanceof int)
+  assert(f instanceof String)
+
+}
+
+func()

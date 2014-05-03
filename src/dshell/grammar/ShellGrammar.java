@@ -221,13 +221,17 @@ class CommandArgPatternFunc extends BMatchFunction {
 		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
 		while(!ShellGrammar.matchStopToken(TokenContext)) {
 			BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
-			if(Token instanceof BPatternToken && ((BPatternToken)Token).PresetPattern.PatternName.equals(DShellStringLiteralPatternFunc.PatternName)) {
+			if(this.matchPatternToken(Token, DoubleQuoteStringLiteralPatternFunc.PatternName)) {
 				this.Flush(TokenContext, NodeList, TokenList);
-				BNode Node = DShellStringLiteralPatternFunc.Interpolate(ParentNode, TokenContext, Token);
+				BNode Node = DoubleQuoteStringLiteralPatternFunc.Interpolate(ParentNode, TokenContext, Token);
 				if(Node == null) {
 					Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText()));
 				}
 				NodeList.add(Node);
+			}
+			else if(this.matchPatternToken(Token, SingleQuoteStringLiteralPatternFunc.patternName)) {
+				this.Flush(TokenContext, NodeList, TokenList);
+				NodeList.add(new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText())));
 			}
 			else if(!FoundEscape && Token.EqualsText("$") && !Token.IsNextWhiteSpace() && TokenContext.MatchToken("{")) {
 				this.Flush(TokenContext, NodeList, TokenList);
@@ -304,6 +308,16 @@ class CommandArgPatternFunc extends BMatchFunction {
 		BToken Token = new BToken(TokenContext.SourceContext.Source, StartIndex, EndIndex);
 		NodeList.add(new BunStringNode(null, Token, LibBunSystem._UnquoteString(Utils.resolveHome(Token.GetText()))));
 		TokenList.clear(0);
+	}
+
+	private boolean matchPatternToken(BToken token, String patternName) {
+		if(token instanceof BPatternToken) {
+			BPatternToken patternToken = (BPatternToken) token;
+			if(patternToken.PresetPattern.PatternName.equals(patternName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

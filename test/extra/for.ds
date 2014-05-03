@@ -1,8 +1,0 @@
-function f() {
-	var size: int = 5
-	for(var i : int = 0; i < size; i = i + 1) {
-		log $i
-	}
-}
-
-f()

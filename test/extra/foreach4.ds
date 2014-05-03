@@ -1,5 +1,0 @@
-import command ls
-
-for(a in $(ls)) {
-	log "file: ${a}"
-}

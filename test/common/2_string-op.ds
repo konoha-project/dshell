@@ -1,0 +1,3 @@
+var str = "はるのサクラ"
+str = str.replaceAll("はるの", "うずまき")
+assert(str == "うずまきサクラ")

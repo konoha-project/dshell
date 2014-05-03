@@ -3,14 +3,14 @@ package dshell.grammar;
 import libbun.parser.BSourceContext;
 import libbun.util.BTokenFunction;
 
-public class DShellStringLiteralTokenFunc extends BTokenFunction {
+public class DoubleQuoteStringLiteralTokenFunc extends BTokenFunction {
 	@Override
 	public boolean Invoke(BSourceContext SourceContext) {
 		int StartIndex = SourceContext.GetPosition();
 		SourceContext.MoveNext();
 		try {
 			this.MatchStringLiteral(SourceContext);
-			SourceContext.Tokenize(DShellStringLiteralPatternFunc.PatternName, StartIndex, SourceContext.GetPosition());
+			SourceContext.Tokenize(DoubleQuoteStringLiteralPatternFunc.PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
 		catch(Exception e) {

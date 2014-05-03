@@ -1,0 +1,11 @@
+function f1() {
+	log "hello"
+}
+
+function f2(a : int, b : int) {
+	return a == b
+}
+
+f1()
+assert(!f2(1, 2))
+assert(f2(23, 23))

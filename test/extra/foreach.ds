@@ -1,8 +1,0 @@
-function f() {
-	var ary = ["hello", "world"]
-	for(a in ary) {
-		log ${a}
-	}
-}
-
-f()

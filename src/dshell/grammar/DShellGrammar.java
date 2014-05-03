@@ -26,7 +26,8 @@ public class DShellGrammar {	//FIXME
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
-		Gamma.DefineToken("\"", new DShellStringLiteralTokenFunc());
+		Gamma.DefineToken("'", new SingleQuoteStringLiteralTokenFunc());
+		Gamma.DefineToken("\"", new DoubleQuoteStringLiteralTokenFunc());
 
 //		overrideStatement(Gamma, "import", new JavaImportPattern());
 		overrideStatement(Gamma, "continue", new ContinuePatternFunction());
@@ -39,7 +40,7 @@ public class DShellGrammar {	//FIXME
 		Gamma.DefineStatement(location, new LocationDefinePatternFunc());
 		Gamma.DefineStatement("for", new ForPatternFunc());
 		Gamma.DefineStatement("for", new ForeachPatternFunc());
-		Gamma.DefineExpression(DShellStringLiteralPatternFunc.PatternName, new DShellStringLiteralPatternFunc());
+		Gamma.DefineExpression(DoubleQuoteStringLiteralPatternFunc.PatternName, new DoubleQuoteStringLiteralPatternFunc());
 //		NameSpace.DefineExpression("$( `", substitutionPattern);
 		Gamma.DefineExpression("$", substitutionPattern);
 		Gamma.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);

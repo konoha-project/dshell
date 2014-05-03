@@ -1,0 +1,11 @@
+var a = {"a" : 1}
+assert(a["a"] == 1)
+a["b"] = 12
+assert(a["b"] == 12)
+assert(!a.hasKey("c"))
+
+var b = a.keys()
+assert(b.size() == 2)
+assert(a.hasKey(b[0]))
+assert(a.haskey(b[1]))
+
