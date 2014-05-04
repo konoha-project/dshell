@@ -1,0 +1,67 @@
+// primitive type
+var a = 1
+assert(a instanceof int)
+var b = true
+assert(b instanceof boolean)
+var c = 3.23
+assert(c instanceof float)
+
+// class tyep
+class Hoge {
+	var name = "hey"
+	var id = 12
+}
+
+class Huga extends Hoge {
+	var isMan = false
+}
+
+var d = new Hoge()
+assert(d instanceof Hoge)
+assert(!(d instanceof Huga))
+var e = new Huga()
+assert(e instanceof Huga)
+assert(e instanceof Hoge)
+
+// func type
+var f = function(a : int, b : Exception) {
+	var c = a + 12
+	log $a
+	throw b
+}
+
+assert(f instanceof Func<int, Exception, void>)
+
+// generic type
+var g1 = [1, 2, 3]
+var g2 = ["a", "b", "c"]
+var g3 = [new Hoge(), new Huga()]
+assert(g1 instanceof int[])
+assert(g2 instanceof String[])
+assert(g3 instanceof Hoge[])
+assert(!(g3 instanceof Object[]))
+
+var g4 = {"a" : 1, "b" : 2}
+var g5 = {"a" : "aa", "b" : "bb"}
+assert(g4 instanceof Map<int>)
+assert(g5 instanceof Map<String>)
+assert(!(g5 instanceof Map<int>))
+
+// Exception type
+var h1 = new Exception()
+var h2 = new DShellException()
+var h3 = new FileNotFoundException()
+assert(h1 instanceof Exception)
+assert(!(h1 instanceof DShellException))
+assert(h2 instanceof DShellException)
+assert(h2 instanceof Exception)
+assert(h3 instanceof FileNotFoundException)
+assert(h3 instanceof DShellException)
+assert(h3 instanceof Exception)
+
+try {
+	1 / 0
+} catch(e) {
+	assert(e instanceof NativeException)
+	assert(e instanceof Exception)
+}

@@ -1,3 +1,0 @@
-import command ls, grep
-
-ls -la > /dev/null | grep ds

@@ -1,9 +1,0 @@
-import command ls, ps
-
-function g() {
-	ls -la
-	ps ax
-}
-
-g()
-

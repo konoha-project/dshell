@@ -33,7 +33,7 @@ test:
 self-test:
 	cd ./tools/test-dshell/ && ant clean && ant && cp ./test-dshell.jar ../../
 	cd ../../
-	TEST_DIR=./test dshell ./test/test_all.ds
+	TEST_DIR=./test dshell ./test/run_test.ds
 
 test-rec:
 	#USAGE: make test-rec URL=http://www.ubicg.ynu.ac.jp/Rec/api/3.0

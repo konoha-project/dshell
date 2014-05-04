@@ -1,0 +1,11 @@
+import command echo, ls, grep
+
+echo "hello world"
+var a = echo hello world
+assert(a == "hello world")
+
+var b : int = echo hello wolrd
+assert(b == 0)
+
+assert(ls)
+

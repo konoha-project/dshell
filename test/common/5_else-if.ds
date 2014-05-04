@@ -9,4 +9,4 @@ function func(num : int) {
 
 assert(func(1) == 10)
 assert(func(2) == 2 * 100)
-assert(func(3) == 3 * 1000)
+assert(func(3) == 3 * 100)

@@ -7,5 +7,5 @@ assert(!a.hasKey("c"))
 var b = a.keys()
 assert(b.size() == 2)
 assert(a.hasKey(b[0]))
-assert(a.haskey(b[1]))
+assert(a.hasKey(b[1]))
 

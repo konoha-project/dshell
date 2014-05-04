@@ -1,0 +1,29 @@
+class Person {
+	var name = "naruto"
+	var age = 17
+	var isChild: Func<Person, int, boolean>
+}
+
+function Person(this : Person, name: String, age : int) {
+	this.name = name
+	this.age = age
+	return this
+}
+
+function isChild(this: Person, a: int) {
+	if (a < 5) {
+		return true
+	} else {
+		return false
+	}
+}
+
+function func() {
+	var obj1 = new Person()
+	var obj2 = new Person("hoge", 23)
+
+	assert(obj1.isChild(1))
+	assert(!isChild(obj2, 6))
+}
+
+func()

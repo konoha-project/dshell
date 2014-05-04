@@ -1,0 +1,7 @@
+try {
+	throw new DShellException()
+	assert(false)
+}
+catch(e : DShellException) {
+	assert(true)
+}

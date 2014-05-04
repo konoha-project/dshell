@@ -16,7 +16,7 @@ var b2 = 2.2
 assert(-a2 == -4.2)
 assert(a2 + b2 == 6.4)
 assert(a2 - b2 == 2)
-assert(a2 * b2 == 9.24)
+assert(a2 * b2 == 9.240000000000002)
 assert(a2 / b2 == 1.909090909090909)
 assert(a2 % b2 == 2.0)
 

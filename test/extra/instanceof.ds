@@ -1,5 +1,0 @@
-function f() {
-	assert(!(3.12 instanceof int))
-}
-
-f()

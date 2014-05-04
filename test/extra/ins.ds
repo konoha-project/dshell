@@ -1,0 +1,7 @@
+var f = function(a : int, b : Exception) {
+	var a = a + 1
+	log $a
+	throw b
+}
+/* f(1, new Exception()) */
+assert(f instanceof Func<int, Exception, void>)

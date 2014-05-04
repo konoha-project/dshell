@@ -1,0 +1,40 @@
+import env TEST_DIR
+import command echo
+
+let LOG = "./test-result.log"
+
+function test(test_dir : String, test_file : String, option : String) {
+	import command java
+
+	var mode = "[s]"
+	if(option == "-i") {
+		mode = "[i]"
+	}
+	echo "====== Test: ${mode} ${test_file} ======" &>> $LOG
+	var prefix = "[fail]:"
+	if(java -jar -ea test-dshell.jar $option $test_dir/$test_file &>> $LOG) {
+		prefix = "[pass]:"
+	}
+	var msg = "${prefix} ${mode} ${test_dir}/${test_file}"
+	echo $msg
+	echo $msg &>> $LOG
+}
+
+function test_all(dir : String, option : int) {
+	import command ls
+	for(test_file in $(ls $dir)) {
+		if(option == 0) {
+			test(dir, test_file, "")
+			test(dir, test_file, "-i")
+		} else if(option == 1) {
+			test(dir, test_file, "")
+		} else {
+			test(dir, test_file, "-i")
+		}
+	}
+}
+
+echo > $LOG
+test_all("${TEST_DIR}/common", 0)
+test_all("${TEST_DIR}/scripting", 1)
+

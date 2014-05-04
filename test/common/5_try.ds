@@ -1,0 +1,17 @@
+var a = "empty"
+try {
+	1 / 0
+	assert(false)
+} catch(e : DShellException) {
+	assert(false)
+} catch(e : FileNotFoundException) {
+	assert(false)
+} catch(e : Exception) {
+	assert(false)
+} catch(e) {
+	assert(true)
+} finally {
+	a = "finally"
+}
+
+assert(a == "finally")
