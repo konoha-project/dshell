@@ -82,6 +82,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaClass(MultipleException.class);
 		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
 		this.loadJavaClass(DShellException.NullException.class);
+		this.loadJavaClass(NativeException.class);
 		this.loadJavaClassList(Errno.getExceptionClassList());
 		this.loadJavaClass(CommandArg.class);
 		this.loadJavaClass(SubstitutedArg.class);
@@ -329,6 +330,19 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 
 		this.AsmBuilder.BreakLabelStack.pop();
 		this.AsmBuilder.ContinueLabelStack.pop();
+	}
+
+	@Override
+	protected void VisitVarDeclNode(BunLetVarNode Node) {
+		String VarName = Node.GetGivenName();
+		if(this.AsmBuilder.FindLocalVariable(VarName) != null) {
+			this.VisitErrorNode(new ErrorNode(Node, VarName + " is already defined"));
+			return;
+		}
+		Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
+		this.AsmBuilder.AddLocal(DeclClass, VarName);
+		this.AsmBuilder.PushNode(DeclClass, Node.InitValueNode());
+		this.AsmBuilder.StoreLocal(VarName);
 	}
 
 	@Override

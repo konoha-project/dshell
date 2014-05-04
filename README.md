@@ -6,6 +6,8 @@ D-Shell
 * libbun (https://github.com/libbun/libbun)
 * ant
 * jdk 1.7
+* gcc
+* make
 
 ## How To Use
 

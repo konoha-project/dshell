@@ -11,27 +11,45 @@ function test(test_dir : String, test_file : String, option : String) {
 		mode = "[i]"
 	}
 	echo "====== Test: ${mode} ${test_file} ======" &>> $LOG
+	let result : boolean = java -jar -ea test-dshell.jar $option $test_dir/$test_file &>> $LOG
 	var prefix = "[fail]:"
-	if(java -jar -ea test-dshell.jar $option $test_dir/$test_file &>> $LOG) {
+	if(result) {
 		prefix = "[pass]:"
 	}
 	var msg = "${prefix} ${mode} ${test_dir}/${test_file}"
 	echo $msg
 	echo $msg &>> $LOG
+
+	return result
 }
 
 function test_all(dir : String, option : int) {
 	import command ls
+	var count = 0
+	var pass_count = 0
 	for(test_file in $(ls $dir)) {
 		if(option == 0) {
-			test(dir, test_file, "")
-			test(dir, test_file, "-i")
+			count++
+			if(test(dir, test_file, "")) {
+				pass_count++
+			}
+			count++
+			if(test(dir, test_file, "-i")) {
+				pass_count++
+			}
 		} else if(option == 1) {
-			test(dir, test_file, "")
+			count++
+			if(test(dir, test_file, "")) {
+				pass_count++
+			}
 		} else {
-			test(dir, test_file, "-i")
+			count++
+			if(test(dir, test_file, "-i")) {
+				pass_count++
+			}
 		}
 	}
+	log "test:${dir} ${pass_count}/${count}"
 }
 
 echo > $LOG

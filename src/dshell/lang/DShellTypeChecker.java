@@ -6,6 +6,8 @@ import libbun.ast.SyntaxSugarNode;
 import libbun.ast.binary.BinaryOperatorNode;
 import libbun.ast.binary.BunInstanceOfNode;
 import libbun.ast.decl.BunFunctionNode;
+import libbun.ast.decl.BunVarBlockNode;
+import libbun.ast.literal.BunNullNode;
 import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunWhileNode;
@@ -109,12 +111,9 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	@Override public void VisitThrowNode(BunThrowNode Node) {
-		if(Node.ParentNode != null && Node.ParentNode.ParentNode != null && 
-				Node.ParentNode.ParentNode instanceof BunFunctionNode) {
-			BunFunctionNode FuncNode = (BunFunctionNode) Node.ParentNode.ParentNode;
-			if(FuncNode == Node.GetDefiningFunctionNode()) {
-				this.CurrentFunctionNode.SetReturnType(BType.VoidType);
-			}
+		BunFunctionNode FuncNode = this.findParentFuncNode(Node);
+		if(FuncNode != null && FuncNode == Node.GetDefiningFunctionNode()) {
+			this.CurrentFunctionNode.SetReturnType(BType.VoidType);
 		}
 		this.CheckTypeAt(Node, BunThrowNode._Expr, BType.VarType);
 		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
@@ -122,6 +121,21 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			return;
 		}
 		this.ReturnTypeNode(Node, BType.VoidType);
+	}
+
+	private BunFunctionNode findParentFuncNode(BNode node) {
+		if(node == null) {
+			return null;
+		}
+		if(node instanceof BunBlockNode && !(node instanceof BunVarBlockNode)) {
+			if(node.ParentNode != null && node.ParentNode instanceof BunFunctionNode) {
+				return (BunFunctionNode) node.ParentNode;
+			}
+		}
+		else {
+			return this.findParentFuncNode(node.ParentNode);
+		}
+		return null;
 	}
 
 	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
@@ -214,5 +228,18 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		BlockNode.Append(ReturnNode);
 		FuncNode.SetReturnType(Node.Type);
 		return FuncNode;
+	}
+
+	@Override public void VisitNullNode(BunNullNode Node) {
+		BType Type = this.GetContextType();
+		if(Type.IsIntType() || Type.IsBooleanType() || Type.IsFloatType() || Type.IsVoidType()) {
+			this.ReturnErrorNode(Node, Node.SourceToken, "null is not " + Type + " type");
+			return;
+		}
+		else if(Type.IsVarType()) {
+			this.ReturnErrorNode(Node, Node.SourceToken, "untyped null value");
+			return;
+		}
+		this.ReturnTypeNode(Node, Type);
 	}
 }
