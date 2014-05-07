@@ -6,7 +6,7 @@ import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.decl.BunVarBlockNode;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.LibBunVisitor;
 
 public class DShellForNode extends BNode {
 	public final static int _VarDecl = 0;	// LetVarNode

@@ -5,7 +5,7 @@ import dshell.lib.Utils;
 import libbun.ast.BNode;
 import libbun.ast.binary.ComparatorNode;
 import libbun.lang.bun.BunPrecedence;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.LibBunVisitor;
 
 public class MatchRegexNode extends ComparatorNode {
 	private final boolean IsUnmatch;

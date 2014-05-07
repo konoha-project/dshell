@@ -6,7 +6,7 @@ import libbun.ast.SyntaxSugarNode;
 import libbun.ast.expression.FuncCallNode;
 import libbun.ast.expression.GetNameNode;
 import libbun.ast.literal.BunStringNode;
-import libbun.parser.LibBunTypeChecker;
+import libbun.parser.classic.LibBunTypeChecker;
 import libbun.type.BType;
 
 public class ArgumentNode extends SyntaxSugarNode {

@@ -2,9 +2,9 @@ package dshell.grammar;
 
 import libbun.ast.BNode;
 import libbun.ast.literal.BunStringNode;
-import libbun.parser.BToken;
-import libbun.parser.BTokenContext;
-import libbun.parser.ParserSource;
+import libbun.parser.classic.BToken;
+import libbun.parser.classic.BTokenContext;
+import libbun.parser.classic.ParserSource;
 import libbun.util.BArray;
 import libbun.util.BMatchFunction;
 import libbun.util.LibBunSystem;

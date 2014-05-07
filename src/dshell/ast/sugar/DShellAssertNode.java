@@ -5,7 +5,7 @@ import libbun.ast.DesugarNode;
 import libbun.ast.SyntaxSugarNode;
 import libbun.ast.expression.FuncCallNode;
 import libbun.ast.expression.GetNameNode;
-import libbun.parser.LibBunTypeChecker;
+import libbun.parser.classic.LibBunTypeChecker;
 import libbun.type.BType;
 
 public class DShellAssertNode extends SyntaxSugarNode {

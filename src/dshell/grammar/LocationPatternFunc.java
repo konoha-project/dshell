@@ -4,8 +4,8 @@ import dshell.grammar.CommandPatternFunc;
 import dshell.grammar.PrefixOptionPatternFunc;
 import libbun.ast.BNode;
 import dshell.ast.CommandNode;
-import libbun.parser.BToken;
-import libbun.parser.BTokenContext;
+import libbun.parser.classic.BToken;
+import libbun.parser.classic.BTokenContext;
 import libbun.util.BMatchFunction;
 
 public class LocationPatternFunc extends BMatchFunction {	//TODO

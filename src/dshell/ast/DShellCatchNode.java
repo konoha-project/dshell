@@ -8,7 +8,7 @@ import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.literal.BunTypeNode;
 import libbun.ast.BNode;
 import libbun.encode.jvm.JavaTypeTable;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.LibBunVisitor;
 import libbun.type.BType;
 
 public class DShellCatchNode extends BNode {

@@ -49,7 +49,7 @@ function test_all(dir : String, option : int) {
 			}
 		}
 	}
-	log "test:${dir} ${pass_count}/${count}"
+	log "result:${dir} ${pass_count}/${count}"
 }
 
 echo > $LOG

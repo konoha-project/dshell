@@ -2,7 +2,7 @@ package dshell.grammar;
 
 import libbun.ast.BNode;
 import libbun.ast.error.ErrorNode;
-import libbun.parser.BTokenContext;
+import libbun.parser.classic.BTokenContext;
 import libbun.util.BMatchFunction;
 import dshell.ast.DShellTryNode;
 

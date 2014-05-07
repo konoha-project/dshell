@@ -3,8 +3,8 @@ package dshell.grammar;
 import dshell.ast.MatchRegexNode;
 import libbun.ast.BNode;
 import libbun.ast.binary.BinaryOperatorNode;
-import libbun.parser.BToken;
-import libbun.parser.BTokenContext;
+import libbun.parser.classic.BToken;
+import libbun.parser.classic.BTokenContext;
 import libbun.util.BMatchFunction;
 
 public class MatchRegexPatternFunc extends BMatchFunction {

@@ -1,6 +1,6 @@
 package dshell.grammar;
 
-import libbun.parser.BSourceContext;
+import libbun.parser.classic.BSourceContext;
 import libbun.util.BTokenFunction;
 
 public class SingleQuoteStringLiteralTokenFunc extends BTokenFunction {

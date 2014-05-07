@@ -4,8 +4,8 @@ import libbun.util.BMatchFunction;
 import libbun.lang.konoha.ContinuePatternFunction;
 import libbun.lang.bun.BunGrammar;
 import libbun.lang.bun.extra.BunExtraGrammar;
-import libbun.parser.LibBunGamma;
-import libbun.parser.LibBunSyntax;
+import libbun.parser.classic.LibBunGamma;
+import libbun.parser.classic.LibBunSyntax;
 import dshell.DShell;
 import dshell.grammar.ShellGrammar;
 

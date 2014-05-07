@@ -3,7 +3,7 @@ package dshell.ast;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.LibBunVisitor;
 
 public class DShellWrapperNode extends BNode {
 	private BNode TargetNode;

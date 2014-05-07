@@ -4,8 +4,8 @@ import dshell.ast.sugar.ArgumentNode;
 import dshell.lang.DShellVisitor;
 import dshell.lib.Utils;
 import libbun.ast.BNode;
-import libbun.parser.BToken;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.BToken;
+import libbun.parser.classic.LibBunVisitor;
 import libbun.type.BType;
 import libbun.util.BArray;
 

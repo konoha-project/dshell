@@ -17,7 +17,7 @@ import libbun.ast.expression.MethodCallNode;
 import libbun.ast.literal.BunBooleanNode;
 import libbun.ast.literal.BunIntNode;
 import libbun.ast.statement.BunIfNode;
-import libbun.parser.LibBunTypeChecker;
+import libbun.parser.classic.LibBunTypeChecker;
 import libbun.type.BType;
 import dshell.ast.DShellForNode;
 import dshell.lib.Utils;

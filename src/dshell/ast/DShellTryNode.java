@@ -5,7 +5,7 @@ import dshell.lib.Utils;
 import libbun.ast.AbstractListNode;
 import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
-import libbun.parser.LibBunVisitor;
+import libbun.parser.classic.LibBunVisitor;
 
 public class DShellTryNode extends AbstractListNode {
 	public final static int _Try = 0;
