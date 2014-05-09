@@ -26,6 +26,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
+import dshell.ast.InternalFuncCallNode;
 import dshell.ast.MatchRegexNode;
 import dshell.ast.sugar.DShellForeachNode;
 import dshell.exception.Exception;
@@ -241,5 +242,10 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 			return;
 		}
 		this.ReturnTypeNode(Node, Type);
+	}
+
+	@Override
+	public void VisitInternalFuncCallNode(InternalFuncCallNode Node) {
+		this.ReturnTypeNode(Node, Node.getReturnType());
 	}
 }

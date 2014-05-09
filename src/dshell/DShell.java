@@ -167,6 +167,7 @@ public class DShell {
 			System.out.println(DShellConsole.welcomeMessage);
 		}
 		this.showVersionInfo();
+		generator.loadVariables(true);
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
 			importBuilder.append("import command ");
@@ -198,6 +199,7 @@ public class DShell {
 		DShellByteCodeGenerator generator = gFactory.createGenerator();
 		String scriptName = this.scriptArgs[0];
 		generator.loadArg(this.scriptArgs);
+		generator.loadVariables(false);
 		boolean status = generator.loadFile(scriptName);
 		if(!status) {
 			System.err.println("abort loading: " + scriptName);

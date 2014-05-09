@@ -53,6 +53,10 @@ public class GlobalVariableTable {
 		return varIndex;
 	}
 
+	public static void removeEntry(String varName) {
+		varIndexMap.remove(varName);
+	}
+
 	public static boolean existEntry(String varName) {
 		return varIndexMap.containsKey(varName);
 	}

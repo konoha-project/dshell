@@ -32,6 +32,7 @@ import dshell.ast.DShellCatchNode;
 import dshell.ast.DShellForNode;
 import dshell.ast.DShellTryNode;
 import dshell.ast.DShellWrapperNode;
+import dshell.ast.InternalFuncCallNode;
 import dshell.ast.MatchRegexNode;
 import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.ast.sugar.DShellImportEnvNode;
@@ -45,6 +46,7 @@ import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.GlobalVariableTable;
 import dshell.lib.RuntimeContext;
+import dshell.lib.StreamFactory;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -86,6 +88,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaClassList(Errno.getExceptionClassList());
 		this.loadJavaClass(CommandArg.class);
 		this.loadJavaClass(SubstitutedArg.class);
+		this.loadJavaClass(StreamFactory.InputStream.class);
+		this.loadJavaClass(StreamFactory.OutputStream.class);
 
 		try {
 			this.ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
@@ -404,7 +408,16 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 		int typeId = this.getTypeId(Node.DeclType());
 		int varIndex = GlobalVariableTable.addEntry(varName, typeId, Node.IsReadOnly());
-		this.setVariable(varIndex, typeId, Node.InitValueNode());
+		try {
+			this.setVariable(varIndex, typeId, Node.InitValueNode());
+		}
+		catch(Throwable t) {
+			GlobalVariableTable.removeEntry(varName);
+			if(!(t instanceof RuntimeException)) {
+				t = new RuntimeException(t);
+			}
+			throw (RuntimeException)t;
+		}
 	}
 
 	@Override
@@ -467,6 +480,11 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	@Override
 	public void VisitMatchRegexNode(MatchRegexNode Node) {
 		this.VisitBinaryNode(Node);
+	}
+
+	@Override
+	public void VisitInternalFuncCallNode(InternalFuncCallNode Node) {
+		this.invokeStaticMethod(null, Node.getMethod());
 	}
 
 	protected void invokeStaticMethod(BNode Node, Method method) {
@@ -752,6 +770,39 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		NativeException.wrapException(e.getCause()).printStackTrace();
 	}
 
+	protected void clearCurrentFunction(BNode node) {	//TODO:
+		//Class<?> FuncClass = this.GetDefinedFunctionClass(info.funcName, BType.VoidType, 0);
+	}
+
+	protected void clearTopLevelStatementList() {	//TODO:
+		for(TopLevelStatementInfo info : this.topLevelStatementList) {
+			
+		}
+		this.topLevelStatementList.clear();
+	}
+
+	protected Class<?> removeDefinedFuncClass(String funcName, BType recvType, int funcParamSize) {
+		//return this.GeneratedClassMap.GetOrNull(this.NameFunctionClass(FuncName, RecvType, FuncParamSize));
+		return null;
+	}
+
+	public void loadVariables(boolean isInteractive) {
+		BNode parentNode = new BunBlockNode(null, this.RootGamma);
+		ArrayList<BNode> nodeList = new ArrayList<BNode>();
+		nodeList.add(this.createVarNode(parentNode, "stdin", StreamFactory.class, "createStdin"));
+		nodeList.add(this.createVarNode(parentNode, "stdout", StreamFactory.class, "createStdout"));
+		nodeList.add(this.createVarNode(parentNode, "stderr", StreamFactory.class, "createStderr"));
+		for(BNode node : nodeList) {
+			this.generateStatement(node, isInteractive);
+			this.evalAndPrint();
+		}
+	}
+
+	public BNode createVarNode(BNode parentNode, String varName, Class<?> holderClass, String methodName) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, varName);
+		node.SetNode(BunLetVarNode._InitValue, new InternalFuncCallNode(node, holderClass, methodName));
+		return node;
+	}
 	private static class ErrorNodeFoundException extends RuntimeException {
 		private static final long serialVersionUID = -2465006344250569543L;
 	}
@@ -765,4 +816,8 @@ class TopLevelStatementInfo {
 		this.funcName = funcName;
 		this.returnType = returnType;
 	}
+}
+
+class TopLevelStatementList {
+	private LinkedList<TopLevelStatementInfo> topLevelStatementList;
 }
