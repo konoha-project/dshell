@@ -1,64 +1,27 @@
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
+#include <stdio.h>  /* for perror */
+#include <unistd.h> /* for execvp */
+#include <stdlib.h> /* for EXIT_FAILURE */
 
-#define CHAR_SIZE 32
-#define PATH_SIZE 512
-
-
-static char *getJarPath(char *progPath)
-{
-	char jarName[] = "dshell.jar";
-	char *path = (char *)malloc(sizeof(char) * PATH_SIZE);
-#ifdef JAR_PATH
+#ifndef JAR_PATH
+#error JAR_PATH must be defined.
+#endif
 
 #define XSTR(s) STR(s)
 #define STR(s) #s
-	snprintf(path, PATH_SIZE, "%s/%s", XSTR(JAR_PATH), jarName);
-#else
-	int endOfPrefix = 0;
-	int i = 0;
-	while(progPath[i] != '\0') {
-		if(progPath[i] == '/') {
-			endOfPrefix = i;
-		}
-		i++;
-	}
-	char *prefix =  (char *)malloc(sizeof(char) * (endOfPrefix + 1));
-	strncpy(prefix, progPath, endOfPrefix);
-	prefix[endOfPrefix] = '\0';
-	snprintf(path, PATH_SIZE, "%s/%s", prefix, jarName);
-#endif
-	return path;
-}
+#define DSHELL_JAR_FILE XSTR(JAR_PATH) "/dshell.jar"
 
-
-int main(int argc, char **argv)
+int main(int argc, char* argv[])
 {
-	int size = argc + 3;
-	char **const params = (char **)malloc(sizeof(char *) * size);
-	int i;
-	for(i = 0; i < size; i++) {
-		if(i == 0) {
-			params[i] = (char *)malloc(sizeof(char) * CHAR_SIZE);
-			strncpy(params[i], "java", CHAR_SIZE);
-		} else if(i == 1) {
-			params[i] = (char *)malloc(sizeof(char) * CHAR_SIZE);
-			strncpy(params[i], "-jar", CHAR_SIZE);
-		} else if(i == 2) {
-			params[i] = (char *)malloc(sizeof(char) * PATH_SIZE);
-			strncpy(params[i], getJarPath(argv[0]), PATH_SIZE);
-		} else if(i == size - 1) {
-			params[i] = NULL;
-		} else {
-			char *arg = argv[i - 2];
-			int argSize = strlen(arg) + 1;
-			params[i] = (char *)malloc(sizeof(char) * argSize);
-			strncpy(params[i], arg, argSize);
-		}
+	int i, newargc = argc + 3;
+	char *newargv[newargc];
+	newargv[0] = "java";
+	newargv[1] = "-jar";
+	newargv[2] = DSHELL_JAR_FILE;
+	for(i = 1; i < argc; i++) {
+		newargv[i + 2] = argv[i];
 	}
-	execvp(params[0], params);
+	newargv[argc + 2] = NULL;
+	execvp(newargv[0], newargv);
 	perror("launching dshell failed\n");
-	return -1;
+	return EXIT_FAILURE;
 }
