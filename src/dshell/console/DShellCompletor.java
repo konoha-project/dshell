@@ -11,11 +11,12 @@ import dshell.lib.Utils;
 import jline.Completor;
 
 public class DShellCompletor implements Completor {
-	private jline.SimpleCompletor commandCompletor;
-	private jline.SimpleCompletor envCompletor;
-	private jline.SimpleCompletor importCompletor;
-	private DShellFileNameCompletor fileNameCompletor;
-	private jline.ArgumentCompletor.ArgumentDelimiter delimiter;
+	private final jline.SimpleCompletor commandCompletor;
+	private final jline.SimpleCompletor envCompletor;
+	private final jline.SimpleCompletor importCompletor;
+	private final DShellFileNameCompletor fileNameCompletor;
+	private final jline.NullCompletor nullCompletor;
+	private final jline.ArgumentCompletor.ArgumentDelimiter delimiter;
 
 	public DShellCompletor() {
 		this.commandCompletor = new jline.SimpleCompletor("dummy");
@@ -24,6 +25,7 @@ public class DShellCompletor implements Completor {
 		this.envCompletor.setCandidates(RuntimeContext.getContext().getEnvSet());
 		this.importCompletor = new jline.SimpleCompletor(new String[]{"command", "env"});
 		this.fileNameCompletor = new DShellFileNameCompletor();
+		this.nullCompletor = new jline.NullCompletor();
 		this.delimiter = new jline.ArgumentCompletor.WhitespaceArgumentDelimiter();
 	}
 
@@ -54,32 +56,32 @@ public class DShellCompletor implements Completor {
 		return commandSet;
 	}
 
-	private jline.Completor selectCompletor(int argIndex, String[] args) {
-		if(this.isCommandRequired(argIndex, args)) {
+	private jline.Completor selectCompletor(final int argIndex, final String[] args) {
+		if(argIndex == 0 && args.length == 0) {
+			return this.nullCompletor;
+		}
+		if(argIndex == 0) {
+			String arg =args[argIndex];
+			if(arg.indexOf("/") != -1) {
+				return this.fileNameCompletor;
+			}
 			return this.commandCompletor;
 		}
-		String prevArg = args[argIndex - 1];
-		if(prevArg.equals("env") && argIndex - 2 > -1 && args[argIndex - 2].equals("import")) {
-			return this.envCompletor;
-		}
-		if(prevArg.equals("import")) {
-			return this.importCompletor;
+		else {
+			String prevArg = args[argIndex - 1];
+			if(prevArg.equals(ShellGrammar.timeout) || prevArg.equals(ShellGrammar.trace)) {
+				return this.commandCompletor;
+			}
+			if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
+				return this.commandCompletor;
+			}
+			if(prevArg.equals("env") && argIndex - 2 > -1 && args[argIndex - 2].equals("import")) {
+				return this.envCompletor;
+			}
+			if(prevArg.equals("import")) {
+				return this.importCompletor;
+			}
 		}
 		return this.fileNameCompletor;
-	}
-
-	private boolean isCommandRequired(int argIndex, String[] args) {
-		if(argIndex == 0) {
-			return true;
-		}
-		String prevArg = args[argIndex - 1];
-		if(prevArg.equals(ShellGrammar.timeout) || prevArg.equals(ShellGrammar.trace) 
-				|| prevArg.equals("command")) {
-			return true;
-		}
-		if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {
-			return true;
-		}
-		return false;
 	}
 }
