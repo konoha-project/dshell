@@ -168,6 +168,7 @@ public class DShell {
 		}
 		this.showVersionInfo();
 		generator.loadVariables(true);
+		generator.loadDShellrc();
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
 			importBuilder.append("import command ");

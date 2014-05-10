@@ -598,6 +598,32 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return this.loadScript(script, fileName, 1, false);
 	}
 
+	public void loadDShellrc() {
+		final String fileName = RuntimeContext.getContext().getenv("HOME") + "/.dshellrc";
+		String script = LibBunSystem._LoadTextFile(fileName);
+		if(script != null && this.loadScript(script, fileName, 0, true)) {
+			this.evalAndPrint();
+		}
+	}
+
+	public void loadVariables(boolean isInteractive) {
+		BNode parentNode = new BunBlockNode(null, this.RootGamma);
+		ArrayList<BNode> nodeList = new ArrayList<BNode>();
+		nodeList.add(this.createVarNode(parentNode, "stdin", StreamFactory.class, "createStdin"));
+		nodeList.add(this.createVarNode(parentNode, "stdout", StreamFactory.class, "createStdout"));
+		nodeList.add(this.createVarNode(parentNode, "stderr", StreamFactory.class, "createStderr"));
+		for(BNode node : nodeList) {
+			this.generateStatement(node, isInteractive);
+			this.evalAndPrint();
+		}
+	}
+
+	public BNode createVarNode(BNode parentNode, String varName, Class<?> holderClass, String methodName) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, varName);
+		node.SetNode(BunLetVarNode._InitValue, new InternalFuncCallNode(node, holderClass, methodName));
+		return node;
+	}
+
 	protected void generateByteCode(BNode Node) {
 		try {
 			Node.Accept(this);
@@ -786,23 +812,6 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return null;
 	}
 
-	public void loadVariables(boolean isInteractive) {
-		BNode parentNode = new BunBlockNode(null, this.RootGamma);
-		ArrayList<BNode> nodeList = new ArrayList<BNode>();
-		nodeList.add(this.createVarNode(parentNode, "stdin", StreamFactory.class, "createStdin"));
-		nodeList.add(this.createVarNode(parentNode, "stdout", StreamFactory.class, "createStdout"));
-		nodeList.add(this.createVarNode(parentNode, "stderr", StreamFactory.class, "createStderr"));
-		for(BNode node : nodeList) {
-			this.generateStatement(node, isInteractive);
-			this.evalAndPrint();
-		}
-	}
-
-	public BNode createVarNode(BNode parentNode, String varName, Class<?> holderClass, String methodName) {
-		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, varName);
-		node.SetNode(BunLetVarNode._InitValue, new InternalFuncCallNode(node, holderClass, methodName));
-		return node;
-	}
 	private static class ErrorNodeFoundException extends RuntimeException {
 		private static final long serialVersionUID = -2465006344250569543L;
 	}

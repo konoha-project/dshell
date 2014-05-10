@@ -55,11 +55,15 @@ class CommandTokenFunc extends BTokenFunction {
 			SymbolBuilder.append(ch);
 			SourceContext.MoveNext();
 		}
-		if(RuntimeContext.getContext().commandScope.isCommand(SymbolBuilder.toString())) {
+		String commandSymbol = SymbolBuilder.toString();
+		if(RuntimeContext.getContext().commandScope.isCommand(commandSymbol)) {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
-		else if(SymbolBuilder.toString().indexOf("/") != -1) {
+		else if(commandSymbol.startsWith("//") || commandSymbol.startsWith("/*")) {
+			return false;
+		}
+		else if(commandSymbol.indexOf("/") != -1) {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
@@ -569,6 +573,7 @@ public class ShellGrammar {
 		Gamma.DefineToken("1", commandSymbolToken);
 		Gamma.DefineToken("~", commandSymbolToken);
 		Gamma.DefineToken(".", commandSymbolToken);
+		Gamma.DefineToken("/", commandSymbolToken);
 
 		Gamma.DefineStatement("import", new ImportPatternFunc());
 		Gamma.DefineExpression(ImportCommandPatternFunc._PatternName, new ImportCommandPatternFunc());
