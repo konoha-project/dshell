@@ -14,7 +14,6 @@ import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
 import libbun.ast.EmptyNode;
 import libbun.ast.binary.BunAddNode;
-import libbun.ast.error.ErrorNode;
 import libbun.ast.literal.BunStringNode;
 import libbun.parser.classic.BPatternToken;
 import libbun.parser.classic.BSourceContext;
@@ -48,9 +47,9 @@ class CommandTokenFunc extends BTokenFunction {
 	public boolean Invoke(BSourceContext SourceContext) {
 		int StartIndex = SourceContext.GetPosition();
 		StringBuilder SymbolBuilder = new StringBuilder();
-		while(SourceContext.HasChar()) {
+		for(int i = 0; SourceContext.HasChar(); i++) {
 			char ch = SourceContext.GetCurrentChar();
-			if(!LibBunSystem._IsDigitOrLetter(ch) && ch != '-' && ch != '+' && ch != '_') {
+			if(i != 0 && !this.matchAcceptableChar(ch)) {
 				break;
 			}
 			SymbolBuilder.append(ch);
@@ -60,7 +59,27 @@ class CommandTokenFunc extends BTokenFunction {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
+		else if(SymbolBuilder.toString().indexOf("/") != -1) {
+			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
+			return true;
+		}
 		return false;
+	}
+
+	private boolean matchAcceptableChar(char ch) {
+		if(Character.isLetterOrDigit(ch)) {
+			return true;
+		}
+		switch(ch) {
+		case '-':
+		case '+':
+		case '_':
+		case '/':
+		case '.':
+			return true;
+		default:
+			return false;
+		}
 	}
 }
 
@@ -101,7 +120,7 @@ class ImportCommandPatternFunc extends BMatchFunction {
 				System.err.println("found duplicated syntax pattern: " + Syntax);
 			}
 		}
-		else if(!RuntimeContext.getContext().commandScope.setCommand(Command, CommandPath)) {
+		else if(!RuntimeContext.getContext().commandScope.setCommandPath(Command, CommandPath)) {
 			if(LibBunSystem.DebugMode) {
 				System.err.println("found duplicated symbol: " + Command);
 			}
@@ -163,10 +182,8 @@ class CommandPatternFunc extends BMatchFunction {
 	@Override
 	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
 		BToken CommandToken = TokenContext.GetToken(BTokenContext._MoveNext);
-		String Command = RuntimeContext.getContext().commandScope.getCommand(CommandToken.GetText());
-		if(Command == null) {
-			return new ErrorNode(ParentNode, CommandToken, "undefined command symbol");
-		}
+		String Command = RuntimeContext.getContext().commandScope.getCommandPath(CommandToken.GetText());
+		Command = Command != null ? Command : CommandToken.GetText();
 		CommandNode CommandNode = new CommandNode(ParentNode, CommandToken, Command);
 		while(TokenContext.HasNext()) {
 			if(TokenContext.MatchToken("|")) {
@@ -550,6 +567,8 @@ public class ShellGrammar {
 		Gamma.DefineToken("#", new ShellStyleCommentTokenFunc());
 		Gamma.DefineToken("Aa_", commandSymbolToken);
 		Gamma.DefineToken("1", commandSymbolToken);
+		Gamma.DefineToken("~", commandSymbolToken);
+		Gamma.DefineToken(".", commandSymbolToken);
 
 		Gamma.DefineStatement("import", new ImportPatternFunc());
 		Gamma.DefineExpression(ImportCommandPatternFunc._PatternName, new ImportCommandPatternFunc());
@@ -567,7 +586,7 @@ public class ShellGrammar {
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
 		for(String symbol : symbolList) {
-			RuntimeContext.getContext().commandScope.setCommand(symbol, symbol);
+			RuntimeContext.getContext().commandScope.setCommandPath(symbol, symbol);
 		}
 	}
 }

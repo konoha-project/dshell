@@ -4,9 +4,9 @@ import java.util.HashMap;
 import java.util.Stack;
 
 interface CommandScopeOp {
-	public boolean setCommand(String commandSymbol, String command);
-	public boolean isCommand(String commandSymbol);
-	public String getCommand(String commandSymbol);
+	public boolean setCommandPath(String commandName, String commandPath);
+	public boolean isCommand(String commandName);
+	public String getCommandPath(String commandName);
 }
 
 public class CommandScope implements CommandScopeOp {
@@ -18,18 +18,18 @@ public class CommandScope implements CommandScopeOp {
 	}
 
 	@Override
-	public boolean setCommand(String commandSymbol, String command) {
-		return this.scopeStack.peek().setCommand(commandSymbol, command);
+	public boolean setCommandPath(String commandName, String commandPath) {
+		return this.scopeStack.peek().setCommandPath(commandName, commandPath);
 	}
 
 	@Override
-	public boolean isCommand(String commandSymbol) {
-		return this.scopeStack.peek().isCommand(commandSymbol);
+	public boolean isCommand(String commandName) {
+		return this.scopeStack.peek().isCommand(commandName);
 	}
 
 	@Override
-	public String getCommand(String commandSymbol) {
-		return this.scopeStack.peek().getCommand(commandSymbol);
+	public String getCommandPath(String commandName) {
+		return this.scopeStack.peek().getCommandPath(commandName);
 	}
 
 	public void createNewScope() {
@@ -60,35 +60,35 @@ public class CommandScope implements CommandScopeOp {
 		}
 
 		@Override
-		public boolean setCommand(String commandSymbol, String command) {
-			if(this.commandMap.containsKey(commandSymbol)) {
+		public boolean setCommandPath(String commandName, String commandPath) {
+			if(this.commandMap.containsKey(commandName)) {
 				return false;
 			}
-			this.commandMap.put(commandSymbol, command);
+			this.commandMap.put(commandName, commandPath);
 			return true;
 		}
 
 		@Override
-		public boolean isCommand(String commandSymbol) {
-			if(this.commandMap.containsKey(commandSymbol)) {
+		public boolean isCommand(String commandName) {
+			if(this.commandMap.containsKey(commandName)) {
 				return true;
 			}
 			if(this.getParentScope() == null) {
 				return false;
 			}
-			return this.getParentScope().isCommand(commandSymbol);
+			return this.getParentScope().isCommand(commandName);
 		}
 
 		@Override
-		public String getCommand(String commandSymbol) {
-			String Command = this.commandMap.get(commandSymbol);
+		public String getCommandPath(String commandName) {
+			String Command = this.commandMap.get(commandName);
 			if(Command != null) {
 				return Command;
 			}
 			if(this.getParentScope() == null) {
 				return null;
 			}
-			return this.getParentScope().getCommand(commandSymbol);
+			return this.getParentScope().getCommandPath(commandName);
 		}
 	}
 }
