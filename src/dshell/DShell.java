@@ -40,7 +40,6 @@ public class DShell {
 
 	protected ExecutionMode mode;
 	protected boolean autoImportCommand = true;
-	protected boolean disableWelcomeMessage = false;
 	private final boolean enableTerminal;
 	private String specificArg = null;
 	protected String[] scriptArgs;
@@ -70,9 +69,6 @@ public class DShell {
 				}
 				else if(optionSymbol.equals("--disable-auto-import")) {
 					this.autoImportCommand = false;
-				}
-				else if(optionSymbol.equals("--disable-welcome")) {
-					this.disableWelcomeMessage = true;
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
@@ -163,12 +159,8 @@ public class DShell {
 	protected void runInteractiveMode(GeneratorFactory gFactory, AbstractConsole console) {
 		DShellByteCodeGenerator generator = gFactory.createGenerator();
 		String line = null;
-		if(!this.disableWelcomeMessage) {
-			System.out.println(DShellConsole.welcomeMessage);
-		}
 		this.showVersionInfo();
 		generator.loadVariables(true);
-		generator.loadDShellrc();
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
 			importBuilder.append("import command ");
@@ -182,6 +174,7 @@ public class DShell {
 			}
 			generator.loadLine(importBuilder.toString(), 0, false);
 		}
+		generator.loadDShellrc();
 		generator.Logger.OutputErrorsToStdErr();
 		while((line = console.readLine()) != null) {
 			if(line.equals("")) {
@@ -254,7 +247,6 @@ public class DShell {
 		stream.println("Options:");
 		stream.println("    --debug");
 		stream.println("    --disable-auto-import");
-		stream.println("    --disable-welcome");
 		stream.println("    --help");
 		stream.println("    --logging:file [file path (appendable)]");
 		stream.println("    --logging:stdout");

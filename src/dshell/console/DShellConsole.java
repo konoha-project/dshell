@@ -20,14 +20,8 @@ public class DShellConsole implements AbstractConsole {
 	private final TTYConfigurator ttyConfig;
 	private int lineNumber;
 
-	public final static String welcomeMessage = "oooooooooo.            .oooooo..o oooo                  oooo  oooo  \n" +
-                                                "`888'   `Y8b          d8P'    `Y8 `888                  `888  `888  \n" +
-                                                " 888      888         Y88bo.       888 .oo.    .ooooo.   888   888  \n" +
-                                                " 888      888          `\"Y8888o.   888P\"Y88b  d88' `88b  888   888  \n" +
-                                                " 888      888 8888888      `\"Y88b  888   888  888ooo888  888   888  \n" +
-                                                " 888     d88'         oo     .d8P  888   888  888    .o  888   888  \n" +
-                                                "o888bood8P'           8\"\"88888P'  o888o o888o `Y8bod8P' o888o o888o \n\n" +
-                                                "Welcome to D-Shell <https://github.com/konoha-project/dshell>\n";
+	private final static String welcomeMessage = "Welcome to D-Shell <https://github.com/konoha-project/dshell>";
+
 	public DShellConsole() {
 		try {
 			this.consoleReader = new jline.ConsoleReader();
@@ -35,6 +29,7 @@ public class DShellConsole implements AbstractConsole {
 			this.lineNumber = 1;
 			// save jline tty config
 			this.ttyConfig = TTYConfigurator.initConfigurator(this.consoleReader.getTerminal());
+			System.out.println(welcomeMessage);
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);

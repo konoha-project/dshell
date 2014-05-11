@@ -60,7 +60,7 @@ class CommandTokenFunc extends BTokenFunction {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
-		else if(commandSymbol.startsWith("//") || commandSymbol.startsWith("/*")) {
+		else if(commandSymbol.startsWith("//") || (commandSymbol.equals("/") && SourceContext.GetCurrentChar() == '*')) {
 			return false;
 		}
 		else if(commandSymbol.indexOf("/") != -1) {

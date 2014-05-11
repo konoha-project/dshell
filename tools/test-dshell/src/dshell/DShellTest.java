@@ -15,7 +15,6 @@ public class DShellTest extends DShell {
 	@Override
 	protected void parseArguments(String[] args) {
 		this.autoImportCommand = false;
-		this.disableWelcomeMessage = true;
 		this.mode = ExecutionMode.scriptingMode;
 		for(int i = 0; i < args.length; i++) {
 			String optionSymbol = args[i];
