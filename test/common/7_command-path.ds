@@ -1,0 +1,3 @@
+var a : String = /bin/echo hello world
+assert(a == "hello world")
+

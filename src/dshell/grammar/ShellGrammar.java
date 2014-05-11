@@ -60,10 +60,13 @@ class CommandTokenFunc extends BTokenFunction {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
-		else if(commandSymbol.startsWith("//") || (commandSymbol.equals("/") && SourceContext.GetCurrentChar() == '*')) {
+		else if(commandSymbol.startsWith("//")) {
 			return false;
 		}
-		else if(commandSymbol.indexOf("/") != -1) {
+		else if(commandSymbol.equals("/") && SourceContext.HasChar() && SourceContext.GetCurrentChar() == '*') {
+			return false;
+		}
+		else if(this.isValidFilePath(commandSymbol)) {
 			SourceContext.Tokenize(CommandPatternFunc._PatternName, StartIndex, SourceContext.GetPosition());
 			return true;
 		}
@@ -84,6 +87,14 @@ class CommandTokenFunc extends BTokenFunction {
 		default:
 			return false;
 		}
+	}
+
+	private boolean isValidFilePath(String commandPath) {
+		int fileSeparaterIndex = commandPath.lastIndexOf("/");
+		if(fileSeparaterIndex != -1 && fileSeparaterIndex != commandPath.length() - 1) {
+			return true;
+		}
+		return false;
 	}
 }
 

@@ -36,10 +36,27 @@ public class DShellFileNameCompletor extends FileNameCompletor {
 		}
 		final File[] entries = (dir == null) ? new File[0] : dir.listFiles();
 		try {
-			return matchFiles(buffer, translated, entries, candidates);
+			return this.matchFiles(buffer, translated, entries, candidates);
 		}
 		finally {
-			sortFileNames(candidates);
+			this.sortFileNames(candidates);
 		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@Override
+	public int matchFiles(final String buffer, final String translated, final File[] entries, final List candidates) {
+		if(entries == null) {
+			return -1;
+		}
+		for(int i = 0; i < entries.length; i++) {
+			if(entries[i].getPath().startsWith(translated)) {
+				String fileNameSuffix = (entries[i].isDirectory()) ? File.separator : "";
+				String fileName = entries[i].getName() + fileNameSuffix;
+				candidates.add(fileName);
+			}
+		}
+		int index = buffer.lastIndexOf(File.separator);
+		return index + File.separator.length();
 	}
 }

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 
 import libbun.util.BArray;
-
+import dshell.exception.NativeException;
 import dshell.grammar.DShellGrammar;
 import dshell.grammar.ShellGrammar;
 import dshell.remote.RequestSender;
@@ -322,8 +322,8 @@ class SubProc extends PseudoProcess {
 			this.stdout = this.proc.getInputStream();
 			this.stderr = this.proc.getErrorStream();
 		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
+		catch(IOException e) {
+			throw NativeException.wrapException(e);
 		}
 	}
 
