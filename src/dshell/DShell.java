@@ -274,16 +274,16 @@ public class DShell {
 		}
 
 		public DShellByteCodeGenerator createGenerator() {
-			DShellByteCodeGenerator generator = newGenerator(this.generatorClass);
+			DShellByteCodeGenerator generator = this.newGenerator();
 			DShellGrammar.ImportGrammar(generator.RootGamma);
-			generator.SetTypeChecker(newTypeChecker(this.typeCheckerClass, generator));
+			generator.SetTypeChecker(newTypeChecker(generator));
 			generator.RequireLibrary("common", null);
 			return generator;
 		}
 
-		private DShellByteCodeGenerator newGenerator(Class<?> generatorClass) {
+		protected DShellByteCodeGenerator newGenerator() {
 			try {
-				return (DShellByteCodeGenerator) generatorClass.newInstance();
+				return (DShellByteCodeGenerator) this.generatorClass.newInstance();
 			}
 			catch(Exception e) {
 				e.printStackTrace();
@@ -292,9 +292,9 @@ public class DShell {
 			return null;
 		}
 
-		private LibBunTypeChecker newTypeChecker(Class<?> typeCheckerClass, DShellByteCodeGenerator generator) {
+		protected LibBunTypeChecker newTypeChecker(DShellByteCodeGenerator generator) {
 			try {
-				Constructor<?> constructor = typeCheckerClass.getConstructor(DShellByteCodeGenerator.class);
+				Constructor<?> constructor = this.typeCheckerClass.getConstructor(DShellByteCodeGenerator.class);
 				DShellTypeChecker typeChecker = (DShellTypeChecker) constructor.newInstance(new Object[] {generator});
 				return typeChecker;
 			}
@@ -305,5 +305,4 @@ public class DShell {
 			return null;
 		}
 	}
-
 }

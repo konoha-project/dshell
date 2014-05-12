@@ -1,5 +1,7 @@
 package dshell.exception;
 
+import dshell.lib.RuntimeContext;
+
 public class NativeException extends Exception {
 	private static final long serialVersionUID = -846806025039854L;
 
@@ -27,5 +29,13 @@ public class NativeException extends Exception {
 		String message = this.internalException.getMessage();
 		message = (message == null ? "" : message);
 		sBuilder.append(this.toString() +  ": " + message + "\n");
+	}
+
+	@Override
+	public void printStackTrace() {
+		super.printStackTrace();
+		if(RuntimeContext.getContext().isDebugMode()) {
+			this.internalException.printStackTrace();
+		}
 	}
 }

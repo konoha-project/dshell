@@ -127,7 +127,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		CommandNode node = Node;
 		while(node != null) {
 			nodeList.add(node);
-			node = (CommandNode) node.PipedNextNode;
+			node = (CommandNode) node.getPipedNextNode();
 		}
 		// new String[n][]
 		int size = nodeList.size();

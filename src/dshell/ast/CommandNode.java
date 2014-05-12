@@ -12,7 +12,7 @@ import libbun.util.BArray;
 public class CommandNode extends BNode {
 	private final BArray<BNode> ArgList;
 	private BType RetType = BType.VarType;
-	public CommandNode PipedNextNode;
+	private CommandNode PipedNextNode;
 
 	public CommandNode(BNode ParentNode, BToken Token, String Command) {
 		super(ParentNode, 0);
@@ -55,6 +55,13 @@ public class CommandNode extends BNode {
 		return this.RetType;
 	}
 
+	public CommandNode getPipedNextNode() {
+		return this.PipedNextNode;
+	}
+
+	public void setPipedNextNode(CommandNode node) {
+		this.PipedNextNode = node;
+	}
 	@Override
 	public void Accept(LibBunVisitor Visitor) {
 		if(Visitor instanceof DShellVisitor) {
