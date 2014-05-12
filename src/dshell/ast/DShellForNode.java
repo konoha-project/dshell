@@ -15,76 +15,76 @@ public class DShellForNode extends BNode {
 	public final static int _Next  = 3;
 	public final static int _Block = 4;
 
-	public DShellForNode(BNode ParentNode) {
-		super(ParentNode, 5);
+	public DShellForNode(BNode parentNode) {
+		super(parentNode, 5);
 	}
 
 	@Override
-	public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitForNode(this);
+	public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitForNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 
-	public final boolean HasDeclNode() {
+	public final boolean hasDeclNode() {
 		return this.AST[_Init] != null;
 	}
 
-	public final BunLetVarNode VarDeclNode() {
+	public final BunLetVarNode toVarDeclNode() {
 		if(this.AST[_VarDecl] == null) {
-			BNode Node = this.AST[_Init];
-			if(Node instanceof BunLetVarNode) {
-				this.AST[_VarDecl] = Node;
+			BNode node = this.AST[_Init];
+			if(node instanceof BunLetVarNode) {
+				this.AST[_VarDecl] = node;
 			}
-			else if(Node instanceof BunVarBlockNode) {
+			else if(node instanceof BunVarBlockNode) {
 				this.AST[_VarDecl] = ((BunVarBlockNode)this.AST[_Init]).VarDeclNode();
 			}
 			else {
-				Utils.fatal(1, "invalid type: " + Node.getClass().getSimpleName());
+				Utils.fatal(1, "invalid type: " + node.getClass().getSimpleName());
 			}
 		}
 		return (BunLetVarNode) this.AST[_VarDecl];
 	}
 
-	public final BNode CondNode() {
-		BNode CondNode = this.AST[_Cond];
-		if(!(CondNode.ParentNode instanceof BunBlockNode)) {
-			CondNode.ParentNode = this.BlockNode();
+	public final BNode condNode() {
+		BNode condNode = this.AST[_Cond];
+		if(!(condNode.ParentNode instanceof BunBlockNode)) {
+			condNode.ParentNode = this.blockNode();
 		}
-		return CondNode;
+		return condNode;
 	}
 
-	public final boolean HasNextNode() {
-		return this.NextNode() != null;
+	public final boolean hasNextNode() {
+		return this.nextNode() != null;
 	}
 
-	public final BNode NextNode() {
-		BNode NextNode = this.AST[_Next];
-		if(!(NextNode.ParentNode instanceof BunBlockNode)) {
-			NextNode.ParentNode = this.BlockNode();
+	public final BNode nextNode() {
+		BNode nextNode = this.AST[_Next];
+		if(!(nextNode.ParentNode instanceof BunBlockNode)) {
+			nextNode.ParentNode = this.blockNode();
 		}
-		return NextNode;
+		return nextNode;
 	}
 
-	public final BunBlockNode BlockNode() {
-		BNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof BunBlockNode) {
-			return (BunBlockNode) BlockNode;
+	public final BunBlockNode blockNode() {
+		BNode blockNode = this.AST[_Block];
+		if(blockNode instanceof BunBlockNode) {
+			return (BunBlockNode) blockNode;
 		}
 		Utils.fatal(1, "need BlockNode");
 		return null;
 	}
 
-	public final void PrepareTypeCheck() { // must call before type check
-		if(this.HasDeclNode()) {
-			this.VarDeclNode();
+	public final void prepareTypeCheck() { // must call before type check
+		if(this.hasDeclNode()) {
+			this.toVarDeclNode();
 		}
-		this.CondNode();
-		if(this.HasNextNode()) {
-			this.NextNode();
+		this.condNode();
+		if(this.hasNextNode()) {
+			this.nextNode();
 		}
 	}
 }

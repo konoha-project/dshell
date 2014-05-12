@@ -7,14 +7,14 @@ import dshell.ast.DShellCatchNode;
 
 public class DShellCatchPatternFunc extends BMatchFunction {
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BNode CatchNode = new DShellCatchNode(ParentNode);
-		CatchNode = TokenContext.MatchToken(CatchNode, "catch", BTokenContext._Required);
-		CatchNode = TokenContext.MatchToken(CatchNode, "(", BTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._NameInfo, "$Name$", BTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._TypeInfo, "$TypeAnnotation$", BTokenContext._Optional);
-		CatchNode = TokenContext.MatchToken(CatchNode, ")", BTokenContext._Required);
-		CatchNode = TokenContext.MatchPattern(CatchNode, DShellCatchNode._Block, "$Block$", BTokenContext._Required);
-		return CatchNode;
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BNode catchNode = new DShellCatchNode(parentNode);
+		catchNode = tokenContext.MatchToken(catchNode, "catch", BTokenContext._Required);
+		catchNode = tokenContext.MatchToken(catchNode, "(", BTokenContext._Required);
+		catchNode = tokenContext.MatchPattern(catchNode, DShellCatchNode._NameInfo, "$Name$", BTokenContext._Required);
+		catchNode = tokenContext.MatchPattern(catchNode, DShellCatchNode._TypeInfo, "$TypeAnnotation$", BTokenContext._Optional);
+		catchNode = tokenContext.MatchToken(catchNode, ")", BTokenContext._Required);
+		catchNode = tokenContext.MatchPattern(catchNode, DShellCatchNode._Block, "$Block$", BTokenContext._Required);
+		return catchNode;
 	}
 }

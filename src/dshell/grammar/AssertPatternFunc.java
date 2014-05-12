@@ -7,12 +7,12 @@ import dshell.ast.sugar.DShellAssertNode;
 
 public class AssertPatternFunc extends BMatchFunction {
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BNode Node = new DShellAssertNode(ParentNode);
-		Node = TokenContext.MatchToken(Node, "assert", BTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, "(", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellAssertNode._Expr, "$Expression$", BTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
-		return Node;
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BNode node = new DShellAssertNode(parentNode);
+		node = tokenContext.MatchToken(node, "assert", BTokenContext._Required);
+		node = tokenContext.MatchToken(node, "(", BTokenContext._Required);
+		node = tokenContext.MatchPattern(node, DShellAssertNode._Expr, "$Expression$", BTokenContext._Required);
+		node = tokenContext.MatchToken(node, ")", BTokenContext._Required);
+		return node;
 	}
 }

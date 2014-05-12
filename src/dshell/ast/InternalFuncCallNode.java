@@ -14,8 +14,8 @@ public class InternalFuncCallNode extends BNode {
 	private final BType returnType;
 
 	// call only void param
-	public InternalFuncCallNode(BNode ParentNode, Class<?> holderClass, String methodName) {
-		super(ParentNode, 0);
+	public InternalFuncCallNode(BNode parentNode, Class<?> holderClass, String methodName) {
+		super(parentNode, 0);
 		try {
 			this.staticMethod = holderClass.getMethod(methodName, new Class<?>[]{});
 			this.returnType = JavaTypeTable.GetBunType(this.staticMethod.getReturnType());
@@ -34,12 +34,12 @@ public class InternalFuncCallNode extends BNode {
 	}
 
 	@Override
-	public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitInternalFuncCallNode(this);
+	public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitInternalFuncCallNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

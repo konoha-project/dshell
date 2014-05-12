@@ -13,24 +13,24 @@ import libbun.type.BType;
 public class DShellImportEnvNode extends SyntaxSugarNode {
 	public final static int _NameInfo = 0;
 
-	public DShellImportEnvNode(BNode ParentNode) {
-		super(ParentNode, 1);
+	public DShellImportEnvNode(BNode parentNode) {
+		super(parentNode, 1);
 	}
 
 	@Override
-	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
+	public void PerformTyping(LibBunTypeChecker typeChecker, BType contextType) {
 	}	// do nothing
 
 	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
-		String EnvName = this.AST[_NameInfo].SourceToken.GetText();
-		BNode LetNode = new BunLetVarNode(this, BunLetVarNode._IsReadOnly, null, null);
-		LetNode.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
-		GetNameNode FuncNameNode = new GetNameNode(this.ParentNode, this.SourceToken, "getEnv");
-		FuncCallNode GetEnvNode = new FuncCallNode(this.ParentNode, FuncNameNode);
-		GetEnvNode.SourceToken = SourceToken;
-		GetEnvNode.SetNode(BNode._AppendIndex, new BunStringNode(GetEnvNode, null, EnvName));
-		LetNode.SetNode(BunLetVarNode._InitValue, GetEnvNode);
-		return new DesugarNode(this, LetNode);
+	public DesugarNode PerformDesugar(LibBunTypeChecker typeChecker) {
+		String envName = this.AST[_NameInfo].SourceToken.GetText();
+		BNode letNode = new BunLetVarNode(this, BunLetVarNode._IsReadOnly, null, null);
+		letNode.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
+		GetNameNode funcNameNode = new GetNameNode(this.ParentNode, this.SourceToken, "getEnv");
+		FuncCallNode getEnvNode = new FuncCallNode(this.ParentNode, funcNameNode);
+		getEnvNode.SourceToken = SourceToken;
+		getEnvNode.SetNode(BNode._AppendIndex, new BunStringNode(getEnvNode, null, envName));
+		letNode.SetNode(BunLetVarNode._InitValue, getEnvNode);
+		return new DesugarNode(this, letNode);
 	}
 }

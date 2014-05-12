@@ -10,20 +10,20 @@ import libbun.util.BMatchFunction;
 
 public class LocationPatternFunc extends BMatchFunction {	//TODO
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BToken Token = TokenContext.GetToken();
-		TokenContext.MoveNext();
-		CommandNode Node = new CommandNode(ParentNode, Token, DShellGrammar.location);
-		Node.AppendArgNode(ParentNode.GetGamma().GetSymbol(Token.GetText()));
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BToken token = tokenContext.GetToken();
+		tokenContext.MoveNext();
+		CommandNode node = new CommandNode(parentNode, token, DShellGrammar.location);
+		node.appendArgNode(parentNode.GetGamma().GetSymbol(token.GetText()));
 		// Match Prefix Option
-		BNode PrefixOptionNode = TokenContext.ParsePatternAfter(ParentNode, Node, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
-		if(PrefixOptionNode != null) {
-			return Node.AppendPipedNextNode((CommandNode) PrefixOptionNode);
+		BNode prefixOptionNode = tokenContext.ParsePatternAfter(parentNode, node, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
+		if(prefixOptionNode != null) {
+			return node.appendPipedNextNode((CommandNode) prefixOptionNode);
 		}
 		// Match Command Symbol
-		BNode PipedNode = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
-		if(!PipedNode.IsErrorNode()) {
-			return Node.AppendPipedNextNode((CommandNode) PipedNode);
+		BNode pipedNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+		if(!pipedNode.IsErrorNode()) {
+			return node.appendPipedNextNode((CommandNode) pipedNode);
 		}
 		return null;
 	}

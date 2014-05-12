@@ -6,26 +6,26 @@ import libbun.ast.BNode;
 import libbun.parser.classic.LibBunVisitor;
 
 public class DShellWrapperNode extends BNode {
-	private BNode TargetNode;
+	private BNode targetNode;
 	private final boolean isVarTarget;
 
-	public DShellWrapperNode(BNode TargetNode) {
-		this(TargetNode, false);
+	public DShellWrapperNode(BNode targetNode) {
+		this(targetNode, false);
 	}
 
-	public DShellWrapperNode(BNode TargetNode, boolean isVarTarget) {
-		super(TargetNode.ParentNode, 1);
-		this.SourceToken = TargetNode.SourceToken;
-		this.TargetNode = TargetNode;
+	public DShellWrapperNode(BNode targetNode, boolean isVarTarget) {
+		super(targetNode.ParentNode, 1);
+		this.SourceToken = targetNode.SourceToken;
+		this.targetNode = targetNode;
 		this.isVarTarget = isVarTarget;
 	}
 
 	public BNode getTargetNode() {
-		return this.TargetNode;
+		return this.targetNode;
 	}
 
 	public void setTargetNode(BNode Node) {
-		this.TargetNode = Node;
+		this.targetNode = Node;
 	}
 
 	public boolean isVarTarget() {
@@ -33,12 +33,12 @@ public class DShellWrapperNode extends BNode {
 	}
 
 	@Override
-	public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitWrapperNode(this);
+	public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitWrapperNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

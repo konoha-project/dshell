@@ -15,16 +15,16 @@ public class LocationDefinePatternFunc extends BMatchFunction {	//TODO
 	}
 
 	@Override	//TODO: multiple host, ssh
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		TokenContext.MoveNext();
-		BNode Node = TokenContext.ParsePattern(ParentNode, "$Name$", BTokenContext._Required);
-		if(!Node.IsErrorNode() && TokenContext.MatchToken("=")) {
-			BNode ValueNode = TokenContext.ParsePattern(ParentNode, "$StringLiteral$", BTokenContext._Required);
-			if(!ValueNode.IsErrorNode()) {
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		tokenContext.MoveNext();
+		BNode node = tokenContext.ParsePattern(parentNode, "$Name$", BTokenContext._Required);
+		if(!node.IsErrorNode() && tokenContext.MatchToken("=")) {
+			BNode valueNode = tokenContext.ParsePattern(parentNode, "$StringLiteral$", BTokenContext._Required);
+			if(!valueNode.IsErrorNode()) {
 //				String NameSymbol = ((BGetNameNode)Node).GetName();
 //				ParentNode.GetNameSpace().DefineExpression(NameSymbol, this.locationPattern);
 //				ParentNode.GetNameSpace().SetSymbol(NameSymbol, (BStringNode)ValueNode);
-				return new EmptyNode(ParentNode);
+				return new EmptyNode(parentNode);
 			}
 		}
 		return null;

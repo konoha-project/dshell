@@ -11,21 +11,21 @@ import libbun.type.BType;
 public class DShellAssertNode extends SyntaxSugarNode {
 	public final static int _Expr = 0;
 
-	public DShellAssertNode(BNode ParentNode) {
-		super(ParentNode, 1);
+	public DShellAssertNode(BNode parentNode) {
+		super(parentNode, 1);
 	}
 
 	@Override
-	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
-		TypeChecker.CheckTypeAt(this, _Expr, BType.BooleanType);
+	public void PerformTyping(LibBunTypeChecker typeChecker, BType contextType) {
+		typeChecker.CheckTypeAt(this, _Expr, BType.BooleanType);
 	}
 
 	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
-		GetNameNode FuncNameNode = new GetNameNode(this, this.SourceToken, "assertDShell");
-		FuncCallNode Node = new FuncCallNode(this.ParentNode, FuncNameNode);
-		Node.SourceToken = this.SourceToken;
-		Node.SetNode(BNode._AppendIndex, this.AST[_Expr]);
-		return new DesugarNode(this, Node);
+	public DesugarNode PerformDesugar(LibBunTypeChecker typeChecker) {
+		GetNameNode funcNameNode = new GetNameNode(this, this.SourceToken, "assertDShell");
+		FuncCallNode node = new FuncCallNode(this.ParentNode, funcNameNode);
+		node.SourceToken = this.SourceToken;
+		node.SetNode(BNode._AppendIndex, this.AST[_Expr]);
+		return new DesugarNode(this, node);
 	}
 }

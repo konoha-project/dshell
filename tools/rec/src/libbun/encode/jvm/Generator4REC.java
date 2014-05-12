@@ -22,20 +22,20 @@ public class Generator4REC extends DShellByteCodeGenerator {
 		}
 	}
 	@Override
-	public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
-		if(Node instanceof DShellAssertNode) {
-			this.VisitAssertNode((DShellAssertNode) Node);
+	public void VisitSyntaxSugarNode(SyntaxSugarNode node) {
+		if(node instanceof DShellAssertNode) {
+			this.VisitAssertNode((DShellAssertNode) node);
 		}
 		else {
-			super.VisitSyntaxSugarNode(Node);
+			super.VisitSyntaxSugarNode(node);
 		}
 	}
 
-	private void VisitAssertNode(DShellAssertNode Node) {
-		this.AsmBuilder.SetLineNumber(Node);
-		Node.AST[DShellAssertNode._Expr].Accept(this);
+	private void VisitAssertNode(DShellAssertNode node) {
+		this.AsmBuilder.SetLineNumber(node);
+		node.AST[DShellAssertNode._Expr].Accept(this);
 		this.AsmBuilder.PushConst("");
-		this.invokeStaticMethod(Node, this.assertREC);
+		this.invokeStaticMethod(node, this.assertREC);
 	}
 
 	public static void assertREC(boolean result, String location) {

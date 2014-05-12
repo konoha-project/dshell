@@ -97,7 +97,7 @@ public class RECWriter {
 		}
 	}
 
-	private void invoke(String RECServerURL, String[] scriptArgs) {
+	private void invoke(String recServerURL, String[] scriptArgs) {
 		String type = scriptArgs[0];
 		String localtion = "";
 		String authid = "xyx@gmail.com";
@@ -143,11 +143,11 @@ public class RECWriter {
 			String[] parsedData = this.parseErrorMessage(streamBuffer.toString());
 			if(parsedData != null) {
 				int data = Integer.parseInt(parsedData[0]);
-				RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext(parsedData[1], type));
+				RecAPI.pushRawData(recServerURL, type, localtion, data, authid, new RecAPI.RecContext(parsedData[1], type));
 			}
 			else {
 				int data = this.resolveData(exitStatus, type);
-				RecAPI.pushRawData(RECServerURL, type, localtion, data, authid, new RecAPI.RecContext("", type));
+				RecAPI.pushRawData(recServerURL, type, localtion, data, authid, new RecAPI.RecContext("", type));
 			}
 			System.exit(0);
 		}
@@ -193,16 +193,16 @@ public class RECWriter {
 
 class RecAPI {
 	/* TODO: return result of rpc */ 
-	private static void remoteProcedureCall(String RECServerURL, RecRequest Params) throws IOException {
-		String Json = JSON.encode(new JSONRPC(Params));
-		StringEntity Body = new StringEntity(Json);
+	private static void remoteProcedureCall(String recServerURL, RecRequest params) throws IOException {
+		String json = JSON.encode(new JSONRPC(params));
+		StringEntity body = new StringEntity(json);
 
-		HttpClient Client = HttpClientBuilder.create().build();
-		HttpPost Request = new HttpPost(RECServerURL);
-		Request.addHeader("Content-type", "application/json");
-		Request.setEntity(Body);
+		HttpClient client = HttpClientBuilder.create().build();
+		HttpPost request = new HttpPost(recServerURL);
+		request.addHeader("Content-type", "application/json");
+		request.setEntity(body);
 		try {
-			HttpResponse response = Client.execute(Request);
+			HttpResponse response = client.execute(request);
 			System.out.println(EntityUtils.toString(response.getEntity()));
 		}
 		catch(Exception e) {
@@ -210,9 +210,9 @@ class RecAPI {
 		}
 	}
 
-	public static void pushRawData(String RECServerURL, String type, String location, int data, String authid, RecContext context) {
+	public static void pushRawData(String recServerURL, String type, String location, int data, String authid, RecContext context) {
 		try {
-			remoteProcedureCall(RECServerURL, new RecRequest(type, location, data, authid, context));
+			remoteProcedureCall(recServerURL, new RecRequest(type, location, data, authid, context));
 		}
 		catch(IOException e) {
 			e.printStackTrace();
@@ -226,13 +226,13 @@ class RecAPI {
 		public int id;
 		public RecRequest params;
 
-		private static double JsonRPCVersion = 2.0;
-		private static int Id = 0;
+		private static double jsonRPCVersion = 2.0;
+		private static int jsonId = 0;
 
 		public JSONRPC(RecRequest recRequest) {
-			this.jsonrpc = Double.toString(JsonRPCVersion);
+			this.jsonrpc = Double.toString(jsonRPCVersion);
 			this.method = "pushRawData";
-			this.id = Id;
+			this.id = jsonId;
 			this.params = recRequest;
 		}
 	}

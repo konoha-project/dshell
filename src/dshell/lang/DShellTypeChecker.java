@@ -34,94 +34,94 @@ import dshell.lib.CommandArg;
 
 public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 
-	public DShellTypeChecker(DShellByteCodeGenerator Generator) {
-		super(Generator);
+	public DShellTypeChecker(DShellByteCodeGenerator generator) {
+		super(generator);
 	}
 
 	@Override
-	public void VisitCommandNode(CommandNode Node) {
-		BType ContextType = this.GetContextType();
-		if(!(Node.ParentNode instanceof CommandNode)) {
-			if(Node.RetType().IsStringType() && Node.ParentNode instanceof DShellForeachNode) {
-				ContextType = BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType);
+	public void visitCommandNode(CommandNode node) {
+		BType contextType = this.GetContextType();
+		if(!(node.ParentNode instanceof CommandNode)) {
+			if(node.retType().IsStringType() && node.ParentNode instanceof DShellForeachNode) {
+				contextType = BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType);
 			}
-			else if(Node.RetType().IsStringType()) {
-				ContextType = BType.StringType;
+			else if(node.retType().IsStringType()) {
+				contextType = BType.StringType;
 			}
-			else if(ContextType.IsVarType() && Node.ParentNode instanceof BunBlockNode) {
-				ContextType = BType.VoidType;
+			else if(contextType.IsVarType() && node.ParentNode instanceof BunBlockNode) {
+				contextType = BType.VoidType;
 			}
-			else if(ContextType.IsVarType()) {
-				ContextType = BType.StringType;
+			else if(contextType.IsVarType()) {
+				contextType = BType.StringType;
 			}
 		}
-		int size = Node.GetArgSize();
+		int size = node.getArgSize();
 		for(int i = 0; i < size; i++) {
-			BNode SubNode = Node.GetArgAt(i);
-			SubNode = this.CheckType(SubNode, JavaTypeTable.GetBunType(CommandArg.class));
-			Node.SetArgAt(i, SubNode);
+			BNode subNode = node.getArgAt(i);
+			subNode = this.CheckType(subNode, JavaTypeTable.GetBunType(CommandArg.class));
+			node.setArgAt(i, subNode);
 		}
-		if(Node.getPipedNextNode() != null) {
-			Node.setPipedNextNode((CommandNode) this.CheckType(Node.getPipedNextNode(), ContextType));
+		if(node.getPipedNextNode() != null) {
+			node.setPipedNextNode((CommandNode) this.CheckType(node.getPipedNextNode(), contextType));
 		}
-		this.ReturnTypeNode(Node, ContextType);
+		this.ReturnTypeNode(node, contextType);
 	}
 
 	@Override
-	public void VisitTryNode(DShellTryNode Node) {
-		this.CheckTypeAt(Node, DShellTryNode._Try, BType.VoidType);
-		int size = Node.GetListSize();
+	public void visitTryNode(DShellTryNode node) {
+		this.CheckTypeAt(node, DShellTryNode._Try, BType.VoidType);
+		int size = node.GetListSize();
 		for(int i = 0; i < size; i++) {
-			BNode CatchNode = Node.GetListAt(i);
-			CatchNode = this.CheckType(CatchNode, BType.VoidType);
-			Node.SetListAt(i, CatchNode);
+			BNode catchNode = node.GetListAt(i);
+			catchNode = this.CheckType(catchNode, BType.VoidType);
+			node.SetListAt(i, catchNode);
 		}
-		if(Node.HasFinallyBlockNode()) {
-			this.CheckTypeAt(Node, DShellTryNode._Finally, BType.VoidType);
+		if(node.hasFinallyBlockNode()) {
+			this.CheckTypeAt(node, DShellTryNode._Finally, BType.VoidType);
 		}
-		this.ReturnTypeNode(Node, BType.VoidType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 
 	@Override
-	public void VisitCatchNode(DShellCatchNode Node) {
-		if(!this.CheckTypeRequirement(Node.ExceptionType())) {
-			this.ReturnErrorNode(Node, Node.GetAstToken(DShellCatchNode._TypeInfo), "require Exception type");
+	public void visitCatchNode(DShellCatchNode node) {
+		if(!this.checkTypeRequirement(node.exceptionType())) {
+			this.ReturnErrorNode(node, node.GetAstToken(DShellCatchNode._TypeInfo), "require Exception type");
 			return;
 		}
-		BunBlockNode BlockNode = Node.BlockNode();
-		if(!(Node.ExceptionType() instanceof BVarType)) {
-			Node.SetExceptionType(this.VarScope.NewVarType(Node.ExceptionType(), Node.ExceptionName(), Node.SourceToken));
-			BlockNode.GetBlockGamma().SetSymbol(Node.ExceptionName(), Node.ToLetVarNode());
+		BunBlockNode blockNode = node.blockNode();
+		if(!(node.exceptionType() instanceof BVarType)) {
+			node.setExceptionType(this.VarScope.NewVarType(node.exceptionType(), node.exceptionName(), node.SourceToken));
+			blockNode.GetBlockGamma().SetSymbol(node.exceptionName(), node.toLetVarNode());
 		}
-		this.VisitBlockNode(BlockNode);
-		if(BlockNode.GetListSize() == 0) {
-			LibBunLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.ExceptionName());
+		this.VisitBlockNode(blockNode);
+		if(blockNode.GetListSize() == 0) {
+			LibBunLogger._LogWarning(node.SourceToken, "unused variable: " + node.exceptionName());
 		}
-		this.ReturnTypeNode(Node, BType.VoidType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 
-	private boolean CheckTypeRequirement(BType ExceptionType) {
-		Class<?> JavaClass = ((DShellByteCodeGenerator)this.Generator).GetJavaClass(ExceptionType);
-		while(JavaClass != null) {
-			if(JavaClass.equals(Exception.class)) {
+	private boolean checkTypeRequirement(BType exceptionType) {
+		Class<?> javaClass = ((DShellByteCodeGenerator)this.Generator).GetJavaClass(exceptionType);
+		while(javaClass != null) {
+			if(javaClass.equals(Exception.class)) {
 				return true;
 			}
-			JavaClass = JavaClass.getSuperclass();
+			javaClass = javaClass.getSuperclass();
 		}
 		return false;
 	}
 
-	@Override public void VisitThrowNode(BunThrowNode Node) {
-		BunFunctionNode FuncNode = this.findParentFuncNode(Node);
-		if(FuncNode != null && FuncNode == Node.GetDefiningFunctionNode()) {
+	@Override public void VisitThrowNode(BunThrowNode node) {
+		BunFunctionNode funcNode = this.findParentFuncNode(node);
+		if(funcNode != null && funcNode == node.GetDefiningFunctionNode()) {
 			this.CurrentFunctionNode.SetReturnType(BType.VoidType);
 		}
-		this.CheckTypeAt(Node, BunThrowNode._Expr, BType.VarType);
-		if(!this.CheckTypeRequirement(Node.ExprNode().Type)) {
-			this.ReturnErrorNode(Node, Node.GetAstToken(BunThrowNode._Expr), "require Exception type");
+		this.CheckTypeAt(node, BunThrowNode._Expr, BType.VarType);
+		if(!this.checkTypeRequirement(node.ExprNode().Type)) {
+			this.ReturnErrorNode(node, node.GetAstToken(BunThrowNode._Expr), "require Exception type");
 			return;
 		}
-		this.ReturnTypeNode(Node, BType.VoidType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 
 	private BunFunctionNode findParentFuncNode(BNode node) {
@@ -139,113 +139,113 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		return null;
 	}
 
-	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
-		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.VarType);
-		this.ReturnTypeNode(Node, BType.BooleanType);
+	@Override public void VisitInstanceOfNode(BunInstanceOfNode node) {
+		this.CheckTypeAt(node, BinaryOperatorNode._Left, BType.VarType);
+		this.ReturnTypeNode(node, BType.BooleanType);
 	}
 
-	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
-		if(Node instanceof BunContinueNode) {
-			this.VisitContinueNode((BunContinueNode) Node);
+	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode node) {
+		if(node instanceof BunContinueNode) {
+			this.visitContinueNode((BunContinueNode) node);
 		}
 		else {
-			super.VisitSyntaxSugarNode(Node);
+			super.VisitSyntaxSugarNode(node);
 		}
 	}
 
 	@Override
-	public void VisitContinueNode(BunContinueNode Node) {
-		BNode CurrentNode = Node;
-		boolean FoundWhile = false;
-		while(CurrentNode != null) {
-			if(CurrentNode instanceof BunWhileNode || CurrentNode instanceof DShellForNode) {
-				FoundWhile = true;
+	public void visitContinueNode(BunContinueNode node) {
+		BNode currentNode = node;
+		boolean foundWhile = false;
+		while(currentNode != null) {
+			if(currentNode instanceof BunWhileNode || currentNode instanceof DShellForNode) {
+				foundWhile = true;
 				break;
 			}
-			CurrentNode = CurrentNode.ParentNode;
+			currentNode = currentNode.ParentNode;
 		}
-		if(!FoundWhile) {
-			this.ReturnErrorNode(Node, Node.SourceToken, "only available inside loop statement");
+		if(!foundWhile) {
+			this.ReturnErrorNode(node, node.SourceToken, "only available inside loop statement");
 			return;
 		}
-		this.ReturnTypeNode(Node, BType.VoidType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 
 	@Override
-	public void VisitForNode(DShellForNode Node) {	//FIXME
-		Node.PrepareTypeCheck();
-		if(Node.HasDeclNode()) {
-			this.VisitVarDeclNode(Node.BlockNode().GetBlockGamma(), Node.VarDeclNode());
+	public void visitForNode(DShellForNode node) {	//FIXME
+		node.prepareTypeCheck();
+		if(node.hasDeclNode()) {
+			this.VisitVarDeclNode(node.blockNode().GetBlockGamma(), node.toVarDeclNode());
 		}
-		this.CheckTypeAt(Node, DShellForNode._Block, BType.VoidType);
-		this.CheckTypeAt(Node, DShellForNode._Cond, BType.BooleanType);
-		if(Node.HasNextNode()) {
-			this.CheckTypeAt(Node, DShellForNode._Next, BType.VoidType);
+		this.CheckTypeAt(node, DShellForNode._Block, BType.VoidType);
+		this.CheckTypeAt(node, DShellForNode._Cond, BType.BooleanType);
+		if(node.hasNextNode()) {
+			this.CheckTypeAt(node, DShellForNode._Next, BType.VoidType);
 		}
-		if(Node.BlockNode().GetListSize() == 0) {
-			LibBunLogger._LogWarning(Node.SourceToken, "unused variable: " + Node.VarDeclNode().GetGivenName());
+		if(node.blockNode().GetListSize() == 0) {
+			LibBunLogger._LogWarning(node.SourceToken, "unused variable: " + node.toVarDeclNode().GetGivenName());
 		}
-		this.ReturnTypeNode(Node, BType.VoidType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 
 	@Override
-	public void VisitWrapperNode(DShellWrapperNode Node) {
-		Node.Type = BType.VoidType;
-		BNode TargetNode = Node.getTargetNode();
-		TargetNode = this.CheckType(TargetNode, BType.VarType);
-		TargetNode.Type = BType.VoidType;
-		Node.setTargetNode(TargetNode);
-		this.ReturnNode(Node);
+	public void visitWrapperNode(DShellWrapperNode node) {
+		node.Type = BType.VoidType;
+		BNode targetNode = node.getTargetNode();
+		targetNode = this.CheckType(targetNode, BType.VarType);
+		targetNode.Type = BType.VoidType;
+		node.setTargetNode(targetNode);
+		this.ReturnNode(node);
 	}
 
 	@Override
-	public void VisitMatchRegexNode(MatchRegexNode Node) {
-		this.CheckTypeAt(Node, BinaryOperatorNode._Left, BType.StringType);
-		this.CheckTypeAt(Node, BinaryOperatorNode._Right, BType.StringType);
-		this.ReturnBinaryTypeNode(Node, BType.BooleanType);
+	public void visitMatchRegexNode(MatchRegexNode node) {
+		this.CheckTypeAt(node, BinaryOperatorNode._Left, BType.StringType);
+		this.CheckTypeAt(node, BinaryOperatorNode._Right, BType.StringType);
+		this.ReturnBinaryTypeNode(node, BType.BooleanType);
 	}
 
-	public BunFunctionNode VisitTopLevelStatementNode(BNode Node) {
-		BNode ParentNode = Node.ParentNode;
-		BToken SourceToken = Node.SourceToken;
-		String FuncName = this.Generator.NameUniqueSymbol("topLevel");
-		BunFunctionNode FuncNode = new BunFunctionNode(ParentNode);
-		FuncNode.Type = BType.VoidType;
-		FuncNode.GivenName = FuncName;
-		FuncNode.SourceToken = SourceToken;
-		BunBlockNode BlockNode = new BunBlockNode(ParentNode, null);
-		FuncNode.SetNode(BunFunctionNode._Block, BlockNode);
-		Node.ParentNode = BlockNode;
-		this.CurrentFunctionNode = FuncNode;
-		Node = this.CheckType(Node, BType.VarType);
+	public BunFunctionNode visitTopLevelStatementNode(BNode node) {
+		BNode parentNode = node.ParentNode;
+		BToken sourceToken = node.SourceToken;
+		String funcName = this.Generator.NameUniqueSymbol("topLevel");
+		BunFunctionNode funcNode = new BunFunctionNode(parentNode);
+		funcNode.Type = BType.VoidType;
+		funcNode.GivenName = funcName;
+		funcNode.SourceToken = sourceToken;
+		BunBlockNode blockNode = new BunBlockNode(parentNode, null);
+		funcNode.SetNode(BunFunctionNode._Block, blockNode);
+		node.ParentNode = blockNode;
+		this.CurrentFunctionNode = funcNode;
+		node = this.CheckType(node, BType.VarType);
 		this.CurrentFunctionNode = null;
-		BunReturnNode ReturnNode = new BunReturnNode(ParentNode);
-		if(Node.Type.IsVoidType()) {
-			BlockNode.Append(Node);
+		BunReturnNode returnNode = new BunReturnNode(parentNode);
+		if(node.Type.IsVoidType()) {
+			blockNode.Append(node);
 		}
 		else {
-			ReturnNode.SetNode(BunReturnNode._Expr, Node);
+			returnNode.SetNode(BunReturnNode._Expr, node);
 		}
-		BlockNode.Append(ReturnNode);
-		FuncNode.SetReturnType(Node.Type);
-		return FuncNode;
+		blockNode.Append(returnNode);
+		funcNode.SetReturnType(node.Type);
+		return funcNode;
 	}
 
-	@Override public void VisitNullNode(BunNullNode Node) {
-		BType Type = this.GetContextType();
-		if(Type.IsIntType() || Type.IsBooleanType() || Type.IsFloatType() || Type.IsVoidType()) {
-			this.ReturnErrorNode(Node, Node.SourceToken, "null is not " + Type + " type");
+	@Override public void VisitNullNode(BunNullNode node) {
+		BType type = this.GetContextType();
+		if(type.IsIntType() || type.IsBooleanType() || type.IsFloatType() || type.IsVoidType()) {
+			this.ReturnErrorNode(node, node.SourceToken, "null is not " + type + " type");
 			return;
 		}
-		else if(Type.IsVarType()) {
-			this.ReturnErrorNode(Node, Node.SourceToken, "untyped null value");
+		else if(type.IsVarType()) {
+			this.ReturnErrorNode(node, node.SourceToken, "untyped null value");
 			return;
 		}
-		this.ReturnTypeNode(Node, Type);
+		this.ReturnTypeNode(node, type);
 	}
 
 	@Override
-	public void VisitInternalFuncCallNode(InternalFuncCallNode Node) {
-		this.ReturnTypeNode(Node, Node.getReturnType());
+	public void visitInternalFuncCallNode(InternalFuncCallNode node) {
+		this.ReturnTypeNode(node, node.getReturnType());
 	}
 }

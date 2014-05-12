@@ -10,78 +10,78 @@ import libbun.util.BMatchFunction;
 import libbun.util.LibBunSystem;
 
 public class DoubleQuoteStringLiteralPatternFunc extends BMatchFunction {
-	public final static String PatternName = "$InterStringLiteral$";
+	public final static String patternName = "$InterStringLiteral$";
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
-		BNode Node  = Interpolate(ParentNode, TokenContext, Token);
-		if(Node != null) {
-			return Node;
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
+		BNode node  = interpolate(parentNode, tokenContext, token);
+		if(node != null) {
+			return node;
 		}
-		return new BunStringNode(ParentNode, Token, LibBunSystem._UnquoteString(Token.GetText()));
+		return new BunStringNode(parentNode, token, LibBunSystem._UnquoteString(token.GetText()));
 	}
 
-	public static BNode Interpolate(BNode ParentNode, BTokenContext TokenContext, BToken Token) {
-		BArray<BNode> NodeList = new BArray<BNode>(new BNode[]{});
-		boolean FoundExpr = false;
-		int StartIndex = Token.StartIndex + 1;
-		final int EndIndex = Token.EndIndex - 1;
-		int CurrentIndex = StartIndex;
-		ParserSource Source = TokenContext.SourceContext.Source;
-		while(CurrentIndex < EndIndex) {
-			char ch = Source.GetCharAt(CurrentIndex);
+	public static BNode interpolate(BNode parentNode, BTokenContext tokenContext, BToken token) {
+		BArray<BNode> nodeList = new BArray<BNode>(new BNode[]{});
+		boolean foundExpr = false;
+		int startIndex = token.StartIndex + 1;
+		final int endIndex = token.EndIndex - 1;
+		int currentIndex = startIndex;
+		ParserSource source = tokenContext.SourceContext.Source;
+		while(currentIndex < endIndex) {
+			char ch = source.GetCharAt(currentIndex);
 			if(ch == '\\') {
-				CurrentIndex++;
+				currentIndex++;
 			}
 			else if(ch == '$') {
-				char next = Source.GetCharAt(CurrentIndex + 1);
+				char next = source.GetCharAt(currentIndex + 1);
 				if(next == '(' || next == '{') {
-					FoundExpr = true;
-					CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
-					StartIndex = CurrentIndex = CreateExprNode(NodeList, ParentNode, TokenContext, CurrentIndex, EndIndex);
-					if(CurrentIndex == -1) {
+					foundExpr = true;
+					createStringNode(nodeList, parentNode, tokenContext, startIndex, currentIndex);
+					startIndex = currentIndex = createExprNode(nodeList, parentNode, tokenContext, currentIndex, endIndex);
+					if(currentIndex == -1) {
 						return null;
 					}
 					continue;
 				}
 			}
-			CurrentIndex++;
+			currentIndex++;
 		}
-		if(!FoundExpr) {
+		if(!foundExpr) {
 			return null;
 		}
-		CreateStringNode(NodeList, ParentNode, TokenContext, StartIndex, CurrentIndex);
-		return ShellGrammar._ToNode(ParentNode, TokenContext, NodeList);
+		createStringNode(nodeList, parentNode, tokenContext, startIndex, currentIndex);
+		return ShellGrammar.toNode(parentNode, tokenContext, nodeList);
 	}
 
-	private static int CreateExprNode(BArray<BNode> NodeList, BNode ParentNode, BTokenContext TokenContext, int CurrentIndex, int EndIndex) {
-		char ch = TokenContext.SourceContext.Source.GetCharAt(CurrentIndex + 1);
+	private static int createExprNode(BArray<BNode> nodeList, BNode parentNode, BTokenContext tokenContext, int currentIndex, int endIndex) {
+		char ch = tokenContext.SourceContext.Source.GetCharAt(currentIndex + 1);
 		if(ch == '{') {
-			BTokenContext LocalContext = TokenContext.SubContext(CurrentIndex + 2, EndIndex);
-			BNode Node = LocalContext.ParsePattern(ParentNode, "$Expression$", BTokenContext._Required);
-			BToken CloseToken = LocalContext.GetToken();
-			if(!Node.IsErrorNode() && CloseToken.EqualsText("}")) {
-				NodeList.add(Node);
-				return CloseToken.EndIndex;
+			BTokenContext localContext = tokenContext.SubContext(currentIndex + 2, endIndex);
+			BNode node = localContext.ParsePattern(parentNode, "$Expression$", BTokenContext._Required);
+			BToken closeToken = localContext.GetToken();
+			if(!node.IsErrorNode() && closeToken.EqualsText("}")) {
+				nodeList.add(node);
+				return closeToken.EndIndex;
 			}
 		}
 		else {
-			BTokenContext LocalContext = TokenContext.SubContext(CurrentIndex, EndIndex);
-			BNode Node = LocalContext.ParsePattern(ParentNode, SubstitutionPatternFunc._PatternName, BTokenContext._Required);
-			if(!Node.IsErrorNode()) {
-				NodeList.add(Node);
-				return LocalContext.LatestToken.EndIndex;
+			BTokenContext localContext = tokenContext.SubContext(currentIndex, endIndex);
+			BNode node = localContext.ParsePattern(parentNode, SubstitutionPatternFunc._PatternName, BTokenContext._Required);
+			if(!node.IsErrorNode()) {
+				nodeList.add(node);
+				return localContext.LatestToken.EndIndex;
 			}
 		}
 		return -1;
 	}
 
-	private static void CreateStringNode(BArray<BNode> NodeList, BNode ParentNode, BTokenContext TokenContext, int StartIndex, int CurrentIndex) {
-		if(StartIndex == CurrentIndex) {
+	private static void createStringNode(BArray<BNode> nodeList, BNode parentNode, BTokenContext tokenContext, int startIndex, int currentIndex) {
+		if(startIndex == currentIndex) {
 			return;
 		}
-		BToken Token = new BToken(TokenContext.SourceContext.Source, StartIndex, CurrentIndex);
-		BNode Node = new BunStringNode(ParentNode, null, LibBunSystem._UnquoteString(Token.GetText()));
-		NodeList.add(Node);
+		BToken token = new BToken(tokenContext.SourceContext.Source, startIndex, currentIndex);
+		BNode node = new BunStringNode(parentNode, null, LibBunSystem._UnquoteString(token.GetText()));
+		nodeList.add(node);
 	}
 }

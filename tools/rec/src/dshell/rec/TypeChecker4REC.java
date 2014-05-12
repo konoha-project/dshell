@@ -7,22 +7,22 @@ import dshell.ast.sugar.DShellAssertNode;
 import dshell.lang.DShellTypeChecker;
 
 public class TypeChecker4REC extends DShellTypeChecker {
-	public TypeChecker4REC(DShellByteCodeGenerator Generator) {
-		super(Generator);
+	public TypeChecker4REC(DShellByteCodeGenerator generator) {
+		super(generator);
 	}
 
 	@Override
-	public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
-		if(Node instanceof DShellAssertNode) {
-			this.VisitAssertNode((DShellAssertNode) Node);
+	public void VisitSyntaxSugarNode(SyntaxSugarNode node) {
+		if(node instanceof DShellAssertNode) {
+			this.VisitAssertNode((DShellAssertNode) node);
 		}
 		else {
-			super.VisitSyntaxSugarNode(Node);
+			super.VisitSyntaxSugarNode(node);
 		}
 	}
 
-	private void VisitAssertNode(DShellAssertNode Node) {
-		this.CheckTypeAt(Node, DShellAssertNode._Expr, BType.BooleanType);
-		this.ReturnTypeNode(Node, BType.VoidType);
+	private void VisitAssertNode(DShellAssertNode node) {
+		this.CheckTypeAt(node, DShellAssertNode._Expr, BType.BooleanType);
+		this.ReturnTypeNode(node, BType.VoidType);
 	}
 }

@@ -65,13 +65,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	private BunFunctionNode untypedMainNode = null;
 	protected final LinkedList<TopLevelStatementInfo> topLevelStatementList;
 
-	private Method ExecCommandVoid;
-	private Method ExecCommandBool;
-	private Method ExecCommandInt;
-	private Method ExecCommandString;
-	private Method ExecCommandStringArray;
-	private Method ExecCommandTask;
-	private Method ExecCommandTaskArray;
+	private Method execCommandVoid;
+	private Method execCommandBool;
+	private Method execCommandInt;
+	private Method execCommandString;
+	private Method execCommandStringArray;
+	private Method execCommandTask;
+	private Method execCommandTaskArray;
 
 	private Method wrapException;
 
@@ -92,13 +92,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaClass(StreamUtils.OutputStream.class);
 
 		try {
-			this.ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
-			this.ExecCommandBool = TaskBuilder.class.getMethod("ExecCommandBool", CommandArg[][].class);
-			this.ExecCommandInt = TaskBuilder.class.getMethod("ExecCommandInt", CommandArg[][].class);
-			this.ExecCommandString = TaskBuilder.class.getMethod("ExecCommandString", CommandArg[][].class);
-			this.ExecCommandStringArray = TaskBuilder.class.getMethod("ExecCommandStringArray", CommandArg[][].class);
-			this.ExecCommandTask = TaskBuilder.class.getMethod("ExecCommandTask", CommandArg[][].class);
-			this.ExecCommandTaskArray = TaskBuilder.class.getMethod("ExecCommandTaskArray", CommandArg[][].class);
+			this.execCommandVoid = TaskBuilder.class.getMethod("execCommandVoid", CommandArg[][].class);
+			this.execCommandBool = TaskBuilder.class.getMethod("execCommandBool", CommandArg[][].class);
+			this.execCommandInt = TaskBuilder.class.getMethod("execCommandInt", CommandArg[][].class);
+			this.execCommandString = TaskBuilder.class.getMethod("execCommandString", CommandArg[][].class);
+			this.execCommandStringArray = TaskBuilder.class.getMethod("execCommandStringArray", CommandArg[][].class);
+			this.execCommandTask = TaskBuilder.class.getMethod("execCommandTask", CommandArg[][].class);
+			this.execCommandTaskArray = TaskBuilder.class.getMethod("execCommandTaskArray", CommandArg[][].class);
 
 			this.wrapException = NativeException.class.getMethod("wrapException", Throwable.class);
 		}
@@ -121,13 +121,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	public void VisitCommandNode(CommandNode Node) {
-		this.AsmBuilder.SetLineNumber(Node);
+	public void visitCommandNode(CommandNode node) {
+		this.AsmBuilder.SetLineNumber(node);
 		ArrayList<CommandNode> nodeList = new ArrayList<CommandNode>();
-		CommandNode node = Node;
-		while(node != null) {
-			nodeList.add(node);
-			node = (CommandNode) node.getPipedNextNode();
+		CommandNode commandNode = node;
+		while(commandNode != null) {
+			nodeList.add(commandNode);
+			commandNode = (CommandNode) commandNode.getPipedNextNode();
 		}
 		// new String[n][]
 		int size = nodeList.size();
@@ -136,7 +136,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		for(int i = 0; i < size; i++) {
 			// new String[m];
 			CommandNode currentNode = nodeList.get(i);
-			int listSize = currentNode.GetArgSize();
+			int listSize = currentNode.getArgSize();
 			this.AsmBuilder.visitInsn(Opcodes.DUP);
 			this.AsmBuilder.visitLdcInsn(i);
 			this.AsmBuilder.visitLdcInsn(listSize);
@@ -144,192 +144,192 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			for(int j = 0; j < listSize; j++ ) {
 				this.AsmBuilder.visitInsn(Opcodes.DUP);
 				this.AsmBuilder.visitLdcInsn(j);
-				currentNode.GetArgAt(j).Accept(this);
+				currentNode.getArgAt(j).Accept(this);
 				this.AsmBuilder.visitInsn(Opcodes.AASTORE);
 			}
 			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
 		}
 
-		if(Node.Type.IsBooleanType()) {
-			this.invokeStaticMethod(Node, this.ExecCommandBool);
+		if(node.Type.IsBooleanType()) {
+			this.invokeStaticMethod(node, this.execCommandBool);
 		}
-		else if(Node.Type.IsIntType()) {
-			this.invokeStaticMethod(Node, this.ExecCommandInt);
+		else if(node.Type.IsIntType()) {
+			this.invokeStaticMethod(node, this.execCommandInt);
 		}
-		else if(Node.Type.IsStringType()) {
-			this.invokeStaticMethod(Node, this.ExecCommandString);
+		else if(node.Type.IsStringType()) {
+			this.invokeStaticMethod(node, this.execCommandString);
 		}
-		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
-			this.invokeStaticMethod(Node, this.ExecCommandStringArray);
+		else if(node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
+			this.invokeStaticMethod(node, this.execCommandStringArray);
 		}
-		else if(Node.Type.equals(JavaTypeTable.GetBunType(Task.class))) {
-			this.invokeStaticMethod(Node, this.ExecCommandTask);
+		else if(node.Type.equals(JavaTypeTable.GetBunType(Task.class))) {
+			this.invokeStaticMethod(node, this.execCommandTask);
 		}
-		else if(Node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetBunType(Task.class)))) {
-			this.invokeStaticMethod(Node, this.ExecCommandTaskArray);
+		else if(node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, JavaTypeTable.GetBunType(Task.class)))) {
+			this.invokeStaticMethod(node, this.execCommandTaskArray);
 		}
 		else {
-			this.invokeStaticMethod(Node, this.ExecCommandVoid);
+			this.invokeStaticMethod(node, this.execCommandVoid);
 		}
 	}
 
 	@Override
-	public void VisitTryNode(DShellTryNode Node) {
-		AsmTryCatchLabel Label = new AsmTryCatchLabel();
-		this.TryCatchLabel.push(Label); // push
+	public void visitTryNode(DShellTryNode node) {
+		AsmTryCatchLabel label = new AsmTryCatchLabel();
+		this.TryCatchLabel.push(label); // push
 		// try block
-		this.AsmBuilder.visitLabel(Label.BeginTryLabel);
-		Node.TryBlockNode().Accept(this);
-		this.AsmBuilder.visitLabel(Label.EndTryLabel);
-		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
+		this.AsmBuilder.visitLabel(label.BeginTryLabel);
+		node.tryBlockNode().Accept(this);
+		this.AsmBuilder.visitLabel(label.EndTryLabel);
+		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, label.FinallyLabel);
 		// catch block
-		int size = Node.GetListSize();
+		int size = node.GetListSize();
 		for(int i = 0; i < size; i++) {
-			Node.GetListAt(i).Accept(this);
+			node.GetListAt(i).Accept(this);
 		}
 		// finally block
-		this.AsmBuilder.visitLabel(Label.FinallyLabel);
-		if(Node.HasFinallyBlockNode()) {
-			Node.FinallyBlockNode().Accept(this);
+		this.AsmBuilder.visitLabel(label.FinallyLabel);
+		if(node.hasFinallyBlockNode()) {
+			node.finallyBlockNode().Accept(this);
 		}
 		this.TryCatchLabel.pop();
 	}
 
 	@Override
-	public void VisitCatchNode(DShellCatchNode Node) {
+	public void visitCatchNode(DShellCatchNode node) {
 		Label catchLabel = new Label();
 		AsmTryCatchLabel Label = this.TryCatchLabel.peek();
 
 		// prepare
-		String throwType = this.resolveExceptionType(Node);
+		String throwType = this.resolveExceptionType(node);
 		this.AsmBuilder.visitTryCatchBlock(Label.BeginTryLabel, Label.EndTryLabel, catchLabel, throwType);
 
 		// catch block
-		this.AsmBuilder.AddLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
+		this.AsmBuilder.AddLocal(this.GetJavaClass(node.exceptionType()), node.exceptionName());
 		this.AsmBuilder.visitLabel(catchLabel);
-		this.invokeExceptionWrapper(Node);
-		Node.BlockNode().Accept(this);
+		this.invokeExceptionWrapper(node);
+		node.blockNode().Accept(this);
 		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
 
-		this.AsmBuilder.RemoveLocal(this.GetJavaClass(Node.ExceptionType()), Node.ExceptionName());
+		this.AsmBuilder.RemoveLocal(this.GetJavaClass(node.exceptionType()), node.exceptionName());
 	}
 
-	private String resolveExceptionType(DShellCatchNode Node) {
-		if(!Node.HasTypeInfo()) {
+	private String resolveExceptionType(DShellCatchNode node) {
+		if(!node.hasTypeInfo()) {
 			return Type.getType(Throwable.class).getInternalName();
 		}
-		return this.AsmType(Node.ExceptionType()).getInternalName();
+		return this.AsmType(node.exceptionType()).getInternalName();
 	}
 
-	private void invokeExceptionWrapper(DShellCatchNode Node) {
-		if(!Node.HasTypeInfo()) {
+	private void invokeExceptionWrapper(DShellCatchNode node) {
+		if(!node.hasTypeInfo()) {
 			this.invokeStaticMethod(null, this.wrapException);
 		}
-		this.AsmBuilder.StoreLocal(Node.ExceptionName());
+		this.AsmBuilder.StoreLocal(node.exceptionName());
 	}
 
-	@Override public void VisitThrowNode(BunThrowNode Node) {
-		Node.ExprNode().Accept(this);
+	@Override public void VisitThrowNode(BunThrowNode node) {
+		node.ExprNode().Accept(this);
 		this.AsmBuilder.visitInsn(Opcodes.ATHROW);
 	}
 
-	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
-		if(!(Node.LeftNode().Type instanceof BGenericType) && !(Node.LeftNode().Type instanceof BFuncType)) {
-			this.VisitNativeInstanceOfNode(Node);
+	@Override public void VisitInstanceOfNode(BunInstanceOfNode node) {
+		if(!(node.LeftNode().Type instanceof BGenericType) && !(node.LeftNode().Type instanceof BFuncType)) {
+			this.VisitNativeInstanceOfNode(node);
 			return;
 		}
-		Node.LeftNode().Accept(this);
-		this.AsmBuilder.Pop(Node.LeftNode().Type);
-		this.AsmBuilder.PushLong(Node.LeftNode().Type.TypeId);
-		this.AsmBuilder.PushLong(Node.TargetType().TypeId);
+		node.LeftNode().Accept(this);
+		this.AsmBuilder.Pop(node.LeftNode().Type);
+		this.AsmBuilder.PushLong(node.LeftNode().Type.TypeId);
+		this.AsmBuilder.PushLong(node.TargetType().TypeId);
 		Method method = JavaMethodTable.GetBinaryStaticMethod(BType.IntType, "==", BType.IntType);
 		this.invokeStaticMethod(null, method);
 	}
 
-	private void VisitNativeInstanceOfNode(BunInstanceOfNode Node) {
-		if(!Node.TargetType().Equals(JavaTypeTable.GetBunType(this.GetJavaClass(Node.TargetType())))) {
-			Node.LeftNode().Accept(this);
-			this.AsmBuilder.Pop(Node.LeftNode().Type);
+	private void VisitNativeInstanceOfNode(BunInstanceOfNode node) {
+		if(!node.TargetType().Equals(JavaTypeTable.GetBunType(this.GetJavaClass(node.TargetType())))) {
+			node.LeftNode().Accept(this);
+			this.AsmBuilder.Pop(node.LeftNode().Type);
 			this.AsmBuilder.PushBoolean(false);
 			return;
 		}
-		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
-		if(Node.TargetType().IsIntType()) {
-			JavaClass = Long.class;
+		Class<?> javaClass = this.GetJavaClass(node.TargetType());
+		if(node.TargetType().IsIntType()) {
+			javaClass = Long.class;
 		}
-		else if(Node.TargetType().IsFloatType()) {
-			JavaClass = Double.class;
+		else if(node.TargetType().IsFloatType()) {
+			javaClass = Double.class;
 		}
-		else if(Node.TargetType().IsBooleanType()) {
-			JavaClass = Boolean.class;
+		else if(node.TargetType().IsBooleanType()) {
+			javaClass = Boolean.class;
 		}
-		this.invokeBoxingMethod(Node.LeftNode());
-		this.AsmBuilder.visitTypeInsn(Opcodes.INSTANCEOF, JavaClass);
+		this.invokeBoxingMethod(node.LeftNode());
+		this.AsmBuilder.visitTypeInsn(Opcodes.INSTANCEOF, javaClass);
 	}
 
-	private void invokeBoxingMethod(BNode TargetNode) {
-		Class<?> TargetClass = Object.class;
-		if(TargetNode.Type.IsIntType()) {
-			TargetClass = Long.class;
+	private void invokeBoxingMethod(BNode targetNode) {
+		Class<?> targetClass = Object.class;
+		if(targetNode.Type.IsIntType()) {
+			targetClass = Long.class;
 		}
-		else if(TargetNode.Type.IsFloatType()) {
-			TargetClass = Double.class;
+		else if(targetNode.Type.IsFloatType()) {
+			targetClass = Double.class;
 		}
-		else if(TargetNode.Type.IsBooleanType()) {
-			TargetClass = Boolean.class;
+		else if(targetNode.Type.IsBooleanType()) {
+			targetClass = Boolean.class;
 		}
-		Class<?> SourceClass = this.GetJavaClass(TargetNode.Type);
-		Method sMethod = JavaMethodTable.GetCastMethod(TargetClass, SourceClass);
-		TargetNode.Accept(this);
-		if(!TargetClass.equals(Object.class)) {
+		Class<?> sourceClass = this.GetJavaClass(targetNode.Type);
+		Method sMethod = JavaMethodTable.GetCastMethod(targetClass, sourceClass);
+		targetNode.Accept(this);
+		if(!targetClass.equals(Object.class)) {
 			this.invokeStaticMethod(null, sMethod);
 		}
 	}
 
-	@Override public void VisitErrorNode(ErrorNode Node) {
-		assert Node.SourceToken != null;
-		LibBunLogger._LogError(Node.SourceToken, Node.ErrorMessage);
+	@Override public void VisitErrorNode(ErrorNode node) {
+		assert node.SourceToken != null;
+		LibBunLogger._LogError(node.SourceToken, node.ErrorMessage);
 		throw new ErrorNodeFoundException();
 	}
 
-	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode Node) {
-		if(Node instanceof BunContinueNode) {
-			this.VisitContinueNode((BunContinueNode) Node);
+	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode node) {
+		if(node instanceof BunContinueNode) {
+			this.visitContinueNode((BunContinueNode) node);
 		}
 		else {
-			super.VisitSyntaxSugarNode(Node);
+			super.VisitSyntaxSugarNode(node);
 		}
 	}
 
 	@Override
-	public void VisitContinueNode(BunContinueNode Node) {
+	public void visitContinueNode(BunContinueNode node) {
 		Label l = this.AsmBuilder.ContinueLabelStack.peek();
 		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, l);
 	}
 
 	@Override
-	public void VisitForNode(DShellForNode Node) {
+	public void visitForNode(DShellForNode node) {
 		Label headLabel = new Label();
 		Label continueLabel = new Label();
 		Label breakLabel = new Label();
 		this.AsmBuilder.BreakLabelStack.push(breakLabel);
 		this.AsmBuilder.ContinueLabelStack.push(continueLabel);
 
-		if(Node.HasDeclNode()) {
-			this.VisitVarDeclNode(Node.VarDeclNode());
+		if(node.hasDeclNode()) {
+			this.VisitVarDeclNode(node.toVarDeclNode());
 		}
 		this.AsmBuilder.visitLabel(headLabel);
-		Node.CondNode().Accept(this);
+		node.condNode().Accept(this);
 		this.AsmBuilder.visitJumpInsn(Opcodes.IFEQ, breakLabel);
-		Node.BlockNode().Accept(this);
+		node.blockNode().Accept(this);
 		this.AsmBuilder.visitLabel(continueLabel);
-		if(Node.HasNextNode()) {
-			Node.NextNode().Accept(this);
+		if(node.hasNextNode()) {
+			node.nextNode().Accept(this);
 		}
 		this.AsmBuilder.visitJumpInsn(Opcodes.GOTO, headLabel);
 		this.AsmBuilder.visitLabel(breakLabel);
-		if(Node.HasDeclNode()) {
-			this.VisitVarDeclNode2(Node.VarDeclNode());
+		if(node.hasDeclNode()) {
+			this.VisitVarDeclNode2(node.toVarDeclNode());
 		}
 
 		this.AsmBuilder.BreakLabelStack.pop();
@@ -337,21 +337,21 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	protected void VisitVarDeclNode(BunLetVarNode Node) {
-		String VarName = Node.GetGivenName();
-		if(this.AsmBuilder.FindLocalVariable(VarName) != null) {
-			this.VisitErrorNode(new ErrorNode(Node, VarName + " is already defined"));
+	protected void VisitVarDeclNode(BunLetVarNode node) {
+		String varName = node.GetGivenName();
+		if(this.AsmBuilder.FindLocalVariable(varName) != null) {
+			this.VisitErrorNode(new ErrorNode(node, varName + " is already defined"));
 			return;
 		}
-		Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
-		this.AsmBuilder.AddLocal(DeclClass, VarName);
-		this.AsmBuilder.PushNode(DeclClass, Node.InitValueNode());
-		this.AsmBuilder.StoreLocal(VarName);
+		Class<?> declClass = this.GetJavaClass(node.DeclType());
+		this.AsmBuilder.AddLocal(declClass, varName);
+		this.AsmBuilder.PushNode(declClass, node.InitValueNode());
+		this.AsmBuilder.StoreLocal(varName);
 	}
 
 	@Override
-	public void VisitWrapperNode(DShellWrapperNode Node) {
-		Node.getTargetNode().Accept(this);
+	public void visitWrapperNode(DShellWrapperNode node) {
+		node.getTargetNode().Accept(this);
 	}
 
 	private int getTypeId(BType type) {
@@ -400,16 +400,16 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	public void VisitLetNode(BunLetVarNode Node) {
-		String varName = Node.GetGivenName();
+	public void VisitLetNode(BunLetVarNode node) {
+		String varName = node.GetGivenName();
 		if(GlobalVariableTable.existEntry(varName)) {
-			this.VisitErrorNode(new ErrorNode(Node, varName + " is already defined"));
+			this.VisitErrorNode(new ErrorNode(node, varName + " is already defined"));
 			return;
 		}
-		int typeId = this.getTypeId(Node.DeclType());
-		int varIndex = GlobalVariableTable.addEntry(varName, typeId, Node.IsReadOnly());
+		int typeId = this.getTypeId(node.DeclType());
+		int varIndex = GlobalVariableTable.addEntry(varName, typeId, node.IsReadOnly());
 		try {
-			this.setVariable(varIndex, typeId, Node.InitValueNode());
+			this.setVariable(varIndex, typeId, node.InitValueNode());
 		}
 		catch(Throwable t) {
 			GlobalVariableTable.removeEntry(varName);
@@ -421,13 +421,13 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	@Override
-	protected void VisitGlobalNameNode(GetNameNode Node) {
-		BunLetVarNode LetNode = Node.ResolvedNode;
-		String varName = LetNode.GetGivenName();
-		int typeId = this.getTypeId(LetNode.DeclType());
+	protected void VisitGlobalNameNode(GetNameNode node) {
+		BunLetVarNode letNode = node.ResolvedNode;
+		String varName = letNode.GetGivenName();
+		int typeId = this.getTypeId(letNode.DeclType());
 		int varIndex = GlobalVariableTable.getVarIndex(varName, typeId);
 		if(varIndex == -1) {
-			this.VisitErrorNode(new ErrorNode(Node, "undefiend varibale: " + varName));
+			this.VisitErrorNode(new ErrorNode(node, "undefiend varibale: " + varName));
 			return;
 		}
 		String owner = Type.getInternalName(GlobalVariableTable.class);
@@ -451,40 +451,40 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
 			this.AsmBuilder.PushInt(varIndex);
 			this.AsmBuilder.visitInsn(Opcodes.AALOAD);
-			this.AsmBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.GetJavaClass(Node.Type));
+			this.AsmBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.GetJavaClass(node.Type));
 			break;
 		}
 	}
 
 	@Override
-	protected void GenerateAssignNode(GetNameNode Node, BNode ExprNode) {
-		if(Node.ResolvedNode == null) {
-			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + Node.GivenName));
+	protected void GenerateAssignNode(GetNameNode node, BNode exprNode) {
+		if(node.ResolvedNode == null) {
+			this.VisitErrorNode(new ErrorNode(node, "undefined symbol: " + node.GivenName));
 			return;
 		}
-		if(Node.ResolvedNode.IsReadOnly() && !(Node.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
-			this.VisitErrorNode(new ErrorNode(Node, "read only variable: " + Node.GivenName));
+		if(node.ResolvedNode.IsReadOnly() && !(node.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
+			this.VisitErrorNode(new ErrorNode(node, "read only variable: " + node.GivenName));
 			return;
 		}
-		if(Node.ResolvedNode.GetDefiningFunctionNode() == null) {
-			int typeId = this.getTypeId(ExprNode.Type);
-			int varIndex = GlobalVariableTable.getVarIndex(Node.ResolvedNode.GetGivenName(), typeId);
-			this.setVariable(varIndex, typeId, ExprNode);
+		if(node.ResolvedNode.GetDefiningFunctionNode() == null) {
+			int typeId = this.getTypeId(exprNode.Type);
+			int varIndex = GlobalVariableTable.getVarIndex(node.ResolvedNode.GetGivenName(), typeId);
+			this.setVariable(varIndex, typeId, exprNode);
 			return;
 		}
-		String Name = Node.GetUniqueName(this);
-		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(Name), ExprNode);
-		this.AsmBuilder.StoreLocal(Name);
+		String name = node.GetUniqueName(this);
+		this.AsmBuilder.PushNode(this.AsmBuilder.GetLocalType(name), exprNode);
+		this.AsmBuilder.StoreLocal(name);
 	}
 
 	@Override
-	public void VisitMatchRegexNode(MatchRegexNode Node) {
-		this.VisitBinaryNode(Node);
+	public void visitMatchRegexNode(MatchRegexNode node) {
+		this.VisitBinaryNode(node);
 	}
 
 	@Override
-	public void VisitInternalFuncCallNode(InternalFuncCallNode Node) {
-		this.invokeStaticMethod(null, Node.getMethod());
+	public void visitInternalFuncCallNode(InternalFuncCallNode node) {
+		this.invokeStaticMethod(null, node.getMethod());
 	}
 
 	// utils for visitor
@@ -606,18 +606,18 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	public void loadArg(String[] scriptArgs) {
-		StringBuilder ARGVBuilder = new StringBuilder();
-		ARGVBuilder.append("let ARGV = [");
+		StringBuilder argvBuilder = new StringBuilder();
+		argvBuilder.append("let ARGV = [");
 		for(int i = 0; i < scriptArgs.length; i++) {
 			if(i != 0) {
-				ARGVBuilder.append(", ");
+				argvBuilder.append(", ");
 			}
-			ARGVBuilder.append("\"");
-			ARGVBuilder.append(scriptArgs[i]);
-			ARGVBuilder.append("\"");
+			argvBuilder.append("\"");
+			argvBuilder.append(scriptArgs[i]);
+			argvBuilder.append("\"");
 		}
-		ARGVBuilder.append("]");
-		this.loadScript(ARGVBuilder.toString(), scriptArgs[0], 0, false);
+		argvBuilder.append("]");
+		this.loadScript(argvBuilder.toString(), scriptArgs[0], 0, false);
 	}
 
 	public boolean loadFile(String fileName) {
@@ -655,9 +655,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		return node;
 	}
 
-	protected void generateByteCode(BNode Node) {
+	protected void generateByteCode(BNode node) {
 		try {
-			Node.Accept(this);
+			node.Accept(this);
 		}
 		catch(ErrorNodeFoundException e) {
 			this.topLevelStatementList.clear();
@@ -674,47 +674,47 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	protected boolean generateStatement(BNode Node, boolean IsInteractive) {
+	protected boolean generateStatement(BNode node, boolean IsInteractive) {
 		this.EnableVisitor();
-		if(Node instanceof EmptyNode) {
+		if(node instanceof EmptyNode) {
 			return this.IsVisitable();
 		}
-		if(Node instanceof TopLevelNode) {
-			((TopLevelNode)Node).Perform(this.RootGamma);
+		if(node instanceof TopLevelNode) {
+			((TopLevelNode)node).Perform(this.RootGamma);
 			return this.IsVisitable();
 		}
-		Node = this.checkTopLevelSupport(Node);
-		if(Node.IsErrorNode()) {
-			this.generateByteCode(Node);
+		node = this.checkTopLevelSupport(node);
+		if(node.IsErrorNode()) {
+			this.generateByteCode(node);
 		}
-		else if(IsInteractive && (Node instanceof DShellWrapperNode) && !((DShellWrapperNode)Node).isVarTarget()) {
-			Node = this.TypeChecker.CheckType(Node, BType.VoidType);
-			this.generateByteCode(Node);
+		else if(IsInteractive && (node instanceof DShellWrapperNode) && !((DShellWrapperNode)node).isVarTarget()) {
+			node = this.TypeChecker.CheckType(node, BType.VoidType);
+			this.generateByteCode(node);
 		}
 		else if(IsInteractive) {
-			BunFunctionNode FuncNode = ((DShellTypeChecker)this.TypeChecker).VisitTopLevelStatementNode(Node);
-			this.topLevelStatementList.add(new TopLevelStatementInfo(FuncNode.GivenName, FuncNode.ReturnType()));
-			this.generateByteCode(FuncNode);
+			BunFunctionNode funcNode = ((DShellTypeChecker)this.TypeChecker).visitTopLevelStatementNode(node);
+			this.topLevelStatementList.add(new TopLevelStatementInfo(funcNode.GivenName, funcNode.ReturnType()));
+			this.generateByteCode(funcNode);
 		}
 		else {
 			if(this.untypedMainNode == null) {
-				this.untypedMainNode = new BunFunctionNode(Node.ParentNode);
+				this.untypedMainNode = new BunFunctionNode(node.ParentNode);
 				this.untypedMainNode.GivenName = "main";
-				this.untypedMainNode.SourceToken = Node.SourceToken;
+				this.untypedMainNode.SourceToken = node.SourceToken;
 				this.untypedMainNode.SetNode(BunFunctionNode._Block, new BunBlockNode(this.untypedMainNode, null));
 			}
-			this.untypedMainNode.BlockNode().Append(Node);
+			this.untypedMainNode.BlockNode().Append(node);
 		}
 		return this.IsVisitable();
 	}
 
 	protected boolean evalAndPrintEachNode(TopLevelStatementInfo info) {
-		Class<?> FuncClass = this.GetDefinedFunctionClass(info.funcName, BType.VoidType, 0);
+		Class<?> funcClass = this.GetDefinedFunctionClass(info.funcName, BType.VoidType, 0);
 		try {
-			Method Method = FuncClass.getMethod("f");
-			Object Value = Method.invoke(null);
+			Method method = funcClass.getMethod("f");
+			Object value = method.invoke(null);
 			if(!info.returnType.IsVoidType()) {
-				System.out.println(" (" + info.returnType + ") " + Value);
+				System.out.println(" (" + info.returnType + ") " + value);
 			}
 			return true;
 		}
@@ -743,10 +743,10 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			System.exit(1);
 		}
 		try {
-			BunFunctionNode Node = (BunFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
-			Node.Type = BType.VoidType;
-			Node.IsExport = true;
-			Node.Accept(this);
+			BunFunctionNode node = (BunFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
+			node.Type = BType.VoidType;
+			node.IsExport = true;
+			node.Accept(this);
 			this.Logger.OutputErrorsToStdErr();
 		}
 		catch(ErrorNodeFoundException e) {
@@ -762,9 +762,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 			System.exit(1);
 		}
 		if(this.MainFuncNode != null) {
-			JavaStaticFieldNode MainFunc = this.MainFuncNode;
+			JavaStaticFieldNode mainFunc = this.MainFuncNode;
 			try {
-				Method Method = MainFunc.StaticClass.getMethod("f");
+				Method Method = mainFunc.StaticClass.getMethod("f");
 				Method.invoke(null);
 				System.exit(0);
 			}

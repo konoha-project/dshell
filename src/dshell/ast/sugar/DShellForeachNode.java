@@ -42,110 +42,110 @@ public class DShellForeachNode extends SyntaxSugarNode {
 	public final static int _Expr  = 1;
 	public final static int _Block = 2;
 
-	public DShellForeachNode(BNode ParentNode) {
-		super(ParentNode, 3);
+	public DShellForeachNode(BNode parentNode) {
+		super(parentNode, 3);
 	}
 
 	@Override
-	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
-		TypeChecker.CheckTypeAt(this, _Expr, BType.VarType);
+	public void PerformTyping(LibBunTypeChecker typeChecker, BType contextType) {
+		typeChecker.CheckTypeAt(this, _Expr, BType.VarType);
 		if(!this.AST[_Expr].Type.IsArrayType()) {
 			this.SetNode(_Expr, new ErrorNode(this.ParentNode, this.SourceToken, "require array type"));
 		}
 	}
 
 	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChecker) {
-		String ValuesSymbol = TypeChecker.Generator.NameUniqueSymbol("values");
-		String SizeSymbol = TypeChecker.Generator.NameUniqueSymbol("size");
-		String IndexSymbol = TypeChecker.Generator.NameUniqueSymbol("index");
+	public DesugarNode PerformDesugar(LibBunTypeChecker typeChecker) {
+		String valuesSymbol = typeChecker.Generator.NameUniqueSymbol("values");
+		String sizeSymbol = typeChecker.Generator.NameUniqueSymbol("size");
+		String indexSymbol = typeChecker.Generator.NameUniqueSymbol("index");
 		// create if
-		BNode Node = new BunIfNode(this.ParentNode);
-		Node.SetNode(BunIfNode._Cond, new BunBooleanNode(true));
-		BunBlockNode ThenBlockNode = new BunBlockNode(Node, null);
-		Node.SetNode(BunIfNode._Then, ThenBlockNode);
+		BNode node = new BunIfNode(this.ParentNode);
+		node.SetNode(BunIfNode._Cond, new BunBooleanNode(true));
+		BunBlockNode thenBlockNode = new BunBlockNode(node, null);
+		node.SetNode(BunIfNode._Then, thenBlockNode);
 		// create var
-		this.CreateAndSetValueDeclNode(ThenBlockNode, ValuesSymbol, this.AST[_Expr]);
-		this.CreateAndSetSizeDeclNode(ThenBlockNode, SizeSymbol, ValuesSymbol);
+		this.createAndSetValueDeclNode(thenBlockNode, valuesSymbol, this.AST[_Expr]);
+		this.createAndSetSizeDeclNode(thenBlockNode, sizeSymbol, valuesSymbol);
 		// create for
-		DShellForNode ForNode = new DShellForNode(ThenBlockNode);
-		ThenBlockNode.SetNode(BNode._AppendIndex, ForNode);
-		ForNode.SetNode(DShellForNode._Init, this.CreateIndexDeclNode(ForNode, IndexSymbol));
-		ForNode.SetNode(DShellForNode._Cond, this.CreateCondNode(ForNode, IndexSymbol, SizeSymbol));
-		ForNode.SetNode(DShellForNode._Next, this.CreateIncrementNode(ForNode, IndexSymbol));
-		ForNode.SetNode(DShellForNode._Block, this.CreateForBlockNode(ForNode, ValuesSymbol, IndexSymbol));
-		return new DesugarNode(this, Node);
+		DShellForNode forNode = new DShellForNode(thenBlockNode);
+		thenBlockNode.SetNode(BNode._AppendIndex, forNode);
+		forNode.SetNode(DShellForNode._Init, this.createIndexDeclNode(forNode, indexSymbol));
+		forNode.SetNode(DShellForNode._Cond, this.createCondNode(forNode, indexSymbol, sizeSymbol));
+		forNode.SetNode(DShellForNode._Next, this.createIncrementNode(forNode, indexSymbol));
+		forNode.SetNode(DShellForNode._Block, this.createForBlockNode(forNode, valuesSymbol, indexSymbol));
+		return new DesugarNode(this, node);
 	}
 
-	private void CreateAndSetValueDeclNode(BunBlockNode ParentNode, String ValuesSymbol, BNode ExprNode) {
-		BunLetVarNode Node = new BunLetVarNode(ParentNode, BunLetVarNode._IsReadOnly, null, ValuesSymbol);
-		Node.SetNode(BunLetVarNode._InitValue, ExprNode);
-		ParentNode.SetNode(BNode._AppendIndex, Node);
+	private void createAndSetValueDeclNode(BunBlockNode parentNode, String valuesSymbol, BNode exprNode) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, valuesSymbol);
+		node.SetNode(BunLetVarNode._InitValue, exprNode);
+		parentNode.SetNode(BNode._AppendIndex, node);
 	}
 
-	private void CreateAndSetSizeDeclNode(BunBlockNode ParentNode, String SizeSymbol, String ValuesSymbol) {
-		BunLetVarNode Node = new BunLetVarNode(ParentNode, BunLetVarNode._IsReadOnly, null, SizeSymbol);
-		Node.SourceToken = this.SourceToken;
-		MethodCallNode SizeNode = new MethodCallNode(ParentNode, new GetNameNode(ParentNode, null, ValuesSymbol), "Size");
-		SizeNode.SourceToken = this.SourceToken; // for line number
-		Node.SetNode(BunLetVarNode._InitValue, SizeNode);
-		ParentNode.SetNode(BNode._AppendIndex, Node);
+	private void createAndSetSizeDeclNode(BunBlockNode parentNode, String sizeSymbol, String valuesSymbol) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, sizeSymbol);
+		node.SourceToken = this.SourceToken;
+		MethodCallNode sizeNode = new MethodCallNode(parentNode, new GetNameNode(parentNode, null, valuesSymbol), "Size");
+		sizeNode.SourceToken = this.SourceToken; // for line number
+		node.SetNode(BunLetVarNode._InitValue, sizeNode);
+		parentNode.SetNode(BNode._AppendIndex, node);
 	}
 
-	private BunLetVarNode CreateIndexDeclNode(BNode ParentNode, String IndexSymbol) {
-		BunLetVarNode Node = new BunLetVarNode(ParentNode, 0, null, IndexSymbol);
-		Node.SetNode(BunLetVarNode._InitValue, new BunIntNode(Node, null, 0));
-		return Node;
+	private BunLetVarNode createIndexDeclNode(BNode parentNode, String indexSymbol) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, 0, null, indexSymbol);
+		node.SetNode(BunLetVarNode._InitValue, new BunIntNode(node, null, 0));
+		return node;
 	}
 
-	private ComparatorNode CreateCondNode(BNode ParentNode, String IndexSymbol, String SizeSymbol) {
-		BNode LeftNode = new GetNameNode(ParentNode, null, IndexSymbol);
-		BNode RightNode = new GetNameNode(ParentNode, null, SizeSymbol);
-		BunLessThanNode Node = new BunLessThanNode(ParentNode);
-		Node.SetLeftNode(LeftNode);
-		Node.SetRightNode(RightNode);
-		return Node;
+	private ComparatorNode createCondNode(BNode parentNode, String indexSymbol, String sizeSymbol) {
+		BNode leftNode = new GetNameNode(parentNode, null, indexSymbol);
+		BNode rightNode = new GetNameNode(parentNode, null, sizeSymbol);
+		BunLessThanNode node = new BunLessThanNode(parentNode);
+		node.SetLeftNode(leftNode);
+		node.SetRightNode(rightNode);
+		return node;
 	}
 
-	private AssignNode CreateIncrementNode(BNode ParentNode, String IndexSymbol) {
-		BinaryOperatorNode BinaryNode = new BunAddNode(ParentNode);
-		BinaryNode.SetLeftNode(new GetNameNode(BinaryNode, null, IndexSymbol));
-		BinaryNode.SetRightNode(new BunIntNode(BinaryNode, null, 1));
-		return new AssignNode(IndexSymbol, BinaryNode);
+	private AssignNode createIncrementNode(BNode parentNode, String indexSymbol) {
+		BinaryOperatorNode binaryNode = new BunAddNode(parentNode);
+		binaryNode.SetLeftNode(new GetNameNode(binaryNode, null, indexSymbol));
+		binaryNode.SetRightNode(new BunIntNode(binaryNode, null, 1));
+		return new AssignNode(indexSymbol, binaryNode);
 	}
 
-	private BunLetVarNode CreateValueDeclNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol) {
-		BNode IndexNode = new GetIndexNode(ParentNode, new GetNameNode(ParentNode, null, ValuesSymbol));
-		IndexNode.SetNode(GetIndexNode._Index, new GetNameNode(IndexNode, null, IndexSymbol));
-		BunLetVarNode Node = new BunLetVarNode(ParentNode, 0, null, this.GetName());
-		Node.SetNode(BunLetVarNode._InitValue, IndexNode);
-		return Node;
+	private BunLetVarNode createValueDeclNode(BNode parentNode, String valuesSymbol, String indexSymbol) {
+		BNode indexNode = new GetIndexNode(parentNode, new GetNameNode(parentNode, null, valuesSymbol));
+		indexNode.SetNode(GetIndexNode._Index, new GetNameNode(indexNode, null, indexSymbol));
+		BunLetVarNode node = new BunLetVarNode(parentNode, 0, null, this.getName());
+		node.SetNode(BunLetVarNode._InitValue, indexNode);
+		return node;
 	}
 
-	private BunBlockNode CreateForBlockNode(BNode ParentNode, String ValuesSymbol, String IndexSymbol) {
-		BunBlockNode ForBlockNode = new BunBlockNode(ParentNode, null);
-		ForBlockNode.Append(this.CreateValueDeclNode(ForBlockNode, ValuesSymbol, IndexSymbol));
-		BunBlockNode OldBlockNode = this.BlockNode();
-		int size = OldBlockNode.GetListSize();
+	private BunBlockNode createForBlockNode(BNode parentNode, String valuesSymbol, String indexSymbol) {
+		BunBlockNode forBlockNode = new BunBlockNode(parentNode, null);
+		forBlockNode.Append(this.createValueDeclNode(forBlockNode, valuesSymbol, indexSymbol));
+		BunBlockNode oldBlockNode = this.blockNode();
+		int size = oldBlockNode.GetListSize();
 		for(int i = 0; i < size; i++) {
-			ForBlockNode.Append(OldBlockNode.GetListAt(i));
+			forBlockNode.Append(oldBlockNode.GetListAt(i));
 		}
-		return ForBlockNode;
+		return forBlockNode;
 	}
 
-	private final String GetName() {	//FIXME getName()
-		BNode ValueNameNode = this.AST[_Value];
-		if(!(ValueNameNode instanceof GetNameNode)) {
+	private final String getName() {	//FIXME getName()
+		BNode valueNameNode = this.AST[_Value];
+		if(!(valueNameNode instanceof GetNameNode)) {
 			Utils.fatal(1, "require GetNameNode");
 		}
-		return ((GetNameNode)ValueNameNode).GivenName;
+		return ((GetNameNode)valueNameNode).GivenName;
 	}
 
-	private final BunBlockNode BlockNode() {
-		BNode BlockNode = this.AST[_Block];
-		if(!(BlockNode instanceof BunBlockNode)) {
+	private final BunBlockNode blockNode() {
+		BNode blockNode = this.AST[_Block];
+		if(!(blockNode instanceof BunBlockNode)) {
 			Utils.fatal(1, "require BlockNode");
 		}
-		return ((BunBlockNode)BlockNode);
+		return ((BunBlockNode)blockNode);
 	}
 }

@@ -3,7 +3,6 @@ package dshell.grammar;
 import dshell.grammar.PrefixOptionPatternFunc;
 import libbun.type.BType;
 import libbun.util.BMatchFunction;
-import libbun.util.Var;
 import libbun.ast.BNode;
 import dshell.ast.CommandNode;
 import libbun.parser.classic.BToken;
@@ -12,20 +11,20 @@ import libbun.parser.classic.BTokenContext;
 public class SubstitutionPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$Substitution$";
 
-	@Override public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		@Var BToken Token = TokenContext.GetToken(BTokenContext._MoveNext);
-		if(Token.EqualsText("$") && TokenContext.MatchToken("(")) {
-			@Var BNode Node = TokenContext.ParsePattern(ParentNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
-			if(Node == null) {
-				Node = TokenContext.ParsePattern(ParentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+	@Override public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
+		if(token.EqualsText("$") && tokenContext.MatchToken("(")) {
+			BNode node = tokenContext.ParsePattern(parentNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
+			if(node == null) {
+				node = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 			}
-			Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
-			if(Node instanceof CommandNode) {
-				((CommandNode)Node).SetType(BType.StringType);
+			node = tokenContext.MatchToken(node, ")", BTokenContext._Required);
+			if(node instanceof CommandNode) {
+				((CommandNode)node).setType(BType.StringType);
 			}
-			return Node;
+			return node;
 		}
-		else if(Token.EqualsText("`")) {
+		else if(token.EqualsText("`")) {
 			//TODO:
 		}
 		return null;

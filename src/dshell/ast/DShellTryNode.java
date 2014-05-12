@@ -11,38 +11,38 @@ public class DShellTryNode extends AbstractListNode {
 	public final static int _Try = 0;
 	public final static int _Finally = 1;
 
-	public DShellTryNode(BNode ParentNode) {
-		super(ParentNode, 2);
+	public DShellTryNode(BNode parentNode) {
+		super(parentNode, 2);
 	}
 
-	public final BunBlockNode TryBlockNode() {
-		BNode BlockNode = this.AST[_Try];
-		if(BlockNode instanceof BunBlockNode) {
-			return (BunBlockNode) BlockNode;
+	public final BunBlockNode tryBlockNode() {
+		BNode blockNode = this.AST[_Try];
+		if(blockNode instanceof BunBlockNode) {
+			return (BunBlockNode) blockNode;
 		}
-		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		Utils.fatal(1, "need ZBlockNode: " + blockNode);
 		return null;
 	}
 
-	public final boolean HasFinallyBlockNode() {
+	public final boolean hasFinallyBlockNode() {
 		return this.AST[_Finally] != null;
 	}
 
-	public final BunBlockNode FinallyBlockNode() {
-		BNode BlockNode = this.AST[_Finally];
-		if(BlockNode instanceof BunBlockNode) {
-			return (BunBlockNode) BlockNode;
+	public final BunBlockNode finallyBlockNode() {
+		BNode blockNode = this.AST[_Finally];
+		if(blockNode instanceof BunBlockNode) {
+			return (BunBlockNode) blockNode;
 		}
-		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		Utils.fatal(1, "need ZBlockNode: " + blockNode);
 		return null;
 	}
 
-	@Override public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitTryNode(this);
+	@Override public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitTryNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

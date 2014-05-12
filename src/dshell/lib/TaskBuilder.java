@@ -174,36 +174,36 @@ public class TaskBuilder {
 	}
 
 	// called by ModifiedAsmGenerator#VisitCommandNode
-	public static void ExecCommandVoid(CommandArg[][] cmds) {
+	public static void execCommandVoid(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(VoidType, printable, throwable);
 		new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static int ExecCommandInt(CommandArg[][] cmds) {
+	public static int execCommandInt(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(IntType, printable, returnable);
 		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
 	}
 
-	public static boolean ExecCommandBool(CommandArg[][] cmds) {
-		return ExecCommandInt(cmds) == 0;
+	public static boolean execCommandBool(CommandArg[][] cmds) {
+		return execCommandInt(cmds) == 0;
 	}
 
-	public static String ExecCommandString(CommandArg[][] cmds) {
+	public static String execCommandString(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(StringType, returnable);
 		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
-	public static BArray<String> ExecCommandStringArray(CommandArg[][] cmds) {
-		return new BArray<String>(0, Utils.splitWithDelim(ExecCommandString(cmds)));
+	public static BArray<String> execCommandStringArray(CommandArg[][] cmds) {
+		return new BArray<String>(0, Utils.splitWithDelim(execCommandString(cmds)));
 	}
 
-	public static Task ExecCommandTask(CommandArg[][] cmds) {
+	public static Task execCommandTask(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
 		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	@SuppressWarnings("unchecked")
-	public static BArray<Task> ExecCommandTaskArray(CommandArg[][] cmds) {
+	public static BArray<Task> execCommandTaskArray(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
 		return (BArray<Task>)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}

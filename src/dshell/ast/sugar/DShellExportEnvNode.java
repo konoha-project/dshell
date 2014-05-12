@@ -14,26 +14,26 @@ public class DShellExportEnvNode extends SyntaxSugarNode {
 	public final static int _NameInfo = 0;
 	public final static int _Expr = 1;
 
-	public DShellExportEnvNode(BNode ParentNode) {
-		super(ParentNode, 2);
+	public DShellExportEnvNode(BNode parentNode) {
+		super(parentNode, 2);
 	}
 
 	@Override
-	public void PerformTyping(LibBunTypeChecker TypeChecker, BType ContextType) {
-		TypeChecker.CheckTypeAt(this, _Expr, BType.StringType);
+	public void PerformTyping(LibBunTypeChecker typeChecker, BType contextType) {
+		typeChecker.CheckTypeAt(this, _Expr, BType.StringType);
 	}
 
 	@Override
-	public DesugarNode PerformDesugar(LibBunTypeChecker TypeChekcer) {
-		String EnvName = this.AST[_NameInfo].SourceToken.GetText();
-		GetNameNode FuncNameNode = new GetNameNode(this.ParentNode, this.SourceToken, "setEnv");
-		FuncCallNode SetEnvNode = new FuncCallNode(this.ParentNode, FuncNameNode);
-		SetEnvNode.SourceToken = this.SourceToken;
-		SetEnvNode.SetNode(BNode._AppendIndex, new BunStringNode(SetEnvNode, null, EnvName));
-		SetEnvNode.SetNode(BNode._AppendIndex, this.AST[DShellExportEnvNode._Expr]);
-		BNode LetNode = new BunLetVarNode(this, BunLetVarNode._IsReadOnly, null, null);
-		LetNode.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
-		LetNode.SetNode(BunLetVarNode._InitValue, SetEnvNode);
-		return new DesugarNode(this, LetNode);
+	public DesugarNode PerformDesugar(LibBunTypeChecker typeChecker) {
+		String envName = this.AST[_NameInfo].SourceToken.GetText();
+		GetNameNode funcNameNode = new GetNameNode(this.ParentNode, this.SourceToken, "setEnv");
+		FuncCallNode setEnvNode = new FuncCallNode(this.ParentNode, funcNameNode);
+		setEnvNode.SourceToken = this.SourceToken;
+		setEnvNode.SetNode(BNode._AppendIndex, new BunStringNode(setEnvNode, null, envName));
+		setEnvNode.SetNode(BNode._AppendIndex, this.AST[DShellExportEnvNode._Expr]);
+		BNode letNode = new BunLetVarNode(this, BunLetVarNode._IsReadOnly, null, null);
+		letNode.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
+		letNode.SetNode(BunLetVarNode._InitValue, setEnvNode);
+		return new DesugarNode(this, letNode);
 	}
 }

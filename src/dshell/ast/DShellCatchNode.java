@@ -16,63 +16,63 @@ public class DShellCatchNode extends BNode {
 	public final static int _TypeInfo = 1;
 	public final static int _Block = 2;
 
-	private String ExceptionName = null;
-	private BType ExceptionType = null;
+	private String exceptionName = null;
+	private BType exceptionType = null;
 
-	public DShellCatchNode(BNode ParentNode) {
-		super(ParentNode, 3);
+	public DShellCatchNode(BNode parentNode) {
+		super(parentNode, 3);
 	}
 
-	public final String ExceptionName() {
-		if(this.ExceptionName == null) {
-			this.ExceptionName = this.AST[_NameInfo].SourceToken.GetText();
+	public final String exceptionName() {
+		if(this.exceptionName == null) {
+			this.exceptionName = this.AST[_NameInfo].SourceToken.GetText();
 		}
-		return this.ExceptionName;
+		return this.exceptionName;
 	}
 
-	public final BType ExceptionType() {
-		if(this.ExceptionType == null && this.HasTypeInfo()) {
-			this.ExceptionType = ((BunTypeNode) this.AST[_TypeInfo]).Type;
+	public final BType exceptionType() {
+		if(this.exceptionType == null && this.hasTypeInfo()) {
+			this.exceptionType = ((BunTypeNode) this.AST[_TypeInfo]).Type;
 		}
-		if(this.ExceptionType == null) {
-			this.ExceptionType = JavaTypeTable.GetBunType(Exception.class);
+		if(this.exceptionType == null) {
+			this.exceptionType = JavaTypeTable.GetBunType(Exception.class);
 		}
-		return this.ExceptionType;
+		return this.exceptionType;
 	}
 
-	public void SetExceptionType(BType Type) {
-		this.ExceptionType = Type;
+	public void setExceptionType(BType type) {
+		this.exceptionType = type;
 	}
 
-	public BunLetVarNode ToLetVarNode() {
-		BunLetVarNode Node = new BunLetVarNode(this.ParentNode, BunLetVarNode._IsReadOnly, null, null);
-		Node.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
-		if(this.HasTypeInfo()) {
-			Node.SetNode(BunLetVarNode._TypeInfo, this.AST[_TypeInfo]);
+	public BunLetVarNode toLetVarNode() {
+		BunLetVarNode node = new BunLetVarNode(this.ParentNode, BunLetVarNode._IsReadOnly, null, null);
+		node.SetNode(BunLetVarNode._NameInfo, this.AST[_NameInfo]);
+		if(this.hasTypeInfo()) {
+			node.SetNode(BunLetVarNode._TypeInfo, this.AST[_TypeInfo]);
 		}
-		Node.SetDeclType(this.ExceptionType());
-		return Node;
+		node.SetDeclType(this.exceptionType());
+		return node;
 	}
 
-	public final BunBlockNode BlockNode() {
-		BNode BlockNode = this.AST[_Block];
-		if(BlockNode instanceof BunBlockNode) {
-			return (BunBlockNode) BlockNode;
+	public final BunBlockNode blockNode() {
+		BNode blockNode = this.AST[_Block];
+		if(blockNode instanceof BunBlockNode) {
+			return (BunBlockNode) blockNode;
 		}
-		Utils.fatal(1, "need ZBlockNode: " + BlockNode);
+		Utils.fatal(1, "need ZBlockNode: " + blockNode);
 		return null;
 	}
 
-	public boolean HasTypeInfo() {
+	public boolean hasTypeInfo() {
 		return this.AST[_TypeInfo] != null;
 	}
 
-	@Override public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitCatchNode(this);
+	@Override public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitCatchNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

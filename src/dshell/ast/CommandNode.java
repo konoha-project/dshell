@@ -10,65 +10,65 @@ import libbun.type.BType;
 import libbun.util.BArray;
 
 public class CommandNode extends BNode {
-	private final BArray<BNode> ArgList;
-	private BType RetType = BType.VarType;
-	private CommandNode PipedNextNode;
+	private final BArray<BNode> argList;
+	private BType retType = BType.VarType;
+	private CommandNode pipedNextNode;
 
-	public CommandNode(BNode ParentNode, BToken Token, String Command) {
-		super(ParentNode, 0);
-		this.SourceToken = Token;
-		this.PipedNextNode = null;
-		this.ArgList = new BArray<BNode>(new BNode[]{});
-		this.AppendArgNode(new ArgumentNode(ParentNode, Command));
+	public CommandNode(BNode parentNode, BToken token, String command) {
+		super(parentNode, 0);
+		this.SourceToken = token;
+		this.pipedNextNode = null;
+		this.argList = new BArray<BNode>(new BNode[]{});
+		this.appendArgNode(new ArgumentNode(parentNode, command));
 	}
 
-	public void AppendArgNode(BNode Node) {
-		this.ArgList.add(this.SetChild(Node, true));
+	public void appendArgNode(BNode node) {
+		this.argList.add(this.SetChild(node, true));
 	}
 
-	public BNode AppendPipedNextNode(CommandNode Node) {
-		CommandNode CurrentNode = this;
-		while(CurrentNode.PipedNextNode != null) {
-			CurrentNode = CurrentNode.PipedNextNode;
+	public BNode appendPipedNextNode(CommandNode node) {
+		CommandNode currentNode = this;
+		while(currentNode.pipedNextNode != null) {
+			currentNode = currentNode.pipedNextNode;
 		}
-		CurrentNode.PipedNextNode = (CommandNode) CurrentNode.SetChild(Node, false);
+		currentNode.pipedNextNode = (CommandNode) currentNode.SetChild(node, false);
 		return this;
 	}
 
-	public int GetArgSize() {
-		return this.ArgList.size();
+	public int getArgSize() {
+		return this.argList.size();
 	}
 
-	public void SetArgAt(int Index, BNode ArgNode) {
-		BArray.SetIndex(this.ArgList, Index, ArgNode);
+	public void setArgAt(int index, BNode argNode) {
+		BArray.SetIndex(this.argList, index, argNode);
 	}
 
-	public BNode GetArgAt(int Index) {
-		return BArray.GetIndex(this.ArgList, Index);
+	public BNode getArgAt(int index) {
+		return BArray.GetIndex(this.argList, index);
 	}
 
-	public void SetType(BType Type) {
-		this.RetType = Type;
+	public void setType(BType type) {
+		this.retType = type;
 	}
 
-	public BType RetType() {
-		return this.RetType;
+	public BType retType() {
+		return this.retType;
 	}
 
 	public CommandNode getPipedNextNode() {
-		return this.PipedNextNode;
+		return this.pipedNextNode;
 	}
 
 	public void setPipedNextNode(CommandNode node) {
-		this.PipedNextNode = node;
+		this.pipedNextNode = node;
 	}
 	@Override
-	public void Accept(LibBunVisitor Visitor) {
-		if(Visitor instanceof DShellVisitor) {
-			((DShellVisitor)Visitor).VisitCommandNode(this);
+	public void Accept(LibBunVisitor visitor) {
+		if(visitor instanceof DShellVisitor) {
+			((DShellVisitor)visitor).visitCommandNode(this);
 		}
 		else {
-			Utils.fatal(1, Visitor.getClass().getName() + " is unsupported Visitor");
+			Utils.fatal(1, visitor.getClass().getName() + " is unsupported Visitor");
 		}
 	}
 }

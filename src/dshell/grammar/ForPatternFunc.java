@@ -7,17 +7,17 @@ import dshell.ast.DShellForNode;
 
 public class ForPatternFunc extends BMatchFunction {
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BNode Node = new DShellForNode(ParentNode);
-		Node = TokenContext.MatchToken(Node, "for", BTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, "(", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Init, "var", BTokenContext._Optional);
-		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Cond, "$Expression$", BTokenContext._Required);
-		Node = TokenContext.MatchToken(Node, ";", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Next, "$Expression$", BTokenContext._Optional);
-		Node = TokenContext.MatchToken(Node, ")", BTokenContext._Required);
-		Node = TokenContext.MatchPattern(Node, DShellForNode._Block, "$Block$", BTokenContext._Required);
-		return Node;
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BNode node = new DShellForNode(parentNode);
+		node = tokenContext.MatchToken(node, "for", BTokenContext._Required);
+		node = tokenContext.MatchToken(node, "(", BTokenContext._Required);
+		node = tokenContext.MatchPattern(node, DShellForNode._Init, "var", BTokenContext._Optional);
+		node = tokenContext.MatchToken(node, ";", BTokenContext._Required);
+		node = tokenContext.MatchPattern(node, DShellForNode._Cond, "$Expression$", BTokenContext._Required);
+		node = tokenContext.MatchToken(node, ";", BTokenContext._Required);
+		node = tokenContext.MatchPattern(node, DShellForNode._Next, "$Expression$", BTokenContext._Optional);
+		node = tokenContext.MatchToken(node, ")", BTokenContext._Required);
+		node = tokenContext.MatchPattern(node, DShellForNode._Block, "$Block$", BTokenContext._Required);
+		return node;
 	}
 }

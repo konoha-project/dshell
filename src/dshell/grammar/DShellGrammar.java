@@ -16,75 +16,75 @@ public class DShellGrammar {	//FIXME
 		return "__@$" + Symbol;
 	}
 
-	public static void ImportGrammar(LibBunGamma Gamma) {
+	public static void ImportGrammar(LibBunGamma gamma) {
 		// import BunGrammer
-		BunGrammar.LoadGrammar(Gamma);
+		BunGrammar.LoadGrammar(gamma);
 		// import ShellGrammar
-		ShellGrammar.LoadGrammar(Gamma);
+		ShellGrammar.LoadGrammar(gamma);
 		// import DShell Specific Grammar
 		MatchRegexPatternFunc matchRegxPattern = new MatchRegexPatternFunc();
 		SubstitutionPatternFunc substitutionPattern = new SubstitutionPatternFunc();
 		DShellVarPatternFunc varPattern = new DShellVarPatternFunc();
 
-		Gamma.DefineToken("'", new SingleQuoteStringLiteralTokenFunc());
-		Gamma.DefineToken("\"", new DoubleQuoteStringLiteralTokenFunc());
+		gamma.DefineToken("'", new SingleQuoteStringLiteralTokenFunc());
+		gamma.DefineToken("\"", new DoubleQuoteStringLiteralTokenFunc());
 
 //		overrideStatement(Gamma, "import", new JavaImportPattern());
-		overrideStatement(Gamma, "continue", new ContinuePatternFunction());
+		overrideStatement(gamma, "continue", new ContinuePatternFunction());
 
-		Gamma.DefineBinaryOperator("=~", matchRegxPattern);
-		Gamma.DefineBinaryOperator("!~", matchRegxPattern);
+		gamma.DefineBinaryOperator("=~", matchRegxPattern);
+		gamma.DefineBinaryOperator("!~", matchRegxPattern);
 
-		overrideStatement(Gamma, "try", new DShellTryPatternFunc());
-		overrideStatement(Gamma, DShellTryPatternFunc.CatchPatternName, new DShellCatchPatternFunc());
-		Gamma.DefineStatement(location, new LocationDefinePatternFunc());
-		Gamma.DefineStatement("for", new ForPatternFunc());
-		Gamma.DefineStatement("for", new ForeachPatternFunc());
-		Gamma.DefineExpression(DoubleQuoteStringLiteralPatternFunc.PatternName, new DoubleQuoteStringLiteralPatternFunc());
+		overrideStatement(gamma, "try", new DShellTryPatternFunc());
+		overrideStatement(gamma, DShellTryPatternFunc.catchPatternName, new DShellCatchPatternFunc());
+		gamma.DefineStatement(location, new LocationDefinePatternFunc());
+		gamma.DefineStatement("for", new ForPatternFunc());
+		gamma.DefineStatement("for", new ForeachPatternFunc());
+		gamma.DefineExpression(DoubleQuoteStringLiteralPatternFunc.patternName, new DoubleQuoteStringLiteralPatternFunc());
 //		NameSpace.DefineExpression("$( `", substitutionPattern);
-		Gamma.DefineExpression("$", substitutionPattern);
-		Gamma.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
-		overrideExpression(Gamma, "assert", new AssertPatternFunc());
-		overrideExpression(Gamma, DShellBlockPatternFunc.PatternName, new DShellBlockPatternFunc());
-		overrideStatement(Gamma, "var", varPattern);
-		overrideStatement(Gamma, "let", varPattern);
+		gamma.DefineExpression("$", substitutionPattern);
+		gamma.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
+		overrideExpression(gamma, "assert", new AssertPatternFunc());
+		overrideExpression(gamma, DShellBlockPatternFunc.patternName, new DShellBlockPatternFunc());
+		overrideStatement(gamma, "var", varPattern);
+		overrideStatement(gamma, "let", varPattern);
 
-		Gamma.DefineExpressionSuffix("++", BunExtraGrammar.IncSuffixPattern);
-		Gamma.DefineExpressionSuffix("--", BunExtraGrammar.DecSuffixPattern);
+		gamma.DefineExpressionSuffix("++", BunExtraGrammar.IncSuffixPattern);
+		gamma.DefineExpressionSuffix("--", BunExtraGrammar.DecSuffixPattern);
 
-		Gamma.DefineBinaryOperator("+", BunExtraGrammar.SelfAddPattern);
-		Gamma.DefineBinaryOperator("-", BunExtraGrammar.SelfSubPattern);
-		Gamma.DefineBinaryOperator("*", BunExtraGrammar.SelfMulPattern);
-		Gamma.DefineBinaryOperator("/", BunExtraGrammar.SelfDivPattern);
-		Gamma.DefineBinaryOperator("%", BunExtraGrammar.SelfModPattern);
-		Gamma.DefineBinaryOperator("&", BunExtraGrammar.SelfBitwiseAndPattern);
-		Gamma.DefineBinaryOperator("|", BunExtraGrammar.SelfBitwiseOrPattern);
-		Gamma.DefineBinaryOperator("^", BunExtraGrammar.SelfBitwiseXorPattern);
-		Gamma.DefineBinaryOperator("<<", BunExtraGrammar.SelfLeftShiftPattern);
-		Gamma.DefineBinaryOperator(">>", BunExtraGrammar.SelfRightShiftPattern);
+		gamma.DefineBinaryOperator("+", BunExtraGrammar.SelfAddPattern);
+		gamma.DefineBinaryOperator("-", BunExtraGrammar.SelfSubPattern);
+		gamma.DefineBinaryOperator("*", BunExtraGrammar.SelfMulPattern);
+		gamma.DefineBinaryOperator("/", BunExtraGrammar.SelfDivPattern);
+		gamma.DefineBinaryOperator("%", BunExtraGrammar.SelfModPattern);
+		gamma.DefineBinaryOperator("&", BunExtraGrammar.SelfBitwiseAndPattern);
+		gamma.DefineBinaryOperator("|", BunExtraGrammar.SelfBitwiseOrPattern);
+		gamma.DefineBinaryOperator("^", BunExtraGrammar.SelfBitwiseXorPattern);
+		gamma.DefineBinaryOperator("<<", BunExtraGrammar.SelfLeftShiftPattern);
+		gamma.DefineBinaryOperator(">>", BunExtraGrammar.SelfRightShiftPattern);
 
-		Gamma.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
+		gamma.Generator.LangInfo.AppendGrammarInfo("dshell" + DShell.version);
 	}
 
-	private static void overrideStatement(LibBunGamma Gamma, String PatternName, BMatchFunction MatchFunc) {
-		LibBunSyntax oldSyntaxPattern = Gamma.GetSyntaxPattern(PatternName);	//FIXME
+	private static void overrideStatement(LibBunGamma gamma, String patternName, BMatchFunction matchFunc) {
+		LibBunSyntax oldSyntaxPattern = gamma.GetSyntaxPattern(patternName);	//FIXME
 		if(oldSyntaxPattern == null) {
-			Gamma.DefineStatement(PatternName, MatchFunc);
+			gamma.DefineStatement(patternName, matchFunc);
 		}
 		else {
-			oldSyntaxPattern.MatchFunc = MatchFunc;
+			oldSyntaxPattern.MatchFunc = matchFunc;
 			oldSyntaxPattern.ParentPattern = null;
 			oldSyntaxPattern.SyntaxFlag = LibBunSyntax._Statement;
 		}
 	}
 
-	private static void overrideExpression(LibBunGamma Gamma, String PatternName, BMatchFunction MatchFunc) {
-		LibBunSyntax oldSyntaxPattern = Gamma.GetSyntaxPattern(PatternName);	//FIXME
+	private static void overrideExpression(LibBunGamma gamma, String patternName, BMatchFunction matchFunc) {
+		LibBunSyntax oldSyntaxPattern = gamma.GetSyntaxPattern(patternName);	//FIXME
 		if(oldSyntaxPattern == null) {
-			Gamma.DefineExpression(PatternName, MatchFunc);
+			gamma.DefineExpression(patternName, matchFunc);
 		}
 		else {
-			oldSyntaxPattern.MatchFunc = MatchFunc;
+			oldSyntaxPattern.MatchFunc = matchFunc;
 			oldSyntaxPattern.ParentPattern = null;
 			oldSyntaxPattern.SyntaxFlag = 0;
 		}

@@ -8,18 +8,18 @@ import libbun.util.BMatchFunction;
 
 public class DShellVarPatternFunc extends BMatchFunction {
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		int AccessFlag = 0;
-		BToken Token = TokenContext.GetToken();
-		if(Token.EqualsText("let")) {
-			AccessFlag = BunLetVarNode._IsReadOnly;
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		int accessFlag = 0;
+		BToken token = tokenContext.GetToken();
+		if(token.EqualsText("let")) {
+			accessFlag = BunLetVarNode._IsReadOnly;
 		}
-		BNode VarNode = new BunLetVarNode(ParentNode, AccessFlag, null, null);
-		VarNode = TokenContext.MatchToken(VarNode, AccessFlag == 0 ? "var" : "let", BTokenContext._Required);
-		VarNode = TokenContext.MatchPattern(VarNode, BunLetVarNode._NameInfo, "$Name$", BTokenContext._Required);
-		VarNode = TokenContext.MatchPattern(VarNode, BunLetVarNode._TypeInfo, "$TypeAnnotation$", BTokenContext._Optional);
-		VarNode = TokenContext.MatchToken(VarNode, "=", BTokenContext._Required);
-		VarNode = TokenContext.MatchPattern(VarNode, BunLetVarNode._InitValue, "$Expression$", BTokenContext._Required);
-		return VarNode;
+		BNode varNode = new BunLetVarNode(parentNode, accessFlag, null, null);
+		varNode = tokenContext.MatchToken(varNode, accessFlag == 0 ? "var" : "let", BTokenContext._Required);
+		varNode = tokenContext.MatchPattern(varNode, BunLetVarNode._NameInfo, "$Name$", BTokenContext._Required);
+		varNode = tokenContext.MatchPattern(varNode, BunLetVarNode._TypeInfo, "$TypeAnnotation$", BTokenContext._Optional);
+		varNode = tokenContext.MatchToken(varNode, "=", BTokenContext._Required);
+		varNode = tokenContext.MatchPattern(varNode, BunLetVarNode._InitValue, "$Expression$", BTokenContext._Required);
+		return varNode;
 	}
 }

@@ -9,10 +9,10 @@ import libbun.util.BMatchFunction;
 
 public class MatchRegexPatternFunc extends BMatchFunction {
 	@Override
-	public BNode Invoke(BNode ParentNode, BTokenContext TokenContext, BNode LeftNode) {
-		BToken Token = TokenContext.GetToken();
-		boolean IsUnmatch = Token.EqualsText("!~");
-		BinaryOperatorNode BinaryNode = new MatchRegexNode(ParentNode, IsUnmatch);
-		return BinaryNode.SetParsedNode(ParentNode, LeftNode, BinaryNode.GetOperator(), TokenContext);
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BToken token = tokenContext.GetToken();
+		boolean isUnmatch = token.EqualsText("!~");
+		BinaryOperatorNode binaryNode = new MatchRegexNode(parentNode, isUnmatch);
+		return binaryNode.SetParsedNode(parentNode, leftNode, binaryNode.GetOperator(), tokenContext);
 	}
 }

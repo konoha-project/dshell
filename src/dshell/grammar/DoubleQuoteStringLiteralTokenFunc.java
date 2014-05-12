@@ -5,47 +5,47 @@ import libbun.util.BTokenFunction;
 
 public class DoubleQuoteStringLiteralTokenFunc extends BTokenFunction {
 	@Override
-	public boolean Invoke(BSourceContext SourceContext) {
-		int StartIndex = SourceContext.GetPosition();
-		SourceContext.MoveNext();
+	public boolean Invoke(BSourceContext sourceContext) {
+		int startIndex = sourceContext.GetPosition();
+		sourceContext.MoveNext();
 		try {
-			this.MatchStringLiteral(SourceContext);
-			SourceContext.Tokenize(DoubleQuoteStringLiteralPatternFunc.PatternName, StartIndex, SourceContext.GetPosition());
+			this.matchStringLiteral(sourceContext);
+			sourceContext.Tokenize(DoubleQuoteStringLiteralPatternFunc.patternName, startIndex, sourceContext.GetPosition());
 			return true;
 		}
 		catch(Exception e) {
-			SourceContext.LogWarning(StartIndex, e.getMessage());
+			sourceContext.LogWarning(startIndex, e.getMessage());
 			return false;
 		}
 	}
 
-	private void MatchStringLiteral(BSourceContext SourceContext) {
-		while(SourceContext.HasChar()) {
-			char ch = SourceContext.GetCurrentChar();
+	private void matchStringLiteral(BSourceContext sourceContext) {
+		while(sourceContext.HasChar()) {
+			char ch = sourceContext.GetCurrentChar();
 			switch(ch) {
 			case '\"':
-				SourceContext.MoveNext();	// eat '"'
+				sourceContext.MoveNext();	// eat '"'
 				return;
 			case '\n':
 				break;
 			case '\\':
-				SourceContext.MoveNext();
+				sourceContext.MoveNext();
 				break;
 			case '$':
-				this.MatchDollar(SourceContext);
+				this.matchDollar(sourceContext);
 				break;
 			}
-			SourceContext.MoveNext();
+			sourceContext.MoveNext();
 		}
 		throw new RuntimeException("unclosed \"");
 	}
 
-	private void MatchExpression(BSourceContext SourceContext, final char openChar, final char closeChar) {
+	private void matchExpression(BSourceContext sourceContext, final char openChar, final char closeChar) {
 		int braceCount = 1;
-		while(SourceContext.HasChar()) {
-			char ch = SourceContext.GetCurrentChar();
+		while(sourceContext.HasChar()) {
+			char ch = sourceContext.GetCurrentChar();
 			if(ch == '\"') {
-				this.MatchStringLiteral(SourceContext);
+				this.matchStringLiteral(sourceContext);
 				continue;
 			}
 			else if(ch == openChar) {
@@ -57,22 +57,22 @@ public class DoubleQuoteStringLiteralTokenFunc extends BTokenFunction {
 				}
 			}
 			else if(ch == '\\') {
-				SourceContext.MoveNext();
+				sourceContext.MoveNext();
 			}
 			else if(ch == '$') {
-				this.MatchDollar(SourceContext);
+				this.matchDollar(sourceContext);
 			}
-			SourceContext.MoveNext();
+			sourceContext.MoveNext();
 		}
 		throw new RuntimeException("unclosed " + closeChar);
 	}
 
-	private void MatchDollar(BSourceContext SourceContext) {
-		char ch = SourceContext.GetCharAtFromCurrentPosition(1);
+	private void matchDollar(BSourceContext sourceContext) {
+		char ch = sourceContext.GetCharAtFromCurrentPosition(1);
 		if(ch == '{' || ch == '(') {
-			SourceContext.MoveNext();
-			SourceContext.MoveNext();
-			this.MatchExpression(SourceContext, ch, ch == '{' ? '}' : ')');
+			sourceContext.MoveNext();
+			sourceContext.MoveNext();
+			this.matchExpression(sourceContext, ch, ch == '{' ? '}' : ')');
 		}
 	}
 }
