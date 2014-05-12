@@ -487,6 +487,7 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.invokeStaticMethod(null, Node.getMethod());
 	}
 
+	// utils for visitor
 	protected void invokeStaticMethod(BNode Node, Method method) {
 		String owner = Type.getInternalName(method.getDeclaringClass());
 		this.AsmBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
@@ -495,51 +496,81 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		}
 	}
 
-	private void loadJavaClass(Class<?> classObject) {
+	protected void loadJavaClass(Class<?> classObject) {
 		BType type = JavaTypeTable.GetBunType(classObject);
 		this.RootGamma.SetTypeName(type, null);
 	}
 
-	private void loadJavaClassList(ArrayList<Class<?>> classObjList) {
+	protected void loadJavaClassList(ArrayList<Class<?>> classObjList) {
 		for(Class<?> classObj : classObjList) {
 			this.loadJavaClass(classObj);
 		}
 	}
 
-	private void loadJavaStaticMethod(Class<?> holderClass, String internalName, Class<?>... paramClasses) {
+	protected void loadJavaStaticMethod(Class<?> holderClass, String internalName, Class<?>... paramClasses) {
 		this.loadJavaStaticMethod(holderClass, internalName, internalName, paramClasses);
 	}
 
-	private void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
+	protected void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
+		this.loadJavaStaticMethod(holderClass, name, internalName, null, this.toBTypes(paramClasses));
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, String name, BType returnType, BType... paramTypes) {
+		this.loadJavaStaticMethod(holderClass, name, name, returnType, paramTypes);
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, BType returnType, BType... paramTypes) {
 		String formSymbol = name;
 		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
 		BArray<BType> typeList = new BArray<BType>(new BType[4]);
 		StringBuilder formBuilder = new StringBuilder();
 		formBuilder.append(holderClassPath + "." + internalName + "(");
-		for(int i = 0; i < paramClasses.length; i++) {
+		for(int i = 0; i < paramTypes.length; i++) {
 			if(i != 0) {
 				formBuilder.append(",");
 			}
 			formBuilder.append("$[" + i + "]");
-			typeList.add(JavaTypeTable.GetBunType(paramClasses[i]));
+			typeList.add(paramTypes[i]);
 		}
 		formBuilder.append(")");
-		try {
-			typeList.add(JavaTypeTable.GetBunType(holderClass.getMethod(internalName, paramClasses).getReturnType()));
-			BFuncType funcType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
-			BFormFunc formFunc = new BFormFunc(formSymbol, funcType, null, formBuilder.toString());
-			if(name.equals("_")) {
-				this.SetConverterFunc(funcType.GetRecvType(), funcType.GetReturnType(), formFunc);
+		if(returnType == null) {
+			try {
+				returnType = JavaTypeTable.GetBunType(holderClass.getMethod(internalName, this.toClasses(paramTypes)).getReturnType());
 			}
-			else {
-				this.SetDefinedFunc(formFunc);
+			catch(Throwable e) {
+				Utils.fatal(1, "load static method faild: " + e.getMessage());
 			}
 		}
-		catch(Throwable e) {
-			Utils.fatal(1, "load static method faild: " + e.getMessage());
+		typeList.add(returnType);
+		BFuncType funcType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
+		BFormFunc formFunc = new BFormFunc(formSymbol, funcType, null, formBuilder.toString());
+		if(name.equals("_")) {
+			this.SetConverterFunc(funcType.GetRecvType(), funcType.GetReturnType(), formFunc);
+		}
+		else {
+			this.SetDefinedFunc(formFunc);
 		}
 	}
 
+	protected Class<?>[] toClasses(BType[] types) {
+		int size = types.length;
+		Class<?>[] classes = new Class<?>[size];
+		for(int i = 0; i < size; i++) {
+			classes[i] = this.GetJavaClass(types[i]);
+		}
+		return classes;
+	}
+
+	protected BType[] toBTypes(Class<?>[] classes) {
+		int size = classes.length;
+		BType[] types = new BType[size];
+		for(int i = 0; i < size; i++) {
+			types[i] = JavaTypeTable.GetBunType(classes[i]);
+		}
+		return types;
+	}
+
+	// utils for execution
 	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
 		boolean result = true;
 		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
