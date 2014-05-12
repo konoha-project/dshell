@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
-public class StreamFactory {
+public class StreamUtils {
 	public static InputStream createInputStream(java.io.InputStream sourceInput, String name, boolean closeable) {
 		return new InputStream(sourceInput, name, closeable);
 	}
@@ -16,15 +16,15 @@ public class StreamFactory {
 	}
 
 	public static InputStream createStdin() {
-		return createInputStream(System.in, "standard input", false);
+		return new StandardInput();
 	}
 
 	public static OutputStream createStdout() {
-		return createOutputStream(System.out, "standard output", false);
+		return new StandardOutput();
 	}
 
 	public static OutputStream createStderr() {
-		return createOutputStream(System.err, "standard error", false);
+		return new StandardError();
 	}
 
 	private static abstract class Stream {
@@ -112,6 +112,24 @@ public class StreamFactory {
 					e.printStackTrace();
 				}
 			}
+		}
+	}
+
+	public final static class StandardInput extends InputStream {
+		public StandardInput() {
+			super(System.in, "standard input", false);
+		}
+	}
+
+	public final static class StandardOutput extends OutputStream {
+		public StandardOutput() {
+			super(System.out, "standard output", false);
+		}
+	}
+
+	public final static class StandardError extends OutputStream {
+		public StandardError() {
+			super(System.err, "standard error", false);
 		}
 	}
 }

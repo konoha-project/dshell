@@ -1,5 +1,7 @@
 package dshell.lib;
 
+import java.util.ArrayList;
+
 public enum BuiltinSymbol {
 	cd {
 		@Override
@@ -82,5 +84,15 @@ public enum BuiltinSymbol {
 			}
 		}
 		throw new IllegalArgumentException("Illegal Symbol: " + symbol);
+	}
+
+	public static ArrayList<String> getCommandSymbolList() {
+		ArrayList<String> symbolList = new ArrayList<String>();
+		for(BuiltinSymbol symbol : BuiltinSymbol.values()) {
+			if(symbol.isCommandSymbol()) {
+				symbolList.add(symbol.getExternalName());
+			}
+		}
+		return symbolList;
 	}
 }

@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import dshell.grammar.ShellGrammar;
-import dshell.lib.BuiltinCommand;
+import dshell.lib.BuiltinSymbol;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import jline.Completor;
@@ -49,7 +49,7 @@ public class DShellCompletor implements Completor {
 	private static TreeSet<String> getCommandSet() {
 		TreeSet<String> commandSet = Utils.getCommandSetFromPath();
 		// add builtin command
-		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
+		ArrayList<String> symbolList = BuiltinSymbol.getCommandSymbolList();
 		for(String symbol : symbolList) {
 			commandSet.add(symbol);
 		}

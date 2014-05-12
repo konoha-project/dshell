@@ -164,7 +164,7 @@ public class TaskBuilder {
 	}
 
 	private PseudoProcess createProc(ArrayList<CommandArg> cmds, boolean enableTrace) {
-		PseudoProcess proc = BuiltinCommand.createCommand(cmds);
+		PseudoProcess proc = RuntimeContext.getContext().getBuiltinCommand(cmds);
 		if(proc != null) {
 			return proc;
 		}

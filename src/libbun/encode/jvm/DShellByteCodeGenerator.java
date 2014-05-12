@@ -46,7 +46,7 @@ import dshell.lib.CommandArg;
 import dshell.lib.CommandArg.SubstitutedArg;
 import dshell.lib.GlobalVariableTable;
 import dshell.lib.RuntimeContext;
-import dshell.lib.StreamFactory;
+import dshell.lib.StreamUtils;
 import dshell.lib.Task;
 import dshell.lib.TaskBuilder;
 import dshell.lib.Utils;
@@ -88,8 +88,8 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 		this.loadJavaClassList(Errno.getExceptionClassList());
 		this.loadJavaClass(CommandArg.class);
 		this.loadJavaClass(SubstitutedArg.class);
-		this.loadJavaClass(StreamFactory.InputStream.class);
-		this.loadJavaClass(StreamFactory.OutputStream.class);
+		this.loadJavaClass(StreamUtils.InputStream.class);
+		this.loadJavaClass(StreamUtils.OutputStream.class);
 
 		try {
 			this.ExecCommandVoid = TaskBuilder.class.getMethod("ExecCommandVoid", CommandArg[][].class);
@@ -609,9 +609,9 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	public void loadVariables(boolean isInteractive) {
 		BNode parentNode = new BunBlockNode(null, this.RootGamma);
 		ArrayList<BNode> nodeList = new ArrayList<BNode>();
-		nodeList.add(this.createVarNode(parentNode, "stdin", StreamFactory.class, "createStdin"));
-		nodeList.add(this.createVarNode(parentNode, "stdout", StreamFactory.class, "createStdout"));
-		nodeList.add(this.createVarNode(parentNode, "stderr", StreamFactory.class, "createStderr"));
+		nodeList.add(this.createVarNode(parentNode, "stdin", StreamUtils.class, "createStdin"));
+		nodeList.add(this.createVarNode(parentNode, "stdout", StreamUtils.class, "createStdout"));
+		nodeList.add(this.createVarNode(parentNode, "stderr", StreamUtils.class, "createStderr"));
 		for(BNode node : nodeList) {
 			this.generateStatement(node, isInteractive);
 			this.evalAndPrint();

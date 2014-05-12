@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import dshell.ast.CommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
 import dshell.ast.sugar.DShellImportEnvNode;
-import dshell.lib.BuiltinCommand;
+import dshell.lib.BuiltinSymbol;
 import dshell.lib.RuntimeContext;
 import dshell.lib.Utils;
 import dshell.ast.sugar.ArgumentNode;
@@ -600,7 +600,7 @@ public class ShellGrammar {
 		Gamma.DefineStatement(ExportEnvPatternFunc.PatternName, new ExportEnvPatternFunc());
 
 		// from BultinCommandMap
-		ArrayList<String> symbolList = BuiltinCommand.getCommandSymbolList();
+		ArrayList<String> symbolList = BuiltinSymbol.getCommandSymbolList();
 		for(String symbol : symbolList) {
 			RuntimeContext.getContext().commandScope.setCommandPath(symbol, symbol);
 		}

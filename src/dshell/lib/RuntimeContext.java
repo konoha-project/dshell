@@ -2,6 +2,7 @@ package dshell.lib;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.SortedSet;
@@ -48,6 +49,9 @@ public class RuntimeContext implements Serializable {
 	// commandscope
 	transient public final CommandScope commandScope;
 
+	// builtin command holder
+	transient private final BuiltinCommandHolder commandHolder;
+
 	private RuntimeContext(){
 		if(System.getProperty("os.name").startsWith("Windows")) {
 			Utils.fatal(1, "Windows is Not Supported");
@@ -66,6 +70,7 @@ public class RuntimeContext implements Serializable {
 			this.envSet.add(entry.getKey());
 		}
 		this.commandScope = new CommandScope();
+		this.commandHolder = new BuiltinCommandHolder();
 	}
 
 	public Logger getLogger() {
@@ -178,6 +183,10 @@ public class RuntimeContext implements Serializable {
 
 	public String getenv(String key) {
 		return CLibraryWrapper.INSTANCE.getenv(key);
+	}
+
+	public CommandRunner getBuiltinCommand(ArrayList<CommandArg> cmds) {
+		return this.commandHolder.createCommand(cmds);
 	}
 
 	private static class ContextHolder {
