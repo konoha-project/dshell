@@ -512,14 +512,14 @@ public class DShellByteCodeGenerator extends AsmJavaGenerator implements DShellV
 	}
 
 	protected void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
-		this.loadJavaStaticMethod(holderClass, name, internalName, null, this.toBTypes(paramClasses));
+		this.loadJavaStaticMethod(holderClass, null, name, internalName, this.toBTypes(paramClasses));
 	}
 
-	protected void loadJavaStaticMethod(Class<?> holderClass, String name, BType returnType, BType... paramTypes) {
-		this.loadJavaStaticMethod(holderClass, name, name, returnType, paramTypes);
+	protected void loadJavaStaticMethod(Class<?> holderClass, BType returnType, String name, BType... paramTypes) {
+		this.loadJavaStaticMethod(holderClass, returnType, name, name, paramTypes);
 	}
 
-	protected void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, BType returnType, BType... paramTypes) {
+	protected void loadJavaStaticMethod(Class<?> holderClass, BType returnType, String name, String internalName, BType... paramTypes) {
 		String formSymbol = name;
 		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
 		BArray<BType> typeList = new BArray<BType>(new BType[4]);
