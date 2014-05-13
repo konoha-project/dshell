@@ -62,7 +62,7 @@ public class DShellConsole implements AbstractConsole {
 		String line = this.readLine(prompt);
 		lineBuilder.append(line);
 		int level = 0;
-		while((level = checkBraceLevel(line, level)) > 0) {
+		while((level = this.checkBraceLevel(line, level)) > 0) {
 			line = this.readLine(prompt2);
 			lineBuilder.append("\n");
 			lineBuilder.append(line);
@@ -109,18 +109,40 @@ public class DShellConsole implements AbstractConsole {
 		return prompts;
 	}
 
-	private static int checkBraceLevel(String text, int level) {
+	private int checkBraceLevel(String text, int level) {
 		if(text == null) {
 			return -1;
 		}
+		boolean foundDoubleQuote = false;
+		boolean foundSingleQuote = false;
 		int size = text.length();
 		for(int i = 0; i < size; i++) {
 			char ch = text.charAt(i);
-			if(ch == '{' || ch == '[') {
-				level++;
+			if(!foundSingleQuote && !foundDoubleQuote) {
+				if(ch == '{' || ch == '[' || ch == '(') {
+					level++;
+				}
+				if(ch == '}' || ch == ']' || ch == ')') {
+					level--;
+				}
+				if(ch == '\'') {
+					foundSingleQuote = true;
+				}
+				if(ch == '"') {
+					foundDoubleQuote = true;
+				}
 			}
-			if(ch == '}' || ch == ']') {
-				level--;
+			else {
+				if(ch == '\\') {
+					i++;
+					continue;
+				}
+				if(ch == '\'') {
+					foundSingleQuote = !foundSingleQuote;
+				}
+				if(ch == '"') {
+					foundDoubleQuote = !foundDoubleQuote;
+				}
 			}
 		}
 		return level;

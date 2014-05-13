@@ -41,7 +41,7 @@ public class DShellGrammar {	//FIXME
 		gamma.DefineStatement("for", new ForPatternFunc());
 		gamma.DefineStatement("for", new ForeachPatternFunc());
 		gamma.DefineExpression(DoubleQuoteStringLiteralPatternFunc.patternName, new DoubleQuoteStringLiteralPatternFunc());
-//		NameSpace.DefineExpression("$( `", substitutionPattern);
+//		gamma.DefineExpression("$( `", substitutionPattern);
 		gamma.DefineExpression("$", substitutionPattern);
 		gamma.DefineExpression(SubstitutionPatternFunc._PatternName, substitutionPattern);
 		overrideExpression(gamma, "assert", new AssertPatternFunc());
