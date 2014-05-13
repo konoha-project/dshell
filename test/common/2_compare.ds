@@ -1,4 +1,4 @@
-// int value
+# int value
 var a = 4
 var b = 2
 var c = 2
@@ -10,7 +10,7 @@ assert(a > b)
 assert(!(a <= b))
 assert(b >= c)
 
-// float value
+# float value
 var a2 = 4.2
 var b2 = 2.2
 var c2 = 2.2
@@ -22,7 +22,7 @@ assert(a2 > b2)
 assert(!(a2 <= b2))
 assert(b2 >= c2)
 
-// int and float value
+# int and float value
 var a3 = 4.2
 var b3 = 2
 var c3 = 2.0

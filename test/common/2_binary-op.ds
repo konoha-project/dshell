@@ -1,4 +1,4 @@
-// int value
+# int value
 var a = 4
 var b = 2
 
@@ -9,7 +9,7 @@ assert(a * b == 8)
 assert(a / b == 2)
 assert(a % b == 0)
 
-// float value
+# float value
 var a2 = 4.2
 var b2 = 2.2
 
@@ -20,7 +20,7 @@ assert(a2 * b2 == 9.240000000000002)
 assert(a2 / b2 == 1.909090909090909)
 assert(a2 % b2 == 2.0)
 
-// int and float
+# int and float
 var a3 = 4.2
 var b3 = 2
 

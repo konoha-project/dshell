@@ -1,4 +1,4 @@
-// primitive type
+# primitive type
 var a = 1
 assert(a instanceof int)
 var b = true
@@ -6,7 +6,7 @@ assert(b instanceof boolean)
 var c = 3.23
 assert(c instanceof float)
 
-// class tyep
+# class tyep
 class Hoge {
 	var name = "hey"
 	var id = 12
@@ -23,7 +23,7 @@ var e = new Huga()
 assert(e instanceof Huga)
 assert(e instanceof Hoge)
 
-// func type
+# func type
 var f = function(a : int, b : Exception) {
 	var c = a + 12
 	log $a
@@ -32,7 +32,7 @@ var f = function(a : int, b : Exception) {
 
 assert(f instanceof Func<int, Exception, void>)
 
-// generic type
+# generic type
 var g1 = [1, 2, 3]
 var g2 = ["a", "b", "c"]
 var g3 = [new Hoge(), new Huga()]
@@ -47,7 +47,7 @@ assert(g4 instanceof Map<int>)
 assert(g5 instanceof Map<String>)
 assert(!(g5 instanceof Map<int>))
 
-// Exception type
+# Exception type
 var h1 = new Exception()
 var h2 = new DShellException()
 var h3 = new FileNotFoundException()

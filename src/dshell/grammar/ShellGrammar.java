@@ -1,6 +1,7 @@
 package dshell.grammar;
 
 import java.util.ArrayList;
+import java.util.TreeSet;
 
 import dshell.ast.CommandNode;
 import dshell.ast.sugar.DShellExportEnvNode;
@@ -173,6 +174,10 @@ class ImportCommandPatternFunc extends BMatchFunction {
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
 		ArrayList<BToken> tokenList = new ArrayList<BToken>();
 		tokenContext.MoveNext();
+		if(tokenContext.MatchToken("*")) {
+			this.importAllFromPath(parentNode);
+			return new EmptyNode(parentNode);
+		}
 		while(tokenContext.HasNext()) {
 			BToken token = tokenContext.GetToken();
 			if(token.EqualsText(";") || token.IsIndent()) {
@@ -188,6 +193,15 @@ class ImportCommandPatternFunc extends BMatchFunction {
 		}
 		this.setCommandSymbol(parentNode, tokenContext, tokenList);
 		return new EmptyNode(parentNode);
+	}
+
+	private void importAllFromPath(BNode parentNode) {
+		LibBunGamma gamma = parentNode.GetGamma();
+		TreeSet<String> commandSet = Utils.getCommandSetFromPath(true);
+		for(String commandPath : commandSet) {
+			int lastIndex = commandPath.lastIndexOf("/");
+			this.checkDuplicationAndSetCommand(gamma, commandPath.substring(lastIndex + 1), commandPath);
+		}
 	}
 }
 

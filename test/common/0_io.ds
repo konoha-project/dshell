@@ -1,0 +1,8 @@
+stdout.writeLine("hello stdout1")
+stderr.writeLine("hello stderr!")
+
+var a = "hello "
+stdout.writeLine(a + "stdout2")
+stderr.writeLine(a + "stderr2")
+
+# always passed

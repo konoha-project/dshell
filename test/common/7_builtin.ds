@@ -1,0 +1,24 @@
+import command pwd
+
+## test cd
+var a = pwd
+cd ./
+assert(a == $(pwd))
+
+cd ~
+import env HOME
+assert(HOME == $(pwd))
+
+cd ../../
+cd 
+assert(HOME == $(pwd))
+
+cd /
+a = $(pwd)
+cd
+cd ../
+cd /
+assert(a == $(pwd))
+
+## test exit
+exit

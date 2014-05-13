@@ -1,11 +1,11 @@
-// string interpolation
+# string interpolation
 var a = "西暦${1900 + 114}年"
 var b = "西暦\${1900 + 114}年"
 
 assert(a == "西暦2014年")
 assert(b == '西暦${1900 + 114}年')
 
-// variable expand
+# variable expand
 import command echo
 
 var c1 = echo $a
@@ -14,7 +14,7 @@ assert(a == c1)
 var c2 = echo "he${"ll" + "o"} world"
 assert(c2 == "hello world")
 
-// command substitution
+# command substitution
 import command ls
 var d : String[] = ls
 var i = 0;

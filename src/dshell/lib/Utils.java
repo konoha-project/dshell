@@ -43,6 +43,10 @@ public class Utils {
 	}
 
 	public final static TreeSet<String> getCommandSetFromPath() {
+		return getCommandSetFromPath(false);
+	}
+
+	public final static TreeSet<String> getCommandSetFromPath(boolean requireFullPath) {
 		TreeSet<String> commandSet = new TreeSet<String>();
 		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
@@ -53,7 +57,11 @@ public class Utils {
 			}
 			for(File file : files) {
 				if(!file.isDirectory() && file.canExecute()) {
-					commandSet.add(file.getName());
+					String fileName = file.getName();
+					if(requireFullPath) {
+						fileName = path + "/" + fileName;
+					}
+					commandSet.add(fileName);
 				}
 			}
 		}

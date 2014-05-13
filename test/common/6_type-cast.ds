@@ -1,20 +1,20 @@
 function func() {
-  var a: int = 123
-  var b: float = 2.0
-  var c: String = "4567"
+	var a = 123
+	var b = 2.0
+	var c = "4567"
 
-  // int -> float
-  var d = (float)a
+	# int -> float
+	var d = (float)a
 
-  // String -> int
-  var e = (int)c
+	# String -> int
+	var e = (int)c
 
-  // float -> String
-  var f = (String)b
+	# float -> String
+	var f = (String)b
 
-  assert(d instanceof float)
-  assert(e instanceof int)
-  assert(f instanceof String)
+	assert(d instanceof float)
+	assert(e instanceof int)
+	assert(f instanceof String)
 
 }
 
