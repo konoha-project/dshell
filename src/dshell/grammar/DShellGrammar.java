@@ -37,7 +37,7 @@ public class DShellGrammar {	//FIXME
 
 		overrideStatement(gamma, "try", new DShellTryPatternFunc());
 		overrideStatement(gamma, DShellTryPatternFunc.catchPatternName, new DShellCatchPatternFunc());
-		gamma.DefineStatement(location, new LocationDefinePatternFunc());
+//		gamma.DefineStatement(location, new LocationDefinePatternFunc());
 		gamma.DefineStatement("for", new ForPatternFunc());
 		gamma.DefineStatement("for", new ForeachPatternFunc());
 		gamma.DefineExpression(DoubleQuoteStringLiteralPatternFunc.patternName, new DoubleQuoteStringLiteralPatternFunc());

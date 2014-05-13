@@ -210,19 +210,19 @@ class CommandPatternFunc extends BMatchFunction {
 
 	@Override
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
-		BToken commandToken = tokenContext.GetToken(BTokenContext._MoveNext);
-		String command = RuntimeContext.getContext().commandScope.getCommandPath(commandToken.GetText());
-		command = command != null ? command : commandToken.GetText();
-		CommandNode commandNode = new CommandNode(parentNode, commandToken, command);
+		String command = this.checkAndGetCommandPath(tokenContext);
+		if(command == null) {
+			return null;
+		}
+		// Match Prefix Option
+		if(command.equals(ShellGrammar.timeout) || command.equals(ShellGrammar.trace)) {
+			return tokenContext.ParsePatternAfter(parentNode, leftNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Required);
+		}
+		CommandNode commandNode = new CommandNode(parentNode, tokenContext.GetToken(BTokenContext._MoveNext), command);
 		while(tokenContext.HasNext()) {
 			if(tokenContext.MatchToken("|")) {
-				// Match Prefix Option
-				BNode prefixOptionNode = tokenContext.ParsePatternAfter(parentNode, commandNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
-				if(prefixOptionNode != null) {
-					return commandNode.appendPipedNextNode((CommandNode)prefixOptionNode);
-				}
 				// Match Command Symbol
-				BNode pipedNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+				BNode pipedNode = tokenContext.ParsePatternAfter(parentNode, commandNode, CommandPatternFunc._PatternName, BTokenContext._Required);
 				if(pipedNode.IsErrorNode()) {
 					return pipedNode;
 				}
@@ -251,6 +251,19 @@ class CommandPatternFunc extends BMatchFunction {
 		}
 		return commandNode;
 	}
+
+	private String checkAndGetCommandPath(BTokenContext tokenContext) {
+		if(ShellGrammar.matchStopToken(tokenContext)) {
+			return null;
+		}
+		BToken commandToken = tokenContext.GetToken();
+		if(!ShellGrammar.matchPatternToken(commandToken, CommandPatternFunc._PatternName)) {
+			return null;
+		}
+		String command = RuntimeContext.getContext().commandScope.getCommandPath(commandToken.GetText());
+		command = command != null ? command : commandToken.GetText();
+		return command;
+	}
 }
 
 class CommandArgPatternFunc extends BMatchFunction {
@@ -267,7 +280,7 @@ class CommandArgPatternFunc extends BMatchFunction {
 		BArray<BNode> nodeList = new BArray<BNode>(new BNode[]{});
 		while(!ShellGrammar.matchStopToken(tokenContext)) {
 			BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
-			if(this.matchPatternToken(token, DoubleQuoteStringLiteralPatternFunc.patternName)) {
+			if(ShellGrammar.matchPatternToken(token, DoubleQuoteStringLiteralPatternFunc.patternName)) {
 				this.flush(tokenContext, nodeList, tokenList);
 				BNode node = DoubleQuoteStringLiteralPatternFunc.interpolate(parentNode, tokenContext, token);
 				if(node == null) {
@@ -275,7 +288,7 @@ class CommandArgPatternFunc extends BMatchFunction {
 				}
 				nodeList.add(node);
 			}
-			else if(this.matchPatternToken(token, SingleQuoteStringLiteralPatternFunc.patternName)) {
+			else if(ShellGrammar.matchPatternToken(token, SingleQuoteStringLiteralPatternFunc.patternName)) {
 				this.flush(tokenContext, nodeList, tokenList);
 				nodeList.add(new BunStringNode(parentNode, null, LibBunSystem._UnquoteString(token.GetText())));
 			}
@@ -354,16 +367,6 @@ class CommandArgPatternFunc extends BMatchFunction {
 		BToken token = new BToken(tokenContext.SourceContext.Source, startIndex, endIndex);
 		nodeList.add(new BunStringNode(null, token, LibBunSystem._UnquoteString(Utils.resolveHome(token.GetText()))));
 		tokenList.clear(0);
-	}
-
-	private boolean matchPatternToken(BToken token, String patternName) {
-		if(token instanceof BPatternToken) {
-			BPatternToken patternToken = (BPatternToken) token;
-			if(patternToken.PresetPattern.PatternName.equals(patternName)) {
-				return true;
-			}
-		}
-		return false;
 	}
 }
 
@@ -589,6 +592,16 @@ public class ShellGrammar {
 		return node;
 	}
 
+	public static boolean matchPatternToken(BToken token, String patternName) {
+		if(token instanceof BPatternToken) {
+			BPatternToken patternToken = (BPatternToken) token;
+			if(patternToken.PresetPattern.PatternName.equals(patternName)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static void LoadGrammar(LibBunGamma gamma) {
 		final BTokenFunction commandSymbolToken = new CommandTokenFunc();
 		final BMatchFunction prefixOptionPattern = new PrefixOptionPatternFunc();
@@ -605,8 +618,6 @@ public class ShellGrammar {
 		gamma.DefineExpression(CommandPatternFunc._PatternName, new CommandPatternFunc());
 		gamma.DefineExpression(CommandArgPatternFunc._PatternName, new CommandArgPatternFunc());
 		gamma.DefineExpression(RedirectPatternFunc._PatternName, new RedirectPatternFunc());
-		gamma.DefineExpression(ShellGrammar.timeout, prefixOptionPattern);
-		gamma.DefineExpression(ShellGrammar.trace, prefixOptionPattern);
 		gamma.DefineExpression(PrefixOptionPatternFunc._PatternName, prefixOptionPattern);
 		gamma.DefineExpression(SuffixOptionPatternFunc._PatternName, new SuffixOptionPatternFunc());
 
@@ -616,7 +627,10 @@ public class ShellGrammar {
 		// from BultinCommandMap
 		ArrayList<String> symbolList = BuiltinSymbol.getCommandSymbolList();
 		for(String symbol : symbolList) {
-			RuntimeContext.getContext().commandScope.setCommandPath(symbol, symbol);
+			RuntimeContext.getContext().commandScope.setCommandPath(symbol);
 		}
+		// prefix option
+		RuntimeContext.getContext().commandScope.setCommandPath(ShellGrammar.timeout);
+		RuntimeContext.getContext().commandScope.setCommandPath(ShellGrammar.trace);
 	}
 }

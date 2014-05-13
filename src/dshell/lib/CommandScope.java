@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Stack;
 
 interface CommandScopeOp {
+	public boolean setCommandPath(String commandName);
 	public boolean setCommandPath(String commandName, String commandPath);
 	public boolean isCommand(String commandName);
 	public String getCommandPath(String commandName);
@@ -15,6 +16,11 @@ public class CommandScope implements CommandScopeOp {
 	public CommandScope() {
 		this.scopeStack = new Stack<CommandScope.LocalScope>();
 		this.scopeStack.push(new LocalScope());
+	}
+
+	@Override
+	public boolean setCommandPath(String commandName) {
+		return this.setCommandPath(commandName, commandName);
 	}
 
 	@Override
@@ -57,6 +63,11 @@ public class CommandScope implements CommandScopeOp {
 
 		private LocalScope getParentScope() {
 			return this.parentScope;
+		}
+
+		@Override
+		public boolean setCommandPath(String commandName) {
+			return this.setCommandPath(commandName, commandName);
 		}
 
 		@Override
