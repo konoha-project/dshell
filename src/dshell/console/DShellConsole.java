@@ -1,18 +1,15 @@
 package dshell.console;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.InputStream;
+import java.lang.ProcessBuilder.Redirect;
 
-import dshell.lib.CommandArg;
 import dshell.lib.RuntimeContext;
-import dshell.lib.TaskBuilder;
-import dshell.lib.TaskOption;
 import dshell.lib.Utils;
 import jline.Terminal;
 import jline.ANSIBuffer.ANSICodes;
 import jline.UnixTerminal;
-import static dshell.lib.TaskOption.Behavior.returnable;
-import static dshell.lib.TaskOption.RetType.StringType;
 
 public class DShellConsole implements AbstractConsole {
 	private final jline.ConsoleReader consoleReader;
@@ -169,28 +166,41 @@ class TTYConfigurator {
 	}
 
 	public void loadJlineConfig() {
-		System.out.print(ANSICodes.attrib(36));
 		loadTTYConfig(this.jlineTTYConfig);
 	}
 
 	private static void loadTTYConfig(String ttyConfig) {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
-		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
-		cmdList.add(CommandArg.createCommandArg("stty"));
-		cmdList.add(CommandArg.createCommandArg(ttyConfig));
-		cmdsList.add(cmdList);
-		new TaskBuilder(cmdsList, option).invoke();
+		execStty(ttyConfig);
 	}
 
 	private static String saveTTYConfig() {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		ArrayList<ArrayList<CommandArg>> cmdsList = new ArrayList<ArrayList<CommandArg>>();
-		ArrayList<CommandArg> cmdList = new ArrayList<CommandArg>();
-		cmdList.add(CommandArg.createCommandArg("stty"));
-		cmdList.add(CommandArg.createCommandArg("-g"));
-		cmdsList.add(cmdList);
-		return ((String) new TaskBuilder(cmdsList, option).invoke()).trim();
+		return execStty("-g");
+	}
+
+	private static String execStty(String arg) {
+		ByteArrayOutputStream streamBuffer = new ByteArrayOutputStream();
+		ProcessBuilder procBuilder = new ProcessBuilder("stty", arg);
+		procBuilder.inheritIO();
+		procBuilder.redirectOutput(Redirect.PIPE);
+		try {
+			Process proc = procBuilder.start();
+			final InputStream input = proc.getInputStream();
+			final int size = 512;
+			int readSize = 0;
+			byte[] buffer = new byte[size];
+			while((readSize = input.read(buffer, 0, size)) > -1) {
+				streamBuffer.write(buffer, 0, readSize);
+			}
+			proc.waitFor();
+		}
+		catch(IOException e) {
+			e.printStackTrace();
+			Utils.fatal(1, "IO problem");
+		}
+		catch(InterruptedException e) {
+			e.printStackTrace();
+		}
+		return streamBuffer.toString();
 	}
 
 	public static TTYConfigurator initConfigurator(Terminal term) {
@@ -198,7 +208,6 @@ class TTYConfigurator {
 			UnixTerminal unixTerm = (UnixTerminal)term;
 			String originalTTYConfig = (String) Utils.getValue(unixTerm, "ttyConfig");
 			String jlineTTYConfig = saveTTYConfig();
-			System.out.print(ANSICodes.attrib(36));
 			Runtime.getRuntime().addShutdownHook(new ShutdownOp());
 			return new TTYConfigurator(originalTTYConfig, jlineTTYConfig);
 		}

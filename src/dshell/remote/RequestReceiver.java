@@ -20,10 +20,10 @@ public class RequestReceiver {
 			ArrayList<ArrayList<CommandArg>> cmdsList = request.getCmdsList();
 			TaskOption option = request.getOption();
 			if(option.is(background)) {
-				new TaskBuilder(cmdsList, option).invoke();
+				TaskBuilder.createTask(cmdsList, option);
 			}
 			else {
-				Task task = (Task) new TaskBuilder(cmdsList, option).invoke();
+				Task task = (Task) TaskBuilder.createTask(cmdsList, option);
 				new ObjectOutputStream(System.out).writeObject(task);
 			}
 			System.exit(0);

@@ -4,15 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
 import libbun.util.BArray;
 
 import dshell.exception.DShellException;
-import dshell.exception.Errno;
-import dshell.exception.MultipleException;
 import dshell.remote.RequestSender;
 
 import static dshell.lib.TaskOption.Behavior.printable ;
@@ -20,16 +16,17 @@ import static dshell.lib.TaskOption.Behavior.throwable ;
 import static dshell.lib.TaskOption.Behavior.background;
 import static dshell.lib.TaskOption.Behavior.sender;
 import static dshell.lib.TaskOption.Behavior.receiver;
-import static dshell.lib.TaskOption.Behavior.timeout;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;
+
 	transient private Thread stateMonitor;
 	transient private final PseudoProcess[] procs;
 	transient private final TaskOption option;
-	transient private MessageStreamHandler stdoutHandler;
-	transient private MessageStreamHandler stderrHandler;
+	transient private MessageStreamHandlerOp stdoutHandler;
+	transient private MessageStreamHandlerOp stderrHandler;
 	transient private ArrayList<Task> taskList;
+
 	private boolean terminated = false;
 	private String stdoutMessage;
 	private String stderrMessage;
@@ -42,9 +39,9 @@ public class Task implements Serializable {
 		this.procs = procs;
 		this.representString = represent;
 		// start task
-		int ProcessSize = this.procs.length;
+		int procSize = this.procs.length;
 		this.procs[0].start();
-		for(int i = 1; i < ProcessSize; i++) {
+		for(int i = 1; i < procSize; i++) {
 			this.procs[i].start();
 			this.procs[i].pipe(this.procs[i - 1]);
 		}
@@ -56,35 +53,34 @@ public class Task implements Serializable {
 		this.stderrHandler = this.createStderrHandler();
 		this.stderrHandler.startHandler();
 		// start state monitor
-		if(option.is(background)) {
-			this.stateMonitor = new Thread() {
-				@Override public void run() {
-					if(timeoutIfEnable()) {
+		if(!option.is(background)) {
+			return;
+		}
+		this.stateMonitor = new Thread() {
+			@Override public void run() {
+				if(timeoutIfEnable()) {
+					return;
+				}
+				while(true) {
+					if(checkTermination()) {
+						System.err.println("Terminated Task: " + representString);
+						// run exit handler
 						return;
 					}
-					while(true) {
-						if(checkTermination()) {
-							StringBuilder msgBuilder = new StringBuilder();
-							msgBuilder.append("Terminated Task: " + representString);
-							System.err.println(msgBuilder.toString());
-							// run exit handler
-							return;
-						}
-						try {
-							Thread.sleep(100); // sleep thread
-						}
-						catch (InterruptedException e) {
-							e.printStackTrace();
-							Utils.fatal(1, "interrupt problem");
-						}
+					try {
+						Thread.sleep(100); // sleep thread
+					}
+					catch (InterruptedException e) {
+						e.printStackTrace();
+						Utils.fatal(1, "interrupt problem");
 					}
 				}
-			};
-			this.stateMonitor.start();
-		}
+			}
+		};
+		this.stateMonitor.start();
 	}
 
-	private MessageStreamHandler createStdoutHandler() {
+	private MessageStreamHandlerOp createStdoutHandler() {
 		if(this.option.supportStdoutHandler()) {
 			OutputStream stdoutStream = null;
 			if(this.option.is(printable)) {
@@ -95,10 +91,10 @@ public class Task implements Serializable {
 			srcOutStreams[0] = lastProc.accessOutStream();
 			return new MessageStreamHandler(srcOutStreams, stdoutStream);
 		}
-		return new EmptyMessageStreamHandler();
+		return EmptyMessageStreamHandler.getHandler();
 	}
 
-	private MessageStreamHandler createStderrHandler() {
+	private MessageStreamHandlerOp createStderrHandler() {
 		if(this.option.supportStderrHandler()) {
 			int size = this.procs.length;
 			InputStream[] srcErrorStreams = new InputStream[size];
@@ -107,7 +103,7 @@ public class Task implements Serializable {
 			}
 			return new MessageStreamHandler(srcErrorStreams, System.err);
 		}
-		return new EmptyMessageStreamHandler();
+		return EmptyMessageStreamHandler.getHandler();
 	}
 
 	@Override public String toString() {
@@ -236,15 +232,18 @@ public class Task implements Serializable {
 	}
 }
 
-class MessageStreamHandler {
+interface MessageStreamHandlerOp {
+	public void startHandler();
+	public String waitTermination();
+	public ByteArrayOutputStream[] getEachBuffers();
+}
+
+class MessageStreamHandler implements MessageStreamHandlerOp {
 	private InputStream[] srcStreams;
 	private OutputStream consoleStream;
 	private ByteArrayOutputStream messageBuffer;
 	private ByteArrayOutputStream[] eachBuffers;
 	private PipeStreamHandler[] streamHandlers;
-
-	public MessageStreamHandler() {	// do nothing
-	}
 
 	public MessageStreamHandler(InputStream[] srcStreams, OutputStream consoleStream) {
 		this.srcStreams = srcStreams;
@@ -254,6 +253,7 @@ class MessageStreamHandler {
 		this.eachBuffers = new ByteArrayOutputStream[this.srcStreams.length];
 	}
 
+	@Override
 	public void startHandler() {
 		boolean[] closeOutputs = {false, false, false};
 		for(int i = 0; i < srcStreams.length; i++) {
@@ -264,6 +264,7 @@ class MessageStreamHandler {
 		}
 	}
 
+	@Override
 	public String waitTermination() {
 		for(PipeStreamHandler streamHandler : this.streamHandlers) {
 			try {
@@ -277,12 +278,13 @@ class MessageStreamHandler {
 		return Utils.removeNewLine(this.messageBuffer.toString());
 	}
 
+	@Override
 	public ByteArrayOutputStream[] getEachBuffers() {
 		return this.eachBuffers;
 	}
 }
 
-class EmptyMessageStreamHandler extends MessageStreamHandler {
+class EmptyMessageStreamHandler implements MessageStreamHandlerOp {
 	@Override
 	public void startHandler() { // do nothing
 	}
@@ -296,101 +298,12 @@ class EmptyMessageStreamHandler extends MessageStreamHandler {
 	public ByteArrayOutputStream[] getEachBuffers() {
 		return new ByteArrayOutputStream[0];
 	}
-}
 
-class ShellExceptionBuilder {
-	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
-		if(option.is(sender) || !option.is(throwable) || option.is(timeout)) {
-			return DShellException.createNullException("");
-		}
-		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
-		for(int i = 0; i < procs.length; i++) {
-			PseudoProcess proc = procs[i];
-			String errorMessage = eachBuffers[i].toString();
-			createAndAddException(exceptionList, proc, errorMessage);
-		}
-		int size = exceptionList.size();
-		if(size == 1) {
-			if(!(exceptionList.get(0) instanceof DShellException.NullException)) {
-				return exceptionList.get(0);
-			}
-		}
-		else if(size > 1) {
-			int count = 0;
-			for(DShellException exception : exceptionList) {
-				if(!(exception instanceof DShellException.NullException)) {
-					count++;
-				}
-			}
-			if(count != 0) {
-				return new MultipleException("", exceptionList.toArray(new DShellException[size]));
-			}
-		}
-		return DShellException.createNullException("");
+	public static MessageStreamHandlerOp getHandler() {
+		return Holder.HANDLER;
 	}
 
-	private static void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
-		CauseInferencer inferencer = CauseInferencer_ltrace.getInferencer();
-		String message = proc.getCmdName();
-		if(proc.isTraced() || proc.getRet() != 0) {
-			DShellException exception;
-			if(proc.isTraced()) {
-				ArrayList<String> infoList = inferencer.doInference((SubProc)proc);
-				exception = createException(message, infoList.toArray(new String[infoList.size()]));
-			}
-			else {
-				exception = new DShellException(message);
-			}
-			exception.setCommand(message);
-			exception.setErrorMessage(errorMessage);
-			exceptionList.add(exception);
-		}
-		else {
-			exceptionList.add(DShellException.createNullException(message));
-		}
-		if(proc instanceof SubProc) {
-			((SubProc)proc).deleteLogFile();
-		}
-	}
-
-	private static DShellException createException(String message, String[] causeInfo) {
-		// syscall: syscallName: 0, param: 1, errno: 2
-		Class<?>[] types = {String.class};
-		Object[] args = {message};
-		String errnoString = causeInfo[2];
-		if(Errno.SUCCESS.match(errnoString)) {
-			return DShellException.createNullException(message);
-		}
-		if(Errno.LAST_ELEMENT.match(errnoString)) {
-			return new DShellException(message);
-		}
-		Class<?> exceptionClass = Errno.getExceptionClass(errnoString);
-		try {
-			Constructor<?> constructor = exceptionClass.getConstructor(types);
-			Errno.DerivedFromErrnoException exception = (Errno.DerivedFromErrnoException) constructor.newInstance(args);
-			exception.setSyscallInfo(causeInfo);
-			return exception;
-		}
-		catch (NoSuchMethodException e) {
-			e.printStackTrace();
-		}
-		catch (SecurityException e) {
-			e.printStackTrace();
-		}
-		catch (InstantiationException e) {
-			e.printStackTrace();
-		}
-		catch (IllegalAccessException e) {
-			e.printStackTrace();
-		}
-		catch (IllegalArgumentException e) {
-			e.printStackTrace();
-		}
-		catch (InvocationTargetException e) {
-			e.printStackTrace();
-		}
-		Utils.fatal(1, "Creating Exception failed");
-		return null;	// unreachable 
+	private static class Holder {
+		private final static MessageStreamHandlerOp HANDLER = new EmptyMessageStreamHandler();
 	}
 }
-

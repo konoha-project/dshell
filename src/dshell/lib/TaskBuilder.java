@@ -1,13 +1,7 @@
 package dshell.lib;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
-import java.util.Calendar;
-
 import libbun.util.BArray;
-import dshell.exception.NativeException;
 import dshell.grammar.DShellGrammar;
 import dshell.grammar.ShellGrammar;
 import dshell.remote.RequestSender;
@@ -22,67 +16,84 @@ import static dshell.lib.TaskOption.RetType.TaskType   ;
 import static dshell.lib.TaskOption.RetType.TaskArrayType;
 
 public class TaskBuilder {
-	private TaskOption option;
-	private PseudoProcess[] Processes;
-	private StringBuilder sBuilder;
-
-	public TaskBuilder(ArrayList<ArrayList<CommandArg>> cmdsList, TaskOption option) {
-		this.option = option;
-		ArrayList<ArrayList<CommandArg>> newCmdsList = this.setInternalOption(cmdsList);
-		this.Processes = this.createProcs(newCmdsList);
-		// generate object representation
-		this.sBuilder = new StringBuilder();
-		for(int i = 0; i< this.Processes.length; i++) {
-			if(i != 0) {
-				this.sBuilder.append(",");
-			}
-			this.sBuilder.append(this.Processes[i].toString());
-		}
-		this.sBuilder.append(" <");
-		this.sBuilder.append(this.option.toString());
-		this.sBuilder.append(">");
+	// called by VisitCommandNode
+	public static void execCommandVoid(CommandArg[][] cmds) {
+		TaskOption option = TaskOption.of(VoidType, printable, throwable);
+		TaskBuilder.createTask(toCmdsList(cmds), option);
 	}
 
-	public Object invoke() {
-		Task task = new Task(this.Processes, this.option, this.sBuilder.toString());
-		if(this.option.is(background)) {
-			return (this.option.isRetType(TaskType) && this.option.is(returnable)) ? task : null;
+	public static int execCommandInt(CommandArg[][] cmds) {
+		TaskOption option = TaskOption.of(IntType, printable, returnable);
+		return ((Integer)TaskBuilder.createTask(toCmdsList(cmds), option)).intValue();
+	}
+
+	public static boolean execCommandBool(CommandArg[][] cmds) {
+		return execCommandInt(cmds) == 0;
+	}
+
+	public static String execCommandString(CommandArg[][] cmds) {
+		TaskOption option = TaskOption.of(StringType, returnable);
+		return (String)TaskBuilder.createTask(toCmdsList(cmds), option);
+	}
+
+	public static BArray<String> execCommandStringArray(CommandArg[][] cmds) {
+		return new BArray<String>(0, Utils.splitWithDelim(execCommandString(cmds)));
+	}
+
+	public static Task execCommandTask(CommandArg[][] cmds) {
+		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
+		return (Task)TaskBuilder.createTask(toCmdsList(cmds), option);
+	}
+
+	@SuppressWarnings("unchecked")
+	public static BArray<Task> execCommandTaskArray(CommandArg[][] cmds) {
+		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
+		return (BArray<Task>)TaskBuilder.createTask(toCmdsList(cmds), option);
+	}
+
+	public static Object createTask(ArrayList<ArrayList<CommandArg>> cmdsList, TaskOption option) {
+		ArrayList<ArrayList<CommandArg>> newCmdsList = setInternalOption(option, cmdsList);
+		PseudoProcess[] procs = createProcs(option, newCmdsList);
+		final Task task = new Task(procs, option, toRepresent(procs, option));
+		if(option.is(background)) {
+			return (option.isRetType(TaskType) && option.is(returnable)) ? task : null;
 		}
 		task.join();
-		if(this.option.is(returnable)) {
-			if(this.option.isRetType(StringType)) {
+		if(option.is(returnable)) {
+			if(option.isRetType(StringType)) {
 				return task.getOutMessage();
 			}
-			else if(this.option.isRetType(IntType)) {
+			else if(option.isRetType(IntType)) {
 				return new Integer(task.getExitStatus());
 			}
-			else if(this.option.isRetType(TaskType)) {
+			else if(option.isRetType(TaskType)) {
 				return task;
 			}
-			else if(this.option.isRetType(TaskArrayType)) {
+			else if(option.isRetType(TaskArrayType)) {
 				return Task.getTaskArray(task);
 			}
 		}
 		return null;
 	}
 
-	public PseudoProcess[] getProcesses() {
-		return this.Processes;
+	private static String toRepresent(PseudoProcess[] procs, TaskOption option) {
+		StringBuilder sBuilder = new StringBuilder();
+		for(int i = 0; i< procs.length; i++) {
+			if(i != 0) {
+				sBuilder.append(",");
+			}
+			sBuilder.append(procs[i].toString());
+		}
+		sBuilder.append(" ");
+		sBuilder.append(option.toString());
+		return sBuilder.toString();
 	}
 
-	public TaskOption getOption() {
-		return this.option;
-	}
-
-	@Override public String toString() {
-		return this.sBuilder.toString();
-	}
-
-	private ArrayList<ArrayList<CommandArg>> setInternalOption(ArrayList<ArrayList<CommandArg>> cmdsList) {
+	private static ArrayList<ArrayList<CommandArg>> setInternalOption(final TaskOption option, ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<ArrayList<CommandArg>> newCmdsBuffer = new ArrayList<ArrayList<CommandArg>>();
 		for(ArrayList<CommandArg> currentCmds : cmdsList) {
 			if(currentCmds.get(0).eq(ShellGrammar.background)) {
-				this.option.setFlag(background, this.option.isRetType(TaskType) || this.option.isRetType(VoidType));
+				option.setFlag(background, option.isRetType(TaskType) || option.isRetType(VoidType));
 				continue;
 			}
 			newCmdsBuffer.add(currentCmds);
@@ -90,7 +101,7 @@ public class TaskBuilder {
 		return newCmdsBuffer;
 	}
 
-	private PseudoProcess[] createProcs(ArrayList<ArrayList<CommandArg>> cmdsList) {
+	private static PseudoProcess[] createProcs(final TaskOption option, ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<PseudoProcess> procBuffer = new ArrayList<PseudoProcess>();
 		boolean foundTraceOption = false;
 		int size = cmdsList.size();
@@ -133,10 +144,10 @@ public class TaskBuilder {
 				for(int j = i + 1; j < size; j++) {
 					sendingCmdsList.add(cmdsList.get(j));
 				}
-				PseudoProcess proc = new RequestSender(sendingCmdsList, this.option.is(background));
+				PseudoProcess proc = new RequestSender(sendingCmdsList, option.is(background));
 				proc.setArgumentList(currentCmds);
 				procBuffer.add(proc);
-				this.option.setFlag(background, false);
+				option.setFlag(background, false);
 				break;
 			}
 			else if(cmdSymbol.eq(ShellGrammar.trace)) {
@@ -144,16 +155,16 @@ public class TaskBuilder {
 				continue;
 			}
 			else if(cmdSymbol.eq(ShellGrammar.timeout)) {
-				this.option.setTimeout(currentCmds.get(1));
+				option.setTimeout(currentCmds.get(1));
 				continue;
 			}
 			else {
 				if(foundTraceOption) {
 					foundTraceOption = false;
-					procBuffer.add(this.createProc(currentCmds, checkTraceRequirements()));
+					procBuffer.add(createProc(option, currentCmds, checkTraceRequirements()));
 				}
 				else {
-					procBuffer.add(this.createProc(currentCmds, false));
+					procBuffer.add(createProc(option, currentCmds, false));
 				}
 			}
 		}
@@ -163,49 +174,14 @@ public class TaskBuilder {
 		return procBuffer.toArray(new PseudoProcess[bufferSize]);
 	}
 
-	private PseudoProcess createProc(ArrayList<CommandArg> cmds, boolean enableTrace) {
+	private static PseudoProcess createProc(final TaskOption option, ArrayList<CommandArg> cmds, boolean enableTrace) {
 		PseudoProcess proc = RuntimeContext.getContext().getBuiltinCommand(cmds);
 		if(proc != null) {
 			return proc;
 		}
-		proc = new SubProc(this.option, enableTrace);
+		proc = new SubProc(option, enableTrace);
 		proc.setArgumentList(cmds);
 		return proc;
-	}
-
-	// called by ModifiedAsmGenerator#VisitCommandNode
-	public static void execCommandVoid(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(VoidType, printable, throwable);
-		new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-
-	public static int execCommandInt(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(IntType, printable, returnable);
-		return ((Integer)new TaskBuilder(toCmdsList(cmds), option).invoke()).intValue();
-	}
-
-	public static boolean execCommandBool(CommandArg[][] cmds) {
-		return execCommandInt(cmds) == 0;
-	}
-
-	public static String execCommandString(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(StringType, returnable);
-		return (String)new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-
-	public static BArray<String> execCommandStringArray(CommandArg[][] cmds) {
-		return new BArray<String>(0, Utils.splitWithDelim(execCommandString(cmds)));
-	}
-
-	public static Task execCommandTask(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(TaskType, printable, returnable, throwable);
-		return (Task)new TaskBuilder(toCmdsList(cmds), option).invoke();
-	}
-
-	@SuppressWarnings("unchecked")
-	public static BArray<Task> execCommandTaskArray(CommandArg[][] cmds) {
-		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
-		return (BArray<Task>)new TaskBuilder(toCmdsList(cmds), option).invoke();
 	}
 
 	private static ArrayList<ArrayList<CommandArg>> toCmdsList(CommandArg[][] cmds) {
@@ -227,213 +203,5 @@ public class TaskBuilder {
 		}
 		System.err.println("Systemcall Trace is Not Supported");
 		return false;
-	}
-}
-
-class SubProc extends PseudoProcess {
-	public final static int traceBackend_ltrace = 0;
-	public static int traceBackendType = traceBackend_ltrace;
-
-	private final static String logdirPath = "/tmp/dshell-trace-log";
-	private static int logId = 0;
-
-	private ProcessBuilder procBuilder;
-	private Process proc;
-	private TaskOption taskOption;
-	public boolean isKilled = false;
-	private boolean enableTrace = false;
-	public String logFilePath = null;
-
-	private static String createLogNameHeader() {
-		Calendar cal = Calendar.getInstance();
-		StringBuilder logNameHeader = new StringBuilder();
-		logNameHeader.append(cal.get(Calendar.YEAR) + "-");
-		logNameHeader.append((cal.get(Calendar.MONTH) + 1) + "-");
-		logNameHeader.append(cal.get(Calendar.DATE) + "-");
-		logNameHeader.append(cal.get((Calendar.HOUR) + 1) + ":");
-		logNameHeader.append(cal.get(Calendar.MINUTE) + "-");
-		logNameHeader.append(cal.get(Calendar.MILLISECOND));
-		logNameHeader.append("-" + logId++);
-		return logNameHeader.toString();
-	}
-
-	public SubProc(TaskOption taskOption, boolean enableTrace) {
-		super();
-		this.taskOption = taskOption;
-		this.enableTrace = enableTrace;
-		this.initTrace();
-	}
-
-	private void initTrace() {
-		if(this.enableTrace) {
-			logFilePath = new String(logdirPath + "/" + createLogNameHeader() + ".log");
-			new File(logdirPath).mkdir();
-			String[] traceCmds;
-			if(traceBackendType == traceBackend_ltrace) {
-				traceCmds = new String[] {"ltrace", "-f", "-S", "-o", logFilePath};
-			}
-			else {
-				Utils.fatal(1, "invalid trace backend type");
-				return;
-			}
-			for(String traceCmd : traceCmds) {
-				this.commandList.add(traceCmd);
-			}
-		}
-	}
-
-	@Override
-	public void setArgumentList(ArrayList<CommandArg> argList) {
-		CommandArg arg = argList.get(0);
-		this.cmdNameBuilder.append(arg);
-		if(arg.eq("sudo")) {
-			ArrayList<String> newCommandList = new ArrayList<String>();
-			newCommandList.add(arg.toString());
-			for(String cmd : this.commandList) {
-				newCommandList.add(cmd);
-			}
-			this.commandList = newCommandList;
-		}
-		else {
-			this.addToCommandList(arg);
-		}
-		this.sBuilder.append("[");
-		this.sBuilder.append(arg);
-		int size = argList.size();
-		for(int i = 1; i < size; i++) {
-			arg = argList.get(i);
-			this.addToCommandList(arg);
-			this.cmdNameBuilder.append(" " + arg);
-			this.sBuilder.append(", ");
-			this.sBuilder.append(arg);
-		}
-		this.sBuilder.append("]");
-		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-		this.procBuilder.redirectError(Redirect.INHERIT);
-		this.stderrIsDirty = true;
-	}
-
-	@Override
-	public void start() {
-		try {
-			this.setStreamBehavior();
-			this.proc = procBuilder.start();
-			this.stdin = this.proc.getOutputStream();
-			this.stdout = this.proc.getInputStream();
-			this.stderr = this.proc.getErrorStream();
-		}
-		catch(IOException e) {
-			throw NativeException.wrapException(e);
-		}
-	}
-
-	@Override
-	public void mergeErrorToOut() {
-		this.procBuilder.redirectErrorStream(true);
-		this.sBuilder.append("&");
-		this.stderrIsDirty = true;
-	}
-
-	private void setStreamBehavior() {
-		if(this.isFirstProc) {
-			if(this.procBuilder.redirectInput().file() == null) {
-				procBuilder.redirectInput(Redirect.INHERIT);
-				this.stdinIsDirty = true;
-			}
-		}
-		if(this.isLastProc) {
-			if(this.procBuilder.redirectOutput().file() == null && !this.taskOption.supportStdoutHandler()) {
-				procBuilder.redirectOutput(Redirect.INHERIT);
-				this.stdoutIsDirty = true;
-			}
-		}
-		if(this.procBuilder.redirectError().file() == null && this.taskOption.supportStderrHandler()) {
-			this.procBuilder.redirectError(Redirect.PIPE);
-			this.stderrIsDirty = false;
-		}
-	}
-
-	@Override
-	public void setInputRedirect(CommandArg readFileName) {
-		this.stdinIsDirty = true;
-		this.procBuilder.redirectInput(new File(readFileName.toString()));
-		this.sBuilder.append(" <");
-		this.sBuilder.append(readFileName);
-	}
-
-	@Override
-	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
-		File file = new File(writeFileName.toString());
-		Redirect redirDest = Redirect.to(file);
-		if(append) {
-			redirDest = Redirect.appendTo(file);
-		}
-		if(fd == STDOUT_FILENO) {
-			this.stdoutIsDirty = true;
-			this.procBuilder.redirectOutput(redirDest);
-		} 
-		else if(fd == STDERR_FILENO) {
-			this.stderrIsDirty = true;
-			this.procBuilder.redirectError(redirDest);
-		}
-		this.sBuilder.append(" " + fd);
-		this.sBuilder.append(">");
-		if(append) {
-			this.sBuilder.append(">");
-		}
-		this.sBuilder.append(writeFileName);
-	}
-
-	@Override
-	public void waitTermination() {
-		try {
-			this.retValue = this.proc.waitFor();
-		}
-		catch(InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@Override
-	public void kill() {
-		if(System.getProperty("os.name").startsWith("Windows")) {
-			this.proc.destroy();
-			return;
-		} 
-		try {
-			int pid = (Integer) Utils.getValue(this.proc, "pid");
-			String[] cmds = {"kill", "-9", Integer.toString(pid)};
-			Process procKiller = new ProcessBuilder(cmds).start();
-			procKiller.waitFor();
-			this.isKilled = true;
-		}
-		catch(Exception e) {
-			e.printStackTrace();
-			Utils.fatal(1, "killing process problem");
-		}
-	}
-
-	public boolean checkTermination() {
-		try {
-			this.retValue = this.proc.exitValue();
-			return true;
-		}
-		catch(IllegalThreadStateException e) {
-			return false;
-		}
-	}
-
-	public String getLogFilePath() {
-		return this.logFilePath;
-	}
-
-	public void deleteLogFile() {
-		if(this.logFilePath != null) {
-			new File(this.logFilePath).delete();
-		}
-	}
-
-	@Override public boolean isTraced() {
-		return this.enableTrace;
 	}
 }

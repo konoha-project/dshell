@@ -86,10 +86,13 @@ public class TaskOption implements Serializable {
 	@Override
 	public String toString() {
 		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("<");
 		sBuilder.append(this.retType.name());
 		for(Behavior flag : this.flagSet) {
-			sBuilder.append("|" + flag.name());
+			sBuilder.append("|");
+			sBuilder.append(flag.name());
 		}
+		sBuilder.append(">");
 		return sBuilder.toString();
 	}
 }
