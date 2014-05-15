@@ -25,6 +25,9 @@ public class CommandScope implements CommandScopeOp {
 
 	@Override
 	public boolean setCommandPath(String commandName, String commandPath) {
+		if(commandName.equals("") || commandPath.equals("")) {
+			return true;
+		}
 		return this.scopeStack.peek().setCommandPath(commandName, commandPath);
 	}
 

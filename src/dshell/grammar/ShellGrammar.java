@@ -106,6 +106,10 @@ class ImportPatternFunc extends BMatchFunction {
 		tokenContext.MoveNext();
 		BToken token = tokenContext.GetToken();
 		if(token.EqualsText("command")) {
+			BNode node = tokenContext.ParsePattern(parentNode, ImportCommandAsPatternFunc.patternName, BTokenContext._Optional);
+			if(node != null) {
+				return node;
+			}
 			return tokenContext.ParsePattern(parentNode, ImportCommandPatternFunc._PatternName, BTokenContext._Required);
 		}
 		if(token.EqualsText("env")) {
@@ -118,56 +122,19 @@ class ImportPatternFunc extends BMatchFunction {
 class ImportCommandPatternFunc extends BMatchFunction {
 	public final static String _PatternName = "$ImportCommand$";
 
-	private BToken toCommandToken(ArrayList<BToken> tokenList) {
-		if(tokenList.isEmpty()) {
-			return null;
-		}
-		int startIndex = tokenList.get(0).StartIndex;
-		int endIndex = tokenList.get(tokenList.size() - 1).EndIndex;
-		BToken commandToken = new BToken(tokenList.get(0).Source, startIndex, endIndex);
-		tokenList.clear();
-		return commandToken;
+	private void setCommandSymbol(BNode parentNode, ArrayList<BToken> tokenList) {
+		String commandPath = ShellGrammar.resolveCommandPath(tokenList);
+		int index = commandPath.lastIndexOf("/");
+		ShellGrammar.checkDuplicationAndSetCommand(parentNode.GetGamma(), commandPath.substring(index + 1), commandPath);
 	}
 
-	private void checkDuplicationAndSetCommand(LibBunGamma gamma, String command, String commandPath) {
-		LibBunSyntax syntax = gamma.GetSyntaxPattern(command);
-		if(syntax != null) {
-			if(LibBunSystem.DebugMode) {
-				System.err.println("found duplicated syntax pattern: " + syntax);
-			}
-		}
-		else if(!RuntimeContext.getContext().commandScope.setCommandPath(command, commandPath)) {
-			if(LibBunSystem.DebugMode) {
-				System.err.println("found duplicated symbol: " + command);
-			}
-		}
-	}
-
-	private void setCommandSymbol(BNode parentNode, BTokenContext tokenContext, ArrayList<BToken> tokenList) {
-		BToken commandToken = this.toCommandToken(tokenList);
-		if(commandToken == null) {
-			return;
-		}
-		String commandPath = Utils.resolveHome(commandToken.GetText());
+	private void importAllFromPath(BNode parentNode) {
 		LibBunGamma gamma = parentNode.GetGamma();
-		int loc = commandPath.lastIndexOf('/');
-		String command = commandPath;
-		if(loc != -1) {
-			if(!Utils.isFileExecutable(commandPath)) {
-				System.err.println("[warning] unknown command: " + commandPath);
-				return;
-			}
-			command = commandPath.substring(loc + 1);
+		TreeSet<String> commandSet = Utils.getCommandSetFromPath(true);
+		for(String commandPath : commandSet) {
+			int lastIndex = commandPath.lastIndexOf("/");
+			ShellGrammar.checkDuplicationAndSetCommand(gamma, commandPath.substring(lastIndex + 1), commandPath);
 		}
-		else {
-			String fullPath = Utils.getCommandFromPath(commandPath);
-			if(fullPath == null) {
-				System.err.println("[warning] unknown command: " + commandPath);
-				return;
-			}
-			commandPath = fullPath;
-		}
-		this.checkDuplicationAndSetCommand(gamma, command, commandPath);
 	}
 
 	@Override
@@ -187,21 +154,50 @@ class ImportCommandPatternFunc extends BMatchFunction {
 				tokenList.add(token);
 			}
 			if(token.IsNextWhiteSpace()) {
-				this.setCommandSymbol(parentNode, tokenContext, tokenList);
+				this.setCommandSymbol(parentNode, tokenList);
 			}
 			tokenContext.MoveNext();
 		}
-		this.setCommandSymbol(parentNode, tokenContext, tokenList);
+		this.setCommandSymbol(parentNode, tokenList);
 		return new EmptyNode(parentNode);
 	}
+}
 
-	private void importAllFromPath(BNode parentNode) {
-		LibBunGamma gamma = parentNode.GetGamma();
-		TreeSet<String> commandSet = Utils.getCommandSetFromPath(true);
-		for(String commandPath : commandSet) {
-			int lastIndex = commandPath.lastIndexOf("/");
-			this.checkDuplicationAndSetCommand(gamma, commandPath.substring(lastIndex + 1), commandPath);
+class ImportCommandAsPatternFunc extends BMatchFunction {
+	public final static String patternName = "$ImportCommandAs$";
+
+	@Override
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		ArrayList<BToken> tokenList = new ArrayList<BToken>();
+		tokenContext.MoveNext();
+		// match command path
+		while(tokenContext.HasNext()) {
+			BToken token = tokenContext.GetToken();
+			if(token.EqualsText(",")) {
+				return null;
+			}
+			tokenList.add(token);
+			tokenContext.MoveNext();
+			if(token.IsNextWhiteSpace()) {
+				break;
+			}
 		}
+		String commandName = ShellGrammar.toCommandToken(tokenList).GetText();
+		if(!tokenContext.MatchToken("as")) {
+			return null;
+		}
+		// match command name
+		while(tokenContext.HasNext()) {
+			BToken token = tokenContext.GetToken();
+			if(token.EqualsText(";") || token.IsIndent()) {
+				break;
+			}
+			tokenList.add(token);
+			tokenContext.MoveNext();
+		}
+		String commandPath = ShellGrammar.resolveCommandPath(tokenList);
+		ShellGrammar.checkDuplicationAndSetCommand(parentNode.GetGamma(), commandName, commandPath);
+		return new EmptyNode(parentNode);
 	}
 }
 
@@ -592,6 +588,51 @@ public class ShellGrammar {
 		return node;
 	}
 
+	public static String resolveCommandPath(ArrayList<BToken> tokenList) {
+		String commandPath = Utils.resolveHome(toCommandToken(tokenList).GetText());
+		int loc = commandPath.lastIndexOf('/');
+		if(loc != -1) {
+			if(!Utils.isFileExecutable(commandPath)) {
+				System.err.println("[warning] unknown command: " + commandPath);
+				return "";
+			}
+		}
+		else {
+			String fullPath = Utils.getCommandFromPath(commandPath);
+			if(fullPath == null) {
+				System.err.println("[warning] unknown command: " + commandPath);
+				return "";
+			}
+			commandPath = fullPath;
+		}
+		return commandPath;
+	}
+
+	public static BToken toCommandToken(ArrayList<BToken> tokenList) {
+		if(tokenList.isEmpty()) {
+			return BToken._NullToken;
+		}
+		int startIndex = tokenList.get(0).StartIndex;
+		int endIndex = tokenList.get(tokenList.size() - 1).EndIndex;
+		BToken commandToken = new BToken(tokenList.get(0).Source, startIndex, endIndex);
+		tokenList.clear();
+		return commandToken;
+	}
+
+	public static void checkDuplicationAndSetCommand(LibBunGamma gamma, String command, String commandPath) {
+		LibBunSyntax syntax = gamma.GetSyntaxPattern(command);
+		if(syntax != null) {
+			if(LibBunSystem.DebugMode) {
+				System.err.println("found duplicated syntax pattern: " + syntax);
+			}
+		}
+		else if(!RuntimeContext.getContext().commandScope.setCommandPath(command, commandPath)) {
+			if(LibBunSystem.DebugMode) {
+				System.err.println("found duplicated symbol: " + command);
+			}
+		}
+	}
+
 	public static boolean matchPatternToken(BToken token, String patternName) {
 		if(token instanceof BPatternToken) {
 			BPatternToken patternToken = (BPatternToken) token;
@@ -615,6 +656,7 @@ public class ShellGrammar {
 
 		gamma.DefineStatement("import", new ImportPatternFunc());
 		gamma.DefineExpression(ImportCommandPatternFunc._PatternName, new ImportCommandPatternFunc());
+		gamma.DefineExpression(ImportCommandAsPatternFunc.patternName, new ImportCommandAsPatternFunc());
 		gamma.DefineExpression(CommandPatternFunc._PatternName, new CommandPatternFunc());
 		gamma.DefineExpression(CommandArgPatternFunc._PatternName, new CommandArgPatternFunc());
 		gamma.DefineExpression(RedirectPatternFunc._PatternName, new RedirectPatternFunc());

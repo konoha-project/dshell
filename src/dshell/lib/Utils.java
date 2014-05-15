@@ -8,6 +8,9 @@ import java.util.regex.PatternSyntaxException;
 
 public class Utils {
 	public final static String getCommandFromPath(String cmd) {
+		if(cmd.equals("")) {
+			return null;
+		}
 		String[] paths = getEnv("PATH").split(":");
 		for(String path : paths) {
 			String fullPath = resolveHome(path + "/" + cmd);
