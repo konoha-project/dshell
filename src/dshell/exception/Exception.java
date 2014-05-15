@@ -72,8 +72,7 @@ public class Exception extends RuntimeException {	// DShell Basis Exception Clas
 		if(!methodName.equals("f")) {
 			return className + "." + methodName;
 		}
-		String[] splitStrings = className.split("__");
-		String name = splitStrings[1];
+		String name = className.split("__")[1];
 		if(name.startsWith("Main") || name.equals("main")) {
 			return "TopLevel";
 		}

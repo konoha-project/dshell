@@ -58,7 +58,7 @@ class CommandTokenFunc extends BTokenFunction {
 		}
 		String commandSymbol = symbolBuilder.toString();
 		if(RuntimeContext.getContext().commandScope.isCommand(commandSymbol)) {
-			sourceContext.Tokenize(CommandPatternFunc._PatternName, startIndex, sourceContext.GetPosition());
+			sourceContext.Tokenize(CommandPatternFunc.patternName, startIndex, sourceContext.GetPosition());
 			return true;
 		}
 		else if(commandSymbol.startsWith("//")) {
@@ -68,7 +68,7 @@ class CommandTokenFunc extends BTokenFunction {
 			return false;
 		}
 		else if(this.isValidFilePath(commandSymbol)) {
-			sourceContext.Tokenize(CommandPatternFunc._PatternName, startIndex, sourceContext.GetPosition());
+			sourceContext.Tokenize(CommandPatternFunc.patternName, startIndex, sourceContext.GetPosition());
 			return true;
 		}
 		return false;
@@ -110,7 +110,7 @@ class ImportPatternFunc extends BMatchFunction {
 			if(node != null) {
 				return node;
 			}
-			return tokenContext.ParsePattern(parentNode, ImportCommandPatternFunc._PatternName, BTokenContext._Required);
+			return tokenContext.ParsePattern(parentNode, ImportCommandPatternFunc.patternName, BTokenContext._Required);
 		}
 		if(token.EqualsText("env")) {
 			return tokenContext.ParsePattern(parentNode, ImportEnvPatternFunc.patternName, BTokenContext._Required);
@@ -120,7 +120,7 @@ class ImportPatternFunc extends BMatchFunction {
 }
 
 class ImportCommandPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$ImportCommand$";
+	public final static String patternName = "$ImportCommand$";
 
 	private void setCommandSymbol(BNode parentNode, ArrayList<BToken> tokenList) {
 		String commandPath = ShellGrammar.resolveCommandPath(tokenList);
@@ -202,7 +202,7 @@ class ImportCommandAsPatternFunc extends BMatchFunction {
 }
 
 class CommandPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$CommandSymbol$";
+	public final static String patternName = "$CommandSymbol$";
 
 	@Override
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
@@ -212,20 +212,20 @@ class CommandPatternFunc extends BMatchFunction {
 		}
 		// Match Prefix Option
 		if(command.equals(ShellGrammar.timeout) || command.equals(ShellGrammar.trace)) {
-			return tokenContext.ParsePatternAfter(parentNode, leftNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Required);
+			return tokenContext.ParsePatternAfter(parentNode, leftNode, PrefixOptionPatternFunc.patternName, BTokenContext._Required);
 		}
 		CommandNode commandNode = new CommandNode(parentNode, tokenContext.GetToken(BTokenContext._MoveNext), command);
 		while(tokenContext.HasNext()) {
 			if(tokenContext.MatchToken("|")) {
 				// Match Command Symbol
-				BNode pipedNode = tokenContext.ParsePatternAfter(parentNode, commandNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+				BNode pipedNode = tokenContext.ParsePatternAfter(parentNode, commandNode, CommandPatternFunc.patternName, BTokenContext._Required);
 				if(pipedNode.IsErrorNode()) {
 					return pipedNode;
 				}
 				return commandNode.appendPipedNextNode((CommandNode)pipedNode);
 			}
 			// Match Redirect
-			BNode redirectNode = tokenContext.ParsePattern(parentNode, RedirectPatternFunc._PatternName, BTokenContext._Optional);
+			BNode redirectNode = tokenContext.ParsePattern(parentNode, RedirectPatternFunc.patternName, BTokenContext._Optional);
 			if(redirectNode != null) {
 				commandNode.appendPipedNextNode((CommandNode)redirectNode);
 				continue;
@@ -239,7 +239,7 @@ class CommandPatternFunc extends BMatchFunction {
 				return commandNode.appendPipedNextNode((CommandNode)suffixOptionNode);
 			}
 			// Match Argument
-			BNode argNode = tokenContext.ParsePattern(parentNode, CommandArgPatternFunc._PatternName, BTokenContext._Optional);
+			BNode argNode = tokenContext.ParsePattern(parentNode, CommandArgPatternFunc.patternName, BTokenContext._Optional);
 			if(argNode == null) {
 				break;
 			}
@@ -253,7 +253,7 @@ class CommandPatternFunc extends BMatchFunction {
 			return null;
 		}
 		BToken commandToken = tokenContext.GetToken();
-		if(!ShellGrammar.matchPatternToken(commandToken, CommandPatternFunc._PatternName)) {
+		if(!ShellGrammar.matchPatternToken(commandToken, CommandPatternFunc.patternName)) {
 			return null;
 		}
 		String command = RuntimeContext.getContext().commandScope.getCommandPath(commandToken.GetText());
@@ -263,7 +263,7 @@ class CommandPatternFunc extends BMatchFunction {
 }
 
 class CommandArgPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$CommandArg$";
+	public final static String patternName = "$CommandArg$";
 
 	@Override
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
@@ -312,9 +312,9 @@ class CommandArgPatternFunc extends BMatchFunction {
 //			}
 			else if(!foundEscape && token.EqualsText("$") && !token.IsNextWhiteSpace() && tokenContext.MatchToken("(")) {
 				this.flush(tokenContext, nodeList, tokenList);
-				BNode node = tokenContext.ParsePattern(parentNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
+				BNode node = tokenContext.ParsePattern(parentNode, PrefixOptionPatternFunc.patternName, BTokenContext._Optional);
 				if(node == null) {
-					node = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+					node = tokenContext.ParsePattern(parentNode, CommandPatternFunc.patternName, BTokenContext._Required);
 				}
 				node = tokenContext.MatchToken(node, ")", BTokenContext._Required);
 				if(node instanceof CommandNode) {
@@ -367,7 +367,7 @@ class CommandArgPatternFunc extends BMatchFunction {
 }
 
 class RedirectPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$Redirect$";
+	public final static String patternName = "$Redirect$";
 
 	// <, >, >>, >&, 1>, 2>, 1>>, 2>>, &>, &>>
 	@Override
@@ -415,7 +415,7 @@ class RedirectPatternFunc extends BMatchFunction {
 	private BNode createRedirectNode(BNode parentNode, BTokenContext tokenContext, String redirectSymbol, boolean existTarget) {
 		CommandNode node = new CommandNode(parentNode, null, redirectSymbol);
 		if(existTarget) {
-			BNode targetNode = tokenContext.ParsePattern(node, CommandArgPatternFunc._PatternName, BTokenContext._Required);
+			BNode targetNode = tokenContext.ParsePattern(node, CommandArgPatternFunc.patternName, BTokenContext._Required);
 			if(targetNode.IsErrorNode()) {
 				return targetNode;
 			}
@@ -426,14 +426,14 @@ class RedirectPatternFunc extends BMatchFunction {
 }
 
 class PrefixOptionPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$PrefixOption$";
+	public final static String patternName = "$PrefixOption$";
 
 	@Override
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
 		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
 		String symbol = token.GetText();
 		if(symbol.equals(ShellGrammar.trace)) {
-			BNode commandNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+			BNode commandNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc.patternName, BTokenContext._Required);
 			if(commandNode.IsErrorNode()) {
 				return commandNode;
 			}
@@ -445,7 +445,7 @@ class PrefixOptionPatternFunc extends BMatchFunction {
 			if(timeNode.IsErrorNode()) {
 				return timeNode;
 			}
-			BNode commandNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+			BNode commandNode = tokenContext.ParsePattern(parentNode, CommandPatternFunc.patternName, BTokenContext._Required);
 			if(commandNode.IsErrorNode()) {
 				return commandNode;
 			}
@@ -590,8 +590,8 @@ public class ShellGrammar {
 
 	public static String resolveCommandPath(ArrayList<BToken> tokenList) {
 		String commandPath = Utils.resolveHome(toCommandToken(tokenList).GetText());
-		int loc = commandPath.lastIndexOf('/');
-		if(loc != -1) {
+		int index = commandPath.lastIndexOf('/');
+		if(index != -1) {
 			if(!Utils.isFileExecutable(commandPath)) {
 				System.err.println("[warning] unknown command: " + commandPath);
 				return "";
@@ -655,12 +655,12 @@ public class ShellGrammar {
 		gamma.DefineToken("/", commandSymbolToken);
 
 		gamma.DefineStatement("import", new ImportPatternFunc());
-		gamma.DefineExpression(ImportCommandPatternFunc._PatternName, new ImportCommandPatternFunc());
+		gamma.DefineExpression(ImportCommandPatternFunc.patternName, new ImportCommandPatternFunc());
 		gamma.DefineExpression(ImportCommandAsPatternFunc.patternName, new ImportCommandAsPatternFunc());
-		gamma.DefineExpression(CommandPatternFunc._PatternName, new CommandPatternFunc());
-		gamma.DefineExpression(CommandArgPatternFunc._PatternName, new CommandArgPatternFunc());
-		gamma.DefineExpression(RedirectPatternFunc._PatternName, new RedirectPatternFunc());
-		gamma.DefineExpression(PrefixOptionPatternFunc._PatternName, prefixOptionPattern);
+		gamma.DefineExpression(CommandPatternFunc.patternName, new CommandPatternFunc());
+		gamma.DefineExpression(CommandArgPatternFunc.patternName, new CommandArgPatternFunc());
+		gamma.DefineExpression(RedirectPatternFunc.patternName, new RedirectPatternFunc());
+		gamma.DefineExpression(PrefixOptionPatternFunc.patternName, prefixOptionPattern);
 		gamma.DefineExpression(SuffixOptionPatternFunc._PatternName, new SuffixOptionPatternFunc());
 
 		gamma.DefineStatement(ImportEnvPatternFunc.patternName, new ImportEnvPatternFunc());

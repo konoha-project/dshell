@@ -48,8 +48,8 @@ public class DShell {
 		this(args, false);
 	}
 
-	public DShell(String[] args, boolean enableDummyTerminal) {
-		this.enableTerminal = enableDummyTerminal;
+	public DShell(String[] args, boolean enableTerminal) {
+		this.enableTerminal = enableTerminal;
 		this.parseArguments(args);
 	}
 

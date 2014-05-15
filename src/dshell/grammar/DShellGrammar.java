@@ -12,8 +12,8 @@ import dshell.grammar.ShellGrammar;
 public class DShellGrammar {	//FIXME
 	public final static String location = "location";
 
-	public static String toLocationSymbol(String Symbol) {
-		return "__@$" + Symbol;
+	public static String toLocationSymbol(String symbol) {
+		return "__@$" + symbol;
 	}
 
 	public static void ImportGrammar(LibBunGamma gamma) {

@@ -200,7 +200,7 @@ class TTYConfigurator {
 		catch(InterruptedException e) {
 			e.printStackTrace();
 		}
-		return streamBuffer.toString();
+		return Utils.removeNewLine(streamBuffer.toString());
 	}
 
 	public static TTYConfigurator initConfigurator(Terminal term) {

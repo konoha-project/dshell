@@ -14,9 +14,9 @@ public class SubstitutionPatternFunc extends BMatchFunction {
 	@Override public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
 		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
 		if(token.EqualsText("$") && tokenContext.MatchToken("(")) {
-			BNode node = tokenContext.ParsePattern(parentNode, PrefixOptionPatternFunc._PatternName, BTokenContext._Optional);
+			BNode node = tokenContext.ParsePattern(parentNode, PrefixOptionPatternFunc.patternName, BTokenContext._Optional);
 			if(node == null) {
-				node = tokenContext.ParsePattern(parentNode, CommandPatternFunc._PatternName, BTokenContext._Required);
+				node = tokenContext.ParsePattern(parentNode, CommandPatternFunc.patternName, BTokenContext._Required);
 			}
 			node = tokenContext.MatchToken(node, ")", BTokenContext._Required);
 			if(node instanceof CommandNode) {

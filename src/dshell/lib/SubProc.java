@@ -12,7 +12,7 @@ public class SubProc extends PseudoProcess {
 	public final static int traceBackend_ltrace = 0;
 	public static int traceBackendType = traceBackend_ltrace;
 
-	private final static String logdirPath = "/tmp/dshell-trace-log";
+	private final static String logDirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
 
 	private ProcessBuilder procBuilder;
@@ -44,8 +44,8 @@ public class SubProc extends PseudoProcess {
 
 	private void initTrace() {
 		if(this.enableTrace) {
-			logFilePath = new String(logdirPath + "/" + createLogNameHeader() + ".log");
-			new File(logdirPath).mkdir();
+			logFilePath = new String(logDirPath + "/" + createLogNameHeader() + ".log");
+			new File(logDirPath).mkdir();
 			String[] traceCmds;
 			if(traceBackendType == traceBackend_ltrace) {
 				traceCmds = new String[] {"ltrace", "-f", "-S", "-o", logFilePath};

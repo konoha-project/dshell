@@ -21,28 +21,28 @@ public class Utils {
 		return null;
 	}
 
-	public final static boolean isFile(String Path) {
-		return new File(Path).isFile();
+	public final static boolean isFile(String path) {
+		return new File(path).isFile();
 	}
 
-	public final static boolean isDirectory(String Path) {
-		return new File(Path).isDirectory();
+	public final static boolean isDirectory(String path) {
+		return new File(path).isDirectory();
 	}
 
-	public final static boolean isFileExists(String Path) {
-		return new File(Path).exists();
+	public final static boolean isFileExists(String path) {
+		return new File(path).exists();
 	}
 
-	public final static boolean isFileReadable(String Path) {
-		return new File(Path).canRead();
+	public final static boolean isFileReadable(String path) {
+		return new File(path).canRead();
 	}
 
-	public final static boolean isFileWritable(String Path) {
-		return new File(Path).canWrite();
+	public final static boolean isFileWritable(String path) {
+		return new File(path).canWrite();
 	}
 
-	public final static boolean isFileExecutable(String Path) {
-		return new File(Path).canExecute();
+	public final static boolean isFileExecutable(String path) {
+		return new File(path).canExecute();
 	}
 
 	public final static TreeSet<String> getCommandSetFromPath() {
@@ -138,14 +138,14 @@ public class Utils {
 		return null;
 	}
 
-	public static String resolveHome(String Path) {
-		if(Path.equals("~")) {
+	public static String resolveHome(String path) {
+		if(path.equals("~")) {
 			return Utils.getEnv("HOME");
 		}
-		else if(Path.startsWith("~/")) {
-			return Utils.getEnv("HOME") + Path.substring(1);
+		else if(path.startsWith("~/")) {
+			return Utils.getEnv("HOME") + path.substring(1);
 		}
-		return Path;
+		return path;
 	}
 
 	private final static Pattern defaultDelimPattern = Pattern.compile("[\n\t ]+", Pattern.UNIX_LINES);
@@ -175,16 +175,16 @@ public class Utils {
 		return Double.parseDouble(value);
 	}
 
-	public static String removeNewLine(String Value) {
-		int Size = Value.length();
-		int EndIndex = Size;
-		for(int i = Size - 1; i > -1; i--) {
-			char ch = Value.charAt(i);
+	public static String removeNewLine(String value) {
+		int size = value.length();
+		int endIndex = size;
+		for(int i = size - 1; i > -1; i--) {
+			char ch = value.charAt(i);
 			if(ch != '\n') {
-				EndIndex = i + 1;
+				endIndex = i + 1;
 				break;
 			}
 		}
-		return EndIndex == Size ? Value : Value.substring(0, EndIndex);
+		return endIndex == size ? value : value.substring(0, endIndex);
 	}
 }
