@@ -3,8 +3,8 @@ package dshell.rec;
 import libbun.ast.SyntaxSugarNode;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.type.BType;
-import dshell.ast.sugar.DShellAssertNode;
-import dshell.lang.DShellTypeChecker;
+import dshell.internal.ast.sugar.DShellAssertNode;
+import dshell.internal.lang.DShellTypeChecker;
 
 public class TypeChecker4REC extends DShellTypeChecker {
 	public TypeChecker4REC(DShellByteCodeGenerator generator) {

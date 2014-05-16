@@ -2,9 +2,9 @@ package libbun.encode.jvm;
 
 import java.lang.reflect.Method;
 
-import dshell.ast.sugar.DShellAssertNode;
-import dshell.lib.Utils;
-import dshell.lib.Utils.AssertionError;
+import dshell.internal.ast.sugar.DShellAssertNode;
+import dshell.internal.lib.Utils;
+import dshell.internal.lib.Utils.AssertionError;
 import libbun.ast.SyntaxSugarNode;
 import libbun.encode.jvm.DShellByteCodeGenerator;
 

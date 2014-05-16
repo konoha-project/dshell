@@ -22,8 +22,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-import dshell.DShell.GeneratorFactory;
-import dshell.lib.Utils;
+import dshell.internal.lib.Utils;
+import dshell.internal.main.DShell.GeneratorFactory;
 
 /**
 params: {

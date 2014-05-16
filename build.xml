@@ -36,7 +36,7 @@
 			<fileset dir="${build_dir}" includes="**/*.class" />
 			<exclude name="**/*Test.class" />
 			<manifest>
-				<attribute name="Main-Class" value="dshell.DShell" />
+				<attribute name="Main-Class" value="dshell.internal.main.DShell" />
 			</manifest>
 			<zipfileset src="${libbun_jar}" />
 			<zipfileset src="ext/jna-4.0.0.jar" />

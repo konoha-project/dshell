@@ -2,9 +2,10 @@ package dshell;
 
 import libbun.encode.jvm.Generator4Test;
 import libbun.util.LibBunSystem;
-import dshell.console.AbstractConsole;
-import dshell.lang.DShellTypeChecker;
-import dshell.lib.RuntimeContext;
+import dshell.internal.console.AbstractConsole;
+import dshell.internal.lang.DShellTypeChecker;
+import dshell.internal.lib.RuntimeContext;
+import dshell.internal.main.DShell;
 
 public class DShellTest extends DShell {
 
