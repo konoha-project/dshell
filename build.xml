@@ -34,6 +34,7 @@
 	<target name="jar" depends="build">
 		<jar jarfile="${dshell_jar}">
 			<fileset dir="${build_dir}" includes="**/*.class" />
+			<fileset dir="." includes="lib/jvm/*" />
 			<exclude name="**/*Test.class" />
 			<manifest>
 				<attribute name="Main-Class" value="dshell.internal.main.DShell" />

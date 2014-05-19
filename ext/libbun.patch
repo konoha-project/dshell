@@ -1,0 +1,222 @@
+diff --git a/build.xml b/build.xml
+index 4efd2cc..49a4e2c 100644
+--- a/build.xml
++++ b/build.xml
+@@ -21,12 +21,27 @@
+ 	<!-- ================================== -->
+ 	<target name="build">
+ 		<mkdir dir="${build_dir}" />
+-		<javac srcdir="${source_dir}" destdir="${build_dir}" target="1.6" source="1.6"
++		<javac sourcepath ="" srcdir="${source_dir}"
++			destdir="${build_dir}" target="1.7" source="1.7"
+ 			debug="yes" debuglevel="lines,vars,source" includeantruntime="false">
+ 			<classpath path="java/ext/asm-all-4.0.jar" />
+ 			<classpath path="${jline_jar}" />
+-			<include name="**/*.java" />
+-			<exclude name="**/*Test.java" />
++			<exclude name="libbun/main/**"/>
++			<exclude name="libbun/encode/jvm/**"/>
++			<exclude name="libbun/encode/llvm/**"/>
++			<exclude name="libbun/encode/devel/**"/>
++			<exclude name="libbun/encode/erlang/**"/>
++			<exclude name="libbun/encode/haskell/**"/>
++			<exclude name="libbun/encode/obsolete/**"/>
++			<exclude name="libbun/encode/release/**"/>
++			<exclude name="libbun/encode/playground/**"/>
++			<exclude name="libbun/lang/lisp/**"/>
++			<exclude name="libbun/lang/python/**"/>
++			<exclude name="libbun/lang/bun/shell/**"/>
++			<exclude name="libbun/lang/bun/regex/**"/>
++			<exclude name="libbun/parser/peg/**"/>
++			<exclude name="libbun/parser/ssa/**"/>
++			<exclude name="**/ZNativeType.java"/>
+ 			<compilerarg value="-Xlint:deprecation" />
+ 			<compilerarg value="-Xlint:unchecked" />
+ 		</javac>
+@@ -38,11 +53,6 @@
+ 	<target name="jar" depends="build">
+ 		<jar jarfile="${BinaryName}.jar">
+ 			<fileset dir="${build_dir}" includes="**/*.class" />
+-			<fileset dir="." includes="lib/**" />
+-			<exclude name="**/*Test.class" />
+-			<manifest>
+-				<attribute name="Main-Class" value="libbun.main.Main" />
+-			</manifest>
+ 			<zipfileset src="java/ext/asm-all-4.0.jar" />
+ 			<zipfileset src="${jline_jar}" />
+ 		</jar>
+diff --git a/java/src/libbun/util/LibBunSystem.java b/java/src/libbun/util/LibBunSystem.java
+index 606486b..79602da 100644
+--- a/java/src/libbun/util/LibBunSystem.java
++++ b/java/src/libbun/util/LibBunSystem.java
+@@ -40,8 +40,8 @@ import java.lang.reflect.Method;
+ import libbun.ast.BNode;
+ import libbun.encode.LibBunGenerator;
+ import libbun.encode.LibBunSourceBuilder;
+-import libbun.encode.jvm.JavaTypeTable;
+-import libbun.encode.playground.BunGenerator;
++//import libbun.encode.jvm.JavaTypeTable;
++//import libbun.encode.playground.BunGenerator;
+ import libbun.lang.bun.BunTypeSafer;
+ import libbun.parser.classic.BSourceContext;
+ import libbun.parser.classic.BTokenContext;
+@@ -552,52 +552,52 @@ public class LibBunSystem {
+ 	}
+ 
+ 	private final static BunMap<Class<?>> ClassMap = new BunMap<Class<?>>(null);
+-
+-	static {
+-		ClassMap.put("syntax::bun", libbun.lang.bun.BunGrammar.class);
+-		ClassMap.put("syntax::bun.extra", libbun.lang.bun.extra.BunExtraGrammar.class);
+-		ClassMap.put("syntax::bun.regex", libbun.lang.bun.regexp.RegExpGrammar.class);
+-		ClassMap.put("syntax::bun.shell", libbun.lang.bun.shell.ShellGrammar.class);
+-
+-		ClassMap.put("syntax::lisp",   libbun.lang.lisp.LispGrammar.class);
+-		ClassMap.put("syntax::konoha", libbun.lang.konoha.KonohaGrammar.class);
+-		ClassMap.put("syntax::python", libbun.lang.python.PythonGrammar.class);
+-
+-		// source code by file extension
+-		ClassMap.put("bash", libbun.encode.devel.BashGenerator.class);
+-		ClassMap.put("bun", libbun.encode.playground.BunGenerator.class);
+-		ClassMap.put("c",   libbun.encode.playground.CGenerator.class);
+-		ClassMap.put("cl",  libbun.encode.playground.CommonLispGenerator.class);
+-		ClassMap.put("cs",  libbun.encode.release.CSharpGenerator.class);
+-		ClassMap.put("csharp-playground",  libbun.encode.playground.CSharpGenerator.class);
+-		ClassMap.put("erl", libbun.encode.erlang.ErlangGenerator.class);
+-
+-		ClassMap.put("hs",  libbun.encode.haskell.HaskellSourceGenerator.class);
+-		ClassMap.put("java", libbun.encode.playground.JavaGenerator.class);
+-		ClassMap.put("js",  libbun.encode.release.JavaScriptGenerator.class);
+-		ClassMap.put("javascript-playground",  libbun.encode.playground.JavaScriptGenerator.class);
+-
+-		ClassMap.put("lua",  libbun.encode.devel.LuaGenerator.class);
+-
+-		ClassMap.put("pl",  libbun.encode.obsolete.PerlGenerator.class);
+-		ClassMap.put("py", libbun.encode.release.PythonGenerator.class);
+-		ClassMap.put("python-playground", libbun.encode.playground.PythonGenerator.class);
+-		ClassMap.put("r", libbun.encode.playground.RGenerator.class);
+-		ClassMap.put("rb", libbun.encode.devel.RubyGenerator.class);
+-		ClassMap.put("sml", libbun.encode.devel.SMLSharpGenerator.class);
+-
+-		ClassMap.put("vba", libbun.encode.devel.VBAGenerator.class);
+-
+-		//
+-		ClassMap.put("ssac", libbun.encode.devel.SSACGenerator.class);
+-
+-		// engine
+-		ClassMap.put("jvm", libbun.encode.jvm.AsmJavaGenerator.class);
+-		ClassMap.put("debug-jvm", libbun.encode.jvm.DebugAsmGenerator.class);
+-		ClassMap.put("dump-jvm", libbun.encode.jvm.ByteCodePrinter.class);
+-		ClassMap.put("ll", libbun.encode.llvm.LLVMSourceGenerator.class);
+-
+-	}
++//
++//	static {
++//		ClassMap.put("syntax::bun", libbun.lang.bun.BunGrammar.class);
++//		ClassMap.put("syntax::bun.extra", libbun.lang.bun.extra.BunExtraGrammar.class);
++//		ClassMap.put("syntax::bun.regex", libbun.lang.bun.regexp.RegExpGrammar.class);
++//		ClassMap.put("syntax::bun.shell", libbun.lang.bun.shell.ShellGrammar.class);
++//
++//		ClassMap.put("syntax::lisp",   libbun.lang.lisp.LispGrammar.class);
++//		ClassMap.put("syntax::konoha", libbun.lang.konoha.KonohaGrammar.class);
++//		ClassMap.put("syntax::python", libbun.lang.python.PythonGrammar.class);
++//
++//		// source code by file extension
++//		ClassMap.put("bash", libbun.encode.devel.BashGenerator.class);
++//		ClassMap.put("bun", libbun.encode.playground.BunGenerator.class);
++//		ClassMap.put("c",   libbun.encode.playground.CGenerator.class);
++//		ClassMap.put("cl",  libbun.encode.playground.CommonLispGenerator.class);
++//		ClassMap.put("cs",  libbun.encode.release.CSharpGenerator.class);
++//		ClassMap.put("csharp-playground",  libbun.encode.playground.CSharpGenerator.class);
++//		ClassMap.put("erl", libbun.encode.erlang.ErlangGenerator.class);
++//
++//		ClassMap.put("hs",  libbun.encode.haskell.HaskellSourceGenerator.class);
++//		ClassMap.put("java", libbun.encode.playground.JavaGenerator.class);
++//		ClassMap.put("js",  libbun.encode.release.JavaScriptGenerator.class);
++//		ClassMap.put("javascript-playground",  libbun.encode.playground.JavaScriptGenerator.class);
++//
++//		ClassMap.put("lua",  libbun.encode.devel.LuaGenerator.class);
++//
++//		ClassMap.put("pl",  libbun.encode.obsolete.PerlGenerator.class);
++//		ClassMap.put("py", libbun.encode.release.PythonGenerator.class);
++//		ClassMap.put("python-playground", libbun.encode.playground.PythonGenerator.class);
++//		ClassMap.put("r", libbun.encode.playground.RGenerator.class);
++//		ClassMap.put("rb", libbun.encode.devel.RubyGenerator.class);
++//		ClassMap.put("sml", libbun.encode.devel.SMLSharpGenerator.class);
++//
++//		ClassMap.put("vba", libbun.encode.devel.VBAGenerator.class);
++//
++//		//
++//		ClassMap.put("ssac", libbun.encode.devel.SSACGenerator.class);
++//
++//		// engine
++//		ClassMap.put("jvm", libbun.encode.jvm.AsmJavaGenerator.class);
++//		ClassMap.put("debug-jvm", libbun.encode.jvm.DebugAsmGenerator.class);
++//		ClassMap.put("dump-jvm", libbun.encode.jvm.ByteCodePrinter.class);
++//		ClassMap.put("ll", libbun.encode.llvm.LLVMSourceGenerator.class);
++//
++//	}
+ 
+ 	public final static boolean _LoadGrammar(LibBunGamma Gamma, String ClassName) {
+ 		try {
+@@ -614,34 +614,34 @@ public class LibBunSystem {
+ 		return false;
+ 	}
+ 
+-	public final static LibBunGenerator _LoadGenerator(String ClassName, String OutputFile) {
+-		if (ClassName != null) {
+-			try {
+-				Class<?> GeneratorClass = ClassMap.GetOrNull(ClassName.toLowerCase());
+-				if(GeneratorClass == null) {
+-					GeneratorClass = Class.forName(ClassName);
+-				}
+-				return (LibBunGenerator) GeneratorClass.newInstance();
+-			} catch (Exception e) {
+-				e.printStackTrace();
+-			}
+-		}
+-		LibBunSystem._PrintLine("unknown target: " + ClassName);
+-		return new BunGenerator();
+-	}
+-
+-	public final static LibBunGenerator _InitGenerator(@Nullable String ClassName, String GrammarClass) {
+-		@Var LibBunGenerator Generator = LibBunSystem._LoadGenerator(ClassName, null);
+-		LibBunSystem._LoadGrammar(Generator.RootGamma, GrammarClass);
+-		Generator.SetTypeChecker(new BunTypeSafer(Generator));
+-		Generator.RequireLibrary("common", null);
+-		return Generator;
+-	}
++//	public final static LibBunGenerator _LoadGenerator(String ClassName, String OutputFile) {
++//		if (ClassName != null) {
++//			try {
++//				Class<?> GeneratorClass = ClassMap.GetOrNull(ClassName.toLowerCase());
++//				if(GeneratorClass == null) {
++//					GeneratorClass = Class.forName(ClassName);
++//				}
++//				return (LibBunGenerator) GeneratorClass.newInstance();
++//			} catch (Exception e) {
++//				e.printStackTrace();
++//			}
++//		}
++//		LibBunSystem._PrintLine("unknown target: " + ClassName);
++//		return new BunGenerator();
++//	}
++
++//	public final static LibBunGenerator _InitGenerator(@Nullable String ClassName, String GrammarClass) {
++//		@Var LibBunGenerator Generator = LibBunSystem._LoadGenerator(ClassName, null);
++//		LibBunSystem._LoadGrammar(Generator.RootGamma, GrammarClass);
++//		Generator.SetTypeChecker(new BunTypeSafer(Generator));
++//		Generator.RequireLibrary("common", null);
++//		return Generator;
++//	}
+ 
+ 	//
+-	public final static BType GetNativeType(Class<?> NativeClass) {
+-		return JavaTypeTable.GetBunType(NativeClass);
+-	}
++//	public final static BType GetNativeType(Class<?> NativeClass) {
++//		return JavaTypeTable.GetBunType(NativeClass);
++//	}
+ 
+ 	// Type
+ 	public final static String _GetClassName(Object Value) {

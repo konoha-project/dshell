@@ -8,7 +8,9 @@ TOOLS_DIR="./tools"
 all: build
 
 build:
+	cd ./ext/libbun; git stash && git stash clear
 	git submodule update
+	cd ./ext/libbun; git apply ../libbun.patch
 	ant
 
 clean: clean-launcher
