@@ -187,4 +187,8 @@ public class Utils {
 		}
 		return endIndex == size ? value : value.substring(0, endIndex);
 	}
+
+	public static String getUserName() {
+		return getEnv("USER");
+	}
 }

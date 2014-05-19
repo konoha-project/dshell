@@ -1,6 +1,8 @@
-package libbun.encode.jvm;
+package dshell.internal.jvm;
 
-public class Generator4Test extends DShellByteCodeGenerator {
+import dshell.internal.jvm.JavaByteCodeGenerator;
+
+public class Generator4Test extends JavaByteCodeGenerator {
 	@Override
 	public void evalAndPrint() {
 		while(!this.topLevelStatementList.isEmpty()) {

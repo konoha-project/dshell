@@ -1,13 +1,13 @@
 package dshell.internal.ast;
 
 import dshell.internal.exception.Exception;
+import dshell.internal.jvm.JavaTypeTable;
 import dshell.internal.lang.DShellVisitor;
 import dshell.internal.lib.Utils;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.literal.BunTypeNode;
 import libbun.ast.BNode;
-import libbun.encode.jvm.JavaTypeTable;
 import libbun.parser.classic.LibBunVisitor;
 import libbun.type.BType;
 
@@ -34,14 +34,17 @@ public class DShellCatchNode extends BNode {
 		if(this.exceptionType == null && this.hasTypeInfo()) {
 			this.exceptionType = ((BunTypeNode) this.AST[_TypeInfo]).Type;
 		}
-		if(this.exceptionType == null) {
-			this.exceptionType = JavaTypeTable.GetBunType(Exception.class);
-		}
 		return this.exceptionType;
 	}
 
 	public void setExceptionType(BType type) {
 		this.exceptionType = type;
+	}
+
+	public void setDefaultType(JavaTypeTable typeTable) {
+		if(this.exceptionType() == null) {
+			this.exceptionType = typeTable.GetBunType(Exception.class);
+		}
 	}
 
 	public BunLetVarNode toLetVarNode() {

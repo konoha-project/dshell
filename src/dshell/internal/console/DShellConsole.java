@@ -13,7 +13,7 @@ import jline.UnixTerminal;
 
 public class DShellConsole implements AbstractConsole {
 	private final jline.ConsoleReader consoleReader;
-	private String userName = System.getProperty("user.name");
+	private String userName = Utils.getUserName();
 	private final TTYConfigurator ttyConfig;
 	private int lineNumber;
 

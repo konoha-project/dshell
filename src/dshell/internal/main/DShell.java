@@ -11,13 +11,13 @@ import java.util.TreeSet;
 import dshell.internal.console.AbstractConsole;
 import dshell.internal.console.DShellConsole;
 import dshell.internal.grammar.DShellGrammar;
+import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lang.DShellTypeChecker;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestReceiver;
 import libbun.parser.classic.LibBunTypeChecker;
 import libbun.util.LibBunSystem;
-import libbun.encode.jvm.DShellByteCodeGenerator;
 import static dshell.internal.lib.RuntimeContext.AppenderType;
 
 public class DShell {
@@ -157,7 +157,7 @@ public class DShell {
 	}
 
 	protected void runInteractiveMode(GeneratorFactory gFactory, AbstractConsole console) {
-		DShellByteCodeGenerator generator = gFactory.createGenerator();
+		JavaByteCodeGenerator generator = gFactory.createGenerator();
 		String line = null;
 		this.showVersionInfo();
 		generator.loadVariables(true);
@@ -190,7 +190,7 @@ public class DShell {
 	}
 
 	protected void runScriptingMode(GeneratorFactory gFactory) {
-		DShellByteCodeGenerator generator = gFactory.createGenerator();
+		JavaByteCodeGenerator generator = gFactory.createGenerator();
 		String scriptName = this.scriptArgs[0];
 		generator.loadArg(this.scriptArgs);
 		generator.loadVariables(false);
@@ -203,7 +203,7 @@ public class DShell {
 	}
 
 	protected void runInputEvalMode(GeneratorFactory gFactory) {
-		DShellByteCodeGenerator generator = gFactory.createGenerator();
+		JavaByteCodeGenerator generator = gFactory.createGenerator();
 		String source = this.specificArg;
 		if(this.specificArg == null) {
 			source = readFromIntput();
@@ -265,7 +265,7 @@ public class DShell {
 		private final Class<?> typeCheckerClass;
 
 		public GeneratorFactory() {
-			this(DShellByteCodeGenerator.class, DShellTypeChecker.class);
+			this(JavaByteCodeGenerator.class, DShellTypeChecker.class);
 		}
 
 		public GeneratorFactory(Class<?> generatorClass, Class<?> typeCheckerClass) {
@@ -273,17 +273,17 @@ public class DShell {
 			this.typeCheckerClass = typeCheckerClass;
 		}
 
-		public DShellByteCodeGenerator createGenerator() {
-			DShellByteCodeGenerator generator = this.newGenerator();
+		public JavaByteCodeGenerator createGenerator() {
+			JavaByteCodeGenerator generator = this.newGenerator();
 			DShellGrammar.ImportGrammar(generator.RootGamma);
 			generator.SetTypeChecker(newTypeChecker(generator));
 			generator.RequireLibrary("common", null);
 			return generator;
 		}
 
-		protected DShellByteCodeGenerator newGenerator() {
+		protected JavaByteCodeGenerator newGenerator() {
 			try {
-				return (DShellByteCodeGenerator) this.generatorClass.newInstance();
+				return (JavaByteCodeGenerator) this.generatorClass.newInstance();
 			}
 			catch(Exception e) {
 				e.printStackTrace();
@@ -292,9 +292,9 @@ public class DShell {
 			return null;
 		}
 
-		protected LibBunTypeChecker newTypeChecker(DShellByteCodeGenerator generator) {
+		protected LibBunTypeChecker newTypeChecker(JavaByteCodeGenerator generator) {
 			try {
-				Constructor<?> constructor = this.typeCheckerClass.getConstructor(DShellByteCodeGenerator.class);
+				Constructor<?> constructor = this.typeCheckerClass.getConstructor(JavaByteCodeGenerator.class);
 				DShellTypeChecker typeChecker = (DShellTypeChecker) constructor.newInstance(new Object[] {generator});
 				return typeChecker;
 			}

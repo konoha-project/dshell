@@ -1,8 +1,8 @@
-package dshell;
+package dshell.internal.main;
 
-import libbun.encode.jvm.Generator4Test;
 import libbun.util.LibBunSystem;
 import dshell.internal.console.AbstractConsole;
+import dshell.internal.jvm.Generator4Test;
 import dshell.internal.lang.DShellTypeChecker;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.main.DShell;

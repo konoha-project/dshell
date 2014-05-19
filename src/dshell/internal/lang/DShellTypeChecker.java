@@ -12,8 +12,6 @@ import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunWhileNode;
 import libbun.ast.sugar.BunContinueNode;
-import libbun.encode.jvm.JavaTypeTable;
-import libbun.encode.jvm.DShellByteCodeGenerator;
 import libbun.lang.bun.BunTypeSafer;
 import libbun.parser.classic.BToken;
 import libbun.parser.classic.LibBunLogger;
@@ -30,11 +28,12 @@ import dshell.internal.ast.InternalFuncCallNode;
 import dshell.internal.ast.MatchRegexNode;
 import dshell.internal.ast.sugar.DShellForeachNode;
 import dshell.internal.exception.Exception;
+import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.CommandArg;
 
 public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 
-	public DShellTypeChecker(DShellByteCodeGenerator generator) {
+	public DShellTypeChecker(JavaByteCodeGenerator generator) {
 		super(generator);
 	}
 
@@ -58,7 +57,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 		int size = node.getArgSize();
 		for(int i = 0; i < size; i++) {
 			BNode subNode = node.getArgAt(i);
-			subNode = this.CheckType(subNode, JavaTypeTable.GetBunType(CommandArg.class));
+			subNode = this.CheckType(subNode, ((JavaByteCodeGenerator) this.Generator).getTypeTable().GetBunType(CommandArg.class));
 			node.setArgAt(i, subNode);
 		}
 		if(node.getPipedNextNode() != null) {
@@ -84,6 +83,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 
 	@Override
 	public void visitCatchNode(DShellCatchNode node) {
+		node.setDefaultType(((JavaByteCodeGenerator)this.Generator).getTypeTable());
 		if(!this.checkTypeRequirement(node.exceptionType())) {
 			this.ReturnErrorNode(node, node.GetAstToken(DShellCatchNode._TypeInfo), "require Exception type");
 			return;
@@ -101,7 +101,7 @@ public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 	}
 
 	private boolean checkTypeRequirement(BType exceptionType) {
-		Class<?> javaClass = ((DShellByteCodeGenerator)this.Generator).GetJavaClass(exceptionType);
+		Class<?> javaClass = ((JavaByteCodeGenerator)this.Generator).getJavaClass(exceptionType);
 		while(javaClass != null) {
 			if(javaClass.equals(Exception.class)) {
 				return true;

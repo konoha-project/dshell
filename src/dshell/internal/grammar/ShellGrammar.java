@@ -123,6 +123,9 @@ class ImportCommandPatternFunc extends BMatchFunction {
 	public final static String patternName = "$ImportCommand$";
 
 	private void setCommandSymbol(BNode parentNode, ArrayList<BToken> tokenList) {
+		if(tokenList.isEmpty()) {
+			return;
+		}
 		String commandPath = ShellGrammar.resolveCommandPath(tokenList);
 		int index = commandPath.lastIndexOf("/");
 		ShellGrammar.checkDuplicationAndSetCommand(parentNode.GetGamma(), commandPath.substring(index + 1), commandPath);

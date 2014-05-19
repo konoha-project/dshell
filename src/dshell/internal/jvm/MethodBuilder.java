@@ -41,13 +41,13 @@ class MethodBuilder extends MethodNode {
 	public MethodBuilder(int acc, String name, String desc, JavaByteCodeGenerator generator) {
 		super(acc, name, desc, null, null);
 		this.generator = generator;
-		this.parent = generator.AsmBuilder;
-		generator.AsmBuilder = this;
+		this.parent = generator.asmBuilder;
+		generator.asmBuilder = this;
 	}
 
 	public void finish() {
-		assert(this.generator.AsmBuilder == this);
-		this.generator.AsmBuilder = this.parent;
+		assert(this.generator.asmBuilder == this);
+		this.generator.asmBuilder = this.parent;
 	}
 
 	void setLineNumber(int line) {
@@ -199,7 +199,7 @@ class MethodBuilder extends MethodNode {
 			return;
 		}
 		Method sMethod = this.generator.getMethodTable().GetCastMethod(targetClass, sourceClass);
-		this.generator.Debug("C1="+targetClass.getSimpleName()+ ", C2="+sourceClass.getSimpleName()+", CastMethod="+sMethod);
+		this.generator.debugPrint("C1="+targetClass.getSimpleName()+ ", C2="+sourceClass.getSimpleName()+", CastMethod="+sMethod);
 		if(sMethod != null) {
 			String owner = Type.getInternalName(sMethod.getDeclaringClass());
 			this.visitMethodInsn(INVOKESTATIC, owner, sMethod.getName(), Type.getMethodDescriptor(sMethod));
@@ -207,23 +207,23 @@ class MethodBuilder extends MethodNode {
 		}
 		else if (!targetClass.isAssignableFrom(sourceClass)) {
 			// c1 instanceof C2  C2.
-			this.generator.Debug("CHECKCAST C1="+targetClass.getSimpleName()+ ", given C2="+sourceClass.getSimpleName());
+			this.generator.debugPrint("CHECKCAST C1="+targetClass.getSimpleName()+ ", given C2="+sourceClass.getSimpleName());
 			this.visitTypeInsn(CHECKCAST, Type.getInternalName(targetClass));
 		}
 	}
 
 	void checkParamCast(Class<?> targetClass, BNode node) {
-		Class<?> sourceClass = this.generator.GetJavaClass(node.Type);
+		Class<?> sourceClass = this.generator.getJavaClass(node.Type);
 		if(targetClass != sourceClass) {
-			this.generator.Debug("C2="+node + ": " + node.Type);
+			this.generator.debugPrint("C2="+node + ": " + node.Type);
 			this.checkCast(targetClass, sourceClass);
 		}
 	}
 
 	void checkReturnCast(BNode node, Class<?> sourceClass) {
-		Class<?> targetClass = this.generator.GetJavaClass(node.Type);
+		Class<?> targetClass = this.generator.getJavaClass(node.Type);
 		if(targetClass != sourceClass) {
-			this.generator.Debug("C1 "+node + ": " + node.Type);
+			this.generator.debugPrint("C1 "+node + ": " + node.Type);
 			this.checkCast(targetClass, sourceClass);
 		}
 	}
@@ -265,13 +265,13 @@ class MethodBuilder extends MethodNode {
 			}
 		}
 		this.setLineNumber(node);
-		Class<?> funcClass = this.generator.GetDefinedFunctionClass(funcName, funcType);
+		Class<?> funcClass = this.generator.getDefinedFunctionClass(funcName, funcType);
 		if(funcClass != null) {
 			this.visitMethodInsn(INVOKESTATIC, funcClass, "f", funcType);
 		}
 		else {
 			// in some case, class has not been generated
-			this.generator.LazyBuild(funcType.StringfySignature(funcName));
+			this.generator.lazyBuild(funcType.StringfySignature(funcName));
 			this.visitMethodInsn(INVOKESTATIC, this.generator.NameFunctionClass(funcName, funcType), "f", funcType);
 		}
 	}
@@ -317,17 +317,17 @@ class MethodBuilder extends MethodNode {
 			this.visitInsn(RETURN);
 		}
 		else {
-			Type type = this.generator.javaTypeUtils.AsmType(returnType);
+			Type type = this.generator.javaTypeUtils.asmType(returnType);
 			this.visitInsn(type.getOpcode(IRETURN));
 		}
 	}
 
 	public void visitMethodInsn(int acc, String className, String funcName, BFuncType funcType) {
-		this.visitMethodInsn(acc, className, funcName, this.generator.javaTypeUtils.GetMethodDescriptor(funcType));
+		this.visitMethodInsn(acc, className, funcName, this.generator.javaTypeUtils.getMethodDescriptor(funcType));
 	}
 
 	public void visitMethodInsn(int acc, Class<?> jClass, String funcName, BFuncType funcType) {
-		this.visitMethodInsn(acc, Type.getInternalName(jClass), funcName, this.generator.javaTypeUtils.GetMethodDescriptor(funcType));
+		this.visitMethodInsn(acc, Type.getInternalName(jClass), funcName, this.generator.javaTypeUtils.getMethodDescriptor(funcType));
 	}
 
 	public void visitFieldInsn(int opcode, String className, String name, Class<?> jClass) {

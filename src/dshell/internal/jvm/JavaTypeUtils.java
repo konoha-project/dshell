@@ -11,7 +11,6 @@ import libbun.util.BArray;
 import libbun.util.BBooleanArray;
 import libbun.util.BFloatArray;
 import libbun.util.BIntArray;
-import libbun.util.Var;
 
 import org.objectweb.asm.Type;
 
@@ -24,56 +23,56 @@ public class JavaTypeUtils {
 		this.typeTable = typeTable;
 	}
 
-	final Type AsmType(BType zType) {
-		Class<?> jClass = this.generator.GetJavaClass(zType, Object.class);
+	final Type asmType(BType zType) {
+		Class<?> jClass = this.generator.getJavaClass(zType, Object.class);
 		return Type.getType(jClass);
 	}
 
-	final String GetDescripter(BType zType) {
-		Class<?> jClass = this.generator.GetJavaClass(zType, null);
+	final String getDescripter(BType zType) {
+		Class<?> jClass = this.generator.getJavaClass(zType, null);
 		if(jClass != null) {
 			return Type.getType(jClass).toString();
 		}
 		return "L" + zType + ";";
 	}
 
-	final String GetTypeDesc(BType zType) {
-		Class<?> JClass = this.generator.GetJavaClass(zType);
-		return Type.getDescriptor(JClass);
+	final String getTypeDesc(BType zType) {
+		Class<?> jClass = this.generator.getJavaClass(zType);
+		return Type.getDescriptor(jClass);
 	}
 
-	final String GetMethodDescriptor(BFuncType FuncType) {
+	final String getMethodDescriptor(BFuncType funcType) {
 		StringBuffer sb = new StringBuffer();
 		sb.append("(");
-		for(int i = 0; i < FuncType.GetFuncParamSize(); i++) {
-			BType ParamType = FuncType.GetFuncParamType(i);
-			sb.append(this.GetDescripter(ParamType));
+		for(int i = 0; i < funcType.GetFuncParamSize(); i++) {
+			BType ParamType = funcType.GetFuncParamType(i);
+			sb.append(this.getDescripter(ParamType));
 		}
 		sb.append(")");
-		sb.append(this.GetDescripter(FuncType.GetReturnType()));
-		String Desc = sb.toString();
+		sb.append(this.getDescripter(funcType.GetReturnType()));
+		String desc = sb.toString();
 		//		String Desc2 = this.GetMethodDescriptor2(FuncType);
 		//		System.out.println(" ** Desc: " + Desc + ", " + Desc2 + ", FuncType: " + FuncType);
-		return Desc;
+		return desc;
 	}
 
-	private boolean MatchParam(Class<?>[] jParams, AbstractListNode ParamList) {
-		if(jParams.length != ParamList.GetListSize()) {
+	private boolean matchParam(Class<?>[] jParams, AbstractListNode paramList) {
+		if(jParams.length != paramList.GetListSize()) {
 			return false;
 		}
 		for(int j = 0; j < jParams.length; j++) {
 			if(jParams[j] == Object.class) {
 				continue; // accepting all types
 			}
-			@Var BType jParamType = this.typeTable.GetBunType(jParams[j]);
-			@Var BType ParamType = ParamList.GetListAt(j).Type;
-			if(jParamType == ParamType || jParamType.Accept(ParamList.GetListAt(j).Type)) {
+			BType jParamType = this.typeTable.GetBunType(jParams[j]);
+			BType paramType = paramList.GetListAt(j).Type;
+			if(jParamType == paramType || jParamType.Accept(paramList.GetListAt(j).Type)) {
 				continue;
 			}
-			if(jParamType.IsFloatType() && ParamType.IsIntType()) {
+			if(jParamType.IsFloatType() && paramType.IsIntType()) {
 				continue;
 			}
-			if(jParamType.IsIntType() && ParamType.IsFloatType()) {
+			if(jParamType.IsIntType() && paramType.IsFloatType()) {
 				continue;
 			}
 			return false;
@@ -81,17 +80,17 @@ public class JavaTypeUtils {
 		return true;
 	}
 
-	protected Constructor<?> GetConstructor(BType RecvType, AbstractListNode ParamList) {
-		Class<?> NativeClass = this.generator.GetJavaClass(RecvType);
-		if(NativeClass != null) {
+	protected Constructor<?> getConstructor(BType recvType, AbstractListNode paramList) {
+		Class<?> javaClass = this.generator.getJavaClass(recvType);
+		if(javaClass != null) {
 			try {
-				Constructor<?>[] Methods = NativeClass.getConstructors();
+				Constructor<?>[] Methods = javaClass.getConstructors();
 				for(int i = 0; i < Methods.length; i++) {
-					@Var Constructor<?> jMethod = Methods[i];
+					Constructor<?> jMethod = Methods[i];
 					if(!Modifier.isPublic(jMethod.getModifiers())) {
 						continue;
 					}
-					if(this.MatchParam(jMethod.getParameterTypes(), ParamList)) {
+					if(this.matchParam(jMethod.getParameterTypes(), paramList)) {
 						return jMethod;
 					}
 				}
@@ -101,20 +100,20 @@ public class JavaTypeUtils {
 		return null;
 	}
 
-	protected Method GetMethod(BType RecvType, String MethodName, AbstractListNode ParamList) {
-		Class<?> NativeClass = this.generator.GetJavaClass(RecvType);
-		if(NativeClass != null) {
+	protected Method getMethod(BType recvType, String methodName, AbstractListNode paramList) {
+		Class<?> javaClass = this.generator.getJavaClass(recvType);
+		if(javaClass != null) {
 			try {
-				Method[] Methods = NativeClass.getMethods();
-				for(int i = 0; i < Methods.length; i++) {
-					@Var Method jMethod = Methods[i];
-					if(!MethodName.equals(jMethod.getName())) {
+				Method[] methods = javaClass.getMethods();
+				for(int i = 0; i < methods.length; i++) {
+					Method jMethod = methods[i];
+					if(!methodName.equals(jMethod.getName())) {
 						continue;
 					}
 					if(!Modifier.isPublic(jMethod.getModifiers())) {
 						continue;
 					}
-					if(this.MatchParam(jMethod.getParameterTypes(), ParamList)) {
+					if(this.matchParam(jMethod.getParameterTypes(), paramList)) {
 						return jMethod;
 					}
 				}
@@ -124,11 +123,11 @@ public class JavaTypeUtils {
 		return null;
 	}
 
-	Type AsmType(Class<?> jClass) {
+	Type asmType(Class<?> jClass) {
 		return Type.getType(jClass);
 	}
 
-	Class<?> AsArrayClass(BType zType) {
+	Class<?> asArrayClass(BType zType) {
 		BType zParamType = zType.GetParamType(0);
 		if(zParamType.IsBooleanType()) {
 			return BBooleanArray.class;
@@ -142,7 +141,7 @@ public class JavaTypeUtils {
 		return BArray.class;
 	}
 
-	Class<?> AsElementClass(BType zType) {
+	Class<?> asElementClass(BType zType) {
 		BType zParamType = zType.GetParamType(0);
 		if(zParamType.IsBooleanType()) {
 			return boolean.class;
@@ -156,17 +155,17 @@ public class JavaTypeUtils {
 		return Object.class;
 	}
 
-	String NewArrayDescriptor(BType ArrayType) {
-		BType zParamType = ArrayType.GetParamType(0);
+	String newArrayDescriptor(BType arrayType) {
+		BType zParamType = arrayType.GetParamType(0);
 		if(zParamType.IsBooleanType()) {
-			return Type.getMethodDescriptor(AsmType(void.class), new Type[] {this.AsmType(int.class), this.AsmType(boolean[].class)});
+			return Type.getMethodDescriptor(asmType(void.class), new Type[] {this.asmType(int.class), this.asmType(boolean[].class)});
 		}
 		if(zParamType.IsIntType()) {
-			return Type.getMethodDescriptor(AsmType(void.class), new Type[] {this.AsmType(int.class), this.AsmType(long[].class)});
+			return Type.getMethodDescriptor(asmType(void.class), new Type[] {this.asmType(int.class), this.asmType(long[].class)});
 		}
 		if(zParamType.IsFloatType()) {
-			return Type.getMethodDescriptor(AsmType(void.class), new Type[] {this.AsmType(int.class), this.AsmType(double[].class)});
+			return Type.getMethodDescriptor(asmType(void.class), new Type[] {this.asmType(int.class), this.asmType(double[].class)});
 		}
-		return Type.getMethodDescriptor(AsmType(void.class), new Type[] {this.AsmType(int.class), this.AsmType(Object[].class)});
+		return Type.getMethodDescriptor(asmType(void.class), new Type[] {this.asmType(int.class), this.asmType(Object[].class)});
 	}
 }

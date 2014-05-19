@@ -35,7 +35,7 @@ class ClassBuilder {
 	}
 
 	void addField(int acc, String name, BType zType, Object value) {
-		FieldNode fn = new FieldNode(acc, name, Type.getDescriptor(this.generator.GetJavaClass(zType)), null, value);
+		FieldNode fn = new FieldNode(acc, name, Type.getDescriptor(this.generator.getJavaClass(zType)), null, value);
 		this.fieldList.add(fn);
 	}
 
@@ -51,7 +51,7 @@ class ClassBuilder {
 	}
 
 	MethodBuilder newMethodBuilder(int acc, String name, BFuncType funcType) {
-		return this.newMethodBuilder(acc, name, this.generator.javaTypeUtils.GetMethodDescriptor(funcType));
+		return this.newMethodBuilder(acc, name, this.generator.javaTypeUtils.getMethodDescriptor(funcType));
 	}
 
 	byte[] generateBytecode() {

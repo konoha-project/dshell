@@ -1,4 +1,4 @@
-package dshell.rec;
+package dshell.internal.rec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,8 +9,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import libbun.encode.jvm.DShellByteCodeGenerator;
-import libbun.encode.jvm.Generator4REC;
 import libbun.util.LibBunSystem;
 
 import net.arnx.jsonic.JSON;
@@ -22,6 +20,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
+import dshell.internal.jvm.Generator4REC;
+import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.Utils;
 import dshell.internal.main.DShell.GeneratorFactory;
 
@@ -85,7 +85,7 @@ public class RECWriter {
 			this.invoke(this.recURL, this.scriptArgs);
 		}
 		else {
-			DShellByteCodeGenerator generator = new GeneratorFactory(Generator4REC.class, TypeChecker4REC.class).createGenerator();
+			JavaByteCodeGenerator generator = new GeneratorFactory(Generator4REC.class, TypeChecker4REC.class).createGenerator();
 			String scriptName = this.scriptArgs[0];
 			generator.loadArg(this.scriptArgs);
 			boolean status = generator.loadFile(scriptName);

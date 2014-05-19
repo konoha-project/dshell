@@ -24,45 +24,22 @@
 
 package dshell.internal.jvm;
 
-import static org.objectweb.asm.Opcodes.ACC_ABSTRACT;
-import static org.objectweb.asm.Opcodes.ACC_FINAL;
-import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
-import static org.objectweb.asm.Opcodes.ACC_PROTECTED;
-import static org.objectweb.asm.Opcodes.ACC_PUBLIC;
-import static org.objectweb.asm.Opcodes.ACC_STATIC;
-import static org.objectweb.asm.Opcodes.ALOAD;
-import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.ATHROW;
-import static org.objectweb.asm.Opcodes.CHECKCAST;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.GETFIELD;
-import static org.objectweb.asm.Opcodes.GETSTATIC;
-import static org.objectweb.asm.Opcodes.GOTO;
-import static org.objectweb.asm.Opcodes.IFEQ;
-import static org.objectweb.asm.Opcodes.IFNE;
-import static org.objectweb.asm.Opcodes.ILOAD;
-import static org.objectweb.asm.Opcodes.INSTANCEOF;
-import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
-import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.IRETURN;
-import static org.objectweb.asm.Opcodes.NEW;
-import static org.objectweb.asm.Opcodes.PUTFIELD;
-import static org.objectweb.asm.Opcodes.PUTSTATIC;
-import static org.objectweb.asm.Opcodes.RETURN;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Stack;
 
 import libbun.ast.AbstractListNode;
 import libbun.ast.BNode;
 import libbun.ast.BunBlockNode;
+import libbun.ast.EmptyNode;
 import libbun.ast.GroupNode;
 import libbun.ast.LocalDefinedNode;
+import libbun.ast.SyntaxSugarNode;
 import libbun.ast.binary.AssignNode;
 import libbun.ast.binary.BinaryOperatorNode;
 import libbun.ast.binary.BunAddNode;
@@ -115,6 +92,7 @@ import libbun.ast.statement.BunReturnNode;
 import libbun.ast.statement.BunThrowNode;
 import libbun.ast.statement.BunTryNode;
 import libbun.ast.statement.BunWhileNode;
+import libbun.ast.sugar.BunContinueNode;
 import libbun.ast.unary.BunCastNode;
 import libbun.ast.unary.BunComplementNode;
 import libbun.ast.unary.BunMinusNode;
@@ -125,13 +103,16 @@ import libbun.encode.LibBunGenerator;
 import libbun.lang.bun.BunTypeSafer;
 import libbun.parser.classic.BSourceContext;
 import libbun.parser.classic.BTokenContext;
+import libbun.parser.classic.ParserSource;
 //import libbun.parser.classic.LibBunGamma;
 import libbun.parser.classic.LibBunLangInfo;
 import libbun.parser.classic.LibBunLogger;
 import libbun.type.BClassField;
 import libbun.type.BClassType;
+import libbun.type.BFormFunc;
 import libbun.type.BFunc;
 import libbun.type.BFuncType;
+import libbun.type.BGenericType;
 import libbun.type.BType;
 import libbun.type.BTypePool;
 import libbun.util.BArray;
@@ -141,35 +122,113 @@ import libbun.util.BTokenFunction;
 import libbun.util.BunMap;
 import libbun.util.BunObject;
 import libbun.util.LibBunSystem;
-import libbun.util.SoftwareFault;
-import libbun.util.Var;
 
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
-public class JavaByteCodeGenerator extends LibBunGenerator {
+import dshell.internal.ast.CommandNode;
+import dshell.internal.ast.DShellCatchNode;
+import dshell.internal.ast.DShellForNode;
+import dshell.internal.ast.DShellTryNode;
+import dshell.internal.ast.DShellWrapperNode;
+import dshell.internal.ast.InternalFuncCallNode;
+import dshell.internal.ast.MatchRegexNode;
+import dshell.internal.ast.sugar.DShellExportEnvNode;
+import dshell.internal.ast.sugar.DShellImportEnvNode;
+import dshell.internal.exception.DShellException;
+import dshell.internal.exception.Errno;
+import dshell.internal.exception.MultipleException;
+import dshell.internal.exception.NativeException;
+import dshell.internal.lang.DShellTypeChecker;
+import dshell.internal.lang.DShellVisitor;
+import dshell.internal.lib.CommandArg;
+import dshell.internal.lib.GlobalVariableTable;
+import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.StreamUtils;
+import dshell.internal.lib.Task;
+import dshell.internal.lib.TaskBuilder;
+import dshell.internal.lib.Utils;
+import dshell.internal.lib.CommandArg.SubstitutedArg;
+
+public class JavaByteCodeGenerator extends LibBunGenerator implements DShellVisitor {
 	protected final JavaTypeTable typeTable;
 	protected final JavaMethodTable methodTable;
 	public final JavaTypeUtils javaTypeUtils;
-	protected final BunMap<Class<?>> GeneratedClassMap;
-	protected final BunMap<BNode> LazyNodeMap;
-	public JavaStaticFieldNode MainFuncNode = null;
-	GeneratedClassLoader AsmLoader = null;
-	Stack<TryCatchLabel> TryCatchLabel;
-	MethodBuilder AsmBuilder;
+	protected final BunMap<Class<?>> generatedClassMap;
+	protected final BunMap<BNode> lazyNodeMap;
+	public JavaStaticFieldNode mainFuncNode = null;
+	protected GeneratedClassLoader asmLoader = null;
+	protected Stack<TryCatchLabel> tryCatchLabelStack;
+	protected MethodBuilder asmBuilder;
+
+	private BunFunctionNode untypedMainNode = null;
+	protected final LinkedList<TopLevelStatementInfo> topLevelStatementList;
+
+	private Method execCommandVoid;
+	private Method execCommandBool;
+	private Method execCommandInt;
+	private Method execCommandString;
+	private Method execCommandStringArray;
+	private Method execCommandTask;
+	private Method execCommandTaskArray;
+
+	private Method wrapException;
 
 	public JavaByteCodeGenerator() {
 		super(new LibBunLangInfo("Java1.6", "jvm"));
 		this.typeTable = new JavaTypeTable();
 		this.methodTable = new JavaMethodTable(this.typeTable);
-		this.GeneratedClassMap = new BunMap<Class<?>>(null);
-		this.LazyNodeMap = new BunMap<BNode>(null);
+		this.generatedClassMap = new BunMap<Class<?>>(null);
+		this.lazyNodeMap = new BunMap<BNode>(null);
 		this.javaTypeUtils = new JavaTypeUtils(this, this.typeTable);
-		this.InitFuncClass();
+		this.initFuncClass();
 		//this.ImportLocalGrammar(this.RootGamma);
-		this.TryCatchLabel = new Stack<TryCatchLabel>();
-		this.AsmLoader = new GeneratedClassLoader(this);
+		this.tryCatchLabelStack = new Stack<TryCatchLabel>();
+		this.asmLoader = new GeneratedClassLoader(this);
+
+		//
+		this.topLevelStatementList = new LinkedList<TopLevelStatementInfo>();
+		this.loadJavaClass(Task.class);
+		this.loadJavaClass(dshell.internal.exception.Exception.class);
+		this.loadJavaClass(DShellException.class);
+		this.loadJavaClass(MultipleException.class);
+		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
+		this.loadJavaClass(DShellException.NullException.class);
+		this.loadJavaClass(NativeException.class);
+		this.loadJavaClassList(Errno.getExceptionClassList());
+		this.loadJavaClass(CommandArg.class);
+		this.loadJavaClass(SubstitutedArg.class);
+		this.loadJavaClass(StreamUtils.InputStream.class);
+		this.loadJavaClass(StreamUtils.OutputStream.class);
+
+		try {
+			this.execCommandVoid = TaskBuilder.class.getMethod("execCommandVoid", CommandArg[][].class);
+			this.execCommandBool = TaskBuilder.class.getMethod("execCommandBool", CommandArg[][].class);
+			this.execCommandInt = TaskBuilder.class.getMethod("execCommandInt", CommandArg[][].class);
+			this.execCommandString = TaskBuilder.class.getMethod("execCommandString", CommandArg[][].class);
+			this.execCommandStringArray = TaskBuilder.class.getMethod("execCommandStringArray", CommandArg[][].class);
+			this.execCommandTask = TaskBuilder.class.getMethod("execCommandTask", CommandArg[][].class);
+			this.execCommandTaskArray = TaskBuilder.class.getMethod("execCommandTaskArray", CommandArg[][].class);
+
+			this.wrapException = NativeException.class.getMethod("wrapException", Throwable.class);
+		}
+		catch(Throwable e) {
+			e.printStackTrace();
+			Utils.fatal(1, "method loading failed");
+		}
+		this.methodTable.Import(BType.StringType, "=~", BType.StringType, Utils.class, "matchRegex");
+		this.methodTable.Import(BType.StringType, "!~", BType.StringType, Utils.class, "unmatchRegex");
+
+		// load static method
+		this.loadJavaStaticMethod(Utils.class, "getEnv", String.class);
+		this.loadJavaStaticMethod(Utils.class, "setEnv", String.class, String.class);
+		this.loadJavaStaticMethod(CommandArg.class, "createCommandArg", String.class);
+		this.loadJavaStaticMethod(CommandArg.class, "createSubstitutedArg", String.class);
+		this.loadJavaStaticMethod(Utils.class, "assertDShell", boolean.class);
+		this.loadJavaStaticMethod(JavaCommonApi.class, "_", "ObjectToString", Object.class);
+		this.loadJavaStaticMethod(Utils.class, "_", "stringToLong", String.class);
+		this.loadJavaStaticMethod(Utils.class, "_", "stringToDouble", String.class);
 	}
 
 //	private void ImportLocalGrammar(LibBunGamma Gamma) {
@@ -177,64 +236,64 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 //		Gamma.DefineExpression("$JavaClassPath$", new JavaClassPathPattern());
 //	}
 
-	private void InitFuncClass() {
-		BFuncType FuncType = this.typeTable.FuncType(boolean.class, BSourceContext.class);
-		this.SetGeneratedClass(this.NameType(FuncType), BTokenFunction.class);
-		FuncType = this.typeTable.FuncType(BNode.class, BNode.class, BTokenContext.class, BNode.class);
-		this.SetGeneratedClass(this.NameType(FuncType), BMatchFunction.class);
+	private void initFuncClass() {
+		BFuncType funcType = this.typeTable.FuncType(boolean.class, BSourceContext.class);
+		this.setGeneratedClass(this.NameType(funcType), BTokenFunction.class);
+		funcType = this.typeTable.FuncType(BNode.class, BNode.class, BTokenContext.class, BNode.class);
+		this.setGeneratedClass(this.NameType(funcType), BMatchFunction.class);
 	}
 
-	private final void SetGeneratedClass(String Key, Class<?> C) {
-		this.GeneratedClassMap.put(Key, C);
+	private final void setGeneratedClass(String key, Class<?> generatedClass) {
+		this.generatedClassMap.put(key, generatedClass);
 	}
 
-	private final Class<?> GetGeneratedClass(String Key, Class<?> DefaultClass) {
-		Class<?> C = this.GeneratedClassMap.GetOrNull(Key);
+	private final Class<?> getGeneratedClass(String key, Class<?> defaultClass) {
+		Class<?> C = this.generatedClassMap.GetOrNull(key);
 		if(C != null) {
 			return C;
 		}
-		return DefaultClass;
+		return defaultClass;
 	}
 
-	public Class<?> GetDefinedFunctionClass(String FuncName, BFuncType FuncType) {
-		return this.GeneratedClassMap.GetOrNull(this.NameFunctionClass(FuncName, FuncType));
+	public Class<?> getDefinedFunctionClass(String funcName, BFuncType funcType) {
+		return this.generatedClassMap.GetOrNull(this.NameFunctionClass(funcName, funcType));
 	}
 
-	public Class<?> GetDefinedFunctionClass(String FuncName, BType RecvType, int FuncParamSize) {
-		return this.GeneratedClassMap.GetOrNull(this.NameFunctionClass(FuncName, RecvType, FuncParamSize));
+	public Class<?> getDefinedFunctionClass(String funcName, BType recvType, int funcParamSize) {
+		return this.generatedClassMap.GetOrNull(this.NameFunctionClass(funcName, recvType, funcParamSize));
 	}
 
-	protected void LazyBuild(BunFunctionNode Node) {
-		this.LazyNodeMap.put(Node.GetSignature(), Node);
+	protected void lazyBuild(BunFunctionNode node) {
+		this.lazyNodeMap.put(node.GetSignature(), node);
 	}
 
-	protected void LazyBuild(String Signature) {
-		BNode Node = this.LazyNodeMap.GetOrNull(Signature);
-		if(Node != null) {
-			LibBunSystem._PrintDebug("LazyBuilding: " + Signature);
-			this.LazyNodeMap.remove(Signature);
-			Node.Accept(this);
+	protected void lazyBuild(String signature) {
+		BNode node = this.lazyNodeMap.GetOrNull(signature);
+		if(node != null) {
+			LibBunSystem._PrintDebug("LazyBuilding: " + signature);
+			this.lazyNodeMap.remove(signature);
+			node.Accept(this);
 		}
 	}
 
-	public final Class<?> GetJavaClass(BType zType, Class<?> C) {
+	public final Class<?> getJavaClass(BType zType, Class<?> C) {
 		if(zType instanceof BFuncType) {
-			return this.LoadFuncClass((BFuncType)zType);
+			return this.loadFuncClass((BFuncType)zType);
 		}
 		return this.typeTable.GetJavaClass(zType, C);
 	}
 
-	public final Class<?> GetJavaClass(BType zType) {
-		return this.GetJavaClass(zType, Object.class);
+	public final Class<?> getJavaClass(BType zType) {
+		return this.getJavaClass(zType, Object.class);
 	}
 
-	@Override public BType GetFieldType(BType RecvType, String FieldName) {
-		Class<?> NativeClass = this.GetJavaClass(RecvType);
-		if(NativeClass != null) {
+	@Override public BType GetFieldType(BType recvType, String fieldName) {
+		Class<?> javaClass = this.getJavaClass(recvType);
+		if(javaClass != null) {
 			try {
-				java.lang.reflect.Field NativeField = NativeClass.getField(FieldName);
-				if(Modifier.isPublic(NativeField.getModifiers())) {
-					return this.typeTable.GetBunType(NativeField.getType());
+				java.lang.reflect.Field javaField = javaClass.getField(fieldName);
+				if(Modifier.isPublic(javaField.getModifiers())) {
+					return this.typeTable.GetBunType(javaField.getType());
 				}
 			} catch (SecurityException e) {
 			} catch (NoSuchFieldException e) {
@@ -244,13 +303,13 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		return BType.VarType;     // undefined
 	}
 
-	@Override public BType GetSetterType(BType RecvType, String FieldName) {
-		Class<?> NativeClass = this.GetJavaClass(RecvType);
-		if(NativeClass != null) {
+	@Override public BType GetSetterType(BType recvType, String fieldName) {
+		Class<?> javaClass = this.getJavaClass(recvType);
+		if(javaClass != null) {
 			try {
-				java.lang.reflect.Field NativeField = NativeClass.getField(FieldName);
-				if(Modifier.isPublic(NativeField.getModifiers()) && !Modifier.isFinal(NativeField.getModifiers())) {
-					return this.typeTable.GetBunType(NativeField.getType());
+				java.lang.reflect.Field javaField = javaClass.getField(fieldName);
+				if(Modifier.isPublic(javaField.getModifiers()) && !Modifier.isFinal(javaField.getModifiers())) {
+					return this.typeTable.GetBunType(javaField.getType());
 				}
 			} catch (SecurityException e) {
 			} catch (NoSuchFieldException e) {
@@ -260,25 +319,25 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		return BType.VarType;     // undefined
 	}
 
-	@Override public BFuncType GetMethodFuncType(BType RecvType, String MethodName, AbstractListNode ParamList) {
-		if(MethodName == null) {
-			Constructor<?> jMethod = this.javaTypeUtils.GetConstructor(RecvType, ParamList);
+	@Override public BFuncType GetMethodFuncType(BType recvType, String methodName, AbstractListNode paramList) {
+		if(methodName == null) {
+			Constructor<?> jMethod = this.javaTypeUtils.getConstructor(recvType, paramList);
 			if(jMethod != null) {
-				@Var Class<?>[] ParamTypes = jMethod.getParameterTypes();
-				@Var BArray<BType> TypeList = new BArray<BType>(new BType[ParamTypes.length + 2]);
-				if (ParamTypes != null) {
-					@Var int j = 0;
-					while(j < LibBunSystem._Size(ParamTypes)) {
-						TypeList.add(this.typeTable.GetBunType(ParamTypes[j]));
+				Class<?>[] paramTypes = jMethod.getParameterTypes();
+				BArray<BType> typeList = new BArray<BType>(new BType[paramTypes.length + 2]);
+				if (paramTypes != null) {
+					int j = 0;
+					while(j < LibBunSystem._Size(paramTypes)) {
+						typeList.add(this.typeTable.GetBunType(paramTypes[j]));
 						j = j + 1;
 					}
 				}
-				TypeList.add(RecvType);
-				return BTypePool._LookupFuncType2(TypeList);
+				typeList.add(recvType);
+				return BTypePool._LookupFuncType2(typeList);
 			}
 		}
 		else {
-			Method jMethod = this.javaTypeUtils.GetMethod(RecvType, MethodName, ParamList);
+			Method jMethod = this.javaTypeUtils.getMethod(recvType, methodName, paramList);
 			if(jMethod != null) {
 				return this.typeTable.ConvertToFuncType(jMethod);
 			}
@@ -286,615 +345,756 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		return null;
 	}
 
-	@Override public void VisitNullNode(BunNullNode Node) {
-		this.AsmBuilder.visitInsn(Opcodes.ACONST_NULL);
+	@Override public void VisitNullNode(BunNullNode node) {
+		this.asmBuilder.visitInsn(Opcodes.ACONST_NULL);
 	}
 
-	@Override public void VisitBooleanNode(BunBooleanNode Node) {
-		this.AsmBuilder.pushBoolean(Node.BooleanValue);
+	@Override public void VisitBooleanNode(BunBooleanNode node) {
+		this.asmBuilder.pushBoolean(node.BooleanValue);
 	}
 
-	@Override public void VisitIntNode(BunIntNode Node) {
-		this.AsmBuilder.pushLong(Node.IntValue);
+	@Override public void VisitIntNode(BunIntNode node) {
+		this.asmBuilder.pushLong(node.IntValue);
 	}
 
-	@Override public void VisitFloatNode(BunFloatNode Node) {
-		this.AsmBuilder.pushDouble(Node.FloatValue);
+	@Override public void VisitFloatNode(BunFloatNode node) {
+		this.asmBuilder.pushDouble(node.FloatValue);
 	}
 
-	@Override public void VisitStringNode(BunStringNode Node) {
-		this.AsmBuilder.visitLdcInsn(Node.StringValue);
+	@Override public void VisitStringNode(BunStringNode node) {
+		this.asmBuilder.visitLdcInsn(node.StringValue);
 	}
 
-	@Override public void VisitArrayLiteralNode(BunArrayLiteralNode Node) {
-		if(Node.IsUntyped()) {
-			this.VisitErrorNode(new ErrorNode(Node, "ambigious array"));
+	@Override public void VisitArrayLiteralNode(BunArrayLiteralNode node) {
+		if(node.IsUntyped()) {
+			this.VisitErrorNode(new ErrorNode(node, "ambigious array"));
 			return;
 		}
-		Class<?> ArrayClass = this.javaTypeUtils.AsArrayClass(Node.Type);
-		String Owner = Type.getInternalName(ArrayClass);
-		this.AsmBuilder.visitTypeInsn(NEW, Owner);
-		this.AsmBuilder.visitInsn(DUP);
-		this.AsmBuilder.pushInt(Node.Type.TypeId);
-		this.AsmBuilder.oushNodeListAsArray(this.javaTypeUtils.AsElementClass(Node.Type), 0, Node);
-		this.AsmBuilder.setLineNumber(Node);
-		this.AsmBuilder.visitMethodInsn(INVOKESPECIAL, Owner, "<init>", this.javaTypeUtils.NewArrayDescriptor(Node.Type));
+		Class<?> arrayClass = this.javaTypeUtils.asArrayClass(node.Type);
+		String owner = Type.getInternalName(arrayClass);
+		this.asmBuilder.visitTypeInsn(Opcodes.NEW, owner);
+		this.asmBuilder.visitInsn(Opcodes.DUP);
+		this.asmBuilder.pushInt(node.Type.TypeId);
+		this.asmBuilder.oushNodeListAsArray(this.javaTypeUtils.asElementClass(node.Type), 0, node);
+		this.asmBuilder.setLineNumber(node);
+		this.asmBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", this.javaTypeUtils.newArrayDescriptor(node.Type));
 	}
 
-	@Override public void VisitMapLiteralNode(BunMapLiteralNode Node) {
-		if(Node.IsUntyped()) {
-			this.VisitErrorNode(new ErrorNode(Node, "ambigious map"));
+	@Override public void VisitMapLiteralNode(BunMapLiteralNode node) {
+		if(node.IsUntyped()) {
+			this.VisitErrorNode(new ErrorNode(node, "ambigious map"));
 			return;
 		}
-		String Owner = Type.getInternalName(BunMap.class);
-		this.AsmBuilder.visitTypeInsn(NEW, Owner);
-		this.AsmBuilder.visitInsn(DUP);
-		this.AsmBuilder.pushInt(Node.Type.TypeId);
-		this.AsmBuilder.pushInt(Node.GetListSize() * 2);
-		this.AsmBuilder.visitTypeInsn(ANEWARRAY, Type.getInternalName(Object.class));
-		for(int i = 0; i < Node.GetListSize() ; i++) {
-			BunMapEntryNode EntryNode = Node.GetMapEntryNode(i);
-			this.AsmBuilder.visitInsn(DUP);
-			this.AsmBuilder.pushInt(i * 2);
-			this.AsmBuilder.pushNode(String.class, EntryNode.KeyNode());
-			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
-			this.AsmBuilder.visitInsn(DUP);
-			this.AsmBuilder.pushInt(i * 2 + 1);
-			this.AsmBuilder.pushNode(Object.class, EntryNode.ValueNode());
-			this.AsmBuilder.visitInsn(Opcodes.AASTORE);
+		String owner = Type.getInternalName(BunMap.class);
+		this.asmBuilder.visitTypeInsn(Opcodes.NEW, owner);
+		this.asmBuilder.visitInsn(Opcodes.DUP);
+		this.asmBuilder.pushInt(node.Type.TypeId);
+		this.asmBuilder.pushInt(node.GetListSize() * 2);
+		this.asmBuilder.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(Object.class));
+		for(int i = 0; i < node.GetListSize() ; i++) {
+			BunMapEntryNode entryNode = node.GetMapEntryNode(i);
+			this.asmBuilder.visitInsn(Opcodes.DUP);
+			this.asmBuilder.pushInt(i * 2);
+			this.asmBuilder.pushNode(String.class, entryNode.KeyNode());
+			this.asmBuilder.visitInsn(Opcodes.AASTORE);
+			this.asmBuilder.visitInsn(Opcodes.DUP);
+			this.asmBuilder.pushInt(i * 2 + 1);
+			this.asmBuilder.pushNode(Object.class, entryNode.ValueNode());
+			this.asmBuilder.visitInsn(Opcodes.AASTORE);
 		}
-		this.AsmBuilder.setLineNumber(Node);
-		String Desc = Type.getMethodDescriptor(Type.getType(void.class), new Type[] { Type.getType(int.class),  Type.getType(Object[].class)});
-		this.AsmBuilder.visitMethodInsn(INVOKESPECIAL, Owner, "<init>", Desc);
+		this.asmBuilder.setLineNumber(node);
+		String desc = Type.getMethodDescriptor(Type.getType(void.class), new Type[] { Type.getType(int.class),  Type.getType(Object[].class)});
+		this.asmBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, owner, "<init>", desc);
 	}
 
-	@Override public void VisitNewObjectNode(NewObjectNode Node) {
-		if(Node.IsUntyped()) {
-			this.VisitErrorNode(new ErrorNode(Node, "no class for new operator"));
+	@Override public void VisitNewObjectNode(NewObjectNode node) {
+		if(node.IsUntyped()) {
+			this.VisitErrorNode(new ErrorNode(node, "no class for new operator"));
 			return;
 		}
 		// check class existence
-		if(!Node.Type.Equals(this.typeTable.GetBunType(this.GetJavaClass(Node.Type)))) {
-			this.VisitErrorNode(new ErrorNode(Node, "undefined class: " + Node.Type));
+		if(!node.Type.Equals(this.typeTable.GetBunType(this.getJavaClass(node.Type)))) {
+			this.VisitErrorNode(new ErrorNode(node, "undefined class: " + node.Type));
 			return;
 		}
-		String ClassName = Type.getInternalName(this.GetJavaClass(Node.Type));
-		this.AsmBuilder.visitTypeInsn(NEW, ClassName);
-		this.AsmBuilder.visitInsn(DUP);
-		Constructor<?> jMethod = this.javaTypeUtils.GetConstructor(Node.Type, Node);
-		if(jMethod != null) {
-			Class<?>[] P = jMethod.getParameterTypes();
-			for(int i = 0; i < P.length; i++) {
-				this.AsmBuilder.pushNode(P[i], Node.GetListAt(i));
-			}
-			this.AsmBuilder.setLineNumber(Node);
-			this.AsmBuilder.visitMethodInsn(INVOKESPECIAL, ClassName, "<init>", Type.getConstructorDescriptor(jMethod));
-		}
-		else {
-			this.VisitErrorNode(new ErrorNode(Node, "no constructor: " + Node.Type));
-		}
-	}
-
-	protected void VisitVarDeclNode(BunLetVarNode Node) {
-		Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
-		this.AsmBuilder.addLocal(DeclClass, Node.GetGivenName());
-		this.AsmBuilder.pushNode(DeclClass, Node.InitValueNode());
-		this.AsmBuilder.storeLocal(Node.GetGivenName());
-	}
-
-	protected void VisitVarDeclNode2(BunLetVarNode Node) {
-		Class<?> DeclClass = this.GetJavaClass(Node.DeclType());
-		this.AsmBuilder.removeLocal(DeclClass, Node.GetGivenName());
-	}
-
-	@Override public void VisitVarBlockNode(BunVarBlockNode Node) {
-		this.VisitVarDeclNode(Node.VarDeclNode());
-		this.VisitBlockNode(Node);
-		this.VisitVarDeclNode2(Node.VarDeclNode());
-	}
-
-	public void VisitStaticFieldNode(JavaStaticFieldNode Node) {
-		this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(Node.StaticClass), Node.FieldName, this.GetJavaClass(Node.Type));
-	}
-
-	protected void VisitGlobalNameNode(GetNameNode Node) {
-		if(Node.ResolvedNode instanceof BunLetVarNode) {
-			BunLetVarNode LetNode = Node.ResolvedNode;
-			Class<?> JavaClass = this.GetJavaClass(LetNode.GetAstType(BunLetVarNode._NameInfo));
-			this.AsmBuilder.visitFieldInsn(GETSTATIC, this.NameGlobalNameClass(LetNode.GetUniqueName(this)), "_", JavaClass);
-		}
-		else {
-			this.VisitErrorNode(new ErrorNode(Node, "unimplemented ResolvedNode: " + Node.ResolvedNode.getClass().getName()));
-		}
-	}
-
-	@Override public void VisitGetNameNode(GetNameNode Node) {
-		if(Node.ResolvedNode == null) {
-			this.VisitErrorNode(new ErrorNode(Node, "undefined symbol: " + Node.GivenName));
+		String className = Type.getInternalName(this.getJavaClass(node.Type));
+		this.asmBuilder.visitTypeInsn(Opcodes.NEW, className);
+		this.asmBuilder.visitInsn(Opcodes.DUP);
+		Constructor<?> jMethod = this.javaTypeUtils.getConstructor(node.Type, node);
+		if(jMethod == null) {
+			this.VisitErrorNode(new ErrorNode(node, "no constructor: " + node.Type));
 			return;
 		}
-		if(Node.ResolvedNode.GetDefiningFunctionNode() == null) {
-			this.VisitGlobalNameNode(Node);
+		Class<?>[] paramClasses = jMethod.getParameterTypes();
+		for(int i = 0; i < paramClasses.length; i++) {
+			this.asmBuilder.pushNode(paramClasses[i], node.GetListAt(i));
+		}
+		this.asmBuilder.setLineNumber(node);
+		this.asmBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, className, "<init>", Type.getConstructorDescriptor(jMethod));
+	}
+
+	protected void VisitVarDeclNode(BunLetVarNode node) {
+		String varName = node.GetGivenName();
+		if(this.asmBuilder.findLocalVariable(varName) != null) {
+			this.VisitErrorNode(new ErrorNode(node, varName + " is already defined"));
 			return;
 		}
-		this.AsmBuilder.loadLocal(Node.GetUniqueName(this));
-		this.AsmBuilder.checkReturnCast(Node, this.AsmBuilder.getLocalType(Node.GetUniqueName(this)));
+		Class<?> declClass = this.getJavaClass(node.DeclType());
+		this.asmBuilder.addLocal(declClass, varName);
+		this.asmBuilder.pushNode(declClass, node.InitValueNode());
+		this.asmBuilder.storeLocal(varName);
 	}
 
-	protected void GenerateAssignNode(GetNameNode Node, BNode ExprNode) {
-		@Var String Name = Node.GetUniqueName(this);
-		this.AsmBuilder.pushNode(this.AsmBuilder.getLocalType(Name), ExprNode);
-		this.AsmBuilder.storeLocal(Name);
+	protected void VisitVarDeclNode2(BunLetVarNode node) {
+		Class<?> declClass = this.getJavaClass(node.DeclType());
+		this.asmBuilder.removeLocal(declClass, node.GetGivenName());
 	}
 
+	@Override public void VisitVarBlockNode(BunVarBlockNode node) {
+		this.VisitVarDeclNode(node.VarDeclNode());
+		this.VisitBlockNode(node);
+		this.VisitVarDeclNode2(node.VarDeclNode());
+	}
 
-	@Override public void VisitAssignNode(AssignNode Node) {
-		@Var BNode LeftNode = Node.LeftNode();
-		if(LeftNode instanceof GetNameNode) {
-			this.GenerateAssignNode((GetNameNode)LeftNode, Node.RightNode());
+	public void VisitStaticFieldNode(JavaStaticFieldNode node) {
+		this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(node.StaticClass), node.FieldName, this.getJavaClass(node.Type));
+	}
+
+	protected void VisitGlobalNameNode(GetNameNode node) {
+		BunLetVarNode letNode = node.ResolvedNode;
+		String varName = letNode.GetGivenName();
+		int typeId = this.getTypeId(letNode.DeclType());
+		int varIndex = GlobalVariableTable.getVarIndex(varName, typeId);
+		if(varIndex == -1) {
+			this.VisitErrorNode(new ErrorNode(node, "undefiend varibale: " + varName));
+			return;
 		}
-		else if(LeftNode instanceof GetFieldNode) {
-			this.GenerateAssignNode((GetFieldNode)LeftNode, Node.RightNode());
-		}
-		else if(LeftNode instanceof GetIndexNode) {
-			this.GenerateAssignNode((GetIndexNode)LeftNode, Node.RightNode());
+		String owner = Type.getInternalName(GlobalVariableTable.class);
+		switch(typeId) {
+		case GlobalVariableTable.LONG_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.visitInsn(Opcodes.LALOAD);
+			break;
+		case GlobalVariableTable.DOUBLE_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.visitInsn(Opcodes.DALOAD);
+			break;
+		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.visitInsn(Opcodes.BALOAD);
+			break;
+		case GlobalVariableTable.OBJECT_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.visitInsn(Opcodes.AALOAD);
+			this.asmBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.getJavaClass(node.Type));
+			break;
 		}
 	}
 
-	@Override public void VisitGroupNode(GroupNode Node) {
-		Node.ExprNode().Accept(this);
+	@Override public void VisitGetNameNode(GetNameNode node) {
+		if(node.ResolvedNode == null) {
+			this.VisitErrorNode(new ErrorNode(node, "undefined symbol: " + node.GivenName));
+			return;
+		}
+		if(node.ResolvedNode.GetDefiningFunctionNode() == null) {
+			this.VisitGlobalNameNode(node);
+			return;
+		}
+		this.asmBuilder.loadLocal(node.GetUniqueName(this));
+		this.asmBuilder.checkReturnCast(node, this.asmBuilder.getLocalType(node.GetUniqueName(this)));
 	}
 
-	private Field GetField(Class<?> RecvClass, String Name) {
+	protected void generateAssignNode(GetNameNode node, BNode exprNode) {
+		if(node.ResolvedNode == null) {
+			this.VisitErrorNode(new ErrorNode(node, "undefined symbol: " + node.GivenName));
+			return;
+		}
+		if(node.ResolvedNode.IsReadOnly() && !(node.ResolvedNode.ParentNode instanceof BunFunctionNode)) {
+			this.VisitErrorNode(new ErrorNode(node, "read only variable: " + node.GivenName));
+			return;
+		}
+		if(node.ResolvedNode.GetDefiningFunctionNode() == null) {
+			int typeId = this.getTypeId(exprNode.Type);
+			int varIndex = GlobalVariableTable.getVarIndex(node.ResolvedNode.GetGivenName(), typeId);
+			this.setVariable(varIndex, typeId, exprNode);
+			return;
+		}
+		String name = node.GetUniqueName(this);
+		this.asmBuilder.pushNode(this.asmBuilder.getLocalType(name), exprNode);
+		this.asmBuilder.storeLocal(name);
+	}
+
+
+	@Override public void VisitAssignNode(AssignNode node) {
+		BNode leftNode = node.LeftNode();
+		if(leftNode instanceof GetNameNode) {
+			this.generateAssignNode((GetNameNode)leftNode, node.RightNode());
+		}
+		else if(leftNode instanceof GetFieldNode) {
+			this.generateAssignNode((GetFieldNode)leftNode, node.RightNode());
+		}
+		else if(leftNode instanceof GetIndexNode) {
+			this.generateAssignNode((GetIndexNode)leftNode, node.RightNode());
+		}
+	}
+
+	@Override public void VisitGroupNode(GroupNode node) {
+		node.ExprNode().Accept(this);
+	}
+
+	private Field getField(Class<?> recvClass, String name) {
 		try {
-			return RecvClass.getField(Name);
+			return recvClass.getField(name);
 		} catch (Exception e) {
 			LibBunSystem._FixMe(e);
 		}
 		return null;  // type checker guarantees field exists
 	}
 
-	@Override public void VisitGetFieldNode(GetFieldNode Node) {
-		assert !Node.IsUntyped();
-		Class<?> RecvClass = this.GetJavaClass(Node.RecvNode().Type);
-		Field jField = this.GetField(RecvClass, Node.GetName());
-		String Owner = Type.getType(RecvClass).getInternalName();
-		String Desc = Type.getType(jField.getType()).getDescriptor();
+	@Override public void VisitGetFieldNode(GetFieldNode node) {
+		assert !node.IsUntyped();
+		Class<?> recvClass = this.getJavaClass(node.RecvNode().Type);
+		Field jField = this.getField(recvClass, node.GetName());
+		String owner = Type.getType(recvClass).getInternalName();
+		String desc = Type.getType(jField.getType()).getDescriptor();
 		if(Modifier.isStatic(jField.getModifiers())) {
-			this.AsmBuilder.visitFieldInsn(Opcodes.GETSTATIC, Owner, Node.GetName(), Desc);
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, node.GetName(), desc);
 		}
 		else {
-			this.AsmBuilder.pushNode(null, Node.RecvNode());
-			this.AsmBuilder.visitFieldInsn(GETFIELD, Owner, Node.GetName(), Desc);
+			this.asmBuilder.pushNode(null, node.RecvNode());
+			this.asmBuilder.visitFieldInsn(Opcodes.GETFIELD, owner, node.GetName(), desc);
 		}
-		this.AsmBuilder.checkReturnCast(Node, jField.getType());
+		this.asmBuilder.checkReturnCast(node, jField.getType());
 	}
 
-	protected void GenerateAssignNode(GetFieldNode Node, BNode ExprNode) {
-		assert !Node.IsUntyped();
-		Class<?> RecvClass = this.GetJavaClass(Node.RecvNode().Type);
-		Field jField = this.GetField(RecvClass, Node.GetName());
-		String Owner = Type.getType(RecvClass).getInternalName();
-		String Desc = Type.getType(jField.getType()).getDescriptor();
+	protected void generateAssignNode(GetFieldNode node, BNode exprNode) {
+		assert !node.IsUntyped();
+		Class<?> recvClass = this.getJavaClass(node.RecvNode().Type);
+		Field jField = this.getField(recvClass, node.GetName());
+		String owner = Type.getType(recvClass).getInternalName();
+		String desc = Type.getType(jField.getType()).getDescriptor();
 		if(Modifier.isStatic(jField.getModifiers())) {
-			this.AsmBuilder.pushNode(jField.getType(), ExprNode);
-			this.AsmBuilder.visitFieldInsn(PUTSTATIC, Owner, Node.GetName(), Desc);
+			this.asmBuilder.pushNode(jField.getType(), exprNode);
+			this.asmBuilder.visitFieldInsn(Opcodes.PUTSTATIC, owner, node.GetName(), desc);
 		}
 		else {
-			this.AsmBuilder.pushNode(null, Node.RecvNode());
-			this.AsmBuilder.pushNode(jField.getType(), ExprNode);
-			this.AsmBuilder.visitFieldInsn(PUTFIELD, Owner, Node.GetName(), Desc);
+			this.asmBuilder.pushNode(null, node.RecvNode());
+			this.asmBuilder.pushNode(jField.getType(), exprNode);
+			this.asmBuilder.visitFieldInsn(Opcodes.PUTFIELD, owner, node.GetName(), desc);
 		}
 	}
 
-	@Override public void VisitGetIndexNode(GetIndexNode Node) {
-		Method sMethod = this.methodTable.GetBinaryStaticMethod(Node.RecvNode().Type, "[]", Node.IndexNode().Type);
-		this.AsmBuilder.applyStaticMethod(Node, sMethod, new BNode[] {Node.RecvNode(), Node.IndexNode()});
+	@Override public void VisitGetIndexNode(GetIndexNode node) {
+		Method sMethod = this.methodTable.GetBinaryStaticMethod(node.RecvNode().Type, "[]", node.IndexNode().Type);
+		this.asmBuilder.applyStaticMethod(node, sMethod, new BNode[] {node.RecvNode(), node.IndexNode()});
 	}
 
-	protected void GenerateAssignNode(GetIndexNode Node, BNode ExprNode) {
-		Method sMethod = this.methodTable.GetBinaryStaticMethod(Node.RecvNode().Type, "[]=", Node.IndexNode().Type);
-		this.AsmBuilder.applyStaticMethod(Node.ParentNode, sMethod, new BNode[] {Node.RecvNode(), Node.IndexNode(), ExprNode});
+	protected void generateAssignNode(GetIndexNode node, BNode exprNode) {
+		Method sMethod = this.methodTable.GetBinaryStaticMethod(node.RecvNode().Type, "[]=", node.IndexNode().Type);
+		this.asmBuilder.applyStaticMethod(node.ParentNode, sMethod, new BNode[] {node.RecvNode(), node.IndexNode(), exprNode});
 	}
 
-	private int GetInvokeType(Method jMethod) {
+	private int getInvokeType(Method jMethod) {
 		if(Modifier.isStatic(jMethod.getModifiers())) {
-			return INVOKESTATIC;
+			return Opcodes.INVOKESTATIC;
 		}
 		if(Modifier.isInterface(jMethod.getModifiers())) {
-			return INVOKEINTERFACE;
+			return Opcodes.INVOKEINTERFACE;
 		}
-		return INVOKEVIRTUAL;
+		return Opcodes.INVOKEVIRTUAL;
 	}
 
-	@Override public void VisitMethodCallNode(MethodCallNode Node) {
-		this.AsmBuilder.setLineNumber(Node);
-		Method jMethod = this.javaTypeUtils.GetMethod(Node.RecvNode().Type, Node.MethodName(), Node);
+	@Override public void VisitMethodCallNode(MethodCallNode node) {
+		this.asmBuilder.setLineNumber(node);
+		Method jMethod = this.javaTypeUtils.getMethod(node.RecvNode().Type, node.MethodName(), node);
 		assert jMethod != null;
 		if(!Modifier.isStatic(jMethod.getModifiers())) {
-			this.AsmBuilder.pushNode(null, Node.RecvNode());
+			this.asmBuilder.pushNode(null, node.RecvNode());
 		}
-		Class<?>[] P = jMethod.getParameterTypes();
-		for(int i = 0; i < P.length; i++) {
-			this.AsmBuilder.pushNode(P[i], Node.GetListAt(i));
+		Class<?>[] paramClasses = jMethod.getParameterTypes();
+		for(int i = 0; i < paramClasses.length; i++) {
+			this.asmBuilder.pushNode(paramClasses[i], node.GetListAt(i));
 		}
-		int inst = this.GetInvokeType(jMethod);
+		int inst = this.getInvokeType(jMethod);
 		String owner = Type.getInternalName(jMethod.getDeclaringClass());
-		this.AsmBuilder.visitMethodInsn(inst, owner, jMethod.getName(), Type.getMethodDescriptor(jMethod));
-		this.AsmBuilder.checkReturnCast(Node, jMethod.getReturnType());
+		this.asmBuilder.visitMethodInsn(inst, owner, jMethod.getName(), Type.getMethodDescriptor(jMethod));
+		this.asmBuilder.checkReturnCast(node, jMethod.getReturnType());
 	}
 
-	@Override public void VisitFormNode(BunFormNode Node) {
-		for(int i = 0; i < Node.GetListSize(); i++) {
-			this.AsmBuilder.pushNode(null, Node.GetListAt(i));
+	@Override public void VisitFormNode(BunFormNode node) {
+		for(int i = 0; i < node.GetListSize(); i++) {
+			this.asmBuilder.pushNode(null, node.GetListAt(i));
 		}
-		@Var String FormText = Node.FormFunc.FormText;
-		@Var int ClassEnd = FormText.indexOf(".");
-		@Var int MethodEnd = FormText.indexOf("(");
+		String formText = node.FormFunc.FormText;
+		int classEnd = formText.indexOf(".");
+		int methodEnd = formText.indexOf("(");
 		//System.out.println("FormText: " + FormText + " " + ClassEnd + ", " + MethodEnd);
-		@Var String ClassName = FormText.substring(0, ClassEnd);
-		@Var String MethodName = FormText.substring(ClassEnd+1, MethodEnd);
-		this.AsmBuilder.setLineNumber(Node);
+		String className = formText.substring(0, classEnd);
+		String methodName = formText.substring(classEnd+1, methodEnd);
+		this.asmBuilder.setLineNumber(node);
 		//System.out.println("debug: " + ClassName + ", " + MethodName);
-		this.AsmBuilder.visitMethodInsn(INVOKESTATIC, ClassName, MethodName, Node.FormFunc.FuncType);
+		this.asmBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, className, methodName, node.FormFunc.FuncType);
 	}
 
-	@Override public void VisitFuncCallNode(FuncCallNode Node) {
-		@Var BType FuncType = Node.FunctorNode().Type;
-		@Var BunFuncNameNode FuncNameNode = Node.FuncNameNode();
-		if(!(FuncType instanceof BFuncType)) { // lookup func type
-			@Var BFunc Func = ((BunTypeSafer)this.TypeChecker).LookupFunc(Node.GetGamma(), FuncNameNode.FuncName, FuncNameNode.RecvType, FuncNameNode.FuncParamSize);
-			if(Func != null) {
-				FuncType = Func.GetFuncType();
-				Node.Type = ((BFuncType)FuncType).GetReturnType();
+	@Override public void VisitFuncCallNode(FuncCallNode node) {
+		BType funcType = node.FunctorNode().Type;
+		BunFuncNameNode funcNameNode = node.FuncNameNode();
+		if(!(funcType instanceof BFuncType)) { // lookup func type
+			BFunc func = ((BunTypeSafer)this.TypeChecker).LookupFunc(node.GetGamma(), funcNameNode.FuncName, funcNameNode.RecvType, funcNameNode.FuncParamSize);
+			if(func != null) {
+				funcType = func.GetFuncType();
+				node.Type = ((BFuncType)funcType).GetReturnType();
 			}
 		}
-		if(FuncType instanceof BFuncType) {
-			if(FuncNameNode != null) {
-				this.AsmBuilder.applyFuncName(FuncNameNode, FuncNameNode.FuncName, (BFuncType)FuncType, Node);
+		if(funcType instanceof BFuncType) {
+			if(funcNameNode != null) {
+				this.asmBuilder.applyFuncName(funcNameNode, funcNameNode.FuncName, (BFuncType)funcType, node);
 			}
 			else {
-				Class<?> FuncClass = this.LoadFuncClass((BFuncType)FuncType);
-				this.AsmBuilder.applyFuncObject(Node, FuncClass, Node.FunctorNode(), (BFuncType)FuncType, Node);
+				Class<?> funcClass = this.loadFuncClass((BFuncType)funcType);
+				this.asmBuilder.applyFuncObject(node, funcClass, node.FunctorNode(), (BFuncType)funcType, node);
 			}
 		}
 		else {
-			this.VisitErrorNode(new ErrorNode(Node, "not function"));
+			this.VisitErrorNode(new ErrorNode(node, "not function"));
 		}
 	}
 
-	@Override public void VisitUnaryNode(UnaryOperatorNode Node) {
-		Method sMethod = this.methodTable.GetUnaryStaticMethod(Node.SourceToken.GetText(), Node.RecvNode().Type);
-		this.AsmBuilder.applyStaticMethod(Node, sMethod, new BNode[] {Node.RecvNode()});
+	@Override public void VisitUnaryNode(UnaryOperatorNode node) {
+		Method sMethod = this.methodTable.GetUnaryStaticMethod(node.SourceToken.GetText(), node.RecvNode().Type);
+		this.asmBuilder.applyStaticMethod(node, sMethod, new BNode[] {node.RecvNode()});
 	}
 
-	@Override public void VisitNotNode(BunNotNode Node) {
-		this.VisitUnaryNode(Node);
+	@Override public void VisitNotNode(BunNotNode node) {
+		this.VisitUnaryNode(node);
 	}
 
-	@Override public void VisitPlusNode(BunPlusNode Node) {
-		this.VisitUnaryNode(Node);
+	@Override public void VisitPlusNode(BunPlusNode node) {
+		this.VisitUnaryNode(node);
 	}
 
-	@Override public void VisitMinusNode(BunMinusNode Node) {
-		this.VisitUnaryNode(Node);
+	@Override public void VisitMinusNode(BunMinusNode node) {
+		this.VisitUnaryNode(node);
 	}
 
-	@Override public void VisitComplementNode(BunComplementNode Node) {
-		this.VisitUnaryNode(Node);
+	@Override public void VisitComplementNode(BunComplementNode node) {
+		this.VisitUnaryNode(node);
 	}
 
-	@Override public void VisitCastNode(BunCastNode Node) {
-		if(Node.Type.IsVoidType()) {
-			Node.ExprNode().Accept(this);
-			this.AsmBuilder.Pop(Node.ExprNode().Type);
-		}
-		else {
-			Class<?> TargetClass = this.GetJavaClass(Node.Type);
-			Class<?> SourceClass = this.GetJavaClass(Node.ExprNode().Type);
-			Method sMethod = this.methodTable.GetCastMethod(TargetClass, SourceClass);
-			if(sMethod != null) {
-				this.AsmBuilder.applyStaticMethod(Node, sMethod, new BNode[] {Node.ExprNode()});
-			}
-			else if(!TargetClass.isAssignableFrom(SourceClass)) {
-				this.AsmBuilder.visitTypeInsn(CHECKCAST, TargetClass);
-			}
-		}
-	}
-
-	@Override public void VisitInstanceOfNode(BunInstanceOfNode Node) {
-		if(!(Node.TargetType() instanceof BClassType) || !(Node.LeftNode().Type instanceof BClassType)) {
-			this.VisitErrorNode(new ErrorNode(Node, "require Class Type"));
+	@Override public void VisitCastNode(BunCastNode node) {
+		if(node.Type.IsVoidType()) {
+			node.ExprNode().Accept(this);
+			this.asmBuilder.Pop(node.ExprNode().Type);
 			return;
 		}
-		Class<?> JavaClass = this.GetJavaClass(Node.TargetType());
-		Node.LeftNode().Accept(this);
-		this.AsmBuilder.visitTypeInsn(INSTANCEOF, JavaClass);
+		Class<?> targetClass = this.getJavaClass(node.Type);
+		Class<?> sourceClass = this.getJavaClass(node.ExprNode().Type);
+		Method sMethod = this.methodTable.GetCastMethod(targetClass, sourceClass);
+		if(sMethod != null) {
+			this.asmBuilder.applyStaticMethod(node, sMethod, new BNode[] {node.ExprNode()});
+		}
+		else if(!targetClass.isAssignableFrom(sourceClass)) {
+			this.asmBuilder.visitTypeInsn(Opcodes.CHECKCAST, targetClass);
+		}
 	}
 
-	@Override public void VisitBinaryNode(BinaryOperatorNode Node) {
-		Method sMethod = this.methodTable.GetBinaryStaticMethod(Node.LeftNode().Type, Node.GetOperator(), Node.RightNode().Type);
-		this.AsmBuilder.applyStaticMethod(Node, sMethod, new BNode[] {Node.LeftNode(), Node.RightNode()});
+	@Override public void VisitInstanceOfNode(BunInstanceOfNode node) {
+		if(!(node.LeftNode().Type instanceof BGenericType) && !(node.LeftNode().Type instanceof BFuncType)) {
+			this.VisitNativeInstanceOfNode(node);
+			return;
+		}
+		node.LeftNode().Accept(this);
+		this.asmBuilder.Pop(node.LeftNode().Type);
+		this.asmBuilder.pushLong(node.LeftNode().Type.TypeId);
+		this.asmBuilder.pushLong(node.TargetType().TypeId);
+		Method method = this.methodTable.GetBinaryStaticMethod(BType.IntType, "==", BType.IntType);
+		this.invokeStaticMethod(null, method);
 	}
 
-	@Override public void VisitAddNode(BunAddNode Node) {
-		this.VisitBinaryNode(Node);
+	private void VisitNativeInstanceOfNode(BunInstanceOfNode node) {
+		if(!node.TargetType().Equals(this.typeTable.GetBunType(this.getJavaClass(node.TargetType())))) {
+			node.LeftNode().Accept(this);
+			this.asmBuilder.Pop(node.LeftNode().Type);
+			this.asmBuilder.pushBoolean(false);
+			return;
+		}
+		Class<?> javaClass = this.getJavaClass(node.TargetType());
+		if(node.TargetType().IsIntType()) {
+			javaClass = Long.class;
+		}
+		else if(node.TargetType().IsFloatType()) {
+			javaClass = Double.class;
+		}
+		else if(node.TargetType().IsBooleanType()) {
+			javaClass = Boolean.class;
+		}
+		this.invokeBoxingMethod(node.LeftNode());
+		this.asmBuilder.visitTypeInsn(Opcodes.INSTANCEOF, javaClass);
 	}
 
-	@Override public void VisitSubNode(BunSubNode Node) {
-		this.VisitBinaryNode(Node);
+	private void invokeBoxingMethod(BNode targetNode) {
+		Class<?> targetClass = Object.class;
+		if(targetNode.Type.IsIntType()) {
+			targetClass = Long.class;
+		}
+		else if(targetNode.Type.IsFloatType()) {
+			targetClass = Double.class;
+		}
+		else if(targetNode.Type.IsBooleanType()) {
+			targetClass = Boolean.class;
+		}
+		Class<?> sourceClass = this.getJavaClass(targetNode.Type);
+		Method sMethod = this.methodTable.GetCastMethod(targetClass, sourceClass);
+		targetNode.Accept(this);
+		if(!targetClass.equals(Object.class)) {
+			this.invokeStaticMethod(null, sMethod);
+		}
 	}
 
-	@Override public void VisitMulNode(BunMulNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitBinaryNode(BinaryOperatorNode node) {
+		Method sMethod = this.methodTable.GetBinaryStaticMethod(node.LeftNode().Type, node.GetOperator(), node.RightNode().Type);
+		this.asmBuilder.applyStaticMethod(node, sMethod, new BNode[] {node.LeftNode(), node.RightNode()});
 	}
 
-	@Override public void VisitDivNode(BunDivNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitAddNode(BunAddNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitModNode(BunModNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitSubNode(BunSubNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitLeftShiftNode(BunLeftShiftNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitMulNode(BunMulNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitRightShiftNode(BunRightShiftNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitDivNode(BunDivNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitBitwiseAndNode(BunBitwiseAndNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitModNode(BunModNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitBitwiseOrNode(BunBitwiseOrNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitLeftShiftNode(BunLeftShiftNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitBitwiseXorNode(BunBitwiseXorNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitRightShiftNode(BunRightShiftNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitEqualsNode(BunEqualsNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitBitwiseAndNode(BunBitwiseAndNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitNotEqualsNode(BunNotEqualsNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitBitwiseOrNode(BunBitwiseOrNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitLessThanNode(BunLessThanNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitBitwiseXorNode(BunBitwiseXorNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitLessThanEqualsNode(BunLessThanEqualsNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitEqualsNode(BunEqualsNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitGreaterThanNode(BunGreaterThanNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitNotEqualsNode(BunNotEqualsNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitGreaterThanEqualsNode(BunGreaterThanEqualsNode Node) {
-		this.VisitBinaryNode(Node);
+	@Override public void VisitLessThanNode(BunLessThanNode node) {
+		this.VisitBinaryNode(node);
 	}
 
-	@Override public void VisitAndNode(BunAndNode Node) {
+	@Override public void VisitLessThanEqualsNode(BunLessThanEqualsNode node) {
+		this.VisitBinaryNode(node);
+	}
+
+	@Override public void VisitGreaterThanNode(BunGreaterThanNode node) {
+		this.VisitBinaryNode(node);
+	}
+
+	@Override public void VisitGreaterThanEqualsNode(BunGreaterThanEqualsNode node) {
+		this.VisitBinaryNode(node);
+	}
+
+	@Override public void VisitAndNode(BunAndNode node) {
 		Label elseLabel = new Label();
 		Label mergeLabel = new Label();
-		this.AsmBuilder.pushNode(boolean.class, Node.LeftNode());
-		this.AsmBuilder.visitJumpInsn(IFEQ, elseLabel);
+		this.asmBuilder.pushNode(boolean.class, node.LeftNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFEQ, elseLabel);
 
-		this.AsmBuilder.pushNode(boolean.class, Node.RightNode());
-		this.AsmBuilder.visitJumpInsn(IFEQ, elseLabel);
+		this.asmBuilder.pushNode(boolean.class, node.RightNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFEQ, elseLabel);
 
-		this.AsmBuilder.visitLdcInsn(true);
-		this.AsmBuilder.visitJumpInsn(GOTO, mergeLabel);
+		this.asmBuilder.visitLdcInsn(true);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, mergeLabel);
 
-		this.AsmBuilder.visitLabel(elseLabel);
-		this.AsmBuilder.visitLdcInsn(false);
-		this.AsmBuilder.visitJumpInsn(GOTO, mergeLabel);
+		this.asmBuilder.visitLabel(elseLabel);
+		this.asmBuilder.visitLdcInsn(false);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, mergeLabel);
 
-		this.AsmBuilder.visitLabel(mergeLabel);
+		this.asmBuilder.visitLabel(mergeLabel);
 	}
 
-	@Override public void VisitOrNode(BunOrNode Node) {
+	@Override public void VisitOrNode(BunOrNode node) {
 		Label thenLabel = new Label();
 		Label mergeLabel = new Label();
-		this.AsmBuilder.pushNode(boolean.class, Node.LeftNode());
-		this.AsmBuilder.visitJumpInsn(IFNE, thenLabel);
+		this.asmBuilder.pushNode(boolean.class, node.LeftNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFNE, thenLabel);
 
-		this.AsmBuilder.pushNode(boolean.class, Node.RightNode());
-		this.AsmBuilder.visitJumpInsn(IFNE, thenLabel);
+		this.asmBuilder.pushNode(boolean.class, node.RightNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFNE, thenLabel);
 
-		this.AsmBuilder.visitLdcInsn(false);
-		this.AsmBuilder.visitJumpInsn(GOTO, mergeLabel);
+		this.asmBuilder.visitLdcInsn(false);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, mergeLabel);
 
-		this.AsmBuilder.visitLabel(thenLabel);
-		this.AsmBuilder.visitLdcInsn(true);
-		this.AsmBuilder.visitJumpInsn(GOTO, mergeLabel);
+		this.asmBuilder.visitLabel(thenLabel);
+		this.asmBuilder.visitLdcInsn(true);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, mergeLabel);
 
-		this.AsmBuilder.visitLabel(mergeLabel);
+		this.asmBuilder.visitLabel(mergeLabel);
 	}
 
-	@Override public void VisitBlockNode(BunBlockNode Node) {
-		for (int i = 0; i < Node.GetListSize(); i++) {
-			Node.GetListAt(i).Accept(this);
+	@Override public void VisitBlockNode(BunBlockNode node) {
+		for (int i = 0; i < node.GetListSize(); i++) {
+			node.GetListAt(i).Accept(this);
 		}
 	}
 
-	@Override public void VisitIfNode(BunIfNode Node) {
-		Label ElseLabel = new Label();
-		Label EndLabel = new Label();
-		this.AsmBuilder.pushNode(boolean.class, Node.CondNode());
-		this.AsmBuilder.visitJumpInsn(IFEQ, ElseLabel);
+	@Override public void VisitIfNode(BunIfNode node) {
+		Label elseLabel = new Label();
+		Label endLabel = new Label();
+		this.asmBuilder.pushNode(boolean.class, node.CondNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFEQ, elseLabel);
 		// Then
-		Node.ThenNode().Accept(this);
-		this.AsmBuilder.visitJumpInsn(GOTO, EndLabel);
+		node.ThenNode().Accept(this);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, endLabel);
 		// Else
-		this.AsmBuilder.visitLabel(ElseLabel);
-		if(Node.ElseNode() != null) {
-			Node.ElseNode().Accept(this);
-			this.AsmBuilder.visitJumpInsn(GOTO, EndLabel);
+		this.asmBuilder.visitLabel(elseLabel);
+		if(node.ElseNode() != null) {
+			node.ElseNode().Accept(this);
+			this.asmBuilder.visitJumpInsn(Opcodes.GOTO, endLabel);
 		}
 		// End
-		this.AsmBuilder.visitLabel(EndLabel);
+		this.asmBuilder.visitLabel(endLabel);
 	}
 
-	@Override public void VisitReturnNode(BunReturnNode Node) {
-		if(Node.HasReturnExpr()) {
-			Node.ExprNode().Accept(this);
-			Type type = this.javaTypeUtils.AsmType(Node.ExprNode().Type);
-			this.AsmBuilder.visitInsn(type.getOpcode(IRETURN));
+	@Override public void VisitReturnNode(BunReturnNode node) {
+		if(node.HasReturnExpr()) {
+			node.ExprNode().Accept(this);
+			Type type = this.javaTypeUtils.asmType(node.ExprNode().Type);
+			this.asmBuilder.visitInsn(type.getOpcode(Opcodes.IRETURN));
 		}
 		else {
-			this.AsmBuilder.visitInsn(RETURN);
+			this.asmBuilder.visitInsn(Opcodes.RETURN);
 		}
 	}
 
-	@Override public void VisitWhileNode(BunWhileNode Node) {
-		if(Node.HasNextNode()) {
-			Node.BlockNode().Append(Node.NextNode());
+	@Override public void VisitWhileNode(BunWhileNode node) {
+		if(node.HasNextNode()) {
+			node.BlockNode().Append(node.NextNode());
 		}
 		Label continueLabel = new Label();
 		Label breakLabel = new Label();
-		this.AsmBuilder.breakLabelStack.push(breakLabel);
-		this.AsmBuilder.continueLabelStack.push(continueLabel);
+		this.asmBuilder.breakLabelStack.push(breakLabel);
+		this.asmBuilder.continueLabelStack.push(continueLabel);
 
-		this.AsmBuilder.visitLabel(continueLabel);
-		this.AsmBuilder.pushNode(boolean.class, Node.CondNode());
-		this.AsmBuilder.visitJumpInsn(IFEQ, breakLabel); // condition
-		Node.BlockNode().Accept(this);
-		this.AsmBuilder.visitJumpInsn(GOTO, continueLabel);
-		this.AsmBuilder.visitLabel(breakLabel);
+		this.asmBuilder.visitLabel(continueLabel);
+		this.asmBuilder.pushNode(boolean.class, node.CondNode());
+		this.asmBuilder.visitJumpInsn(Opcodes.IFEQ, breakLabel); // condition
+		node.BlockNode().Accept(this);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, continueLabel);
+		this.asmBuilder.visitLabel(breakLabel);
 
-		this.AsmBuilder.breakLabelStack.pop();
-		this.AsmBuilder.continueLabelStack.pop();
+		this.asmBuilder.breakLabelStack.pop();
+		this.asmBuilder.continueLabelStack.pop();
 	}
 
-	@Override public void VisitBreakNode(BunBreakNode Node) {
-		Label l = this.AsmBuilder.breakLabelStack.peek();
-		this.AsmBuilder.visitJumpInsn(GOTO, l);
+	@Override public void VisitBreakNode(BunBreakNode node) {
+		Label l = this.asmBuilder.breakLabelStack.peek();
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, l);
 	}
 
-	@Override public void VisitThrowNode(BunThrowNode Node) { //TODO: exception wrapper
-		String ClassName = Type.getInternalName(SoftwareFault.class);
-		this.AsmBuilder.setLineNumber(Node);
-		this.AsmBuilder.visitTypeInsn(NEW, ClassName);
-		this.AsmBuilder.visitInsn(DUP);
-		this.AsmBuilder.pushNode(Object.class, Node.ExprNode());
-		String Desc = Type.getMethodDescriptor(Type.getType(void.class), new Type[] { Type.getType(Object.class)});
-		this.AsmBuilder.visitMethodInsn(INVOKESPECIAL, ClassName, "<init>", Desc);
-		this.AsmBuilder.visitInsn(ATHROW);
+	@Override public void VisitThrowNode(BunThrowNode node) {
+		node.ExprNode().Accept(this);
+		this.asmBuilder.visitInsn(Opcodes.ATHROW);
 	}
 
 	@Override public void VisitTryNode(BunTryNode Node) {	//do nothing
 	}
 
-	@Override public void VisitLetNode(BunLetVarNode Node) {	//TODO
-	}
 
-	Class<?> LoadFuncClass(BFuncType FuncType) {
-		String ClassName = this.NameType(FuncType);
-		Class<?> FuncClass = this.GetGeneratedClass(ClassName, null);
-		if(FuncClass == null) {
-			@Var String SuperClassName = Type.getInternalName(BFunction.class);
-			@Var ClassBuilder ClassBuilder = this.AsmLoader.newClassBuilder(ACC_PUBLIC| ACC_ABSTRACT, null, ClassName, BFunction.class);
-			MethodBuilder InvokeMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC | ACC_ABSTRACT, "Invoke", FuncType);
-			InvokeMethod.finish();
-
-			MethodBuilder InitMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC, "<init>", "(ILjava/lang/String;)V");
-			InitMethod.visitVarInsn(ALOAD, 0);
-			InitMethod.visitVarInsn(ILOAD, 1);
-			InitMethod.visitVarInsn(ALOAD, 2);
-			InitMethod.visitMethodInsn(INVOKESPECIAL, SuperClassName, "<init>", "(ILjava/lang/String;)V");
-			InitMethod.visitInsn(RETURN);
-			InitMethod.finish();
-
-			FuncClass = this.AsmLoader.loadGeneratedClass(ClassName);
-			this.SetGeneratedClass(ClassName, FuncClass);
+	private int getTypeId(BType type) {
+		if(type.IsIntType()) {
+			return GlobalVariableTable.LONG_TYPE;
 		}
-		return FuncClass;
-	}
-
-	@Override public void VisitFunctionNode(BunFunctionNode Node) {
-		if(Node.IsTopLevelDefineFunction()) {
-			assert(Node.FuncName() != null);
-			assert(Node.IsTopLevel());  // otherwise, transformed to var f = function ()..
-			JavaStaticFieldNode FuncNode = this.GenerateFunctionAsSymbolField(Node.FuncName(), Node);
-			if(Node.IsExport) {
-				if(Node.FuncName().equals("main")) {
-					this.MainFuncNode = FuncNode;
-				}
-			}
-			this.SetMethod(Node.FuncName(), (BFuncType)FuncNode.Type, FuncNode.StaticClass);
+		else if(type.IsFloatType()) {
+			return GlobalVariableTable.DOUBLE_TYPE;
+		}
+		else if(type.IsBooleanType()) {
+			return GlobalVariableTable.BOOLEAN_TYPE;
 		}
 		else {
-			JavaStaticFieldNode FuncNode = this.GenerateFunctionAsSymbolField(Node.GetUniqueName(this), Node);
-			if(this.AsmBuilder != null) {
-				this.VisitStaticFieldNode(FuncNode);
+			return GlobalVariableTable.OBJECT_TYPE;
+		}
+	}
+
+	private void setVariable(int varIndex, int typeId, BNode valueNode) {
+		String owner = Type.getInternalName(GlobalVariableTable.class);
+		switch(typeId) {
+		case GlobalVariableTable.LONG_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "longVarTable", Type.getDescriptor(long[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.pushNode(long.class, valueNode);
+			this.asmBuilder.visitInsn(Opcodes.LASTORE);
+			break;
+		case GlobalVariableTable.DOUBLE_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "doubleVarTable", Type.getDescriptor(double[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.pushNode(double.class, valueNode);
+			this.asmBuilder.visitInsn(Opcodes.DASTORE);
+			break;
+		case GlobalVariableTable.BOOLEAN_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "booleanVarTable", Type.getDescriptor(boolean[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.pushNode(boolean.class, valueNode);
+			this.asmBuilder.visitInsn(Opcodes.BASTORE);
+			break;
+		case GlobalVariableTable.OBJECT_TYPE:
+			this.asmBuilder.visitFieldInsn(Opcodes.GETSTATIC, owner, "objectVarTable", Type.getDescriptor(Object[].class));
+			this.asmBuilder.pushInt(varIndex);
+			this.asmBuilder.pushNode(null, valueNode);
+			this.asmBuilder.visitInsn(Opcodes.AASTORE);
+			break;
+		}
+	}
+
+	@Override public void VisitLetNode(BunLetVarNode node) {
+		String varName = node.GetGivenName();
+		if(GlobalVariableTable.existEntry(varName)) {
+			this.VisitErrorNode(new ErrorNode(node, varName + " is already defined"));
+			return;
+		}
+		int typeId = this.getTypeId(node.DeclType());
+		int varIndex = GlobalVariableTable.addEntry(varName, typeId, node.IsReadOnly());
+		try {
+			this.setVariable(varIndex, typeId, node.InitValueNode());
+		}
+		catch(Throwable t) {
+			GlobalVariableTable.removeEntry(varName);
+			if(!(t instanceof RuntimeException)) {
+				t = new RuntimeException(t);
+			}
+			throw (RuntimeException)t;
+		}
+	}
+
+	Class<?> loadFuncClass(BFuncType funcType) {
+		String className = this.NameType(funcType);
+		Class<?> funcClass = this.getGeneratedClass(className, null);
+		if(funcClass == null) {
+			String superClassName = Type.getInternalName(BFunction.class);
+			ClassBuilder classBuilder = this.asmLoader.newClassBuilder(Opcodes.ACC_PUBLIC| Opcodes.ACC_ABSTRACT, null, className, BFunction.class);
+			MethodBuilder invokeMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, "Invoke", funcType);
+			invokeMethodBuilder.finish();
+
+			MethodBuilder initMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC, "<init>", "(ILjava/lang/String;)V");
+			initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+			initMethodBuilder.visitVarInsn(Opcodes.ILOAD, 1);
+			initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 2);
+			initMethodBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, superClassName, "<init>", "(ILjava/lang/String;)V");
+			initMethodBuilder.visitInsn(Opcodes.RETURN);
+			initMethodBuilder.finish();
+
+			funcClass = this.asmLoader.loadGeneratedClass(className);
+			this.setGeneratedClass(className, funcClass);
+		}
+		return funcClass;
+	}
+
+	@Override public void VisitFunctionNode(BunFunctionNode node) {
+		if(node.IsTopLevelDefineFunction()) {
+			assert(node.FuncName() != null);
+			assert(node.IsTopLevel());  // otherwise, transformed to var f = function ()..
+			JavaStaticFieldNode funcNode = this.generateFunctionAsSymbolField(node.FuncName(), node);
+			if(node.IsExport) {
+				if(node.FuncName().equals("main")) {
+					this.mainFuncNode = funcNode;
+				}
+			}
+			this.setMethod(node.FuncName(), (BFuncType)funcNode.Type, funcNode.StaticClass);
+		}
+		else {
+			JavaStaticFieldNode funcNode = this.generateFunctionAsSymbolField(node.GetUniqueName(this), node);
+			if(this.asmBuilder != null) {
+				this.VisitStaticFieldNode(funcNode);
 			}
 		}
 	}
 
-	private JavaStaticFieldNode GenerateFunctionAsSymbolField(String FuncName, BunFunctionNode Node) {
-		@Var BFuncType FuncType = Node.GetFuncType();
-		String ClassName = this.NameFunctionClass(FuncName, FuncType);
-		Class<?> FuncClass = this.LoadFuncClass(FuncType);
-		@Var ClassBuilder ClassBuilder = this.AsmLoader.newClassBuilder(ACC_PUBLIC|ACC_FINAL, Node, ClassName, FuncClass);
+	private JavaStaticFieldNode generateFunctionAsSymbolField(String funcName, BunFunctionNode node) {
+		BFuncType funcType = node.GetFuncType();
+		String className = this.NameFunctionClass(funcName, funcType);
+		Class<?> funcClass = this.loadFuncClass(funcType);
+		ClassBuilder classBuilder = this.asmLoader.newClassBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, node, className, funcClass);
 
-		MethodBuilder InvokeMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC | ACC_FINAL, "Invoke", FuncType);
+		MethodBuilder invokeMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, "Invoke", funcType);
 		int index = 1;
-		for(int i = 0; i < FuncType.GetFuncParamSize(); i++) {
-			Type AsmType = this.javaTypeUtils.AsmType(FuncType.GetFuncParamType(i));
-			InvokeMethod.visitVarInsn(AsmType.getOpcode(ILOAD), index);
-			index += AsmType.getSize();
+		for(int i = 0; i < funcType.GetFuncParamSize(); i++) {
+			Type asmType = this.javaTypeUtils.asmType(funcType.GetFuncParamType(i));
+			invokeMethodBuilder.visitVarInsn(asmType.getOpcode(Opcodes.ILOAD), index);
+			index += asmType.getSize();
 		}
-		InvokeMethod.visitMethodInsn(INVOKESTATIC, ClassName, "f", FuncType);
-		InvokeMethod.visitReturn(FuncType.GetReturnType());
-		InvokeMethod.finish();
+		invokeMethodBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, className, "f", funcType);
+		invokeMethodBuilder.visitReturn(funcType.GetReturnType());
+		invokeMethodBuilder.finish();
 
-		ClassBuilder.addField(ACC_PUBLIC | ACC_STATIC | ACC_FINAL, "function", FuncClass, null);
+		classBuilder.addField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL, "function", funcClass, null);
 
 		// static init
-		MethodBuilder StaticInitMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC | ACC_STATIC , "<clinit>", "()V");
-		StaticInitMethod.visitTypeInsn(NEW, ClassName);
-		StaticInitMethod.visitInsn(DUP);
-		StaticInitMethod.visitMethodInsn(INVOKESPECIAL, ClassName, "<init>", "()V");
-		StaticInitMethod.visitFieldInsn(PUTSTATIC, ClassName, "function",  FuncClass);
-		StaticInitMethod.visitInsn(RETURN);
-		StaticInitMethod.finish();
+		MethodBuilder staticInitBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC , "<clinit>", "()V");
+		staticInitBuilder.visitTypeInsn(Opcodes.NEW, className);
+		staticInitBuilder.visitInsn(Opcodes.DUP);
+		staticInitBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, className, "<init>", "()V");
+		staticInitBuilder.visitFieldInsn(Opcodes.PUTSTATIC, className, "function",  funcClass);
+		staticInitBuilder.visitInsn(Opcodes.RETURN);
+		staticInitBuilder.finish();
 
-		MethodBuilder InitMethod = ClassBuilder.newMethodBuilder(ACC_PRIVATE, "<init>", "()V");
-		InitMethod.visitVarInsn(ALOAD, 0);
-		InitMethod.visitLdcInsn(FuncType.TypeId);
-		InitMethod.visitLdcInsn(FuncName);
-		InitMethod.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(FuncClass), "<init>", "(ILjava/lang/String;)V");
-		InitMethod.visitInsn(RETURN);
-		InitMethod.finish();
+		MethodBuilder initMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PRIVATE, "<init>", "()V");
+		initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+		initMethodBuilder.visitLdcInsn(funcType.TypeId);
+		initMethodBuilder.visitLdcInsn(funcName);
+		initMethodBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(funcClass), "<init>", "(ILjava/lang/String;)V");
+		initMethodBuilder.visitInsn(Opcodes.RETURN);
+		initMethodBuilder.finish();
 
-		MethodBuilder StaticFuncMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC | ACC_STATIC, "f", FuncType);
-		for(int i = 0; i < Node.GetListSize(); i++) {
-			BunLetVarNode ParamNode = Node.GetParamNode(i);
-			Class<?> DeclClass = this.GetJavaClass(ParamNode.DeclType());
-			StaticFuncMethod.addLocal(DeclClass, ParamNode.GetGivenName());
+		MethodBuilder staticFuncMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "f", funcType);
+		for(int i = 0; i < node.GetListSize(); i++) {
+			BunLetVarNode paramNode = node.GetParamNode(i);
+			Class<?> declClass = this.getJavaClass(paramNode.DeclType());
+			staticFuncMethodBuilder.addLocal(declClass, paramNode.GetGivenName());
 		}
-		Node.BlockNode().Accept(this);
-		StaticFuncMethod.finish();
+		node.BlockNode().Accept(this);
+		staticFuncMethodBuilder.finish();
 
-		FuncClass = this.AsmLoader.loadGeneratedClass(ClassName);
-		this.SetGeneratedClass(ClassName, FuncClass);
-		return new JavaStaticFieldNode(null, FuncClass, FuncType, "function");
+		funcClass = this.asmLoader.loadGeneratedClass(className);
+		this.setGeneratedClass(className, funcClass);
+		return new JavaStaticFieldNode(null, funcClass, funcType, "function");
 	}
 
-	private BFunction LoadFunction(Class<?> WrapperClass, Class<?> StaticMethodClass) {
+	private BFunction loadFunction(Class<?> wrapperClass, Class<?> staticMethodClass) {
 		try {
-			Field f = StaticMethodClass.getField("function");
+			Field f = staticMethodClass.getField("function");
 			Object func = f.get(null);
-			if(WrapperClass != null) {
-				Constructor<?> c = WrapperClass.getConstructor(func.getClass().getSuperclass());
+			if(wrapperClass != null) {
+				Constructor<?> c = wrapperClass.getConstructor(func.getClass().getSuperclass());
 				func = c.newInstance(func);
 			}
 			return (BFunction)func;
@@ -906,32 +1106,32 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		return null;
 	}
 
-	private void SetMethod(String FuncName, BFuncType FuncType, Class<?> FuncClass) {
-		BType RecvType = FuncType.GetRecvType();
-		if(RecvType instanceof BClassType && FuncName != null) {
-			BClassType ClassType = (BClassType)RecvType;
-			BType FieldType = ClassType.GetFieldType(FuncName, null);
-			if(FieldType == null || !FieldType.IsFuncType()) {
-				FuncName = LibBunSystem._AnotherName(FuncName);
-				FieldType = ClassType.GetFieldType(FuncName, null);
-				if(FieldType == null || !FieldType.IsFuncType()) {
+	private void setMethod(String funcName, BFuncType funcType, Class<?> funcClass) {
+		BType recvType = funcType.GetRecvType();
+		if(recvType instanceof BClassType && funcName != null) {
+			BClassType classType = (BClassType)recvType;
+			BType fieldType = classType.GetFieldType(funcName, null);
+			if(fieldType == null || !fieldType.IsFuncType()) {
+				funcName = LibBunSystem._AnotherName(funcName);
+				fieldType = classType.GetFieldType(funcName, null);
+				if(fieldType == null || !fieldType.IsFuncType()) {
 					return;
 				}
 			}
-			if(FieldType.Equals(FuncType)) {
-				this.SetMethod(ClassType, FuncName, this.LoadFunction(null, FuncClass));
+			if(fieldType.Equals(funcType)) {
+				this.setMethod(classType, funcName, this.loadFunction(null, funcClass));
 			}
-			else if(this.IsMethodFuncType((BFuncType)FieldType, FuncType)) {
-				Class<?> WrapperClass = this.MethodWrapperClass((BFuncType)FieldType, FuncType);
-				this.SetMethod(ClassType, FuncName, this.LoadFunction(WrapperClass, FuncClass));
+			else if(this.isMethodFuncType((BFuncType)fieldType, funcType)) {
+				Class<?> WrapperClass = this.methodWrapperClass((BFuncType)fieldType, funcType);
+				this.setMethod(classType, funcName, this.loadFunction(WrapperClass, funcClass));
 			}
 		}
 	}
 
-	private boolean IsMethodFuncType(BFuncType FieldType, BFuncType FuncType) {
-		if(FuncType.GetFuncParamSize() == FieldType.GetFuncParamSize() && FuncType.GetReturnType().Equals(FieldType.GetReturnType())) {
-			for(int i = 1; i < FuncType.GetFuncParamSize(); i++) {
-				if(!FuncType.GetFuncParamType(i).Equals(FieldType.GetFuncParamType(i))) {
+	private boolean isMethodFuncType(BFuncType fieldType, BFuncType funcType) {
+		if(funcType.GetFuncParamSize() == fieldType.GetFuncParamSize() && funcType.GetReturnType().Equals(fieldType.GetReturnType())) {
+			for(int i = 1; i < funcType.GetFuncParamSize(); i++) {
+				if(!funcType.GetFuncParamType(i).Equals(fieldType.GetFuncParamType(i))) {
 					return false;
 				}
 			}
@@ -939,73 +1139,73 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		return true;
 	}
 
-	private Class<?> MethodWrapperClass(BFuncType FuncType, BFuncType SourceFuncType) {
-		String ClassName = "W" + this.NameType(FuncType) + "W" + this.NameType(SourceFuncType);
-		Class<?> WrapperClass = this.GetGeneratedClass(ClassName, null);
-		if(WrapperClass == null) {
-			Class<?> FuncClass = this.LoadFuncClass(FuncType);
-			Class<?> SourceClass = this.LoadFuncClass(SourceFuncType);
-			@Var ClassBuilder ClassBuilder = this.AsmLoader.newClassBuilder(ACC_PUBLIC|ACC_FINAL, null, ClassName, FuncClass);
+	private Class<?> methodWrapperClass(BFuncType funcType, BFuncType sourceFuncType) {
+		String className = "W" + this.NameType(funcType) + "W" + this.NameType(sourceFuncType);
+		Class<?> wrapperClass = this.getGeneratedClass(className, null);
+		if(wrapperClass == null) {
+			Class<?> funcClass = this.loadFuncClass(funcType);
+			Class<?> sourceClass = this.loadFuncClass(sourceFuncType);
+			ClassBuilder classBuilder = this.asmLoader.newClassBuilder(Opcodes.ACC_PUBLIC|Opcodes.ACC_FINAL, null, className, funcClass);
 
-			ClassBuilder.addField(ACC_PUBLIC, "f", SourceClass, null);
+			classBuilder.addField(Opcodes.ACC_PUBLIC, "f", sourceClass, null);
 
-			MethodBuilder InitMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC, "<init>", "(L"+Type.getInternalName(SourceClass)+";)V");
-			InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
-			InitMethod.pushInt(FuncType.TypeId);
-			InitMethod.visitLdcInsn(SourceFuncType.GetName());
-			InitMethod.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(FuncClass), "<init>", "(ILjava/lang/String;)V");
-			InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
-			InitMethod.visitVarInsn(Opcodes.ALOAD, 1);
-			InitMethod.visitFieldInsn(PUTFIELD, ClassName, "f", Type.getDescriptor(SourceClass));
-			InitMethod.visitInsn(RETURN);
-			InitMethod.finish();
+			MethodBuilder initMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC, "<init>", "(L"+Type.getInternalName(sourceClass)+";)V");
+			initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+			initMethodBuilder.pushInt(funcType.TypeId);
+			initMethodBuilder.visitLdcInsn(sourceFuncType.GetName());
+			initMethodBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(funcClass), "<init>", "(ILjava/lang/String;)V");
+			initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+			initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 1);
+			initMethodBuilder.visitFieldInsn(Opcodes.PUTFIELD, className, "f", Type.getDescriptor(sourceClass));
+			initMethodBuilder.visitInsn(Opcodes.RETURN);
+			initMethodBuilder.finish();
 
-			MethodBuilder InvokeMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC | ACC_FINAL, "Invoke", FuncType);
-			InvokeMethod.visitVarInsn(ALOAD, 0);
-			InvokeMethod.visitFieldInsn(GETFIELD, ClassName, "f", Type.getDescriptor(SourceClass));
-			InvokeMethod.visitVarInsn(ALOAD, 1);
+			MethodBuilder invokeMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, "Invoke", funcType);
+			invokeMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+			invokeMethodBuilder.visitFieldInsn(Opcodes.GETFIELD, className, "f", Type.getDescriptor(sourceClass));
+			invokeMethodBuilder.visitVarInsn(Opcodes.ALOAD, 1);
 			//			System.out.println("CAST: " + Type.getInternalName(this.GetJavaClass(SourceFuncType.GetFuncParamType(0))));
-			InvokeMethod.visitTypeInsn(CHECKCAST, this.GetJavaClass(SourceFuncType.GetFuncParamType(0)));
+			invokeMethodBuilder.visitTypeInsn(Opcodes.CHECKCAST, this.getJavaClass(sourceFuncType.GetFuncParamType(0)));
 			int index = 2;
-			for(int i = 1; i < FuncType.GetFuncParamSize(); i++) {
-				Type AsmType = this.javaTypeUtils.AsmType(FuncType.GetFuncParamType(i));
-				InvokeMethod.visitVarInsn(AsmType.getOpcode(ILOAD), index);
-				index += AsmType.getSize();
+			for(int i = 1; i < funcType.GetFuncParamSize(); i++) {
+				Type asmType = this.javaTypeUtils.asmType(funcType.GetFuncParamType(i));
+				invokeMethodBuilder.visitVarInsn(asmType.getOpcode(Opcodes.ILOAD), index);
+				index += asmType.getSize();
 			}
 			//String owner = "C" + FuncType.StringfySignature(FuncName);
-			InvokeMethod.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(SourceClass), "Invoke", this.javaTypeUtils.GetMethodDescriptor(SourceFuncType));
-			InvokeMethod.visitReturn(FuncType.GetReturnType());
-			InvokeMethod.finish();
+			invokeMethodBuilder.visitMethodInsn(Opcodes.INVOKEVIRTUAL, Type.getInternalName(sourceClass), "Invoke", this.javaTypeUtils.getMethodDescriptor(sourceFuncType));
+			invokeMethodBuilder.visitReturn(funcType.GetReturnType());
+			invokeMethodBuilder.finish();
 
-			WrapperClass = this.AsmLoader.loadGeneratedClass(ClassName);
-			this.SetGeneratedClass(ClassName, WrapperClass);
+			wrapperClass = this.asmLoader.loadGeneratedClass(className);
+			this.setGeneratedClass(className, wrapperClass);
 		}
-		return WrapperClass;
+		return wrapperClass;
 	}
 
 
 	// -----------------------------------------------------------------------
 
-	private Class<?> GetSuperClass(BType SuperType) {
-		@Var Class<?> SuperClass = null;
-		if(SuperType != null) {
-			SuperClass = this.GetJavaClass(SuperType);
+	private Class<?> getSuperClass(BType superType) {
+		Class<?> superClass = null;
+		if(superType != null) {
+			superClass = this.getJavaClass(superType);
 		}
 		else {
-			SuperClass = BunObject.class;
+			superClass = BunObject.class;
 		}
-		return SuperClass;
+		return superClass;
 	}
 
-	private final static String NameClassMethod(BType ClassType, String FieldName) {
-		return FieldName + ClassType.TypeId;
+	private final static String nameClassMethod(BType classType, String fieldName) {
+		return fieldName + classType.TypeId;
 	}
 
-	private void SetMethod(BClassType ClassType, String FuncName, BFunction FuncObject) {
+	private void setMethod(BClassType classType, String funcName, BFunction funcObject) {
 		try {
-			Class<?> StaticClass = this.GetJavaClass(ClassType);
-			Field f = StaticClass.getField(NameClassMethod(ClassType, FuncName));
-			f.set(null, FuncObject);
+			Class<?> staticClass = this.getJavaClass(classType);
+			Field f = staticClass.getField(nameClassMethod(classType, funcName));
+			f.set(null, funcObject);
 		}
 		catch (Exception e) {
 			e.printStackTrace();
@@ -1013,114 +1213,661 @@ public class JavaByteCodeGenerator extends LibBunGenerator {
 		}
 	}
 
-	private Object GetConstValue(BNode Node) {
-		if(Node instanceof BunNullNode) {
+	private Object getConstValue(BNode node) {
+		if(node instanceof BunNullNode) {
 			return null;
 		}
-		if(Node instanceof BunBooleanNode) {
-			return ((BunBooleanNode)Node).BooleanValue;
+		if(node instanceof BunBooleanNode) {
+			return ((BunBooleanNode)node).BooleanValue;
 		}
-		if(Node instanceof BunIntNode) {
-			return ((BunIntNode)Node).IntValue;
+		if(node instanceof BunIntNode) {
+			return ((BunIntNode)node).IntValue;
 		}
-		if(Node instanceof BunFloatNode) {
-			return ((BunFloatNode)Node).FloatValue;
+		if(node instanceof BunFloatNode) {
+			return ((BunFloatNode)node).FloatValue;
 		}
-		if(Node instanceof BunStringNode) {
-			return ((BunStringNode)Node).StringValue;
+		if(node instanceof BunStringNode) {
+			return ((BunStringNode)node).StringValue;
 		}
-		if(Node instanceof BunTypeNode) {
-			return Node.Type;
+		if(node instanceof BunTypeNode) {
+			return node.Type;
 		}
 		return null;
 	}
 
-	@Override public void VisitClassNode(BunClassNode Node) {
-		@Var Class<?> SuperClass = this.GetSuperClass(Node.SuperType());
-		@Var ClassBuilder ClassBuilder = this.AsmLoader.newClassBuilder(ACC_PUBLIC, Node, Node.ClassName(), SuperClass);
+	@Override public void VisitClassNode(BunClassNode node) {
+		Class<?> superClass = this.getSuperClass(node.SuperType());
+		ClassBuilder classBuilder = this.asmLoader.newClassBuilder(Opcodes.ACC_PUBLIC, node, node.ClassName(), superClass);
 		// add class field
-		for(int i = 0; i < Node.GetListSize(); i++) {
-			@Var BunLetVarNode FieldNode = Node.GetFieldNode(i);
-			ClassBuilder.addField(ACC_PUBLIC, FieldNode.GetGivenName(), FieldNode.DeclType(), this.GetConstValue(FieldNode.InitValueNode()));
+		for(int i = 0; i < node.GetListSize(); i++) {
+			BunLetVarNode fieldNode = node.GetFieldNode(i);
+			classBuilder.addField(Opcodes.ACC_PUBLIC, fieldNode.GetGivenName(), fieldNode.DeclType(), this.getConstValue(fieldNode.InitValueNode()));
 		}
 		// add static field (only function)
-		for(int i = 0; i < Node.ClassType.GetFieldSize(); i++) {
-			@Var BClassField Field = Node.ClassType.GetFieldAt(i);
-			if(Field.FieldType.IsFuncType()) {
-				ClassBuilder.addField(ACC_PUBLIC|ACC_STATIC, NameClassMethod(Node.ClassType, Field.FieldName), Field.FieldType, null);
+		for(int i = 0; i < node.ClassType.GetFieldSize(); i++) {
+			BClassField field = node.ClassType.GetFieldAt(i);
+			if(field.FieldType.IsFuncType()) {
+				classBuilder.addField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, nameClassMethod(node.ClassType, field.FieldName), field.FieldType, null);
 			}
 		}
 		// public <init>()
-		MethodBuilder InitMethod = ClassBuilder.newMethodBuilder(ACC_PUBLIC, "<init>", "()V");
-		InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
-		InitMethod.pushInt(Node.ClassType.TypeId);
-		InitMethod.visitMethodInsn(INVOKESPECIAL, Node.ClassName(), "<init>", "(I)V");
-		InitMethod.visitInsn(RETURN);
-		InitMethod.finish();
+		MethodBuilder initMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PUBLIC, "<init>", "()V");
+		initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+		initMethodBuilder.pushInt(node.ClassType.TypeId);
+		initMethodBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, node.ClassName(), "<init>", "(I)V");
+		initMethodBuilder.visitInsn(Opcodes.RETURN);
+		initMethodBuilder.finish();
 		// protected <init>(int typeid)
-		InitMethod = ClassBuilder.newMethodBuilder(ACC_PROTECTED, "<init>", "(I)V");
-		InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
+		initMethodBuilder = classBuilder.newMethodBuilder(Opcodes.ACC_PROTECTED, "<init>", "(I)V");
+		initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
 		//		InitMethod.visitVarInsn(Opcodes.ILOAD, 1);
 		//		InitMethod.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(SuperClass), "<init>", "(I)V");
-		InitMethod.visitMethodInsn(INVOKESPECIAL, Type.getInternalName(SuperClass), "<init>", "()V");	// FIXME: ZObject?
-		for(int i = 0; i < Node.GetListSize(); i++) {
-			@Var BunLetVarNode FieldNode = Node.GetFieldNode(i);
-			if(!FieldNode.DeclType().IsFuncType()) {
-				InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
-				InitMethod.pushNode(this.GetJavaClass(FieldNode.DeclType()), FieldNode.InitValueNode());
-				InitMethod.visitFieldInsn(PUTFIELD, Node.ClassName(), FieldNode.GetGivenName(), Type.getDescriptor(this.GetJavaClass(FieldNode.DeclType())));
+		initMethodBuilder.visitMethodInsn(Opcodes.INVOKESPECIAL, Type.getInternalName(superClass), "<init>", "()V");	// FIXME: ZObject?
+		for(int i = 0; i < node.GetListSize(); i++) {
+			BunLetVarNode fieldNode = node.GetFieldNode(i);
+			if(!fieldNode.DeclType().IsFuncType()) {
+				initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+				initMethodBuilder.pushNode(this.getJavaClass(fieldNode.DeclType()), fieldNode.InitValueNode());
+				initMethodBuilder.visitFieldInsn(Opcodes.PUTFIELD, node.ClassName(), fieldNode.GetGivenName(), Type.getDescriptor(this.getJavaClass(fieldNode.DeclType())));
 			}
 		}
 		// set function
-		for(int i = 0; i < Node.ClassType.GetFieldSize(); i++) {
-			@Var BClassField Field = Node.ClassType.GetFieldAt(i);
-			if(Field.FieldType.IsFuncType()) {
-				String FieldDesc = Type.getDescriptor(this.GetJavaClass(Field.FieldType));
-				Label JumpLabel = new Label();
-				InitMethod.visitFieldInsn(Opcodes.GETSTATIC, Node.ClassName(), NameClassMethod(Node.ClassType, Field.FieldName), FieldDesc);
-				InitMethod.visitJumpInsn(Opcodes.IFNULL, JumpLabel);
-				InitMethod.visitVarInsn(Opcodes.ALOAD, 0);
-				InitMethod.visitFieldInsn(Opcodes.GETSTATIC, Node.ClassName(), NameClassMethod(Node.ClassType, Field.FieldName), FieldDesc);
-				InitMethod.visitFieldInsn(Opcodes.PUTFIELD, Node.ClassName(), Field.FieldName, FieldDesc);
-				InitMethod.visitLabel(JumpLabel);
+		for(int i = 0; i < node.ClassType.GetFieldSize(); i++) {
+			BClassField field = node.ClassType.GetFieldAt(i);
+			if(field.FieldType.IsFuncType()) {
+				String fieldDesc = Type.getDescriptor(this.getJavaClass(field.FieldType));
+				Label jumpLabel = new Label();
+				initMethodBuilder.visitFieldInsn(Opcodes.GETSTATIC, node.ClassName(), nameClassMethod(node.ClassType, field.FieldName), fieldDesc);
+				initMethodBuilder.visitJumpInsn(Opcodes.IFNULL, jumpLabel);
+				initMethodBuilder.visitVarInsn(Opcodes.ALOAD, 0);
+				initMethodBuilder.visitFieldInsn(Opcodes.GETSTATIC, node.ClassName(), nameClassMethod(node.ClassType, field.FieldName), fieldDesc);
+				initMethodBuilder.visitFieldInsn(Opcodes.PUTFIELD, node.ClassName(), field.FieldName, fieldDesc);
+				initMethodBuilder.visitLabel(jumpLabel);
 			}
 		}
 
-		InitMethod.visitInsn(RETURN);
-		InitMethod.finish();
+		initMethodBuilder.visitInsn(Opcodes.RETURN);
+		initMethodBuilder.finish();
 
-		this.typeTable.SetTypeTable(Node.ClassType, this.AsmLoader.loadGeneratedClass(Node.ClassName()));
+		this.typeTable.SetTypeTable(node.ClassType, this.asmLoader.loadGeneratedClass(node.ClassName()));
 	}
 
-	@Override public void VisitErrorNode(ErrorNode Node) {
-		//TODO
+	@Override public void VisitErrorNode(ErrorNode node) {
+		assert node.SourceToken != null;
+		LibBunLogger._LogError(node.SourceToken, node.ErrorMessage);
+		throw new ErrorNodeFoundException();
 	}
 
 	@Override public void VisitAsmNode(BunAsmNode Node) {
 		// TODO Auto-generated method stub
 	}
 
-	@Override public void VisitTopLevelNode(TopLevelNode Node) {
-		this.VisitUndefinedNode(Node);
+	@Override public void VisitTopLevelNode(TopLevelNode node) {
+		this.VisitUndefinedNode(node);
 	}
 
-	@Override public void VisitLocalDefinedNode(LocalDefinedNode Node) {
-		if(Node instanceof JavaStaticFieldNode) {
-			this.VisitStaticFieldNode(((JavaStaticFieldNode)Node));
+	@Override public void VisitLocalDefinedNode(LocalDefinedNode node) {
+		if(node instanceof JavaStaticFieldNode) {
+			this.VisitStaticFieldNode(((JavaStaticFieldNode)node));
 		}
 		else {
-			this.VisitUndefinedNode(Node);
+			this.VisitUndefinedNode(node);
 		}
 	}
 
-	public final void Debug(String Message) {
-		LibBunSystem._PrintDebug(Message);
+	public final void debugPrint(String message) {
+		LibBunSystem._PrintDebug(message);
 	}
 
-	@Override public void VisitLiteralNode(LiteralNode Node) {
+	@Override public void VisitLiteralNode(LiteralNode node) {
 	}
 
-	JavaMethodTable getMethodTable() {
+	public JavaMethodTable getMethodTable() {
 		return this.methodTable;
 	}
+
+	public JavaTypeTable getTypeTable() {
+		return this.typeTable;
+	}
+
+	@Override
+	public void visitCommandNode(CommandNode node) {
+		this.asmBuilder.setLineNumber(node);
+		ArrayList<CommandNode> nodeList = new ArrayList<CommandNode>();
+		CommandNode commandNode = node;
+		while(commandNode != null) {
+			nodeList.add(commandNode);
+			commandNode = (CommandNode) commandNode.getPipedNextNode();
+		}
+		// new String[n][]
+		int size = nodeList.size();
+		this.asmBuilder.visitLdcInsn(size);
+		this.asmBuilder.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(CommandArg[].class));
+		for(int i = 0; i < size; i++) {
+			// new String[m];
+			CommandNode currentNode = nodeList.get(i);
+			int listSize = currentNode.getArgSize();
+			this.asmBuilder.visitInsn(Opcodes.DUP);
+			this.asmBuilder.visitLdcInsn(i);
+			this.asmBuilder.visitLdcInsn(listSize);
+			this.asmBuilder.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(CommandArg.class));
+			for(int j = 0; j < listSize; j++ ) {
+				this.asmBuilder.visitInsn(Opcodes.DUP);
+				this.asmBuilder.visitLdcInsn(j);
+				currentNode.getArgAt(j).Accept(this);
+				this.asmBuilder.visitInsn(Opcodes.AASTORE);
+			}
+			this.asmBuilder.visitInsn(Opcodes.AASTORE);
+		}
+
+		if(node.Type.IsBooleanType()) {
+			this.invokeStaticMethod(node, this.execCommandBool);
+		}
+		else if(node.Type.IsIntType()) {
+			this.invokeStaticMethod(node, this.execCommandInt);
+		}
+		else if(node.Type.IsStringType()) {
+			this.invokeStaticMethod(node, this.execCommandString);
+		}
+		else if(node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, BType.StringType))) {
+			this.invokeStaticMethod(node, this.execCommandStringArray);
+		}
+		else if(node.Type.equals(this.typeTable.GetBunType(Task.class))) {
+			this.invokeStaticMethod(node, this.execCommandTask);
+		}
+		else if(node.Type.equals(BTypePool._GetGenericType1(BGenericType._ArrayType, this.typeTable.GetBunType(Task.class)))) {
+			this.invokeStaticMethod(node, this.execCommandTaskArray);
+		}
+		else {
+			this.invokeStaticMethod(node, this.execCommandVoid);
+		}
+	}
+
+	@Override
+	public void visitTryNode(DShellTryNode node) {
+		TryCatchLabel label = new TryCatchLabel();
+		this.tryCatchLabelStack.push(label); // push
+		// try block
+		this.asmBuilder.visitLabel(label.BeginTryLabel);
+		node.tryBlockNode().Accept(this);
+		this.asmBuilder.visitLabel(label.EndTryLabel);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, label.FinallyLabel);
+		// catch block
+		int size = node.GetListSize();
+		for(int i = 0; i < size; i++) {
+			node.GetListAt(i).Accept(this);
+		}
+		// finally block
+		this.asmBuilder.visitLabel(label.FinallyLabel);
+		if(node.hasFinallyBlockNode()) {
+			node.finallyBlockNode().Accept(this);
+		}
+		this.tryCatchLabelStack.pop();
+	}
+
+	@Override
+	public void visitCatchNode(DShellCatchNode node) {
+		Label catchLabel = new Label();
+		TryCatchLabel Label = this.tryCatchLabelStack.peek();
+
+		// prepare
+		String throwType = this.resolveExceptionType(node);
+		this.asmBuilder.visitTryCatchBlock(Label.BeginTryLabel, Label.EndTryLabel, catchLabel, throwType);
+
+		// catch block
+		this.asmBuilder.addLocal(this.getJavaClass(node.exceptionType()), node.exceptionName());
+		this.asmBuilder.visitLabel(catchLabel);
+		this.invokeExceptionWrapper(node);
+		node.blockNode().Accept(this);
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, Label.FinallyLabel);
+
+		this.asmBuilder.removeLocal(this.getJavaClass(node.exceptionType()), node.exceptionName());
+	}
+
+	private String resolveExceptionType(DShellCatchNode node) {
+		if(!node.hasTypeInfo()) {
+			return Type.getType(Throwable.class).getInternalName();
+		}
+		return this.javaTypeUtils.asmType(node.exceptionType()).getInternalName();
+	}
+
+	private void invokeExceptionWrapper(DShellCatchNode node) {
+		if(!node.hasTypeInfo()) {
+			this.invokeStaticMethod(null, this.wrapException);
+		}
+		this.asmBuilder.storeLocal(node.exceptionName());
+	}
+
+	@Override public void VisitSyntaxSugarNode(SyntaxSugarNode node) {
+		if(node instanceof BunContinueNode) {
+			this.visitContinueNode((BunContinueNode) node);
+		}
+		else {
+			super.VisitSyntaxSugarNode(node);
+		}
+	}
+
+	@Override
+	public void visitContinueNode(BunContinueNode node) {
+		Label l = this.asmBuilder.continueLabelStack.peek();
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, l);
+	}
+
+	@Override
+	public void visitForNode(DShellForNode node) {
+		Label headLabel = new Label();
+		Label continueLabel = new Label();
+		Label breakLabel = new Label();
+		this.asmBuilder.breakLabelStack.push(breakLabel);
+		this.asmBuilder.continueLabelStack.push(continueLabel);
+
+		if(node.hasDeclNode()) {
+			this.VisitVarDeclNode(node.toVarDeclNode());
+		}
+		this.asmBuilder.visitLabel(headLabel);
+		node.condNode().Accept(this);
+		this.asmBuilder.visitJumpInsn(Opcodes.IFEQ, breakLabel);
+		node.blockNode().Accept(this);
+		this.asmBuilder.visitLabel(continueLabel);
+		if(node.hasNextNode()) {
+			node.nextNode().Accept(this);
+		}
+		this.asmBuilder.visitJumpInsn(Opcodes.GOTO, headLabel);
+		this.asmBuilder.visitLabel(breakLabel);
+		if(node.hasDeclNode()) {
+			this.VisitVarDeclNode2(node.toVarDeclNode());
+		}
+
+		this.asmBuilder.breakLabelStack.pop();
+		this.asmBuilder.continueLabelStack.pop();
+	}
+
+	@Override
+	public void visitWrapperNode(DShellWrapperNode node) {
+		node.getTargetNode().Accept(this);
+	}
+
+	@Override
+	public void visitMatchRegexNode(MatchRegexNode node) {
+		this.VisitBinaryNode(node);
+	}
+
+	@Override
+	public void visitInternalFuncCallNode(InternalFuncCallNode node) {
+		this.invokeStaticMethod(null, node.getMethod());
+	}
+
+	// utils for visitor
+	protected void invokeStaticMethod(BNode Node, Method method) {
+		String owner = Type.getInternalName(method.getDeclaringClass());
+		this.asmBuilder.visitMethodInsn(Opcodes.INVOKESTATIC, owner, method.getName(), Type.getMethodDescriptor(method));
+		if(Node != null) {
+			this.asmBuilder.checkReturnCast(Node, method.getReturnType());
+		}
+	}
+
+	protected void loadJavaClass(Class<?> classObject) {
+		BType type = this.typeTable.GetBunType(classObject);
+		this.RootGamma.SetTypeName(type, null);
+	}
+
+	protected void loadJavaClassList(ArrayList<Class<?>> classObjList) {
+		for(Class<?> classObj : classObjList) {
+			this.loadJavaClass(classObj);
+		}
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, String internalName, Class<?>... paramClasses) {
+		this.loadJavaStaticMethod(holderClass, internalName, internalName, paramClasses);
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, String name, String internalName, Class<?>... paramClasses) {
+		this.loadJavaStaticMethod(holderClass, null, name, internalName, this.toBTypes(paramClasses));
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, BType returnType, String name, BType... paramTypes) {
+		this.loadJavaStaticMethod(holderClass, returnType, name, name, paramTypes);
+	}
+
+	protected void loadJavaStaticMethod(Class<?> holderClass, BType returnType, String name, String internalName, BType... paramTypes) {
+		String formSymbol = name;
+		String holderClassPath = holderClass.getCanonicalName().replaceAll("\\.", "/");
+		BArray<BType> typeList = new BArray<BType>(new BType[4]);
+		StringBuilder formBuilder = new StringBuilder();
+		formBuilder.append(holderClassPath + "." + internalName + "(");
+		for(int i = 0; i < paramTypes.length; i++) {
+			if(i != 0) {
+				formBuilder.append(",");
+			}
+			formBuilder.append("$[" + i + "]");
+			typeList.add(paramTypes[i]);
+		}
+		formBuilder.append(")");
+		if(returnType == null) {
+			try {
+				returnType = this.typeTable.GetBunType(holderClass.getMethod(internalName, this.toClasses(paramTypes)).getReturnType());
+			}
+			catch(Throwable e) {
+				Utils.fatal(1, "load static method faild: " + e.getMessage());
+			}
+		}
+		typeList.add(returnType);
+		BFuncType funcType = (BFuncType) BTypePool._GetGenericType(BFuncType._FuncType, typeList, true);
+		BFormFunc formFunc = new BFormFunc(formSymbol, funcType, null, formBuilder.toString());
+		if(name.equals("_")) {
+			this.SetConverterFunc(funcType.GetRecvType(), funcType.GetReturnType(), formFunc);
+		}
+		else {
+			this.SetDefinedFunc(formFunc);
+		}
+	}
+
+	protected Class<?>[] toClasses(BType[] types) {
+		int size = types.length;
+		Class<?>[] classes = new Class<?>[size];
+		for(int i = 0; i < size; i++) {
+			classes[i] = this.getJavaClass(types[i]);
+		}
+		return classes;
+	}
+
+	protected BType[] toBTypes(Class<?>[] classes) {
+		int size = classes.length;
+		BType[] types = new BType[size];
+		for(int i = 0; i < size; i++) {
+			types[i] = this.typeTable.GetBunType(classes[i]);
+		}
+		return types;
+	}
+
+	// utils for execution
+	protected boolean loadScript(String script, String fileName, int lineNumber, boolean isInteractive) {
+		boolean result = true;
+		BunBlockNode topBlockNode = new BunBlockNode(null, this.RootGamma);
+		ParserSource source = new ParserSource(fileName, lineNumber, script, this.Logger);
+		BTokenContext tokenContext = new BTokenContext(this.RootParser, this, source, 0, script.length());
+		tokenContext.SkipEmptyStatement();
+		while(tokenContext.HasNext()) {
+			tokenContext.SetParseFlag(BTokenContext._NotAllowSkipIndent);
+			topBlockNode.ClearListToSize(0);
+			BNode stmtNode;
+			try {
+				stmtNode = tokenContext.ParsePattern(topBlockNode, "$Statement$", BTokenContext._Required);
+			}
+			catch(Throwable e) {
+				System.err.println("Parsing Problem");
+				e.printStackTrace();
+				this.topLevelStatementList.clear();
+				return false;
+			}
+			if(!this.generateStatement(stmtNode, isInteractive)) {
+				result = false;
+				break;
+			}
+			tokenContext.SkipEmptyStatement();
+			tokenContext.Vacume();
+		}
+		this.Logger.OutputErrorsToStdErr();
+		return result;
+	}
+
+	public boolean loadLine(String line, int lineNumber, boolean isInteractive) {
+		return this.loadScript(line, "(stdin)", lineNumber, isInteractive);
+	}
+
+	public void loadArg(String[] scriptArgs) {
+		StringBuilder argvBuilder = new StringBuilder();
+		argvBuilder.append("let ARGV = [");
+		for(int i = 0; i < scriptArgs.length; i++) {
+			if(i != 0) {
+				argvBuilder.append(", ");
+			}
+			argvBuilder.append("\"");
+			argvBuilder.append(scriptArgs[i]);
+			argvBuilder.append("\"");
+		}
+		argvBuilder.append("]");
+		this.loadScript(argvBuilder.toString(), scriptArgs[0], 0, false);
+	}
+
+	public boolean loadFile(String fileName) {
+		String script = LibBunSystem._LoadTextFile(fileName);
+		if(script == null) {
+			System.err.println("file not found: " + fileName);
+			System.exit(1);
+		}
+		return this.loadScript(script, fileName, 1, false);
+	}
+
+	public void loadDShellrc() {
+		final String fileName = RuntimeContext.getContext().getenv("HOME") + "/.dshellrc";
+		String script = LibBunSystem._LoadTextFile(fileName);
+		if(script != null && this.loadScript(script, fileName, 0, true)) {
+			this.evalAndPrint();
+		}
+	}
+
+	public void loadVariables(boolean isInteractive) {
+		BNode parentNode = new BunBlockNode(null, this.RootGamma);
+		ArrayList<BNode> nodeList = new ArrayList<BNode>();
+		nodeList.add(this.createVarNode(parentNode, "stdin", StreamUtils.class, "createStdin"));
+		nodeList.add(this.createVarNode(parentNode, "stdout", StreamUtils.class, "createStdout"));
+		nodeList.add(this.createVarNode(parentNode, "stderr", StreamUtils.class, "createStderr"));
+		for(BNode node : nodeList) {
+			this.generateStatement(node, isInteractive);
+			this.evalAndPrint();
+		}
+	}
+
+	public BNode createVarNode(BNode parentNode, String varName, Class<?> holderClass, String methodName) {
+		BunLetVarNode node = new BunLetVarNode(parentNode, BunLetVarNode._IsReadOnly, null, varName);
+		node.SetNode(BunLetVarNode._InitValue, new InternalFuncCallNode(this.getTypeTable(), node, holderClass, methodName));
+		return node;
+	}
+
+	protected void generateByteCode(BNode node) {
+		try {
+			node.Accept(this);
+		}
+		catch(ErrorNodeFoundException e) {
+			this.topLevelStatementList.clear();
+			if(RuntimeContext.getContext().isDebugMode()) {
+				e.printStackTrace();
+			}
+			this.StopVisitor();
+		}
+		catch(Throwable e) {
+			System.err.println("Code Generation Failed");
+			e.printStackTrace();
+			this.topLevelStatementList.clear();
+			this.StopVisitor();
+		}
+	}
+
+	protected boolean generateStatement(BNode node, boolean IsInteractive) {
+		this.EnableVisitor();
+		if(node instanceof EmptyNode) {
+			return this.IsVisitable();
+		}
+		if(node instanceof TopLevelNode) {
+			((TopLevelNode)node).Perform(this.RootGamma);
+			return this.IsVisitable();
+		}
+		node = this.checkTopLevelSupport(node);
+		if(node.IsErrorNode()) {
+			this.generateByteCode(node);
+		}
+		else if(IsInteractive && (node instanceof DShellWrapperNode) && !((DShellWrapperNode)node).isVarTarget()) {
+			node = this.TypeChecker.CheckType(node, BType.VoidType);
+			this.generateByteCode(node);
+		}
+		else if(IsInteractive) {
+			BunFunctionNode funcNode = ((DShellTypeChecker)this.TypeChecker).visitTopLevelStatementNode(node);
+			this.topLevelStatementList.add(new TopLevelStatementInfo(funcNode.GivenName, funcNode.ReturnType()));
+			this.generateByteCode(funcNode);
+		}
+		else {
+			if(this.untypedMainNode == null) {
+				this.untypedMainNode = new BunFunctionNode(node.ParentNode);
+				this.untypedMainNode.GivenName = "main";
+				this.untypedMainNode.SourceToken = node.SourceToken;
+				this.untypedMainNode.SetNode(BunFunctionNode._Block, new BunBlockNode(this.untypedMainNode, null));
+			}
+			this.untypedMainNode.BlockNode().Append(node);
+		}
+		return this.IsVisitable();
+	}
+
+	protected boolean evalAndPrintEachNode(TopLevelStatementInfo info) {
+		Class<?> funcClass = this.getDefinedFunctionClass(info.funcName, BType.VoidType, 0);
+		try {
+			Method method = funcClass.getMethod("f");
+			Object value = method.invoke(null);
+			if(!info.returnType.IsVoidType()) {
+				System.out.println(" (" + info.returnType + ") " + value);
+			}
+			return true;
+		}
+		catch(InvocationTargetException e) {
+			this.printException(e);
+		}
+		catch(Throwable e) {
+			e.printStackTrace();
+			Utils.fatal(1, "invocation problem");
+		}
+		return false;
+	}
+
+	public void evalAndPrint() {
+		while(!this.topLevelStatementList.isEmpty()) {
+			TopLevelStatementInfo info = this.topLevelStatementList.remove();
+			if(!this.evalAndPrintEachNode(info)) {
+				this.topLevelStatementList.clear();
+			}
+		}
+	}
+
+	public void invokeMain() {
+		if(this.untypedMainNode == null) {
+			System.err.println("not found main");
+			System.exit(1);
+		}
+		try {
+			BunFunctionNode node = (BunFunctionNode) this.TypeChecker.CheckType(this.untypedMainNode, BType.VarType);
+			node.Type = BType.VoidType;
+			node.IsExport = true;
+			node.Accept(this);
+			this.Logger.OutputErrorsToStdErr();
+		}
+		catch(ErrorNodeFoundException e) {
+			this.Logger.OutputErrorsToStdErr();
+			if(RuntimeContext.getContext().isDebugMode()) {
+				e.printStackTrace();
+			}
+			System.exit(1);
+		}
+		catch(Throwable e) {
+			e.printStackTrace();
+			System.err.println("Code Generation Failed");
+			System.exit(1);
+		}
+		if(this.mainFuncNode != null) {
+			JavaStaticFieldNode mainFunc = this.mainFuncNode;
+			try {
+				Method Method = mainFunc.StaticClass.getMethod("f");
+				Method.invoke(null);
+				System.exit(0);
+			}
+			catch(InvocationTargetException e) {
+				this.printException(e);
+				System.exit(1);
+			}
+			catch(Throwable e) {
+				e.printStackTrace();
+				Utils.fatal(1, "invocation problem");
+			}
+		}
+	}
+
+	private BNode checkTopLevelSupport(BNode Node) {
+		if(Node instanceof BunVarBlockNode) {
+			return new ErrorNode(Node, "only available inside function");
+		}
+		else if(Node instanceof BunClassNode || Node instanceof BunFunctionNode) {
+			return new DShellWrapperNode(Node);
+		}
+		else if(Node instanceof BunLetVarNode || Node instanceof DShellExportEnvNode || Node instanceof DShellImportEnvNode) {
+			return new DShellWrapperNode(Node, true);
+		}
+		BunReturnNode ReturnNode = this.findReturnNode(Node);
+		if(ReturnNode != null) {
+			return new ErrorNode(ReturnNode, "only available inside function");
+		}
+		return Node;
+	}
+
+	private BunReturnNode findReturnNode(BNode Node) {
+		if(Node == null || Node.IsErrorNode()) {
+			return null;
+		}
+		else if(Node instanceof BunReturnNode) {
+			return (BunReturnNode) Node;
+		}
+		else if(Node instanceof BunBlockNode) {
+			BunBlockNode BlockNode = (BunBlockNode) Node;
+			int size = BlockNode.GetListSize();
+			for(int i = 0; i < size; i++) {
+				BunReturnNode ReturnNode = this.findReturnNode(BlockNode.GetListAt(i));
+				if(ReturnNode != null) {
+					return ReturnNode;
+				}
+			}
+		}
+		int size = Node.GetAstSize();
+		for(int i = 0; i < size; i++) {
+			BunReturnNode ReturnNode = this.findReturnNode(Node.AST[i]);
+			if(ReturnNode != null) {
+				return ReturnNode;
+			}
+		}
+		return null;
+	}
+
+	private void printException(InvocationTargetException e) {
+		NativeException.wrapException(e.getCause()).printStackTrace();
+	}
+
+	protected void clearCurrentFunction(BNode node) {	//TODO:
+		//Class<?> FuncClass = this.GetDefinedFunctionClass(info.funcName, BType.VoidType, 0);
+	}
+
+	protected void clearTopLevelStatementList() {	//TODO:
+		for(TopLevelStatementInfo info : this.topLevelStatementList) {
+			
+		}
+		this.topLevelStatementList.clear();
+	}
+
+	protected Class<?> removeDefinedFuncClass(String funcName, BType recvType, int funcParamSize) {
+		//return this.GeneratedClassMap.GetOrNull(this.NameFunctionClass(FuncName, RecvType, FuncParamSize));
+		return null;
+	}
+
+	private static class ErrorNodeFoundException extends RuntimeException {
+		private static final long serialVersionUID = -2465006344250569543L;
+	}
+}
+
+class TopLevelStatementInfo {
+	public final String funcName;
+	public final BType returnType;
+
+	public TopLevelStatementInfo(String funcName, BType returnType) {
+		this.funcName = funcName;
+		this.returnType = returnType;
+	}
+}
+
+class TopLevelStatementList {
+	private LinkedList<TopLevelStatementInfo> topLevelStatementList;
 }
