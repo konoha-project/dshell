@@ -65,3 +65,8 @@ try {
 	assert(e instanceof NativeException)
 	assert(e instanceof Exception)
 }
+
+// IOStream
+assert(stdin instanceof InputStream)
+assert(stdout instanceof OutputStream)
+assert(stdout instanceof OutputStream)

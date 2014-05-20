@@ -1,8 +1,9 @@
-package dshell.internal.jvm;
+package rec;
 
 import java.lang.reflect.Method;
 
 import dshell.internal.ast.sugar.DShellAssertNode;
+import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.Utils;
 import dshell.internal.lib.Utils.AssertionError;
 import libbun.ast.SyntaxSugarNode;
@@ -31,9 +32,9 @@ public class Generator4REC extends JavaByteCodeGenerator {
 	}
 
 	private void VisitAssertNode(DShellAssertNode node) {
-		this.asmBuilder.setLineNumber(node);
+		this.methodBuilder.setLineNumber(node);
 		node.AST[DShellAssertNode._Expr].Accept(this);
-		this.asmBuilder.pushConst("");
+		this.methodBuilder.pushConst("");
 		this.invokeStaticMethod(node, this.assertREC);
 	}
 

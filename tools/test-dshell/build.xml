@@ -25,7 +25,7 @@
 		<jar jarfile="${test_dshell_jar}">
 			<fileset dir="${test_dshell_build_dir}" includes="**/*.class" />
 			<manifest>
-				<attribute name="Main-Class" value="dshell.internal.main.DShellTest" />
+				<attribute name="Main-Class" value="testable.DShellTest" />
 			</manifest>
 			<zipfileset src="${dshell_jar}" />
 		</jar>

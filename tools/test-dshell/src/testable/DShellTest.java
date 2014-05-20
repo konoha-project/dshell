@@ -1,14 +1,18 @@
-package dshell.internal.main;
+package testable;
 
+import java.util.ArrayList;
+
+import libbun.ast.BNode;
 import libbun.util.LibBunSystem;
 import dshell.internal.console.AbstractConsole;
-import dshell.internal.jvm.Generator4Test;
-import dshell.internal.lang.DShellTypeChecker;
+import dshell.internal.exe.EngineFactory;
+import dshell.internal.exe.ExecutionEngine;
+import dshell.internal.grammar.DShellGrammar;
+import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.main.DShell;
 
 public class DShellTest extends DShell {
-
 	public DShellTest(String[] args) {
 		super(args);
 	}
@@ -40,19 +44,8 @@ public class DShellTest extends DShell {
 	@Override
 	public void execute() {
 		RuntimeContext.getContext();
-		GeneratorFactory gFactory = new GeneratorFactory(Generator4Test.class, DShellTypeChecker.class);
-		switch(this.mode) {
-		case receiverMode:
-			System.err.println("unsupported execution mode");
-			System.exit(1);
-		case interactiveMode:
-			this.runInteractiveMode(gFactory, new DummyConsole(this.scriptArgs[0]));	// never return
-		case scriptingMode:
-			this.runScriptingMode(gFactory);	// never return
-		case inputEvalMode:
-			System.err.println("unsupported execution mode");
-			System.exit(1);
-		}
+		ExecutionEngine engine = new TestableEngineFactory().getEngine();
+		this.execute(engine, new DummyConsole(this.scriptArgs[0]));
 	}
 
 	@Override
@@ -61,6 +54,43 @@ public class DShellTest extends DShell {
 
 	public static void main(String[] args) {
 		new DShellTest(args).execute();
+	}
+}
+
+class TestableEngine extends ExecutionEngine {
+	TestableEngine(JavaByteCodeGenerator generator) {
+		super(generator);
+	}
+
+	@Override
+	public void eval(String sourceName, String source, int lineNum) {
+		this.loadGlobalVariable(true);
+		// parse script
+		ArrayList<BNode> nodeList = this.parseScript(source, sourceName, lineNum);
+		if(nodeList == null) {
+			return;
+		}
+		for(BNode node : nodeList) {
+			if(!this.generateStatement(node, true) || !this.invokeStatement()) {
+				this.generator.Logger.OutputErrorsToStdErr();
+				System.exit(1);
+			}
+		}
+	}
+}
+
+class TestableEngineFactory extends EngineFactory {
+	@Override
+	public ExecutionEngine getEngine() {
+		if(this.called) {
+			throw new RuntimeException("already called");
+		}
+		this.called = true;
+		JavaByteCodeGenerator generator = this.newGenerator();
+		DShellGrammar.ImportGrammar(generator.RootGamma);
+		generator.SetTypeChecker(newTypeChecker(generator));
+		generator.RequireLibrary("common", null);
+		return new TestableEngine(generator);
 	}
 }
 

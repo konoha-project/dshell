@@ -1,4 +1,4 @@
-package dshell.internal.rec;
+package rec;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,10 +20,12 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-import dshell.internal.jvm.Generator4REC;
+
+import dshell.internal.exe.EngineFactory;
+import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.Utils;
-import dshell.internal.main.DShell.GeneratorFactory;
+import dshell.internal.main.DShell;
 
 /**
 params: {
@@ -38,7 +40,7 @@ params: {
 } 
 **/
 
-public class RECWriter {
+public class RECWriter extends DShell {
 	// data definition
 	public final static int asseetError    = 0;
 	public final static int assertSuccess  = 1;
@@ -48,13 +50,17 @@ public class RECWriter {
 
 	private boolean isWriterMode = true;
 	private String recURL;
-	private String[] scriptArgs;
 
 	public static void main(String[] args) {
 		new RECWriter(args).execute();
 	}
 
 	public RECWriter(String[] args) {
+		super(args);
+	}
+
+	@Override
+	protected void parseArguments(String[] args) {
 		for(int i = 0; i < args.length; i++) {
 			String option = args[i];
 			if(option.startsWith("--")) {
@@ -80,20 +86,14 @@ public class RECWriter {
 		System.exit(1);
 	}
 
+	@Override
 	public void execute() {
 		if(this.isWriterMode) {
 			this.invoke(this.recURL, this.scriptArgs);
 		}
 		else {
-			JavaByteCodeGenerator generator = new GeneratorFactory(Generator4REC.class, TypeChecker4REC.class).createGenerator();
-			String scriptName = this.scriptArgs[0];
-			generator.loadArg(this.scriptArgs);
-			boolean status = generator.loadFile(scriptName);
-			if(!status) {
-				System.err.println("abort loading: " + scriptName);
-				System.exit(1);
-			}
-			generator.invokeMain(); // never return
+			ExecutionEngine engine = new EngineFactory(Generator4REC.class, TypeChecker4REC.class).getEngine();
+			this.runScriptingMode(engine);
 		}
 	}
 

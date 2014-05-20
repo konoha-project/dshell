@@ -13,4 +13,8 @@ public class JavaStaticFieldNode extends LocalDefinedNode {
 		this.Type = FieldType;
 		this.FieldName = FieldName;
 	}
+
+	public Class<?> getStaticClass() {
+		return this.StaticClass;
+	}
 }

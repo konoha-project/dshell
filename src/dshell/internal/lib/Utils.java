@@ -2,9 +2,12 @@ package dshell.internal.lib;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import dshell.internal.exception.NativeException;
 
 public class Utils {
 	public final static String getCommandFromPath(String cmd) {
@@ -190,5 +193,9 @@ public class Utils {
 
 	public static String getUserName() {
 		return getEnv("USER");
+	}
+
+	public static void printException(InvocationTargetException e) {
+		NativeException.wrapException(e.getCause()).printStackTrace();
 	}
 }

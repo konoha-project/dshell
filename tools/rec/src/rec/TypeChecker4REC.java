@@ -1,4 +1,4 @@
-package dshell.internal.rec;
+package rec;
 
 import libbun.ast.SyntaxSugarNode;
 import libbun.type.BType;

@@ -4,19 +4,16 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.TreeSet;
 
 import dshell.internal.console.AbstractConsole;
 import dshell.internal.console.DShellConsole;
-import dshell.internal.grammar.DShellGrammar;
-import dshell.internal.jvm.JavaByteCodeGenerator;
-import dshell.internal.lang.DShellTypeChecker;
+import dshell.internal.exe.EngineFactory;
+import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestReceiver;
-import libbun.parser.classic.LibBunTypeChecker;
 import libbun.util.LibBunSystem;
 import static dshell.internal.lib.RuntimeContext.AppenderType;
 
@@ -40,7 +37,7 @@ public class DShell {
 
 	protected ExecutionMode mode;
 	protected boolean autoImportCommand = true;
-	private final boolean enableTerminal;
+	private final boolean enablePseudoTerminal;
 	private String specificArg = null;
 	protected String[] scriptArgs;
 
@@ -48,8 +45,8 @@ public class DShell {
 		this(args, false);
 	}
 
-	public DShell(String[] args, boolean enableTerminal) {
-		this.enableTerminal = enableTerminal;
+	public DShell(String[] args, boolean enablePseudoTerminal) {
+		this.enablePseudoTerminal = enablePseudoTerminal;
 		this.parseArguments(args);
 	}
 
@@ -124,7 +121,7 @@ public class DShell {
 		if(foundScript) {
 			this.mode = ExecutionMode.scriptingMode;
 		}
-		else if(!this.enableTerminal && System.console() == null) {
+		else if(!this.enablePseudoTerminal && System.console() == null) {
 			this.mode = ExecutionMode.inputEvalMode;
 		}
 		else {
@@ -141,26 +138,27 @@ public class DShell {
 	}
 
 	public void execute() {
-		// init context
 		RuntimeContext.getContext();
-		GeneratorFactory gFactory = new GeneratorFactory();
+		ExecutionEngine engine = new EngineFactory().getEngine();
+		this.execute(engine, new DShellConsole());
+	}
+
+	protected void execute(ExecutionEngine engine, AbstractConsole console) {
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return
 		case interactiveMode:
-			this.runInteractiveMode(gFactory, new DShellConsole());	// never return
+			this.runInteractiveMode(engine, console);	// never return
 		case scriptingMode:
-			this.runScriptingMode(gFactory);	// never return
+			this.runScriptingMode(engine);	// never return
 		case inputEvalMode:
-			this.runInputEvalMode(gFactory);	// never return
+			this.runInputEvalMode(engine);	// never return
 		}
 	}
 
-	protected void runInteractiveMode(GeneratorFactory gFactory, AbstractConsole console) {
-		JavaByteCodeGenerator generator = gFactory.createGenerator();
+	protected void runInteractiveMode(ExecutionEngine engine, AbstractConsole console) {
 		String line = null;
 		this.showVersionInfo();
-		generator.loadVariables(true);
 		if(this.autoImportCommand) {
 			StringBuilder importBuilder = new StringBuilder();
 			importBuilder.append("import command ");
@@ -172,48 +170,32 @@ public class DShell {
 				}
 				importBuilder.append(commandSet.pollFirst());
 			}
-			generator.loadLine(importBuilder.toString(), 0, false);
+			engine.eval(importBuilder.toString(), 0);
 		}
-		generator.loadDShellrc();
-		generator.Logger.OutputErrorsToStdErr();
+		engine.loadDShellRC();
 		while((line = console.readLine()) != null) {
 			if(line.equals("")) {
 				continue;
 			}
-			if(generator.loadLine(line, console.getLineNumber(), true)) {
-				generator.evalAndPrint();
-			}
+			engine.eval(line, console.getLineNumber());
 			console.incrementLineNum(line);
 		}
 		System.out.println("");
 		System.exit(0);
 	}
 
-	protected void runScriptingMode(GeneratorFactory gFactory) {
-		JavaByteCodeGenerator generator = gFactory.createGenerator();
-		String scriptName = this.scriptArgs[0];
-		generator.loadArg(this.scriptArgs);
-		generator.loadVariables(false);
-		boolean status = generator.loadFile(scriptName);
-		if(!status) {
-			System.err.println("abort loading: " + scriptName);
-			System.exit(1);
-		}
-		generator.invokeMain(); // never return
+	protected void runScriptingMode(ExecutionEngine engine) {
+		engine.setArg(this.scriptArgs);
+		engine.eval(this.scriptArgs[0]);
 	}
 
-	protected void runInputEvalMode(GeneratorFactory gFactory) {
-		JavaByteCodeGenerator generator = gFactory.createGenerator();
-		String source = this.specificArg;
-		if(this.specificArg == null) {
-			source = readFromIntput();
+	protected void runInputEvalMode(ExecutionEngine engine) {
+		if(this.specificArg != null) {
+			engine.eval("(command line)", this.specificArg);
 		}
-		boolean status = generator.loadLine(source, 1, false);
-		if(!status) {
-			System.err.println("abort loading input source");
-			System.exit(1);
+		else {
+			engine.eval("(stdin)", this.readFromIntput());
 		}
-		generator.invokeMain(); // never return
 	}
 
 	protected String readFromIntput() {
@@ -258,51 +240,5 @@ public class DShell {
 
 	public static void main(String[] args) {
 		new DShell(args).execute();
-	}
-
-	public static class GeneratorFactory {
-		private final Class<?> generatorClass;
-		private final Class<?> typeCheckerClass;
-
-		public GeneratorFactory() {
-			this(JavaByteCodeGenerator.class, DShellTypeChecker.class);
-		}
-
-		public GeneratorFactory(Class<?> generatorClass, Class<?> typeCheckerClass) {
-			this.generatorClass = generatorClass;
-			this.typeCheckerClass = typeCheckerClass;
-		}
-
-		public JavaByteCodeGenerator createGenerator() {
-			JavaByteCodeGenerator generator = this.newGenerator();
-			DShellGrammar.ImportGrammar(generator.RootGamma);
-			generator.SetTypeChecker(newTypeChecker(generator));
-			generator.RequireLibrary("common", null);
-			return generator;
-		}
-
-		protected JavaByteCodeGenerator newGenerator() {
-			try {
-				return (JavaByteCodeGenerator) this.generatorClass.newInstance();
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-				Utils.fatal(1, "cannot loading generator: " + generatorClass.getSimpleName());
-			}
-			return null;
-		}
-
-		protected LibBunTypeChecker newTypeChecker(JavaByteCodeGenerator generator) {
-			try {
-				Constructor<?> constructor = this.typeCheckerClass.getConstructor(JavaByteCodeGenerator.class);
-				DShellTypeChecker typeChecker = (DShellTypeChecker) constructor.newInstance(new Object[] {generator});
-				return typeChecker;
-			}
-			catch(Exception e) {
-				e.printStackTrace();
-				Utils.fatal(1, "cannot loading typechecker: " + typeCheckerClass.getSimpleName());
-			}
-			return null;
-		}
 	}
 }

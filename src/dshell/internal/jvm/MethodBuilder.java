@@ -1,19 +1,5 @@
 package dshell.internal.jvm;
 
-import static org.objectweb.asm.Opcodes.AASTORE;
-import static org.objectweb.asm.Opcodes.ANEWARRAY;
-import static org.objectweb.asm.Opcodes.BASTORE;
-import static org.objectweb.asm.Opcodes.CHECKCAST;
-import static org.objectweb.asm.Opcodes.DASTORE;
-import static org.objectweb.asm.Opcodes.DUP;
-import static org.objectweb.asm.Opcodes.ILOAD;
-import static org.objectweb.asm.Opcodes.INVOKESTATIC;
-import static org.objectweb.asm.Opcodes.INVOKEVIRTUAL;
-import static org.objectweb.asm.Opcodes.IRETURN;
-import static org.objectweb.asm.Opcodes.ISTORE;
-import static org.objectweb.asm.Opcodes.LASTORE;
-import static org.objectweb.asm.Opcodes.RETURN;
-
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Stack;
@@ -28,29 +14,29 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.MethodNode;
 
-
-class MethodBuilder extends MethodNode {
+public class MethodBuilder extends MethodNode {
 	final MethodBuilder        parent;
 	final JavaByteCodeGenerator        generator;
 	ArrayList<JavaLocalStack>     localVals  = new ArrayList<JavaLocalStack>();
 	int UsedStack = 0;
 	Stack<Label>                  breakLabelStack = new Stack<Label>();
 	Stack<Label>                  continueLabelStack = new Stack<Label>();
+	Stack<TryCatchLabel> tryCatchLabelStack = new Stack<TryCatchLabel>();
 	int PreviousLine = 0;
 
 	public MethodBuilder(int acc, String name, String desc, JavaByteCodeGenerator generator) {
 		super(acc, name, desc, null, null);
 		this.generator = generator;
-		this.parent = generator.asmBuilder;
-		generator.asmBuilder = this;
+		this.parent = generator.methodBuilder;
+		generator.methodBuilder = this;
 	}
 
 	public void finish() {
-		assert(this.generator.asmBuilder == this);
-		this.generator.asmBuilder = this.parent;
+		assert(this.generator.methodBuilder == this);
+		this.generator.methodBuilder = this.parent;
 	}
 
-	void setLineNumber(int line) {
+	private void setLineNumber(int line) {
 		if(line != 0 && line != this.PreviousLine) {
 			Label LineLabel = new Label();
 			this.visitLabel(LineLabel);
@@ -59,13 +45,13 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	void setLineNumber(BNode node) {
+	public void setLineNumber(BNode node) {
 		if(node != null && node.SourceToken != null) {
 			this.setLineNumber(node.SourceToken.GetLineNumber());
 		}
 	}
 
-	void pushBoolean(boolean b) {
+	public void pushBoolean(boolean b) {
 		if(b) {
 			this.visitInsn(Opcodes.ICONST_1);
 		}
@@ -74,7 +60,7 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	void pushInt(int n) {
+	public void pushInt(int n) {
 		switch(n) {
 		case -1: this.visitInsn(Opcodes.ICONST_M1); return;
 		case 0: this.visitInsn(Opcodes.ICONST_0); return;
@@ -96,7 +82,7 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	void pushLong(long n) {
+	public void pushLong(long n) {
 		if(n == 0) {
 			this.visitInsn(Opcodes.LCONST_0);
 		}
@@ -112,7 +98,7 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	void pushDouble(double n) {
+	public void pushDouble(double n) {
 		if(n == 0.0) {
 			this.visitInsn(Opcodes.DCONST_0);
 		}
@@ -125,7 +111,7 @@ class MethodBuilder extends MethodNode {
 	}
 
 
-	void pushConst(Object value) {
+	public void pushConst(Object value) {
 		if(value instanceof Boolean) {
 			this.pushBoolean((Boolean)value);
 		}
@@ -140,7 +126,7 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	void Pop(BType T) {
+	public void Pop(BType T) {
 		if(T.IsFloatType() || T.IsIntType()) {
 			this.visitInsn(Opcodes.POP2);
 		}
@@ -149,7 +135,7 @@ class MethodBuilder extends MethodNode {
 		}
 	}
 
-	JavaLocalStack addLocal(Class<?> jClass, String name) {
+	public JavaLocalStack addLocal(Class<?> jClass, String name) {
 		Type asmType =  Type.getType(jClass);
 		JavaLocalStack local = new JavaLocalStack(this.UsedStack, jClass, asmType, name);
 		this.UsedStack = this.UsedStack + asmType.getSize();
@@ -185,13 +171,13 @@ class MethodBuilder extends MethodNode {
 	void loadLocal(String name) {
 		JavaLocalStack local = this.findLocalVariable(name);
 		Type type = local.AsmType;
-		this.visitVarInsn(type.getOpcode(ILOAD), local.Index);
+		this.visitVarInsn(type.getOpcode(Opcodes.ILOAD), local.Index);
 	}
 
 	void storeLocal(String name) {
 		JavaLocalStack local = this.findLocalVariable(name);
 		Type type = local.AsmType;
-		this.visitVarInsn(type.getOpcode(ISTORE), local.Index);
+		this.visitVarInsn(type.getOpcode(Opcodes.ISTORE), local.Index);
 	}
 
 	void checkCast(Class<?> targetClass, Class<?> sourceClass) {
@@ -202,13 +188,13 @@ class MethodBuilder extends MethodNode {
 		this.generator.debugPrint("C1="+targetClass.getSimpleName()+ ", C2="+sourceClass.getSimpleName()+", CastMethod="+sMethod);
 		if(sMethod != null) {
 			String owner = Type.getInternalName(sMethod.getDeclaringClass());
-			this.visitMethodInsn(INVOKESTATIC, owner, sMethod.getName(), Type.getMethodDescriptor(sMethod));
+			this.visitMethodInsn(Opcodes.INVOKESTATIC, owner, sMethod.getName(), Type.getMethodDescriptor(sMethod));
 			this.checkCast(targetClass, sMethod.getReturnType());
 		}
 		else if (!targetClass.isAssignableFrom(sourceClass)) {
 			// c1 instanceof C2  C2.
 			this.generator.debugPrint("CHECKCAST C1="+targetClass.getSimpleName()+ ", given C2="+sourceClass.getSimpleName());
-			this.visitTypeInsn(CHECKCAST, Type.getInternalName(targetClass));
+			this.visitTypeInsn(Opcodes.CHECKCAST, Type.getInternalName(targetClass));
 		}
 	}
 
@@ -238,7 +224,7 @@ class MethodBuilder extends MethodNode {
 	void applyStaticMethod(BNode node, Method sMethod) {
 		String owner = Type.getInternalName(sMethod.getDeclaringClass());
 		this.setLineNumber(node);
-		this.visitMethodInsn(INVOKESTATIC, owner, sMethod.getName(), Type.getMethodDescriptor(sMethod));
+		this.visitMethodInsn(Opcodes.INVOKESTATIC, owner, sMethod.getName(), Type.getMethodDescriptor(sMethod));
 		this.checkReturnCast(node, sMethod.getReturnType());
 	}
 
@@ -267,12 +253,12 @@ class MethodBuilder extends MethodNode {
 		this.setLineNumber(node);
 		Class<?> funcClass = this.generator.getDefinedFunctionClass(funcName, funcType);
 		if(funcClass != null) {
-			this.visitMethodInsn(INVOKESTATIC, funcClass, "f", funcType);
+			this.visitMethodInsn(Opcodes.INVOKESTATIC, funcClass, "f", funcType);
 		}
 		else {
 			// in some case, class has not been generated
 			this.generator.lazyBuild(funcType.StringfySignature(funcName));
-			this.visitMethodInsn(INVOKESTATIC, this.generator.NameFunctionClass(funcName, funcType), "f", funcType);
+			this.visitMethodInsn(Opcodes.INVOKESTATIC, this.generator.NameFunctionClass(funcName, funcType), "f", funcType);
 		}
 	}
 
@@ -282,30 +268,30 @@ class MethodBuilder extends MethodNode {
 			this.pushNode(null, listNode.GetListAt(i));
 		}
 		this.setLineNumber(node);
-		this.visitMethodInsn(INVOKEVIRTUAL, funcClass, "Invoke", funcType);
+		this.visitMethodInsn(Opcodes.INVOKEVIRTUAL, funcClass, "Invoke", funcType);
 	}
 
-	void oushNodeListAsArray(Class<?> T, int startIndex, AbstractListNode nodeList) {
+	void pushNodeListAsArray(Class<?> T, int startIndex, AbstractListNode nodeList) {
 		this.pushInt(nodeList.GetListSize() - startIndex);
 		int storeOpcode = -1;
 		if(T == boolean.class) {
 			this.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_BOOLEAN);
-			storeOpcode = BASTORE;
+			storeOpcode = Opcodes.BASTORE;
 		}
 		else if(T == long.class) {
 			this.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_LONG);
-			storeOpcode = LASTORE;
+			storeOpcode = Opcodes.LASTORE;
 		}
 		else if(T == double.class) {
 			this.visitIntInsn(Opcodes.NEWARRAY, Opcodes.T_DOUBLE);
-			storeOpcode = DASTORE;
+			storeOpcode = Opcodes.DASTORE;
 		}
 		else {
-			this.visitTypeInsn(ANEWARRAY, Type.getInternalName(T));
-			storeOpcode = AASTORE;
+			this.visitTypeInsn(Opcodes.ANEWARRAY, Type.getInternalName(T));
+			storeOpcode = Opcodes.AASTORE;
 		}
 		for(int i = startIndex; i < nodeList.GetListSize() ; i++) {
-			this.visitInsn(DUP);
+			this.visitInsn(Opcodes.DUP);
 			this.pushInt(i - startIndex);
 			this.pushNode(T, nodeList.GetListAt(i));
 			this.visitInsn(storeOpcode);
@@ -314,11 +300,11 @@ class MethodBuilder extends MethodNode {
 
 	public void visitReturn(BType returnType) {
 		if(returnType.IsVoidType()) {
-			this.visitInsn(RETURN);
+			this.visitInsn(Opcodes.RETURN);
 		}
 		else {
 			Type type = this.generator.javaTypeUtils.asmType(returnType);
-			this.visitInsn(type.getOpcode(IRETURN));
+			this.visitInsn(type.getOpcode(Opcodes.IRETURN));
 		}
 	}
 
@@ -336,5 +322,30 @@ class MethodBuilder extends MethodNode {
 
 	public void visitTypeInsn(int opcode, Class<?> C) {
 		this.visitTypeInsn(opcode, Type.getInternalName(C));
+	}
+}
+
+final class JavaLocalStack {
+	public final String   Name;
+	public final Class<?> JavaType;
+	public final Type     AsmType;
+	public final int      Index;
+	public JavaLocalStack(int Index, Class<?> JavaType, Type TypeInfo, String Name) {
+		this.Index    = Index;
+		//System.out.println("** debug add local " + Name + ", " + JavaType);
+		this.JavaType = JavaType;
+		this.AsmType  = TypeInfo;
+		this.Name     = Name;
+	}
+}
+
+class TryCatchLabel {
+	public Label BeginTryLabel;
+	public Label EndTryLabel;
+	public Label FinallyLabel;
+	public TryCatchLabel() {
+		this.BeginTryLabel = new Label();
+		this.EndTryLabel = new Label();
+		this.FinallyLabel = new Label();
 	}
 }
