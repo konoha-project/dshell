@@ -236,7 +236,7 @@ public class ExecutionEngine {
 		}
 		return false;
 	}
-	
+
 	protected boolean generateStatement(BNode node, boolean isInteractive) {
 		if(node instanceof EmptyNode) {
 			return true;

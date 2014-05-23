@@ -69,4 +69,4 @@ try {
 // IOStream
 assert(stdin instanceof InputStream)
 assert(stdout instanceof OutputStream)
-assert(stdout instanceof OutputStream)
+assert(stderr instanceof OutputStream)

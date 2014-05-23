@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import static dshell.internal.lib.TaskOption.Behavior.background;
 import dshell.internal.lib.CommandArg;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.Task;
 import dshell.internal.lib.TaskBuilder;
 import dshell.internal.lib.TaskOption;
 import dshell.internal.lib.Utils;
+import dshell.lang.Task;
 
 public class RequestReceiver {
 	public static void invoke(String requestString) {

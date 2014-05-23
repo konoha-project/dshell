@@ -130,18 +130,18 @@ import dshell.internal.ast.DShellTryNode;
 import dshell.internal.ast.DShellWrapperNode;
 import dshell.internal.ast.InternalFuncCallNode;
 import dshell.internal.ast.MatchRegexNode;
-import dshell.internal.exception.DShellException;
-import dshell.internal.exception.Errno;
-import dshell.internal.exception.MultipleException;
-import dshell.internal.exception.NativeException;
 import dshell.internal.lang.DShellVisitor;
 import dshell.internal.lib.CommandArg;
 import dshell.internal.lib.GlobalVariableTable;
 import dshell.internal.lib.StreamUtils;
-import dshell.internal.lib.Task;
 import dshell.internal.lib.TaskBuilder;
 import dshell.internal.lib.Utils;
 import dshell.internal.lib.CommandArg.SubstitutedArg;
+import dshell.lang.DShellException;
+import dshell.lang.Errno;
+import dshell.lang.MultipleException;
+import dshell.lang.NativeException;
+import dshell.lang.Task;
 
 public class JavaByteCodeGenerator extends LibBunGenerator implements DShellVisitor {
 	protected final JavaTypeTable typeTable;
@@ -176,7 +176,7 @@ public class JavaByteCodeGenerator extends LibBunGenerator implements DShellVisi
 
 		//
 		this.loadJavaClass(Task.class);
-		this.loadJavaClass(dshell.internal.exception.Exception.class);
+		this.loadJavaClass(dshell.lang.Exception.class);
 		this.loadJavaClass(DShellException.class);
 		this.loadJavaClass(MultipleException.class);
 		this.loadJavaClass(Errno.UnimplementedErrnoException.class);
@@ -1583,5 +1583,3 @@ public class JavaByteCodeGenerator extends LibBunGenerator implements DShellVisi
 		private static final long serialVersionUID = -2465006344250569543L;
 	}
 }
-
-

@@ -7,7 +7,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import dshell.internal.exception.NativeException;
+import dshell.lang.NativeException;
 
 public class Utils {
 	public final static String getCommandFromPath(String cmd) {
@@ -163,7 +163,7 @@ public class Utils {
 		}
 	}
 
-	public static class AssertionError extends dshell.internal.exception.Exception {
+	public static class AssertionError extends dshell.lang.Exception {
 		private static final long serialVersionUID = 1160350956527375486L;
 		public AssertionError(String message) {
 			super(message);

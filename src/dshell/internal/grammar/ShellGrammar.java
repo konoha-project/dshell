@@ -234,7 +234,7 @@ class CommandPatternFunc extends BMatchFunction {
 				continue;
 			}
 			// Match Suffix Option
-			BNode suffixOptionNode = tokenContext.ParsePattern(parentNode, SuffixOptionPatternFunc._PatternName, BTokenContext._Optional);
+			BNode suffixOptionNode = tokenContext.ParsePattern(parentNode, SuffixOptionPatternFunc.patternName, BTokenContext._Optional);
 			if(suffixOptionNode != null) {
 				if(suffixOptionNode.IsErrorNode()) {
 					return suffixOptionNode;
@@ -488,7 +488,7 @@ class PrefixOptionPatternFunc extends BMatchFunction {
 }
 
 class SuffixOptionPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$SuffixOption$";
+	public final static String patternName = "$SuffixOption$";
 
 	@Override
 	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
@@ -553,6 +553,24 @@ class DShellBlockPatternFunc extends BMatchFunction {
 		}
 		RuntimeContext.getContext().commandScope.removeCurrentScope();
 		return blockNode;
+	}
+}
+
+class RemoteCommandPatternFunc extends BMatchFunction {
+	public final static String patternName = "$RemoteCommand$";
+
+	@Override
+	public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
+		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);
+		if(!token.EqualsText("@") || token.IsNextWhiteSpace()) {
+			return null;
+		}
+		token = tokenContext.GetToken(BTokenContext._MoveNext);
+		if(!token.IsNameSymbol()) {
+			return null;
+		}
+		
+		return null;
 	}
 }
 
@@ -664,7 +682,7 @@ public class ShellGrammar {
 		gamma.DefineExpression(CommandArgPatternFunc.patternName, new CommandArgPatternFunc());
 		gamma.DefineExpression(RedirectPatternFunc.patternName, new RedirectPatternFunc());
 		gamma.DefineExpression(PrefixOptionPatternFunc.patternName, prefixOptionPattern);
-		gamma.DefineExpression(SuffixOptionPatternFunc._PatternName, new SuffixOptionPatternFunc());
+		gamma.DefineExpression(SuffixOptionPatternFunc.patternName, new SuffixOptionPatternFunc());
 
 		gamma.DefineStatement(ImportEnvPatternFunc.patternName, new ImportEnvPatternFunc());
 		gamma.DefineStatement(ExportEnvPatternFunc.patternName, new ExportEnvPatternFunc());

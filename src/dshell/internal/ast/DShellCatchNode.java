@@ -1,9 +1,9 @@
 package dshell.internal.ast;
 
-import dshell.internal.exception.Exception;
 import dshell.internal.jvm.JavaTypeTable;
 import dshell.internal.lang.DShellVisitor;
 import dshell.internal.lib.Utils;
+import dshell.lang.Exception;
 import libbun.ast.BunBlockNode;
 import libbun.ast.decl.BunLetVarNode;
 import libbun.ast.literal.BunTypeNode;

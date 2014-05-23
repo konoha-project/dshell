@@ -9,9 +9,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
-import dshell.internal.exception.DShellException;
-import dshell.internal.exception.Errno;
-import dshell.internal.exception.MultipleException;
+import dshell.lang.DShellException;
+import dshell.lang.Errno;
+import dshell.lang.MultipleException;
 
 public class ShellExceptionBuilder {
 	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {

@@ -5,6 +5,7 @@ import libbun.util.BArray;
 import dshell.internal.grammar.DShellGrammar;
 import dshell.internal.grammar.ShellGrammar;
 import dshell.internal.remote.RequestSender;
+import dshell.lang.Task;
 import static dshell.internal.lib.TaskOption.Behavior.background;
 import static dshell.internal.lib.TaskOption.Behavior.printable;
 import static dshell.internal.lib.TaskOption.Behavior.returnable;

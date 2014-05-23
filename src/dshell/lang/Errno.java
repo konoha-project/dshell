@@ -1,4 +1,4 @@
-package dshell.internal.exception;
+package dshell.lang;
 
 import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;

@@ -1,6 +1,5 @@
-package dshell.internal.lib;
+package dshell.lang;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -8,7 +7,13 @@ import java.util.ArrayList;
 
 import libbun.util.BArray;
 
-import dshell.internal.exception.DShellException;
+import dshell.internal.lib.PipeStreamHandler.MessageStreamHandlerOp;
+import dshell.internal.lib.PipeStreamHandler.MessageStreamHandler;
+import dshell.internal.lib.PipeStreamHandler.EmptyMessageStreamHandler;
+import dshell.internal.lib.PseudoProcess;
+import dshell.internal.lib.ShellExceptionBuilder;
+import dshell.internal.lib.TaskOption;
+import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestSender;
 
 import static dshell.internal.lib.TaskOption.Behavior.background;
@@ -147,10 +152,6 @@ public class Task implements Serializable {
 		}
 	}
 
-	public void join(long timeout) {
-		
-	}
-
 	public String getOutMessage() {
 		this.join();
 		return this.stdoutMessage;
@@ -229,81 +230,5 @@ public class Task implements Serializable {
 			values[i] = task.taskList.get(i);
 		}
 		return new BArray<Task>(0, values);
-	}
-}
-
-interface MessageStreamHandlerOp {
-	public void startHandler();
-	public String waitTermination();
-	public ByteArrayOutputStream[] getEachBuffers();
-}
-
-class MessageStreamHandler implements MessageStreamHandlerOp {
-	private InputStream[] srcStreams;
-	private OutputStream consoleStream;
-	private ByteArrayOutputStream messageBuffer;
-	private ByteArrayOutputStream[] eachBuffers;
-	private PipeStreamHandler[] streamHandlers;
-
-	public MessageStreamHandler(InputStream[] srcStreams, OutputStream consoleStream) {
-		this.srcStreams = srcStreams;
-		this.messageBuffer = new ByteArrayOutputStream();
-		this.streamHandlers = new PipeStreamHandler[this.srcStreams.length];
-		this.consoleStream = consoleStream;
-		this.eachBuffers = new ByteArrayOutputStream[this.srcStreams.length];
-	}
-
-	@Override
-	public void startHandler() {
-		boolean[] closeOutputs = {false, false, false};
-		for(int i = 0; i < srcStreams.length; i++) {
-			this.eachBuffers[i] = new ByteArrayOutputStream();
-			OutputStream[] destStreams = new OutputStream[]{this.consoleStream, this.messageBuffer, this.eachBuffers[i]};
-			this.streamHandlers[i] = new PipeStreamHandler(this.srcStreams[i], destStreams, true, closeOutputs);
-			this.streamHandlers[i].start();
-		}
-	}
-
-	@Override
-	public String waitTermination() {
-		for(PipeStreamHandler streamHandler : this.streamHandlers) {
-			try {
-				streamHandler.join();
-			}
-			catch(InterruptedException e) {
-				e.printStackTrace();
-				Utils.fatal(1, "interrupt problem");
-			}
-		}
-		return Utils.removeNewLine(this.messageBuffer.toString());
-	}
-
-	@Override
-	public ByteArrayOutputStream[] getEachBuffers() {
-		return this.eachBuffers;
-	}
-}
-
-class EmptyMessageStreamHandler implements MessageStreamHandlerOp {
-	@Override
-	public void startHandler() { // do nothing
-	}
-
-	@Override
-	public String waitTermination() {
-		return "";
-	}
-
-	@Override
-	public ByteArrayOutputStream[] getEachBuffers() {
-		return new ByteArrayOutputStream[0];
-	}
-
-	public static MessageStreamHandlerOp getHandler() {
-		return Holder.HANDLER;
-	}
-
-	private static class Holder {
-		private final static MessageStreamHandlerOp HANDLER = new EmptyMessageStreamHandler();
 	}
 }

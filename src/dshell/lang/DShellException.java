@@ -1,4 +1,4 @@
-package dshell.internal.exception;
+package dshell.lang;
 
 public class DShellException extends Exception {
 	private static final long serialVersionUID = -9126373451448646241L;

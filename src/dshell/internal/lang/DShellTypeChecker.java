@@ -27,9 +27,9 @@ import dshell.internal.ast.DShellWrapperNode;
 import dshell.internal.ast.InternalFuncCallNode;
 import dshell.internal.ast.MatchRegexNode;
 import dshell.internal.ast.sugar.DShellForeachNode;
-import dshell.internal.exception.Exception;
 import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.CommandArg;
+import dshell.lang.Exception;
 
 public class DShellTypeChecker extends BunTypeSafer implements DShellVisitor {
 

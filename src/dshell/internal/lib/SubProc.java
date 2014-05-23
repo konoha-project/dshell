@@ -6,7 +6,7 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import dshell.internal.exception.NativeException;
+import dshell.lang.NativeException;
 
 public class SubProc extends PseudoProcess {
 	public final static int traceBackend_ltrace = 0;

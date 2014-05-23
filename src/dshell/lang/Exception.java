@@ -1,4 +1,4 @@
-package dshell.internal.exception;
+package dshell.lang;
 
 import java.util.LinkedList;
 

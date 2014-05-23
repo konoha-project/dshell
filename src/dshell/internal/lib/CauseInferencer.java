@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import dshell.internal.exception.Errno;
+import dshell.lang.Errno;
 
 public interface CauseInferencer {
 	public ArrayList<String> doInference(SubProc proc);

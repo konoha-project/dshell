@@ -67,7 +67,7 @@ public class DoubleQuoteStringLiteralPatternFunc extends BMatchFunction {
 		}
 		else {
 			BTokenContext localContext = tokenContext.SubContext(currentIndex, endIndex);
-			BNode node = localContext.ParsePattern(parentNode, SubstitutionPatternFunc._PatternName, BTokenContext._Required);
+			BNode node = localContext.ParsePattern(parentNode, SubstitutionPatternFunc.patternName, BTokenContext._Required);
 			if(!node.IsErrorNode()) {
 				nodeList.add(node);
 				return localContext.LatestToken.EndIndex;

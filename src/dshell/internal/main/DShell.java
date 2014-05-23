@@ -140,15 +140,11 @@ public class DShell {
 	public void execute() {
 		RuntimeContext.getContext();
 		ExecutionEngine engine = new EngineFactory().getEngine();
-		this.execute(engine, new DShellConsole());
-	}
-
-	protected void execute(ExecutionEngine engine, AbstractConsole console) {
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return
 		case interactiveMode:
-			this.runInteractiveMode(engine, console);	// never return
+			this.runInteractiveMode(engine, new DShellConsole());	// never return
 		case scriptingMode:
 			this.runScriptingMode(engine);	// never return
 		case inputEvalMode:

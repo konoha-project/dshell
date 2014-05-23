@@ -9,7 +9,7 @@ import libbun.parser.classic.BToken;
 import libbun.parser.classic.BTokenContext;
 
 public class SubstitutionPatternFunc extends BMatchFunction {
-	public final static String _PatternName = "$Substitution$";
+	public final static String patternName = "$Substitution$";
 
 	@Override public BNode Invoke(BNode parentNode, BTokenContext tokenContext, BNode leftNode) {
 		BToken token = tokenContext.GetToken(BTokenContext._MoveNext);

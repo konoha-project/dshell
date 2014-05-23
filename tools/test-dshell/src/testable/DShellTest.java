@@ -11,6 +11,7 @@ import dshell.internal.grammar.DShellGrammar;
 import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.main.DShell;
+import dshell.internal.remote.RequestReceiver;
 
 public class DShellTest extends DShell {
 	public DShellTest(String[] args) {
@@ -45,7 +46,16 @@ public class DShellTest extends DShell {
 	public void execute() {
 		RuntimeContext.getContext();
 		ExecutionEngine engine = new TestableEngineFactory().getEngine();
-		this.execute(engine, new DummyConsole(this.scriptArgs[0]));
+		switch(this.mode) {
+		case receiverMode:
+			RequestReceiver.invoke(null);	// never return
+		case interactiveMode:
+			this.runInteractiveMode(engine, new DummyConsole(this.scriptArgs[0]));	// never return
+		case scriptingMode:
+			this.runScriptingMode(engine);	// never return
+		case inputEvalMode:
+			this.runInputEvalMode(null);	// never return
+		}
 	}
 
 	@Override
