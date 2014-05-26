@@ -1,5 +1,10 @@
 package dshell.lang;
 
+/**
+ * If command invocation problem, throw this exception class instance
+ * @author skgchxngsxyz-osx
+ *
+ */
 public class DShellException extends Exception {
 	private static final long serialVersionUID = -9126373451448646241L;
 	private String commandName;

@@ -2,7 +2,12 @@ package dshell.lang;
 
 import java.util.LinkedList;
 
-public class Exception extends RuntimeException {	// DShell Basis Exception Class
+/**
+ * D-shell basis exception class
+ * @author skgchxngsxyz-osx
+ *
+ */
+public class Exception extends RuntimeException {
 	private static final long serialVersionUID = -8494693504521057747L;
 
 	public Exception() {
