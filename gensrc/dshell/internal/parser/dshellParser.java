@@ -102,11 +102,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_toplevel; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitToplevel(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ToplevelContext toplevel() throws RecognitionException {
@@ -153,11 +148,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_toplevelStatements; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitToplevelStatements(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ToplevelStatementsContext toplevelStatements() throws RecognitionException {
@@ -209,11 +199,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_toplevelStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitToplevelStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ToplevelStatementContext toplevelStatement() throws RecognitionException {
@@ -294,11 +279,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_functionDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitFunctionDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final FunctionDeclarationContext functionDeclaration() throws RecognitionException {
@@ -345,11 +325,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_argumentsDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitArgumentsDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ArgumentsDeclarationContext argumentsDeclaration() throws RecognitionException {
@@ -396,11 +371,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_variableDeclarationWithType; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitVariableDeclarationWithType(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final VariableDeclarationWithTypeContext variableDeclarationWithType() throws RecognitionException {
@@ -442,11 +412,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_typeName; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitTypeName(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final TypeNameContext typeName() throws RecognitionException {
@@ -579,11 +544,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_block; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitBlock(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final BlockContext block() throws RecognitionException {
@@ -639,11 +599,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_blockStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitBlockStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final BlockStatementContext blockStatement() throws RecognitionException {
@@ -682,11 +637,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitClassDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ClassDeclarationContext classDeclaration() throws RecognitionException {
@@ -736,11 +686,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classBlock; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitClassBlock(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ClassBlockContext classBlock() throws RecognitionException {
@@ -793,11 +738,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_classElement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitClassElement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ClassElementContext classElement() throws RecognitionException {
@@ -848,11 +788,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_fieldDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitFieldDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final FieldDeclarationContext fieldDeclaration() throws RecognitionException {
@@ -887,11 +822,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_constructorDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitConstructorDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ConstructorDeclarationContext constructorDeclaration() throws RecognitionException {
@@ -996,11 +926,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_statement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final StatementContext statement() throws RecognitionException {
@@ -1161,11 +1086,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assertStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitAssertStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final AssertStatementContext assertStatement() throws RecognitionException {
@@ -1200,11 +1120,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_breakStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitBreakStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final BreakStatementContext breakStatement() throws RecognitionException {
@@ -1236,11 +1151,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_continueStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitContinueStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ContinueStatementContext continueStatement() throws RecognitionException {
@@ -1277,11 +1187,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_exportEnvStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitExportEnvStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ExportEnvStatementContext exportEnvStatement() throws RecognitionException {
@@ -1333,11 +1238,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitForStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ForStatementContext forStatement() throws RecognitionException {
@@ -1387,11 +1287,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forInit; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitForInit(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ForInitContext forInit() throws RecognitionException {
@@ -1453,11 +1348,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forCond; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitForCond(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ForCondContext forCond() throws RecognitionException {
@@ -1521,11 +1411,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_forIter; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitForIter(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ForIterContext forIter() throws RecognitionException {
@@ -1587,11 +1472,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_foreachStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitForeachStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ForeachStatementContext foreachStatement() throws RecognitionException {
@@ -1643,11 +1523,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_ifStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitIfStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final IfStatementContext ifStatement() throws RecognitionException {
@@ -1702,11 +1577,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_importEnvStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitImportEnvStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ImportEnvStatementContext importEnvStatement() throws RecognitionException {
@@ -1740,11 +1610,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_importCommandStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitImportCommandStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ImportCommandStatementContext importCommandStatement() throws RecognitionException {
@@ -1783,11 +1648,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_returnStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitReturnStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ReturnStatementContext returnStatement() throws RecognitionException {
@@ -1839,11 +1699,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_throwStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitThrowStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ThrowStatementContext throwStatement() throws RecognitionException {
@@ -1884,11 +1739,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_whileStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitWhileStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final WhileStatementContext whileStatement() throws RecognitionException {
@@ -1941,11 +1791,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_tryCatchStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitTryCatchStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final TryCatchStatementContext tryCatchStatement() throws RecognitionException {
@@ -2003,11 +1848,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_finallyBlock; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitFinallyBlock(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final FinallyBlockContext finallyBlock() throws RecognitionException {
@@ -2062,11 +1902,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_catchStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitCatchStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final CatchStatementContext catchStatement() throws RecognitionException {
@@ -2107,11 +1942,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_exceptDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitExceptDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ExceptDeclarationContext exceptDeclaration() throws RecognitionException {
@@ -2172,11 +2002,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_variableDeclaration; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitVariableDeclaration(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final VariableDeclarationContext variableDeclaration() throws RecognitionException {
@@ -2247,11 +2072,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_assignStatement; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitAssignStatement(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final AssignStatementContext assignStatement() throws RecognitionException {
@@ -2349,11 +2169,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_expression; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitExpression(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ExpressionContext expression() throws RecognitionException {
@@ -2678,11 +2493,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_symbol; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitSymbol(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final SymbolContext symbol() throws RecognitionException {
@@ -2730,11 +2540,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_literal; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitLiteral(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final LiteralContext literal() throws RecognitionException {
@@ -2822,11 +2627,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arrayLiteral; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitArrayLiteral(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ArrayLiteralContext arrayLiteral() throws RecognitionException {
@@ -2889,11 +2689,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapLiteral; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitMapLiteral(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final MapLiteralContext mapLiteral() throws RecognitionException {
@@ -2956,11 +2751,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_mapEntry; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitMapEntry(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final MapEntryContext mapEntry() throws RecognitionException {
@@ -3000,11 +2790,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_arguments; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitArguments(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ArgumentsContext arguments() throws RecognitionException {
@@ -3086,11 +2871,6 @@ public class dshellParser extends Parser {
 			super(parent, invokingState);
 		}
 		@Override public int getRuleIndex() { return RULE_argument; }
-		@Override
-		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-			if ( visitor instanceof dshellVisitor ) return ((dshellVisitor<? extends T>)visitor).visitArgument(this);
-			else return visitor.visitChildren(this);
-		}
 	}
 
 	public final ArgumentContext argument() throws RecognitionException {
