@@ -1,3 +1,4 @@
+// auto generated source file. do not edit me.
 package dshell.lang;
 
 import java.util.Arrays;
@@ -5,39 +6,36 @@ import java.util.Arrays;
 import dshell.lang.annotation.ArrayOp;
 import dshell.lang.annotation.ArrayOp.ArrayOpType;
 import dshell.lang.annotation.Exportable;
-import dshell.lang.annotation.GenericClass;
-import dshell.lang.annotation.TypeParameter;
 
 /**
- * Generic array for class Type value.
+ * Int array for class Type value.
  * Can use it as a stack.
  * @author skgchxngsxyz-osx
  *
  */
-@GenericClass
-public class GenericArray {
+public class IntArray {
 	private final static int defaultArraySize = 16;
 
 	/**
 	 * contains array elements.
 	 */
-	private Object[] values;
+	private long[] values;
 
 	/**
 	 * represents currently containing element size.
 	 */
 	private int size;
 
-	public GenericArray(Object[] values) {
+	public IntArray(long[] values) {
 		this.size = values.length;
-		this.values = new Object[this.size < defaultArraySize ? defaultArraySize : this.size];
+		this.values = new long[this.size < defaultArraySize ? defaultArraySize : this.size];
 		System.arraycopy(values, 0, this.values, 0, this.size);
 	}
 
 	/**
 	 * called from clone()
 	 */
-	private GenericArray() {
+	private IntArray() {
 	}
 
 	private void throwIfIndexOutOfRange(long index) {
@@ -69,34 +67,34 @@ public class GenericArray {
 
 	@Exportable
 	@ArrayOp(ArrayOpType.Getter)
-	@TypeParameter()
-	public Object get(long index) {
+	
+	public long get(long index) {
 		this.throwIfIndexOutOfRange(index);
 		return this.values[(int) index];
 	}
 
 	@Exportable
 	@ArrayOp(ArrayOpType.Setter)
-	public void set(long index, @TypeParameter() Object value) {
+	public void set(long index,  long value) {
 		this.throwIfIndexOutOfRange(index);
 		this.values[(int) index] = value;
 	}
 
 	@Exportable
-	public void add(@TypeParameter() Object value) {
+	public void add( long value) {
 		this.expandIfNoFreeSpace();
 		this.values[this.size++] = value;
 	}
 
 	@Exportable
-	public void insert(long index, @TypeParameter() Object value) {
+	public void insert(long index,  long value) {
 		if(index == this.size()) {
 			this.add(value);
 			return;
 		}
 		this.throwIfIndexOutOfRange(index);
 		this.expandIfNoFreeSpace();
-		Object[] newValues = new Object[this.values.length];
+		long[] newValues = new long[this.values.length];
 		final int i = (int) index;
 		System.arraycopy(this.values, 0, newValues, 0, i);
 		newValues[i] = value;
@@ -106,9 +104,9 @@ public class GenericArray {
 	}
 
 	@Exportable
-	@TypeParameter()
-	public Object remove(long index) {
-		Object value = this.get(index);
+	
+	public long remove(long index) {
+		long value = this.get(index);
 		int i = (int) index;
 		System.arraycopy(this.values, i + 1, this.values, i, this.size - 1);
 		this.size--;
@@ -116,23 +114,23 @@ public class GenericArray {
 	}
 
 	@Exportable
-	public void push(Object value) {
+	public void push(long value) {
 		this.add(value);
 	}
 
 	@Exportable
-	@TypeParameter()
-	public Object pop() {
+	
+	public long pop() {
 		return this.values[--this.size];
 	}
 
 	@Exportable
-	public GenericArray clone() {
+	public IntArray clone() {
 		if(this.isEmpty()) {
-			return new GenericArray(new Object[]{});
+			return new IntArray(new long[]{});
 		}
-		Object[] newValues = new Object[this.size];
-		GenericArray clonedArray = new GenericArray();
+		long[] newValues = new long[this.size];
+		IntArray clonedArray = new IntArray();
 		clonedArray.size = this.size;
 		System.arraycopy(this.values, 0, newValues, 0, this.size);
 		clonedArray.values = newValues;

@@ -17,7 +17,7 @@
 	<!-- ================================== -->
 	<target name="build" depends="pre-build">
 		<mkdir dir="${build_dir}" />
-		<javac srcdir="${dshell_source_dir}; ./gensrc" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
+		<javac srcdir="${dshell_source_dir}; ./gensrc; ./generated-array" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false">
 			<classpath path="${libbun_jar}" />
 			<classpath path="ext/jna-4.0.0.jar" />
 			<classpath path="ext/log4j-1.2.17.jar" />

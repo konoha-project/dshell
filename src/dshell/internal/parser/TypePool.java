@@ -2,9 +2,11 @@ package dshell.internal.parser;
 
 import java.util.HashMap;
 
+import dshell.lang.BooleanArray;
+import dshell.lang.FloatArray;
 import dshell.lang.GenericArray;
 import dshell.lang.GenericMap;
-import dshell.lang.PrimitiveArray;
+import dshell.lang.IntArray;
 import dshell.lang.proxy.BooleanProxy;
 import dshell.lang.proxy.FloatProxy;
 import dshell.lang.proxy.IntProxy;
@@ -291,11 +293,11 @@ public class TypePool {
 		private PrimitiveArrayType(PrimitiveType elementType) {
 			super(elementType);
 			if(elementType.equals(TypePool.getInstance().intType)) {
-				this.primitiveArrayClass = PrimitiveArray.IntArray.class;
+				this.primitiveArrayClass = IntArray.class;
 			} else if(elementType.equals(TypePool.getInstance().floatType)) {
-				this.primitiveArrayClass = PrimitiveArray.FloatArray.class;
+				this.primitiveArrayClass = FloatArray.class;
 			} else if(elementType.equals(TypePool.getInstance().booleanType)) {
-				this.primitiveArrayClass = PrimitiveArray.BooleanArray.class;
+				this.primitiveArrayClass = BooleanArray.class;
 			} else {
 				throw new RuntimeException(elementType.getNativeClass().getCanonicalName() + " is unsupported class");
 			}

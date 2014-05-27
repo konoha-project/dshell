@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="generated-array"/>
 	<classpathentry kind="src" path="gensrc"/>
 	<classpathentry kind="src" path="tools/test-dshell/src"/>
 	<classpathentry kind="src" path="tools/rec/src"/>
