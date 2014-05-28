@@ -974,7 +974,7 @@ public class Node {
 			 * in ClassNode initialization, set ClassType to TypePool.
 			 */
 			this.className = className;
-			TypePool.getInstance().createClassType(this.className, superType);
+			TypePool.getInstance().createAndSetClassType(this.className, superType);
 		}
 
 		public String getClassName() {

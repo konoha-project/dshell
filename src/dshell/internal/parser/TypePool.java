@@ -73,6 +73,9 @@ public class TypePool {
 	protected TypePool() {
 		this.typeMap = new HashMap<>();
 		this.class2TypeMap = new HashMap<>();
+		/**
+		 * add basic type.
+		 */
 		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", long.class));
 		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", double.class));
 		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", boolean.class));
@@ -82,6 +85,13 @@ public class TypePool {
 		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
 		this.baseArrayType = this.setTypeAndThrowIfDefined(new GenericBaseType("Array", GenericArray.class));
 		this.baseMapType   = this.setTypeAndThrowIfDefined(new GenericBaseType("Map", GenericMap.class));
+
+		/**
+		 * add primitive array type.
+		 */
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.intType));
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.floatType));
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.booleanType));
 	}
 
 	/**
@@ -101,20 +111,29 @@ public class TypePool {
 	 * @return
 	 */
 	private Type setTypeAndThrowIfDefined(Type type, boolean allowUnresolvedClass) {
+		/**
+		 * check type duplication.
+		 */
 		String typeName = type.getTypeName();
 		if(this.typeMap.containsKey(typeName)) {
 			throw new RuntimeException(typeName + " has already defined.");
 		}
+		/**
+		 * add type to typeMap.
+		 */
 		this.typeMap.put(typeName, type);
-		Class<?> nativeClass = type.getNativeClass();
-		if(allowUnresolvedClass) {
-			return type;
+
+		if(type.hasPairedClass()) {
+			Class<?> nativeClass = type.getNativeClass();
+			if(allowUnresolvedClass) {
+				return type;
+			}
+			assert nativeClass != null;
+			if(this.class2TypeMap.containsKey(nativeClass)) {
+				throw new RuntimeException("native class " + nativeClass.getName() + " has already exported.");
+			}
+			this.class2TypeMap.put(nativeClass, type);
 		}
-		assert nativeClass != null;
-		if(this.class2TypeMap.containsKey(nativeClass)) {
-			throw new RuntimeException("native class " + nativeClass.getName() + " has already exported.");
-		}
-		this.class2TypeMap.put(nativeClass, type);
 		return type;
 	}
 
@@ -124,7 +143,7 @@ public class TypePool {
 	 * @param type
 	 * @param nativeClass
 	 */
-	public void setGeneratedNativeClass(ClassType type, Class<?> nativeClass) {
+	public void setGeneratedNativeClass(UserDefinedType type, Class<?> nativeClass) {
 		String typeName = type.getTypeName();
 		if(!this.typeMap.containsKey(typeName)) {
 			throw new RuntimeException("undefined type: " + typeName);
@@ -136,7 +155,7 @@ public class TypePool {
 		type.setGeneratedClass(nativeClass);
 	}
 
-	public void createClassType(String className, Type superType) {
+	public void createAndSetClassType(String className, Type superType) {
 		if(!superType.allowExtends) {
 			throw new RuntimeException(superType.getTypeName() + " is not inheritable");
 		}
@@ -198,7 +217,7 @@ public class TypePool {
 	private Type createAndGetTypeIfUndefined(Type type) {
 		Type gottenType = this.getType(type.getTypeName());
 		if(!gottenType.isResolvedType()) {
-			return this.setTypeAndThrowIfDefined(type);
+			return this.setTypeAndThrowIfDefined(type, true);
 		}
 		return gottenType;
 	}
@@ -211,6 +230,13 @@ public class TypePool {
 		return this.createAndGetTypeIfUndefined(new GenericMapType(elementType));
 	}
 
+	/**
+	 * Currently user defined generic class not supported.
+	 * Future may be supported.
+	 * @param baseTypeName
+	 * @param types
+	 * @return
+	 */
 	public Type createAndGetGenericTypeIfUndefined(String baseTypeName, Type[] types) {
 		GenericBaseType baseType = (GenericBaseType) this.getTypeAndThrowIfUndefined(baseTypeName);
 		return this.createAndGetTypeIfUndefined(new GenericType(baseType, types));
@@ -316,6 +342,10 @@ public class TypePool {
 		public final boolean allowExtends() {
 			return allowExtends;
 		}
+
+		public boolean hasPairedClass() {
+			return true;
+		}
 	}
 
 	/**
@@ -402,6 +432,19 @@ public class TypePool {
 		public String toString() {
 			return this.actualTypeName;
 		}
+
+		public GenericBaseType getBaseType() {
+			return this.baseType;
+		}
+
+		public Type[] getElementsType() {
+			return this.elementsType;
+		}
+
+		@Override
+		public boolean hasPairedClass() {
+			return false;
+		}
 	}
 
 	/**
@@ -448,6 +491,11 @@ public class TypePool {
 		public Class<?> getNativeClass() {
 			return this.primitiveArrayClass;
 		}
+
+		@Override
+		public boolean hasPairedClass() {
+			return true;
+		}
 	}
 
 	/**
@@ -462,28 +510,38 @@ public class TypePool {
 		}
 	}
 
+	public static class UserDefinedType extends Type {
+		protected Class<?> generatedClass;
+
+		protected UserDefinedType(boolean allowExtends) {
+			super("", null, allowExtends);
+		}
+
+		public void setGeneratedClass(Class<?> generatedClass) {
+			this.generatedClass = generatedClass;
+		}
+
+		@Override
+		public Class<?> getNativeClass() {
+			return this.generatedClass;
+		}
+	}
 	/**
 	 * Represents function type.
 	 * It contains parameters type and return type.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class FunctionType extends Type {	//TODO:
+	public static class FunctionType extends UserDefinedType {
 		private final String funcTypeName;
 		private final Type returnType;
 		private final Type[] paramsType;
-		private Class<?> funcClass;
-		
+
 		private FunctionType(Type returnType, Type[] paramsType) {
-			super("", null, false);
+			super(false);
 			this.returnType = returnType;
 			this.paramsType = paramsType;
 			this.funcTypeName = TypePool.toFuncTypeName(this.returnType, this.paramsType);
-		}
-
-		@Override
-		public Class<?> getNativeClass() { //TODO: function class generation
-			return funcClass;
 		}
 
 		@Override
@@ -516,30 +574,16 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public final static class ClassType extends Type {
+	public final static class ClassType extends UserDefinedType {
 		private final Type superType;
-		private Class<?> generatedClass;
 
 		private ClassType(String className, Type superType) {
-			super(className, null);
+			super(true);
 			this.superType = superType;
 		}
 
 		public Type getSuperType() {
 			return this.superType;
-		}
-
-		/**
-		 * set generated class.
-		 * @param generatedClass
-		 */
-		private void setGeneratedClass(Class<?> generatedClass) {
-			this.generatedClass = generatedClass;
-		}
-
-		@Override
-		public Class<?> getNativeClass() {
-			return this.generatedClass;
 		}
 	}
 
@@ -561,6 +605,11 @@ public class TypePool {
 
 		@Override
 		public boolean isResolvedType() {
+			return false;
+		}
+
+		@Override
+		public boolean hasPairedClass() {
 			return false;
 		}
 	}

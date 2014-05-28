@@ -14,7 +14,7 @@ import dshell.lang.annotation.Shared;
  * @author skgchxngsxyz-osx
  *
  */
-public class IntArray {
+public class IntArray implements Cloneable {
 	private final static int defaultArraySize = 16;
 
 	/**

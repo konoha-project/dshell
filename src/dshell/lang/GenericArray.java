@@ -16,7 +16,7 @@ import dshell.lang.annotation.TypeParameter;
  *
  */
 @GenericClass
-public class GenericArray {
+public class GenericArray implements Cloneable {
 	private final static int defaultArraySize = 16;
 
 	/**

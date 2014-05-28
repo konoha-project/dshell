@@ -14,7 +14,7 @@ import dshell.lang.annotation.Shared;
  * @author skgchxngsxyz-osx
  *
  */
-public class BooleanArray {
+public class BooleanArray implements Cloneable {
 	private final static int defaultArraySize = 16;
 
 	/**
