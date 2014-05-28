@@ -3,9 +3,10 @@ package dshell.lang;
 
 import java.util.Arrays;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.annotation.ArrayOp;
 import dshell.lang.annotation.ArrayOp.ArrayOpType;
-import dshell.lang.annotation.Exportable;
+import dshell.lang.annotation.Shared;
 
 /**
  * Boolean array for class Type value.
@@ -50,22 +51,22 @@ public class BooleanArray {
 		}
 	}
 
-	@Exportable
+	@Shared
 	public long size() {
 		return this.size;
 	}
 
-	@Exportable
+	@Shared
 	public boolean isEmpty() {
 		return this.size() == 0;
 	}
 
-	@Exportable
+	@Shared
 	public void clear() {
 		this.size = 0;
 	}
 
-	@Exportable
+	@Shared
 	@ArrayOp(ArrayOpType.Getter)
 	
 	public boolean get(long index) {
@@ -73,20 +74,20 @@ public class BooleanArray {
 		return this.values[(int) index];
 	}
 
-	@Exportable
+	@Shared
 	@ArrayOp(ArrayOpType.Setter)
 	public void set(long index,  boolean value) {
 		this.throwIfIndexOutOfRange(index);
 		this.values[(int) index] = value;
 	}
 
-	@Exportable
+	@Shared
 	public void add( boolean value) {
 		this.expandIfNoFreeSpace();
 		this.values[this.size++] = value;
 	}
 
-	@Exportable
+	@Shared
 	public void insert(long index,  boolean value) {
 		if(index == this.size()) {
 			this.add(value);
@@ -103,7 +104,7 @@ public class BooleanArray {
 		this.size++;
 	}
 
-	@Exportable
+	@Shared
 	
 	public boolean remove(long index) {
 		boolean value = this.get(index);
@@ -113,18 +114,18 @@ public class BooleanArray {
 		return value;
 	}
 
-	@Exportable
+	@Shared
 	public void push(boolean value) {
 		this.add(value);
 	}
 
-	@Exportable
+	@Shared
 	
 	public boolean pop() {
 		return this.values[--this.size];
 	}
 
-	@Exportable
+	@Shared
 	public BooleanArray clone() {
 		if(this.isEmpty()) {
 			return new BooleanArray(new boolean[]{});
@@ -135,5 +136,19 @@ public class BooleanArray {
 		System.arraycopy(this.values, 0, newValues, 0, this.size);
 		clonedArray.values = newValues;
 		return clonedArray;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("[");
+		for(int i = 0; i < this.size; i++) {
+			if(i > 0) {
+				sBuilder.append(", ");
+			}
+			Utils.appendStringifiedValue(sBuilder, this.values[i]);
+		}
+		sBuilder.append("]");
+		return sBuilder.toString();
 	}
 }

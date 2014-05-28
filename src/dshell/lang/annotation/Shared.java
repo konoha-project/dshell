@@ -7,12 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * This is just a marker annotation.
- * It represent callable method from dshell.
+ * It represent shared method or field from dshell.
  * @author skgchxngsxyz-osx
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Exportable {
+@Target({ElementType.METHOD, ElementType.FIELD})
+public @interface Shared {
 
 }

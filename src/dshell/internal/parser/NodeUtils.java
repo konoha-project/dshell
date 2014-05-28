@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.Node.BlockNode;
+import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.TypePool.Type;
 
 public class NodeUtils {
@@ -104,5 +105,79 @@ public class NodeUtils {
 		public Type getType() {
 			return this.type;
 		}
+	}
+
+	public static class ArgsDecl {
+		private final ArrayList<SymbolNode> argsNodeList;
+
+		public ArgsDecl() {
+			this.argsNodeList = new ArrayList<>();
+		}
+
+		public ArrayList<SymbolNode> getNodeList() {
+			return this.argsNodeList;
+		}
+
+		public void addArgDecl(ArgDecl decl) {
+			this.argsNodeList.add(decl.getArgNode());
+		}
+	}
+
+	public static class ArgDecl {
+		private final SymbolNode argDeclNode;
+
+		public ArgDecl(Token token, Type type) {
+			this.argDeclNode = new SymbolNode(token);
+			this.argDeclNode.setType(type);
+		}
+
+		public SymbolNode getArgNode() {
+			return this.argDeclNode;
+		}
+	}
+
+	public static class ClassBody {
+		private final ArrayList<Node> nodeList;
+
+		public ClassBody() {
+			this.nodeList = new ArrayList<>();
+		}
+
+		public void addNode(Node node) {
+			this.nodeList.add(node);
+		}
+
+		public ArrayList<Node> getNodeList() {
+			return this.nodeList;
+		}
+	}
+
+	public static class SuperTypeResolver {
+		private Type type;
+
+		public SuperTypeResolver() {
+			this.type = TypePool.getInstance().objectType;
+		}
+
+		public void setType(Type type) {
+			this.type = type;
+		}
+
+		public Type getType() {
+			return this.type;
+		}
+	}
+
+	/**
+	 * verify class name.
+	 * @return
+	 * - if class name is 'Func', throw exception.
+	 */
+	public static String resolveClassName(Token token) {
+		String className = token.getText();
+		if(className.equals("Func")) {
+			throw new RuntimeException("Func is forbidden class name");
+		}
+		return className;
 	}
 }

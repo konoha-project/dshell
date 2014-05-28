@@ -4,9 +4,11 @@ import java.util.ArrayList;
 
 import org.antlr.v4.runtime.Token;
 
+import dshell.internal.parser.NodeUtils.ArgsDecl;
 import dshell.internal.parser.NodeUtils.Arguments;
 import dshell.internal.parser.NodeUtils.Block;
 import dshell.internal.parser.NodeUtils.CatchedException;
+import dshell.internal.parser.NodeUtils.ClassBody;
 import dshell.internal.parser.NodeUtils.IfElseBlock;
 import dshell.internal.parser.NodeUtils.MapEntry;
 import dshell.internal.parser.NodeUtils.ReturnExpr;
@@ -458,9 +460,9 @@ public class Node {
 		private final String className;
 		private final ArrayList<Node> argNodeList;
 
-		public ConstructorCallNode(Token token, Arguments args) {
+		public ConstructorCallNode(Token token, String className, Arguments args) {
 			this.setToken(token);
-			this.className = this.token.getText();
+			this.className = className;
 			this.argNodeList = args.nodeList;
 		}
 
@@ -931,7 +933,28 @@ public class Node {
 	 *
 	 */
 	public static class FunctionNode extends Node {
-		
+		private final String funcName;
+		private final ArrayList<SymbolNode> nodeList;
+		private final BlockNode blockNode;
+
+		public FunctionNode(Token token, Token nameToken, ArgsDecl decl, Node blockNode) {
+			this.setToken(token);
+			this.funcName = nameToken.getText();
+			this.nodeList = decl.getNodeList();
+			this.blockNode = (BlockNode) blockNode;
+		}
+
+		public String getFuncName() {
+			return this.funcName;
+		}
+
+		public ArrayList<SymbolNode> getArgDeclNodeList() {
+			return this.nodeList;
+		}
+
+		public BlockNode getBlockNode() {
+			return this.blockNode;
+		}
 	}
 
 	/**
@@ -941,7 +964,60 @@ public class Node {
 	 *
 	 */
 	public static class ClassNode extends Node {
-		
+		private final String className;
+		private final ArrayList<Node> classElementList;
+
+		public ClassNode(Token token, String className, Type superType, ClassBody body) {
+			this.setToken(token);
+			this.classElementList = body.getNodeList();
+			/**
+			 * in ClassNode initialization, set ClassType to TypePool.
+			 */
+			this.className = className;
+			TypePool.getInstance().createClassType(this.className, superType);
+		}
+
+		public String getClassName() {
+			return this.className;
+		}
+
+		public ArrayList<Node> getElementList() {
+			return this.classElementList;
+		}
+	}
+
+	/**
+	 * Represents class constructor.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class ConstructorNode extends Node {
+		private Type recvType;
+		private final ArrayList<SymbolNode> nodeList;
+		private final BlockNode blockNode;
+
+		public ConstructorNode(Token token, ArgsDecl decl, Node blockNode) {
+			this.setToken(token);
+			this.recvType = TypePool.getInstance().unresolvedType;
+			this.nodeList = decl.getNodeList();
+			this.blockNode = (BlockNode) blockNode;
+		}
+
+		public void setRecvType(Type type) {
+			this.recvType = type;
+		}
+
+		public Type getRecvType() {
+			return this.recvType;
+		}
+
+		public ArrayList<SymbolNode> getArgDeclNodeList() {
+			return this.nodeList;
+		}
+
+		public BlockNode getBlockNode() {
+			return this.blockNode;
+		}
 	}
 
 	/**
@@ -962,6 +1038,27 @@ public class Node {
 	public static class EmptyBlockNode extends BlockNode {
 		public EmptyBlockNode() {
 			super(new Block());
+		}
+	}
+
+	/**
+	 * Represent root node.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class RootNode extends Node {
+		private final ArrayList<Node> nodeList;
+
+		public RootNode() {
+			this.nodeList = new ArrayList<>();
+		}
+
+		public void addNode(Node node) {
+			this.nodeList.add(node);
+		}
+
+		public ArrayList<Node> getNodeList() {
+			return this.nodeList;
 		}
 	}
 }

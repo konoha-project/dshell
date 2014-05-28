@@ -11,35 +11,74 @@ import dshell.internal.parser.NodeUtils;
 // #        parse       #
 // ######################
 
-toplevel
-	: toplevelStatements? EOF
+toplevel returns [Node.RootNode node]
+	: a+=toplevelStatements? EOF
+		{
+			if($a.size() == 0) {
+				$node = new Node.RootNode();
+			} else {
+				$node = $a.get(0).node;
+			}
+		}
 	;
-toplevelStatements
-	: toplevelStatement (StmtEnd toplevelStatement)*
+toplevelStatements returns [Node.RootNode node]
+	: a+=toplevelStatement (StmtEnd a+=toplevelStatement)*
+	 {
+	 	$node = new Node.RootNode();
+	 	for(int i = 0; i < $a.size(); i++) {
+	 		$node.addNode($a.get(i).node);
+	 	}
+	 }
 	;
-toplevelStatement
-	: functionDeclaration
-	| classDeclaration
-	| statement
+toplevelStatement returns [Node node]
+	: functionDeclaration {$node = $functionDeclaration.node;}
+	| classDeclaration {$node = $classDeclaration.node;}
+	| statement {$node = $statement.node;}
 	;
-functionDeclaration
-	: Function SymbolName '(' argumentsDeclaration? ')' block
+functionDeclaration returns [Node node]
+	: Function SymbolName '(' argumentsDeclaration ')' block
+		{$node = new Node.FunctionNode($Function, $SymbolName, $argumentsDeclaration.decl, $block.node);}
 	;
-argumentsDeclaration
-	: variableDeclarationWithType (',' variableDeclarationWithType)*
+argumentsDeclaration returns [NodeUtils.ArgsDecl decl]
+	: a+=variableDeclarationWithType (',' a+=variableDeclarationWithType)*
+		{
+			$decl = new NodeUtils.ArgsDecl();
+			for(int i = 0; i < $a.size(); i++) {
+				$decl.addArgDecl($a.get(0).arg);
+			}
+		}
+	| { $decl = new NodeUtils.ArgsDecl();}
 	;
-variableDeclarationWithType
-	: SymbolName ':' typeName
+variableDeclarationWithType returns [NodeUtils.ArgDecl arg]
+	: SymbolName ':' typeName {$arg = new NodeUtils.ArgDecl($SymbolName, $typeName.type);}
 	;
-typeName returns [TypePool.Type type]
+typeName returns [TypePool.Type type] locals [TypePool.Type[] types]
 	: Int {$type = TypePool.getInstance().intType;}
 	| Float {$type = TypePool.getInstance().floatType;}
 	| Boolean {$type = TypePool.getInstance().booleanType;}
 	| Void {$type = TypePool.getInstance().voidType;}
-	| ClassName 
-	| typeName '[]'
-	| 'Map' '<' typeName '>'
-	| 'Func' '<' typeName (',' typeName)* '>'
+	| ClassName {$type = TypePool.getInstance().getClassType(NodeUtils.resolveClassName($ClassName));}
+	| typeName '[]' {$type = TypePool.getInstance().createAndGetArrayTypeIfUndefined($typeName.type);}
+	| 'Map' '<' typeName '>' {$type = TypePool.getInstance().createAndGetMapTypeIfUndefined($typeName.type);}
+	| 'Func' '<' typeName ',' paramTypes '>'
+		{$type = TypePool.getInstance().createAndGetFuncTypeIfUndefined($typeName.type, $paramTypes.types);}
+	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
+		{
+			$types = new TypePool.Type[$a.size()];
+			for(int i = 0; i < $types.length; i++) {
+				$types[i] = $a.get(i).type;
+			}
+			$type = TypePool.getInstance().createAndGetGenericTypeIfUndefined(NodeUtils.resolveClassName($ClassName), $types);
+		}
+	;
+paramTypes returns [TypePool.Type[] types]
+	: '[' a+=typeName (',' a+=typeName)* ']'
+		{
+			$types = new TypePool.Type[$a.size()];
+			for(int i = 0; i < $types.length; i++) {
+				$types[i] = $a.get(i).type;
+			}
+		}
 	;
 block returns [Node node] locals [NodeUtils.Block blockModel]
 	: '{' b+=blockStatement* '}' 
@@ -53,22 +92,36 @@ block returns [Node node] locals [NodeUtils.Block blockModel]
 blockStatement returns [Node node]
 	: statement StmtEnd {$node = $statement.node;}
 	;
-classDeclaration
-	: Class ClassName (Extends ClassName)? classBlock
+classDeclaration returns [Node node] locals [NodeUtils.SuperTypeResolver resolver]
+	: Class ClassName (Extends a+=typeName)? classBody
+		{
+			$resolver = new NodeUtils.SuperTypeResolver();
+			if($a.size() == 1) {
+				$resolver.setType($a.get(0).type);
+			}
+			$node = new Node.ClassNode($Class, NodeUtils.resolveClassName($ClassName), $resolver.getType(), $classBody.body);
+		}
 	;
-classBlock
-	: '{' (classElement StmtEnd)+ '}'
+classBody returns [NodeUtils.ClassBody body]
+	: '{' (a+=classElement StmtEnd)+ '}'
+		{
+			$body = new NodeUtils.ClassBody();
+			for(int i = 0; i < $a.size(); i++) {
+				$body.addNode($a.get(i).node);
+			}
+		}
 	;
-classElement
-	: fieldDeclaration
-	| functionDeclaration
-	| constructorDeclaration
+classElement returns [Node node]
+	: fieldDeclaration {$node = $fieldDeclaration.node;}
+	| functionDeclaration {$node = $functionDeclaration.node;}
+	| constructorDeclaration {$node = $constructorDeclaration.node;}
 	;
-fieldDeclaration
+fieldDeclaration returns [Node node]
 	: variableDeclaration
 	;
-constructorDeclaration
-	: Constructor '(' argumentsDeclaration? ')' block
+constructorDeclaration returns [Node node]
+	: Constructor '(' argumentsDeclaration ')' block
+		{$node = new Node.ConstructorNode($Constructor, $argumentsDeclaration.decl, $block.node);}
 	;
 statement returns [Node node]
 	: assertStatement {$node = $assertStatement.node;}
@@ -200,8 +253,7 @@ expression returns [Node node] //FIXME: right join
 	| symbol {$node = $symbol.node;}
 	| '(' expression ')' {$node = $expression.node;}
 	| expression '.' SymbolName {$node = new Node.FieldGetterNode($expression.node, $SymbolName);}
-//	| expression '.' This
-	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($ClassName, $arguments.args);}
+	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($New, NodeUtils.resolveClassName($ClassName), $arguments.args);}
 	| expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($expression.node, $SymbolName, $arguments.args);}
 	| SymbolName '(' arguments ')' {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
@@ -297,7 +349,6 @@ Null		: 'null';
 Return		: 'return';
 Super		: 'super';
 Try			: 'try';
-This		: 'this';
 Throw		: 'throw';
 Var			: 'var';
 Void		: 'void';

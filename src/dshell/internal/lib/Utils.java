@@ -7,6 +7,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import dshell.lang.DShellString;
 import dshell.lang.NativeException;
 
 public class Utils {
@@ -197,5 +198,18 @@ public class Utils {
 
 	public static void printException(InvocationTargetException e) {
 		NativeException.wrapException(e.getCause()).printStackTrace();
+	}
+
+	public static void appendStringifiedValue(StringBuilder sb, Object value) {
+		if(value == null) {
+			sb.append("$null$");
+		}
+		if(value instanceof DShellString) {
+			sb.append('"');
+			sb.append(value.toString());
+			sb.append('"');
+		} else {
+			sb.append(value.toString());
+		}
 	}
 }

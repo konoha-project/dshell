@@ -3,9 +3,10 @@ package dshell.lang;
 
 import java.util.Arrays;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.annotation.ArrayOp;
 import dshell.lang.annotation.ArrayOp.ArrayOpType;
-import dshell.lang.annotation.Exportable;
+import dshell.lang.annotation.Shared;
 
 /**
  * Float array for class Type value.
@@ -50,22 +51,22 @@ public class FloatArray {
 		}
 	}
 
-	@Exportable
+	@Shared
 	public long size() {
 		return this.size;
 	}
 
-	@Exportable
+	@Shared
 	public boolean isEmpty() {
 		return this.size() == 0;
 	}
 
-	@Exportable
+	@Shared
 	public void clear() {
 		this.size = 0;
 	}
 
-	@Exportable
+	@Shared
 	@ArrayOp(ArrayOpType.Getter)
 	
 	public double get(long index) {
@@ -73,20 +74,20 @@ public class FloatArray {
 		return this.values[(int) index];
 	}
 
-	@Exportable
+	@Shared
 	@ArrayOp(ArrayOpType.Setter)
 	public void set(long index,  double value) {
 		this.throwIfIndexOutOfRange(index);
 		this.values[(int) index] = value;
 	}
 
-	@Exportable
+	@Shared
 	public void add( double value) {
 		this.expandIfNoFreeSpace();
 		this.values[this.size++] = value;
 	}
 
-	@Exportable
+	@Shared
 	public void insert(long index,  double value) {
 		if(index == this.size()) {
 			this.add(value);
@@ -103,7 +104,7 @@ public class FloatArray {
 		this.size++;
 	}
 
-	@Exportable
+	@Shared
 	
 	public double remove(long index) {
 		double value = this.get(index);
@@ -113,18 +114,18 @@ public class FloatArray {
 		return value;
 	}
 
-	@Exportable
+	@Shared
 	public void push(double value) {
 		this.add(value);
 	}
 
-	@Exportable
+	@Shared
 	
 	public double pop() {
 		return this.values[--this.size];
 	}
 
-	@Exportable
+	@Shared
 	public FloatArray clone() {
 		if(this.isEmpty()) {
 			return new FloatArray(new double[]{});
@@ -135,5 +136,19 @@ public class FloatArray {
 		System.arraycopy(this.values, 0, newValues, 0, this.size);
 		clonedArray.values = newValues;
 		return clonedArray;
+	}
+
+	@Override
+	public String toString() {
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("[");
+		for(int i = 0; i < this.size; i++) {
+			if(i > 0) {
+				sBuilder.append(", ");
+			}
+			Utils.appendStringifiedValue(sBuilder, this.values[i]);
+		}
+		sBuilder.append("]");
+		return sBuilder.toString();
 	}
 }
