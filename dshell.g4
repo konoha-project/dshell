@@ -12,17 +12,7 @@ import dshell.internal.parser.NodeUtils;
 // ######################
 
 toplevel returns [Node.RootNode node]
-	: a+=toplevelStatements? EOF
-		{
-			if($a.size() == 0) {
-				$node = new Node.RootNode();
-			} else {
-				$node = $a.get(0).node;
-			}
-		}
-	;
-toplevelStatements returns [Node.RootNode node]
-	: a+=toplevelStatement (StmtEnd a+=toplevelStatement)*
+	: (a+=toplevelStatement)+ EOF
 	 {
 	 	$node = new Node.RootNode();
 	 	for(int i = 0; i < $a.size(); i++) {
@@ -35,6 +25,9 @@ toplevelStatement returns [Node node]
 	| classDeclaration {$node = $classDeclaration.node;}
 	| statement {$node = $statement.node;}
 	;
+statementEnd
+	: (';' | '\r' | '\n')+
+	;
 functionDeclaration returns [Node node]
 	: Function SymbolName '(' argumentsDeclaration ')' block
 		{$node = new Node.FunctionNode($Function, $SymbolName, $argumentsDeclaration.decl, $block.node);}
@@ -44,7 +37,7 @@ argumentsDeclaration returns [NodeUtils.ArgsDecl decl]
 		{
 			$decl = new NodeUtils.ArgsDecl();
 			for(int i = 0; i < $a.size(); i++) {
-				$decl.addArgDecl($a.get(0).arg);
+				$decl.addArgDecl($a.get(i).arg);
 			}
 		}
 	| { $decl = new NodeUtils.ArgsDecl();}
@@ -60,8 +53,8 @@ typeName returns [TypePool.Type type] locals [TypePool.Type[] types]
 	| ClassName {$type = TypePool.getInstance().getClassType(NodeUtils.resolveClassName($ClassName));}
 	| typeName '[]' {$type = TypePool.getInstance().createAndGetArrayTypeIfUndefined($typeName.type);}
 	| 'Map' '<' typeName '>' {$type = TypePool.getInstance().createAndGetMapTypeIfUndefined($typeName.type);}
-	| 'Func' '<' typeName ',' paramTypes '>'
-		{$type = TypePool.getInstance().createAndGetFuncTypeIfUndefined($typeName.type, $paramTypes.types);}
+	| 'Func' '<' returnType ',' paramTypes '>'
+		{$type = TypePool.getInstance().createAndGetFuncTypeIfUndefined($returnType.type, $paramTypes.types);}
 	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypePool.Type[$a.size()];
@@ -70,6 +63,9 @@ typeName returns [TypePool.Type type] locals [TypePool.Type[] types]
 			}
 			$type = TypePool.getInstance().createAndGetGenericTypeIfUndefined(NodeUtils.resolveClassName($ClassName), $types);
 		}
+	;
+returnType returns [TypePool.Type type]
+	: typeName {$type = $typeName.type;}
 	;
 paramTypes returns [TypePool.Type[] types]
 	: '[' a+=typeName (',' a+=typeName)* ']'
@@ -81,16 +77,14 @@ paramTypes returns [TypePool.Type[] types]
 		}
 	;
 block returns [Node node] locals [NodeUtils.Block blockModel]
-	: '{' b+=blockStatement* '}' 
+	: '{' b+=statement+ '}' 
 		{
+			$blockModel = new NodeUtils.Block();
 			for(int i = 0; i < $b.size(); i++) {
 				$blockModel.addNode($b.get(i).node);
 			}
 			$node = new Node.BlockNode($blockModel);
 		}
-	;
-blockStatement returns [Node node]
-	: statement StmtEnd {$node = $statement.node;}
 	;
 classDeclaration returns [Node node] locals [NodeUtils.SuperTypeResolver resolver]
 	: Class ClassName (Extends a+=typeName)? classBody
@@ -103,7 +97,7 @@ classDeclaration returns [Node node] locals [NodeUtils.SuperTypeResolver resolve
 		}
 	;
 classBody returns [NodeUtils.ClassBody body]
-	: '{' (a+=classElement StmtEnd)+ '}'
+	: '{' (a+=classElement statementEnd)+ '}'
 		{
 			$body = new NodeUtils.ClassBody();
 			for(int i = 0; i < $a.size(); i++) {
@@ -124,22 +118,22 @@ constructorDeclaration returns [Node node]
 		{$node = new Node.ConstructorNode($Constructor, $argumentsDeclaration.decl, $block.node);}
 	;
 statement returns [Node node]
-	: assertStatement {$node = $assertStatement.node;}
-	| breakStatement {$node = $breakStatement.node;}
-	| continueStatement {$node = $continueStatement.node;}
-	| exportEnvStatement {$node = $exportEnvStatement.node;}
+	: assertStatement statementEnd {$node = $assertStatement.node;}
+	| breakStatement statementEnd {$node = $breakStatement.node;}
+	| continueStatement statementEnd {$node = $continueStatement.node;}
+	| exportEnvStatement statementEnd {$node = $exportEnvStatement.node;}
 	| forStatement {$node = $forStatement.node;}
 	| foreachStatement {$node = $foreachStatement.node;}
 	| ifStatement {$node = $ifStatement.node;}
-	| importEnvStatement {$node = $importEnvStatement.node;}
-	| importCommandStatement {$node = $importCommandStatement.node;}
-	| returnStatement {$node = $returnStatement.node;}
-	| throwStatement {$node = $throwStatement.node;}
+	| importEnvStatement statementEnd {$node = $importEnvStatement.node;}
+	| importCommandStatement statementEnd {$node = $importCommandStatement.node;}
+	| returnStatement statementEnd {$node = $returnStatement.node;}
+	| throwStatement statementEnd {$node = $throwStatement.node;}
 	| whileStatement {$node = $whileStatement.node;}
 	| tryCatchStatement {$node = $tryCatchStatement.node;}
-	| variableDeclaration {$node = $variableDeclaration.node;}
-	| assignStatement {$node = $assignStatement.node;}
-	| expression {$node = $expression.node;}
+	| variableDeclaration statementEnd {$node = $variableDeclaration.node;}
+	| assignStatement statementEnd {$node = $assignStatement.node;}
+	| expression statementEnd {$node = $expression.node;}
 	;
 assertStatement returns [Node node]
 	: Assert '(' expression ')' {$node = new Node.AssertNode($Assert, $expression.node);}
@@ -172,7 +166,7 @@ forIter returns [Node node]
 	| {$node = new Node.EmptyNode();}
 	;
 foreachStatement returns [Node node]
-	: For '(' SymbolName 'in' expression ')' block {$node = new Node.ForInNode($For, $SymbolName, $expression.node, $block.node);}
+	: For '(' SymbolName In expression ')' block {$node = new Node.ForInNode($For, $SymbolName, $expression.node, $block.node);}
 	;
 ifStatement returns [Node node] locals [NodeUtils.IfElseBlock ifElseBlock]
 	: If '(' expression ')' b+=block (Else b+=block)?
@@ -249,9 +243,7 @@ assignStatement returns [Node node]
 		}
 	;
 expression returns [Node node] //FIXME: right join
-	: literal {$node = $literal.node;}
-	| symbol {$node = $symbol.node;}
-	| '(' expression ')' {$node = $expression.node;}
+	: primary {$node = $primary.node;}
 	| expression '.' SymbolName {$node = new Node.FieldGetterNode($expression.node, $SymbolName);}
 	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($New, NodeUtils.resolveClassName($ClassName), $arguments.args);}
 	| expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($expression.node, $SymbolName, $arguments.args);}
@@ -259,15 +251,20 @@ expression returns [Node node] //FIXME: right join
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' expression {$node = new Node.CastNode($typeName.type, $expression.node);}
 	| expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($expression.node, $op);}
-	| op=(PLUS | MINUS) expression {$node = new Node.FuncCallNode($op, $expression.node);}
-	| op=(BIT_NOT | NOT) expression {$node = new Node.FuncCallNode($op, $expression.node);}
-	| left=expression op=(MUL | DIV | MOD) right=expression {$node = new Node.FuncCallNode($op, $left.node, $right.node);}
-	| left=expression op=(ADD | SUB) right=expression {$node = new Node.FuncCallNode($op, $left.node, $right.node);}
-	| left=expression op=(LT | LE | GT | GE) right=expression {$node = new Node.FuncCallNode($op, $left.node, $right.node);}
+	| op=(PLUS | MINUS) expression {$node = new Node.OperatorCallNode($op, $expression.node);}
+	| op=(BIT_NOT | NOT) expression {$node = new Node.OperatorCallNode($op, $expression.node);}
+	| left=expression op=(MUL | DIV | MOD) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	| left=expression op=(ADD | SUB) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	| left=expression op=(LT | LE | GT | GE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| expression Instanceof typeName {$node = new Node.InstanceofNode($Instanceof, $expression.node, $typeName.type);}
-	| left=expression op=(EQ | NE) right=expression {$node = new Node.FuncCallNode($op, $left.node, $right.node);}
-	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.FuncCallNode($op, $left.node, $right.node);}
+	| left=expression op=(EQ | NE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(COND_AND | COND_OR) right=expression {$node = new Node.CondOpNode($op, $left.node, $right.node);}
+	;
+primary returns [Node node]
+	: literal {$node = $literal.node;}
+	| symbol {$node = $symbol.node;}
+	| '(' expression ')' {$node = $expression.node;}
 	;
 symbol returns [Node node]
 	: SymbolName {$node = new Node.SymbolNode($SymbolName);}
@@ -345,7 +342,6 @@ Int			: 'int';
 Instanceof	: 'instanceof';
 Let			: 'let';
 New			: 'new';
-Null		: 'null';
 Return		: 'return';
 Super		: 'super';
 Try			: 'try';
@@ -449,15 +445,11 @@ CommandName	//FIXME:
 	: [0-9a-zA-Z]+
 	;
 
-// statement end
-StmtEnd
-	: StmtEndEach+
-	;
-fragment
-StmtEndEach
-	: ';'
-	| [\r\n]
-	;
+//// statement end
+//StmtEnd
+//	: ';'
+//	| [\r\n]
+//	;
 
 // comment & space
 Comment

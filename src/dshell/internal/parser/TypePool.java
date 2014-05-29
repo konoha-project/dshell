@@ -89,9 +89,9 @@ public class TypePool {
 		/**
 		 * add primitive array type.
 		 */
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.intType));
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.floatType));
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((PrimitiveType) this.booleanType));
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.intType));
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.floatType));
+		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.booleanType));
 	}
 
 	/**
@@ -155,12 +155,12 @@ public class TypePool {
 		type.setGeneratedClass(nativeClass);
 	}
 
-	public void createAndSetClassType(String className, Type superType) {
+	public ClassType createAndSetClassType(String className, Type superType) {
 		if(!superType.allowExtends) {
 			throw new RuntimeException(superType.getTypeName() + " is not inheritable");
 		}
 		Type type = new ClassType(className, superType);
-		this.setTypeAndThrowIfDefined(type, true);
+		return (ClassType) this.setTypeAndThrowIfDefined(type, true);
 	}
 
 	/**
@@ -223,11 +223,11 @@ public class TypePool {
 	}
 
 	public Type createAndGetArrayTypeIfUndefined(Type elementType) {
-		return this.createAndGetTypeIfUndefined(new GenericArrayType(elementType));
+		return this.createAndGetTypeIfUndefined(new GenericArrayType((GenericBaseType) this.baseArrayType, elementType));
 	}
 
 	public Type createAndGetMapTypeIfUndefined(Type elementType) {
-		return this.createAndGetTypeIfUndefined(new GenericMapType(elementType));
+		return this.createAndGetTypeIfUndefined(new GenericMapType((GenericBaseType) this.baseMapType, elementType));
 	}
 
 	/**
@@ -252,7 +252,7 @@ public class TypePool {
 
 	public static String toGenericTypeName(GenericBaseType baseType, Type[] types) {
 		StringBuilder sBuilder = new StringBuilder();
-		if(baseType.equals(TypePool.getInstance().baseArrayType)) {
+		if(baseType.getNativeClass().equals(GenericArray.class)) {
 			sBuilder.append(types[0].toString());
 			sBuilder.append("[]");
 		}
@@ -466,21 +466,21 @@ public class TypePool {
 	 *
 	 */
 	public static class GenericArrayType extends GenericType {
-		private GenericArrayType(Type elementType) {
-			super((GenericBaseType)TypePool.getInstance().baseArrayType, new Type[]{elementType});
+		private GenericArrayType(GenericBaseType baseType, Type elementType) {
+			super(baseType, new Type[]{elementType});
 		}
 	}
 
 	public final static class PrimitiveArrayType extends GenericArrayType {
 		private final Class<?> primitiveArrayClass;
 
-		private PrimitiveArrayType(PrimitiveType elementType) {
-			super(elementType);
-			if(elementType.equals(TypePool.getInstance().intType)) {
+		private PrimitiveArrayType(GenericBaseType baseType, PrimitiveType elementType) {
+			super(baseType, elementType);
+			if(elementType.getNativeClass().equals(long.class)) {
 				this.primitiveArrayClass = IntArray.class;
-			} else if(elementType.equals(TypePool.getInstance().floatType)) {
+			} else if(elementType.getNativeClass().equals(double.class)) {
 				this.primitiveArrayClass = FloatArray.class;
-			} else if(elementType.equals(TypePool.getInstance().booleanType)) {
+			} else if(elementType.getNativeClass().equals(boolean.class)) {
 				this.primitiveArrayClass = BooleanArray.class;
 			} else {
 				throw new RuntimeException(elementType.getNativeClass().getCanonicalName() + " is unsupported class");
@@ -505,8 +505,8 @@ public class TypePool {
 	 *
 	 */
 	public final static class GenericMapType extends GenericType {
-		private GenericMapType(Type elementType) {
-			super((GenericBaseType)TypePool.getInstance().baseMapType, new Type[]{elementType});
+		private GenericMapType(GenericBaseType baseType, Type elementType) {
+			super(baseType, new Type[]{elementType});
 		}
 	}
 
@@ -577,13 +577,65 @@ public class TypePool {
 	public final static class ClassType extends UserDefinedType {
 		private final Type superType;
 
+		/**
+		 * key is FuncType name.
+		 */
+
+		/**
+		 * key is field name.
+		 */
+		private final HashMap<String, FieldHandle> fieldHandleMap;
+
+		/**
+		 * key id method name.
+		 */
+		private final HashMap<String, MethodHandle> methodHandlMap;
+
 		private ClassType(String className, Type superType) {
 			super(true);
 			this.superType = superType;
+			this.fieldHandleMap = new HashMap<>();
+			this.methodHandlMap = new HashMap<>();
 		}
 
 		public Type getSuperType() {
 			return this.superType;
+		}
+	}
+
+	/**
+	 * Used for ClassType.
+	 * contains class field's (except for FuncType field) name and type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	private static class FieldHandle {
+		public final String name;
+		public final Type type;
+
+		private FieldHandle(String name, Type type) {
+			this.name = name;
+			this.type = type;
+		}
+	}
+
+	/**
+	 * Used for ClassType.
+	 * contains FuncType field's name and type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	private static class MethodHandle {
+		public final String name;
+
+		/**
+		 *  Func<$returnType$, [$recvType, $argType...]>
+		 */
+		public final FunctionType type;
+
+		private MethodHandle(String name, FunctionType type) {
+			this.name = name;
+			this.type = type;
 		}
 	}
 

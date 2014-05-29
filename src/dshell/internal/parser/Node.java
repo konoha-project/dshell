@@ -12,6 +12,8 @@ import dshell.internal.parser.NodeUtils.ClassBody;
 import dshell.internal.parser.NodeUtils.IfElseBlock;
 import dshell.internal.parser.NodeUtils.MapEntry;
 import dshell.internal.parser.NodeUtils.ReturnExpr;
+import dshell.internal.parser.TypePool.ClassType;
+import dshell.internal.parser.TypePool.FunctionType;
 import dshell.internal.parser.TypePool.Type;
 
 /**
@@ -19,7 +21,7 @@ import dshell.internal.parser.TypePool.Type;
  * @author skgchxngsxyz-osx
  *
  */
-public class Node {
+public abstract class Node {
 	/**
 	 * For line number generation.
 	 */
@@ -32,7 +34,8 @@ public class Node {
 	public Token getToken() {
 		return this.token;
 	}
-	
+
+	abstract public <T> T accept(NodeVisitor<T> visitor);
 	
 	// ##################
 	// #   expression   #
@@ -104,6 +107,11 @@ public class Node {
 		public long getValue() {
 			return this.value;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -123,6 +131,11 @@ public class Node {
 		public double getValue() {
 			return this.value;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -141,6 +154,11 @@ public class Node {
 
 		public boolean getValue() {
 			return this.value;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -166,6 +184,11 @@ public class Node {
 		public String getValue() {
 			return this.value;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -176,6 +199,11 @@ public class Node {
 	public static class NullNode extends ExprNode {
 		public NullNode(Token token) {
 			this.setToken(token);
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -197,6 +225,11 @@ public class Node {
 
 		public ArrayList<Node> getNodeList() {
 			return this.nodeList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -226,6 +259,11 @@ public class Node {
 		public ArrayList<Node> getValueList() {
 			return this.valueList;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -243,6 +281,11 @@ public class Node {
 
 		public String getSymbolName() {
 			return this.symbolName;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -266,6 +309,11 @@ public class Node {
 
 		public Node getIndexNode() {
 			return this.indexNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -291,6 +339,11 @@ public class Node {
 		public String getFieldName() {
 			return this.fieldName;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -313,6 +366,11 @@ public class Node {
 
 		public Node getExprNode() {
 			return this.exprNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -339,6 +397,11 @@ public class Node {
 		public Type getTargetType() {
 			return this.targetType;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -363,23 +426,22 @@ public class Node {
 		public String getOperator() {
 			return this.op;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
-	 * This node represents function call.
-	 * Function includes binary op, prefix op, or user defined function.
+	 * Represnts operator( binary op, unary op) call.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class FuncCallNode extends ExprNode {
+	public static class OperatorCallNode extends ExprNode {
 		private final String funcName;
 		private final ArrayList<Node> argNodeList;
-
-		public FuncCallNode(Token token, Arguments args) {
-			this.setToken(token);
-			this.funcName = this.token.getText();
-			this.argNodeList = args.nodeList;
-		}
+		private final ArrayList<Type> argTyeList;
 
 		/**
 		 * For prefix op
@@ -388,11 +450,12 @@ public class Node {
 		 * @param node
 		 * - operand
 		 */
-		public FuncCallNode(Token token, Node node) {
+		public OperatorCallNode(Token token, Node node) {
 			this.setToken(token);
 			this.funcName = this.token.getText();
 			this.argNodeList = new ArrayList<>();
 			this.argNodeList.add(node);
+			this.argTyeList = new ArrayList<>();
 		}
 
 		/**
@@ -404,9 +467,10 @@ public class Node {
 		 * @param rightNode
 		 * - binary right
 		 */
-		public FuncCallNode(Token token, Node leftNode, Node rightNode) {
+		public OperatorCallNode(Token token, Node leftNode, Node rightNode) {
 			this.setToken(token);
 			this.funcName = this.token.getText();
+			this.argTyeList = new ArrayList<>();
 			this.argNodeList = new ArrayList<>();
 			this.argNodeList.add(leftNode);
 			this.argNodeList.add(rightNode);
@@ -419,6 +483,54 @@ public class Node {
 		public ArrayList<Node> getNodeList() {
 			return this.argNodeList;
 		}
+
+		public ArrayList<Type> getArgTypeList() {
+			return this.argTyeList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
+	}
+
+	/**
+	 * This node represents function call.
+	 * call user defined function.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class FuncCallNode extends ExprNode {
+		private final String funcName;
+		private final ArrayList<Node> argNodeList;
+		private FunctionType funcType;
+
+		public FuncCallNode(Token token, Arguments args) {
+			this.setToken(token);
+			this.funcName = this.token.getText();
+			this.argNodeList = args.nodeList;
+		}
+
+		public String getFuncName() {
+			return this.funcName;
+		}
+
+		public ArrayList<Node> getNodeList() {
+			return this.argNodeList;
+		}
+
+		public void setCalledFuncType(FunctionType type) {
+			this.funcType = type;
+		}
+
+		public FunctionType getCalledFuncType() {
+			return this.funcType;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -427,6 +539,7 @@ public class Node {
 	 *
 	 */
 	public static class MethodCallNode extends ExprNode {
+		private FunctionType methodType;
 		private final Node recvNode;
 		private final String methodName;
 		private final ArrayList<Node> argNodeList;
@@ -448,6 +561,19 @@ public class Node {
 
 		public ArrayList<Node> getNodeList() {
 			return this.argNodeList;
+		}
+
+		public void setMethodType(FunctionType type) {
+			this.methodType = type;
+		}
+
+		public FunctionType getMethodType() {
+			return this.methodType;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -472,6 +598,11 @@ public class Node {
 
 		public ArrayList<Node> getNodeList() {
 			return this.argNodeList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -504,6 +635,11 @@ public class Node {
 		public Node getRightNode() {
 			return this.rightNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	//TODO: adding shell command represent nodes
@@ -527,6 +663,11 @@ public class Node {
 		public Node getExprNode() {
 			return this.exprNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -545,6 +686,11 @@ public class Node {
 		public ArrayList<Node> getNodeList() {
 			return this.nodeList;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -556,6 +702,11 @@ public class Node {
 		public BreakNode(Token token) {
 			this.setToken(token);
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -566,6 +717,11 @@ public class Node {
 	public static class ContinueNode extends Node {
 		public ContinueNode(Token token) {
 			this.setToken(token);
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -591,6 +747,11 @@ public class Node {
 		public Node getExprNode() {
 			return this.exprNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -608,6 +769,11 @@ public class Node {
 
 		public String getEnvName() {
 			return this.envName;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -656,6 +822,11 @@ public class Node {
 		public BlockNode getBlockNode() {
 			return this.blockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -686,6 +857,11 @@ public class Node {
 		public BlockNode getBlockNode() {
 			return this.blockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -709,6 +885,11 @@ public class Node {
 
 		public BlockNode getBlockNode() {
 			return this.blockNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -743,6 +924,11 @@ public class Node {
 		public BlockNode getElseBlockNode() {
 			return this.elseBlockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -764,6 +950,11 @@ public class Node {
 		public Node getExprNode() {
 			return this.exprNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -781,6 +972,11 @@ public class Node {
 
 		public Node getExprNode() {
 			return this.exprNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -824,6 +1020,11 @@ public class Node {
 		public BlockNode getFinallyBlockNode() {
 			return this.finallyBlockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -854,6 +1055,11 @@ public class Node {
 
 		public BlockNode getCatchBlockNode() {
 			return this.catchBlockNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -892,6 +1098,11 @@ public class Node {
 		public Type getValueType() {
 			return this.valueType;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -925,6 +1136,11 @@ public class Node {
 		public Node getRightNode() {
 			return this.rightNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -955,6 +1171,11 @@ public class Node {
 		public BlockNode getBlockNode() {
 			return this.blockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -964,7 +1185,7 @@ public class Node {
 	 *
 	 */
 	public static class ClassNode extends Node {
-		private final String className;
+		private final ClassType classType;
 		private final ArrayList<Node> classElementList;
 
 		public ClassNode(Token token, String className, Type superType, ClassBody body) {
@@ -973,16 +1194,20 @@ public class Node {
 			/**
 			 * in ClassNode initialization, set ClassType to TypePool.
 			 */
-			this.className = className;
-			TypePool.getInstance().createAndSetClassType(this.className, superType);
+			this.classType = TypePool.getInstance().createAndSetClassType(className, superType);
 		}
 
-		public String getClassName() {
-			return this.className;
+		public ClassType getClassType() {
+			return this.classType;
 		}
 
 		public ArrayList<Node> getElementList() {
 			return this.classElementList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -1018,6 +1243,11 @@ public class Node {
 		public BlockNode getBlockNode() {
 			return this.blockNode;
 		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -1027,6 +1257,11 @@ public class Node {
 	 *
 	 */
 	public static class EmptyNode extends Node {
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
 	}
 
 	/**
@@ -1038,6 +1273,11 @@ public class Node {
 	public static class EmptyBlockNode extends BlockNode {
 		public EmptyBlockNode() {
 			super(new Block());
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 
@@ -1059,6 +1299,11 @@ public class Node {
 
 		public ArrayList<Node> getNodeList() {
 			return this.nodeList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
 		}
 	}
 }
