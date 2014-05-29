@@ -7,13 +7,19 @@ TOOLS_DIR="./tools"
 
 all: build
 
-build:
+build: preprocess
 	cd ./ext/libbun; git stash && git stash clear
 	git submodule update
 	cd ./ext/libbun; git apply ../libbun.patch
 	ant
 
+preprocess:
+	python ./tools/gen-array.py ./src/dshell/lang/GenericArray.java
+	java -jar ./ext/antlr-4.2.2-complete.jar ./dshell.g4 -o ./gensrc/dshell/internal/parser -no-listener -no-visitor -encoding UTF-8
+
 clean: clean-launcher
+	rm -rf ./gensrc
+	rm -rf ./generated-array
 	ant clean
 
 clean-launcher:

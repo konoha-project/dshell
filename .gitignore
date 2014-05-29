@@ -81,4 +81,5 @@ GSYMS
 /dshell.jar
 tools/rec/build
 tools/rec/bin
-
+gensrc
+generated-array

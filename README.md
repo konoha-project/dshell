@@ -8,6 +8,7 @@ D-Shell
 * jdk 1.7
 * gcc
 * make
+* python 2.7
 
 ## How To Use
 

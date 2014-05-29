@@ -1,5 +1,6 @@
 package dshell.internal.parser;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import dshell.lang.BooleanArray;
@@ -46,7 +47,7 @@ public class TypePool {
 	 * Represents D-Shell root class type.
 	 * It is equivalent to java Object.
 	 */
-	public final Type objectType;
+	public final Type objectType = new rootClassType();
 
 	/**
 	 * Equivalent to java void.
@@ -79,9 +80,8 @@ public class TypePool {
 		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", long.class));
 		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", double.class));
 		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", boolean.class));
-		this.stringType    = this.setTypeAndThrowIfDefined(new Type("String", dshell.lang.DShellString.class));
-		this.exceptionType = this.setTypeAndThrowIfDefined(new Type("Exception", dshell.lang.Exception.class));
-		this.objectType    = this.setTypeAndThrowIfDefined(new Type("Object", Object.class));
+		this.stringType    = this.setTypeAndThrowIfDefined(new NativeClassType(this, "String", "dshell.lang.DShellString"));
+		this.exceptionType = this.setTypeAndThrowIfDefined(new NativeClassType(this, "Exception", "dshell.lang.Exception"));
 		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
 		this.baseArrayType = this.setTypeAndThrowIfDefined(new GenericBaseType("Array", GenericArray.class));
 		this.baseMapType   = this.setTypeAndThrowIfDefined(new GenericBaseType("Map", GenericMap.class));
@@ -252,7 +252,7 @@ public class TypePool {
 
 	public static String toGenericTypeName(GenericBaseType baseType, Type[] types) {
 		StringBuilder sBuilder = new StringBuilder();
-		if(baseType.getNativeClass().equals(GenericArray.class)) {
+		if(baseType.getTypeName().equals("Array")) {
 			sBuilder.append(types[0].toString());
 			sBuilder.append("[]");
 		}
@@ -287,7 +287,7 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class Type {
+	public static abstract class Type {
 		/**
 		 * String representation of this type.
 		 * Must be unique name.
@@ -345,6 +345,10 @@ public class TypePool {
 
 		public boolean hasPairedClass() {
 			return true;
+		}
+
+		public boolean isAssignableFrom(Type targetType) {
+			return this.getTypeName().equals(targetType.getTypeName());
 		}
 	}
 
@@ -574,32 +578,45 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public final static class ClassType extends UserDefinedType {
-		private final Type superType;
+	public static class ClassType extends UserDefinedType {
+		protected final Type superType;
 
-		/**
-		 * key is FuncType name.
-		 */
+		protected final ConstructorPool pool;
 
 		/**
 		 * key is field name.
 		 */
-		private final HashMap<String, FieldHandle> fieldHandleMap;
+		protected final HashMap<String, FieldHandle> fieldHandleMap;
 
 		/**
-		 * key id method name.
+		 * key is method name.
 		 */
-		private final HashMap<String, MethodHandle> methodHandlMap;
+		protected final HashMap<String, MethodHandle> methodHandlMap;
 
-		private ClassType(String className, Type superType) {
+		protected ClassType(String className, Type superType) {
 			super(true);
 			this.superType = superType;
+			this.pool = new ConstructorPool();
 			this.fieldHandleMap = new HashMap<>();
 			this.methodHandlMap = new HashMap<>();
 		}
 
 		public Type getSuperType() {
 			return this.superType;
+		}
+
+		@Override
+		public boolean isAssignableFrom(Type targetType) {
+			if(this.getTypeName().equals(targetType.getTypeName())) {
+				return true;
+			}
+			if(targetType instanceof ClassType) {
+				Type superType = ((ClassType)targetType).getSuperType();
+				if(!(superType instanceof rootClassType)) {
+					return this.isAssignableFrom(superType);
+				}
+			}
+			return false;
 		}
 	}
 
@@ -639,6 +656,81 @@ public class TypePool {
 		}
 	}
 
+	/**
+	 * Used for ClassType.
+	 * contains constructor's type.
+	 * @author skgchxngsxyz-opensuse
+	 *
+	 */
+	private static class ConstructorPool {
+		private final HashMap<Integer, ArrayList<Type[]>> paramsTypeListMap;
+
+		private ConstructorPool() {
+			this.paramsTypeListMap = new HashMap<>();
+			/**
+			 * set default constructor type.
+			 */
+			ArrayList<Type[]> defaultTypes = new ArrayList<>();
+			defaultTypes.add(new Type[]{});
+			this.paramsTypeListMap.put(0, defaultTypes);
+		}
+
+		/**
+		 * 
+		 * @param paramsType
+		 * - parameters type except for receiver type.
+		 */
+		public void addConstructorParamsType(Type[] paramsType) {
+			int key = paramsType.length;
+			assert key != 0;
+			ArrayList<Type[]> paramsTypeList = this.paramsTypeListMap.get(key);
+			if(paramsTypeList == null) {
+				paramsTypeList = new ArrayList<>();
+				this.paramsTypeListMap.put(key, paramsTypeList);
+			}
+			paramsTypeList.add(paramsType);
+		}
+
+		public boolean matchParamsType(Type[] targteTypes) {
+			int key = targteTypes.length;
+			ArrayList<Type[]> paramsTypeList = this.paramsTypeListMap.get(key);
+			if(paramsTypeList == null) {
+				return false;
+			}
+			if(key == 0) {
+				return true;
+			}
+			int size = paramsTypeList.size();
+			for(int i = 0; i < size; i++) {
+				if(TypeUtils.matchParamsType(paramsTypeList.get(i), targteTypes)) {
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
+	public static class NativeClassType extends ClassType {
+		private final TypePool typePool;
+		private final String classSignature;
+
+		private NativeClassType(TypePool pool, String className, String classSignature) {
+			this(pool, className, classSignature, pool.objectType);
+		}
+
+		private NativeClassType(TypePool pool, String className, String classSignature, Type superType) {
+			super(className, superType);
+			this.typePool = pool;
+			this.classSignature = classSignature;
+		}
+	}
+
+	public final static class rootClassType extends Type {
+		private rootClassType() {
+			super("$Super$", Object.class);
+		}
+	}
+	
 	/**
 	 * It is an initial value of expression node.
 	 * Type checker replaces this type to actual type.
