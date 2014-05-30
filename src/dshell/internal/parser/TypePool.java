@@ -3,6 +3,9 @@ package dshell.internal.parser;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import dshell.internal.parser.CalleeHandle.ConstructorHandle;
+import dshell.internal.parser.CalleeHandle.FieldHandle;
+import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.lang.BooleanArray;
 import dshell.lang.FloatArray;
 import dshell.lang.GenericArray;
@@ -18,6 +21,7 @@ import dshell.lang.proxy.IntProxy;
  *
  */
 public class TypePool {
+	public static String baseArrayName = "$Array$";
 	/**
 	 * Equivalent to java long.
 	 */
@@ -49,6 +53,7 @@ public class TypePool {
 	 */
 	public final Type objectType = new rootClassType();
 
+	
 	/**
 	 * Equivalent to java void.
 	 */
@@ -83,7 +88,7 @@ public class TypePool {
 		this.stringType    = this.setTypeAndThrowIfDefined(new NativeClassType(this, "String", "dshell.lang.DShellString"));
 		this.exceptionType = this.setTypeAndThrowIfDefined(new NativeClassType(this, "Exception", "dshell.lang.Exception"));
 		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
-		this.baseArrayType = this.setTypeAndThrowIfDefined(new GenericBaseType("Array", GenericArray.class));
+		this.baseArrayType = this.setTypeAndThrowIfDefined(new GenericBaseType(TypePool.baseArrayName, GenericArray.class));
 		this.baseMapType   = this.setTypeAndThrowIfDefined(new GenericBaseType("Map", GenericMap.class));
 
 		/**
@@ -200,7 +205,7 @@ public class TypePool {
 	 */
 	public Type getTypeAndThrowIfUndefined(String typeName) {
 		Type type = this.getType(typeName);
-		if(!type.isResolvedType()) {
+		if(type instanceof UnresolvedType) {
 			throw new RuntimeException("undefined type: " + typeName);
 		}
 		return type;
@@ -216,7 +221,7 @@ public class TypePool {
 
 	private Type createAndGetTypeIfUndefined(Type type) {
 		Type gottenType = this.getType(type.getTypeName());
-		if(!gottenType.isResolvedType()) {
+		if(gottenType instanceof UnresolvedType) {
 			return this.setTypeAndThrowIfDefined(type, true);
 		}
 		return gottenType;
@@ -252,7 +257,7 @@ public class TypePool {
 
 	public static String toGenericTypeName(GenericBaseType baseType, Type[] types) {
 		StringBuilder sBuilder = new StringBuilder();
-		if(baseType.getTypeName().equals("Array")) {
+		if(baseType.getTypeName().equals(baseArrayName)) {
 			sBuilder.append(types[0].toString());
 			sBuilder.append("[]");
 		}
@@ -325,14 +330,6 @@ public class TypePool {
 		@Override
 		public String toString() {
 			return this.typeName;
-		}
-
-		/**
-		 * for type checker
-		 * @return
-		 */
-		public boolean isResolvedType() {
-			return true;
 		}
 
 		/**
@@ -530,6 +527,7 @@ public class TypePool {
 			return this.generatedClass;
 		}
 	}
+
 	/**
 	 * Represents function type.
 	 * It contains parameters type and return type.
@@ -539,13 +537,13 @@ public class TypePool {
 	public static class FunctionType extends UserDefinedType {
 		private final String funcTypeName;
 		private final Type returnType;
-		private final Type[] paramsType;
+		private final Type[] paramTypes;
 
-		private FunctionType(Type returnType, Type[] paramsType) {
+		private FunctionType(Type returnType, Type[] paramTypes) {
 			super(false);
 			this.returnType = returnType;
-			this.paramsType = paramsType;
-			this.funcTypeName = TypePool.toFuncTypeName(this.returnType, this.paramsType);
+			this.paramTypes = paramTypes;
+			this.funcTypeName = TypePool.toFuncTypeName(this.returnType, this.paramTypes);
 		}
 
 		@Override
@@ -558,11 +556,11 @@ public class TypePool {
 		}
 
 		public Type getParamTypeAt(int index) {
-			return this.paramsType[index];
+			return this.paramTypes[index];
 		}
 
-		public Type[] getParamsType() {
-			return this.paramsType;
+		public Type[] getParamTypes() {
+			return this.paramTypes;
 		}
 
 		@Override
@@ -581,7 +579,7 @@ public class TypePool {
 	public static class ClassType extends UserDefinedType {
 		protected final Type superType;
 
-		protected final ConstructorPool pool;
+		protected final ArrayList<ConstructorHandle> constructorHandleList;
 
 		/**
 		 * key is field name.
@@ -596,7 +594,7 @@ public class TypePool {
 		protected ClassType(String className, Type superType) {
 			super(true);
 			this.superType = superType;
-			this.pool = new ConstructorPool();
+			this.constructorHandleList = new ArrayList<>();
 			this.fieldHandleMap = new HashMap<>();
 			this.methodHandlMap = new HashMap<>();
 		}
@@ -618,95 +616,17 @@ public class TypePool {
 			}
 			return false;
 		}
-	}
 
-	/**
-	 * Used for ClassType.
-	 * contains class field's (except for FuncType field) name and type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	private static class FieldHandle {
-		public final String name;
-		public final Type type;
-
-		private FieldHandle(String name, Type type) {
-			this.name = name;
-			this.type = type;
-		}
-	}
-
-	/**
-	 * Used for ClassType.
-	 * contains FuncType field's name and type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	private static class MethodHandle {
-		public final String name;
-
-		/**
-		 *  Func<$returnType$, [$recvType, $argType...]>
-		 */
-		public final FunctionType type;
-
-		private MethodHandle(String name, FunctionType type) {
-			this.name = name;
-			this.type = type;
-		}
-	}
-
-	/**
-	 * Used for ClassType.
-	 * contains constructor's type.
-	 * @author skgchxngsxyz-opensuse
-	 *
-	 */
-	private static class ConstructorPool {
-		private final HashMap<Integer, ArrayList<Type[]>> paramsTypeListMap;
-
-		private ConstructorPool() {
-			this.paramsTypeListMap = new HashMap<>();
-			/**
-			 * set default constructor type.
-			 */
-			ArrayList<Type[]> defaultTypes = new ArrayList<>();
-			defaultTypes.add(new Type[]{});
-			this.paramsTypeListMap.put(0, defaultTypes);
+		public ArrayList<ConstructorHandle> getConstructorHandleList() {
+			return constructorHandleList;
 		}
 
-		/**
-		 * 
-		 * @param paramsType
-		 * - parameters type except for receiver type.
-		 */
-		public void addConstructorParamsType(Type[] paramsType) {
-			int key = paramsType.length;
-			assert key != 0;
-			ArrayList<Type[]> paramsTypeList = this.paramsTypeListMap.get(key);
-			if(paramsTypeList == null) {
-				paramsTypeList = new ArrayList<>();
-				this.paramsTypeListMap.put(key, paramsTypeList);
-			}
-			paramsTypeList.add(paramsType);
+		public HashMap<String, FieldHandle> getFieldHandleMap() {
+			return fieldHandleMap;
 		}
 
-		public boolean matchParamsType(Type[] targteTypes) {
-			int key = targteTypes.length;
-			ArrayList<Type[]> paramsTypeList = this.paramsTypeListMap.get(key);
-			if(paramsTypeList == null) {
-				return false;
-			}
-			if(key == 0) {
-				return true;
-			}
-			int size = paramsTypeList.size();
-			for(int i = 0; i < size; i++) {
-				if(TypeUtils.matchParamsType(paramsTypeList.get(i), targteTypes)) {
-					return true;
-				}
-			}
-			return false;
+		public HashMap<String, MethodHandle> getMethodHandlMap() {
+			return methodHandlMap;
 		}
 	}
 
@@ -745,11 +665,6 @@ public class TypePool {
 		@Override
 		public Class<?> getNativeClass() {
 			throw new RuntimeException("cannot call this method");
-		}
-
-		@Override
-		public boolean isResolvedType() {
-			return false;
 		}
 
 		@Override
