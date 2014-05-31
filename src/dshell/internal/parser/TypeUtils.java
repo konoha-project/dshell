@@ -1,6 +1,7 @@
 package dshell.internal.parser;
 
 import java.lang.reflect.Constructor;
+import java.util.List;
 
 import dshell.internal.parser.TypePool.Type;
 
@@ -56,5 +57,40 @@ public class TypeUtils {
 			t.printStackTrace();
 			throw new RuntimeException(t);
 		}
+	}
+
+	/**
+	 * create type descriptor.
+	 * @param type
+	 * @return
+	 */
+	public static org.objectweb.asm.Type toTypeDescriptor(Type type) {
+		return toTypeDescriptor(type.getInternalName());
+	}
+
+	public static org.objectweb.asm.Type toTypeDescriptor(String internalName) {
+		if(internalName.equals("long")) {
+			return org.objectweb.asm.Type.LONG_TYPE;
+		} else if(internalName.equals("double")) {
+			return org.objectweb.asm.Type.DOUBLE_TYPE;
+		} else if(internalName.equals("boolean")) {
+			return org.objectweb.asm.Type.BOOLEAN_TYPE;
+		} else {
+			return org.objectweb.asm.Type.getType( "L" + internalName + ";");
+		}
+	}
+
+	public static org.objectweb.asm.commons.Method toMehtodDescriptor(Type returnType, String methodName, List<Type> paramTypeList) {
+		int size = paramTypeList.size();
+		org.objectweb.asm.Type[] paramtypeDecs = size == 0 ? null : new org.objectweb.asm.Type[size];
+		for(int i = 0; i < size; i++) {
+			paramtypeDecs[i] = toTypeDescriptor(paramTypeList.get(i));
+		}
+		org.objectweb.asm.Type returnTypeDesc = toTypeDescriptor(returnType);
+		return new org.objectweb.asm.commons.Method(methodName, returnTypeDesc, paramtypeDecs);
+	}
+
+	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<Type> paramTypeList) {
+		return toMehtodDescriptor(TypePool.voidType, "<int>", paramTypeList);
 	}
 } 

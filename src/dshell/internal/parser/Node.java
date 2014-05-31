@@ -1,6 +1,7 @@
 package dshell.internal.parser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.antlr.v4.runtime.Token;
 
@@ -8,7 +9,6 @@ import dshell.internal.parser.NodeUtils.ArgsDecl;
 import dshell.internal.parser.NodeUtils.Arguments;
 import dshell.internal.parser.NodeUtils.Block;
 import dshell.internal.parser.NodeUtils.CatchedException;
-import dshell.internal.parser.NodeUtils.ClassBody;
 import dshell.internal.parser.NodeUtils.IfElseBlock;
 import dshell.internal.parser.NodeUtils.MapEntry;
 import dshell.internal.parser.NodeUtils.ReturnExpr;
@@ -55,7 +55,7 @@ public abstract class Node {
 		/**
 		 * It represents expression return type.
 		 */
-		protected Type type = TypePool.getInstance().unresolvedType;
+		protected Type type = TypePool.unresolvedType;
 
 		/**
 		 * Consider this node as statement.
@@ -100,7 +100,6 @@ public abstract class Node {
 
 		public IntValueNode(Token token) {
 			this.setToken(token);
-			this.type = TypePool.getInstance().intType;
 			this.value = Long.parseLong(token.getText());
 		}
 
@@ -124,7 +123,6 @@ public abstract class Node {
 
 		public FloatValueNode(Token token) {
 			this.setToken(token);
-			this.type = TypePool.getInstance().floatType;
 			this.value = Double.parseDouble(token.getText());
 		}
 
@@ -148,7 +146,6 @@ public abstract class Node {
 
 		public BooleanValueNode(Token token) {
 			this.setToken(token);
-			this.type = TypePool.getInstance().booleanType;
 			this.value = Boolean.parseBoolean(token.getText());
 		}
 
@@ -172,7 +169,6 @@ public abstract class Node {
 
 		public StringValueNode(Token token) {
 			this.setToken(token);
-			this.type = TypePool.getInstance().stringType;
 			this.value = parseTokenText(this.token);
 		}
 
@@ -385,7 +381,6 @@ public abstract class Node {
 
 		public InstanceofNode(Token token, Node exprNode, Type targetType) {
 			this.setToken(token);
-			this.type = TypePool.getInstance().booleanType;
 			this.exprNode = exprNode;
 			this.targetType = targetType;
 		}
@@ -617,7 +612,6 @@ public abstract class Node {
 		private final Node rightNode;
 
 		public CondOpNode(Token token, Node leftNode, Node rightNode) {
-			this.type = TypePool.getInstance().booleanType;
 			this.setToken(token);
 			this.condOp = this.token.getText();
 			this.leftNode = leftNode;
@@ -1079,7 +1073,7 @@ public abstract class Node {
 			this.setToken(token);
 			this.varName = nameToken.getText();
 			this.initValueNode = initValueNode;
-			this.valueType = TypePool.getInstance().unresolvedType;
+			this.valueType = TypePool.unresolvedType;
 			this.isReadOnly = !token.getText().equals("var");
 		}
 
@@ -1186,22 +1180,26 @@ public abstract class Node {
 	 */
 	public static class ClassNode extends Node {
 		private final ClassType classType;
-		private final ArrayList<Node> classElementList;
+		private final List<Node> classElementList;
 
-		public ClassNode(Token token, String className, Type superType, ClassBody body) {
+		/**
+		 * 
+		 * @param token
+		 * @param classType
+		 * - unfinished class type.
+		 * @param body
+		 */
+		public ClassNode(Token token, ClassType classType, List<Node> elementList) {
 			this.setToken(token);
-			this.classElementList = body.getNodeList();
-			/**
-			 * in ClassNode initialization, set ClassType to TypePool.
-			 */
-			this.classType = TypePool.getInstance().createAndSetClassType(className, superType);
+			this.classType = classType;
+			this.classElementList = elementList;
 		}
 
 		public ClassType getClassType() {
 			return this.classType;
 		}
 
-		public ArrayList<Node> getElementList() {
+		public List<Node> getElementList() {
 			return this.classElementList;
 		}
 
@@ -1223,7 +1221,7 @@ public abstract class Node {
 
 		public ConstructorNode(Token token, ArgsDecl decl, Node blockNode) {
 			this.setToken(token);
-			this.recvType = TypePool.getInstance().unresolvedType;
+			this.recvType = TypePool.unresolvedType;
 			this.nodeList = decl.getNodeList();
 			this.blockNode = (BlockNode) blockNode;
 		}

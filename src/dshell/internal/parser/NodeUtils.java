@@ -1,11 +1,13 @@
 package dshell.internal.parser;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.SymbolNode;
+import dshell.internal.parser.TypePool.ClassType;
 import dshell.internal.parser.TypePool.Type;
 
 public class NodeUtils {
@@ -91,7 +93,7 @@ public class NodeUtils {
 
 		public CatchedException(Token token) {
 			this.name = token.getText();
-			this.type = TypePool.getInstance().exceptionType;
+			this.type = TypePool.exceptionType;
 		}
 
 		public void setType(Type type) {
@@ -137,7 +139,7 @@ public class NodeUtils {
 	}
 
 	public static class ClassBody {
-		private final ArrayList<Node> nodeList;
+		private final List<Node> nodeList;
 
 		public ClassBody() {
 			this.nodeList = new ArrayList<>();
@@ -147,37 +149,37 @@ public class NodeUtils {
 			this.nodeList.add(node);
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<Node> getNodeList() {
 			return this.nodeList;
 		}
 	}
 
-	public static class SuperTypeResolver {
-		private Type type;
+	public static class ClassTypeResolver {
+		private final String className;
+		private final TypePool pool;
+		private Type superType = TypePool.objectType;
+		private ClassType classType;
 
-		public SuperTypeResolver() {
-			this.type = TypePool.getInstance().objectType;
+		public ClassTypeResolver(Token token, TypePool pool) {
+			this.className = token.getText();
+			this.pool = pool;
+			if(className.equals("Func")) {
+				throw new RuntimeException("Func is forbidden class name");
+			}
 		}
 
-		public void setType(Type type) {
-			this.type = type;
+		public void setSuperType(Type type) {
+			if(type instanceof ClassType) {
+				this.superType = type;
+			}
+			throw new RuntimeException(type.getTypeName() + " is not class type");
 		}
 
-		public Type getType() {
-			return this.type;
+		public ClassType getClassType() {
+			if(this.classType == null) {
+				this.classType = this.pool.createAndSetClassType(this.className, this.superType);
+			}
+			return this.classType;
 		}
-	}
-
-	/**
-	 * verify class name.
-	 * @return
-	 * - if class name is 'Func', throw exception.
-	 */
-	public static String resolveClassName(Token token) {
-		String className = token.getText();
-		if(className.equals("Func")) {
-			throw new RuntimeException("Func is forbidden class name");
-		}
-		return className;
 	}
 }

@@ -1,5 +1,8 @@
 package dshell.internal.parser;
 
+import java.util.Collections;
+import java.util.List;
+
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import dshell.internal.parser.TypePool.Type;
@@ -70,8 +73,8 @@ public abstract class CalleeHandle {
 
 		private void initTypeDesc() {
 			if(this.ownerTypeDesc == null || this.fieldTypeDesc == null) {
-				this.ownerTypeDesc = org.objectweb.asm.Type.getType(this.ownerType.getNativeClass());
-				this.fieldTypeDesc = org.objectweb.asm.Type.getType(this.fieldType.getNativeClass());
+				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerType);
+				this.fieldTypeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
 			}
 		}
 
@@ -121,8 +124,9 @@ public abstract class CalleeHandle {
 
 		/**
 		 * not contains receiver type.
+		 * it is unmodified.
 		 */
-		protected final TypePool.Type[] paramTypes;
+		protected final List<TypePool.Type> paramTypeList;
 
 		/**
 		 * 
@@ -132,32 +136,26 @@ public abstract class CalleeHandle {
 		 * @param paramTypes
 		 * - if has no parameters, it is empty array;
 		 */
-		protected MethodHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, TypePool.Type[] paramTypes) {
+		protected MethodHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
 			super(calleeName, ownerType);
 			assert returnType != null;
-			assert paramTypes != null;
+			assert paramTypeList != null;
 			this.returnType = returnType;
-			this.paramTypes = paramTypes;
+			this.paramTypeList = Collections.unmodifiableList(paramTypeList);
 		}
 
 		public TypePool.Type getReturnType() {
 			return this.returnType;
 		}
 
-		public TypePool.Type[] getParamTypes() {
-			return this.paramTypes;
+		public List<TypePool.Type> getParamTypeList() {
+			return this.paramTypeList;
 		}
 
 		protected void initMethodDesc() {
 			if(this.ownerTypeDesc == null || this.methodDesc == null) {
-				this.ownerTypeDesc = org.objectweb.asm.Type.getType(this.ownerType.getNativeClass());
-				int size = this.paramTypes.length;
-				Class<?>[] paramClasses = size == 0 ? null : new Class<?>[size];
-				for(int i = 0; i < size; i++) {
-					paramClasses[i] = this.paramTypes[i].getNativeClass();
-				}
-				java.lang.reflect.Method method = TypeUtils.getMethod(this.ownerType.getNativeClass(), this.calleeName, paramClasses);
-				this.methodDesc = org.objectweb.asm.commons.Method.getMethod(method);
+				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerType);
+				this.methodDesc = TypeUtils.toMehtodDescriptor(this.returnType, this.calleeName, this.paramTypeList);
 			}
 		}
 
@@ -179,20 +177,14 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class ConstructorHandle extends MethodHandle {
-		protected ConstructorHandle(TypePool.Type ownerType, TypePool.Type[] paramTypes) {
-			super("<init>", ownerType, TypePool.getInstance().voidType, paramTypes);
+		protected ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
+			super("<init>", ownerType, TypePool.voidType, paramTypeList);
 		}
 
 		private <T> void initConstructorDesc() {
 			if(this.ownerTypeDesc == null || this.methodDesc == null) {
-				this.ownerTypeDesc = org.objectweb.asm.Type.getType(this.ownerType.getNativeClass());
-				int size = this.paramTypes.length;
-				Class<?>[] paramClasses = size == 0 ? null : new Class<?>[size];
-				for(int i = 0; i < size; i++) {
-					paramClasses[i] = this.paramTypes[i].getNativeClass();
-				}
-				java.lang.reflect.Constructor<T> constructor = TypeUtils.getConstructor(this.ownerType.getNativeClass(), paramClasses);
-				this.methodDesc = org.objectweb.asm.commons.Method.getMethod(constructor);
+				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerType);
+				this.methodDesc = TypeUtils.toConstructorDescriptor(this.paramTypeList);
 			}
 		}
 
@@ -215,7 +207,7 @@ public abstract class CalleeHandle {
 	 */
 	public static class FunctionHandle extends MethodHandle {
 		protected FunctionHandle(TypePool.FunctionType funcType) {
-			super("invoke", funcType, funcType.getReturnType(), funcType.getParamTypes());
+			super("invoke", funcType, funcType.getReturnType(), funcType.getParamTypeList());
 		}
 
 		/**
@@ -228,9 +220,14 @@ public abstract class CalleeHandle {
 		}
 	}
 
+	/**
+	 * Represent operator.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
 	public static class OperatorHandle extends MethodHandle {
-		protected OperatorHandle(String calleeName, Type ownerType, Type returnType, Type[] paramTypes) {
-			super(calleeName, ownerType, returnType, paramTypes);
+		protected OperatorHandle(String calleeName, Type ownerType, Type returnType, List<TypePool.Type> paramTypeList) {
+			super(calleeName, ownerType, returnType, paramTypeList);
 		}
 	}
 }

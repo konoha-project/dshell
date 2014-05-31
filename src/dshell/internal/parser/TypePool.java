@@ -1,19 +1,15 @@
 package dshell.internal.parser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
+import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
-import dshell.lang.BooleanArray;
-import dshell.lang.FloatArray;
-import dshell.lang.GenericArray;
-import dshell.lang.GenericMap;
-import dshell.lang.IntArray;
-import dshell.lang.proxy.BooleanProxy;
-import dshell.lang.proxy.FloatProxy;
-import dshell.lang.proxy.IntProxy;
 
 /**
  * It contains builtin types ant user defined types.
@@ -21,153 +17,101 @@ import dshell.lang.proxy.IntProxy;
  *
  */
 public class TypePool {
-	public static String baseArrayName = "$Array$";
+	/**
+	 * package name for generated class.
+	 */
+	private final static String generatedClassNamePrefix = "dshell/defined/class/";
+
+	/**
+	 * package name for generated func interface.
+	 */
+	private final static String generatedFuncNamePrefix = "dshell/defined/func/";
+
+	private static int funcNameSuffix = -1;
+
+	/**
+	 * used for type checker.
+	 * it is default value of ExprNode type.
+	 */
+	public final static Type unresolvedType = new UnresolvedType();
+
+	/**
+	 * Equivalent to java void.
+	 */
+	public final static Type voidType = new VoidType();
+
 	/**
 	 * Equivalent to java long.
 	 */
-	public final Type intType;
+	public final static Type intType = new PrimitiveType("int", "long");
 
 	/**
 	 * Equivalent to java double.
 	 */
-	public final Type floatType;
+	public final static Type floatType = new PrimitiveType("float", "double");
 
 	/**
 	 * Equivalent to java boolean.
 	 */
-	public final Type booleanType;
-
-	/**
-	 * Represents D-Shell string type.
-	 */
-	public final Type stringType;
-
-	/**
-	 * Represents D-Shell root excepion type.
-	 */
-	public final Type exceptionType;
+	public final static Type booleanType = new PrimitiveType("boolean", "boolean");
 
 	/**
 	 * Represents D-Shell root class type.
 	 * It is equivalent to java Object.
 	 */
-	public final Type objectType = new rootClassType();
-
-	
-	/**
-	 * Equivalent to java void.
-	 */
-	public final Type voidType;
+	public final static Type objectType = new RootClassType();
 
 	/**
-	 * Used by Type Checker
+	 * Represents D-Shell string type.
 	 */
-	public final Type unresolvedType = new UnresolvedType();
-	public final Type baseArrayType;
-	public final Type baseMapType;
+	public final static Type stringType = new ClassType("String", "dshell/lang/DShellString", objectType, false);
+
+	/**
+	 * Represents D-Shell root exception type.
+	 */
+	public final static Type exceptionType = new ClassType("Exception", "dshell/lang/Exception", objectType, true);
+
+	private final GenericBaseType baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
+	private final GenericBaseType baseMapType = new GenericBaseType("Map", "dshell/lang/GenericMap", objectType, false);
+
+	private final FunctionBaseType baseFuncType = new FunctionBaseType();
 
 	/**
 	 * type name to type translation table
 	 */
 	protected final HashMap<String, Type> typeMap;
 
-	/**
-	 * native class to type translation table
-	 */
-	protected final HashMap<Class<?>, Type> class2TypeMap;
-
-	protected TypePool() {
+	public TypePool() {
 		this.typeMap = new HashMap<>();
-		this.class2TypeMap = new HashMap<>();
+
 		/**
 		 * add basic type.
 		 */
-		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", long.class));
-		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", double.class));
-		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", boolean.class));
-		this.stringType    = this.setTypeAndThrowIfDefined(new NativeClassType(this, "String", "dshell.lang.DShellString"));
-		this.exceptionType = this.setTypeAndThrowIfDefined(new NativeClassType(this, "Exception", "dshell.lang.Exception"));
-		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
-		this.baseArrayType = this.setTypeAndThrowIfDefined(new GenericBaseType(TypePool.baseArrayName, GenericArray.class));
-		this.baseMapType   = this.setTypeAndThrowIfDefined(new GenericBaseType("Map", GenericMap.class));
-
-		/**
-		 * add primitive array type.
-		 */
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.intType));
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.floatType));
-		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.booleanType));
+		this.setTypeAndThrowIfDefined(voidType);
+		this.setTypeAndThrowIfDefined(intType);
+		this.setTypeAndThrowIfDefined(floatType);
+		this.setTypeAndThrowIfDefined(booleanType);
+		this.setTypeAndThrowIfDefined(stringType);
+		this.setTypeAndThrowIfDefined(exceptionType);
+		this.setTypeAndThrowIfDefined(baseMapType);
+		this.setTypeAndThrowIfDefined(baseFuncType);
+//
+//		/**
+//		 * add primitive array type.
+//		 */
+//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.intType));
+//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.floatType));
+//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.booleanType));
 	}
 
-	/**
-	 * set type and native class to typeMap.
-	 * @param type
-	 * @return
-	 */
-	private Type setTypeAndThrowIfDefined(Type type) {
-		return this.setTypeAndThrowIfDefined(type, false);
+	private void setTypeAndThrowIfDefined(Type type) {
+		if(this.typeMap.containsKey(type.getTypeName())) {
+			throw new RuntimeException(type.getTypeName() + " is already defined");
+		}
+		this.typeMap.put(type.getTypeName(), type);
 	}
 
-	/**
-	 * set type and native class to typeMap.
-	 * @param type
-	 * @param allowUnresolvedClass
-	 * - If true, do not set native class.
-	 * @return
-	 */
-	private Type setTypeAndThrowIfDefined(Type type, boolean allowUnresolvedClass) {
-		/**
-		 * check type duplication.
-		 */
-		String typeName = type.getTypeName();
-		if(this.typeMap.containsKey(typeName)) {
-			throw new RuntimeException(typeName + " has already defined.");
-		}
-		/**
-		 * add type to typeMap.
-		 */
-		this.typeMap.put(typeName, type);
-
-		if(type.hasPairedClass()) {
-			Class<?> nativeClass = type.getNativeClass();
-			if(allowUnresolvedClass) {
-				return type;
-			}
-			assert nativeClass != null;
-			if(this.class2TypeMap.containsKey(nativeClass)) {
-				throw new RuntimeException("native class " + nativeClass.getName() + " has already exported.");
-			}
-			this.class2TypeMap.put(nativeClass, type);
-		}
-		return type;
-	}
-
-	/**
-	 * set generated native class.
-	 * It is used for ClassType.
-	 * @param type
-	 * @param nativeClass
-	 */
-	public void setGeneratedNativeClass(UserDefinedType type, Class<?> nativeClass) {
-		String typeName = type.getTypeName();
-		if(!this.typeMap.containsKey(typeName)) {
-			throw new RuntimeException("undefined type: " + typeName);
-		}
-		if(this.class2TypeMap.containsKey(nativeClass)) {
-			throw new RuntimeException("native class " + nativeClass.getName() + " has already defined.");
-		}
-		this.class2TypeMap.put(nativeClass, type);
-		type.setGeneratedClass(nativeClass);
-	}
-
-	public ClassType createAndSetClassType(String className, Type superType) {
-		if(!superType.allowExtends) {
-			throw new RuntimeException(superType.getTypeName() + " is not inheritable");
-		}
-		Type type = new ClassType(className, superType);
-		return (ClassType) this.setTypeAndThrowIfDefined(type, true);
-	}
-
+	// type getter api
 	/**
 	 * 
 	 * @param typeName
@@ -180,28 +124,14 @@ public class TypePool {
 		if(type instanceof GenericBaseType) {
 			throw new RuntimeException("cannot directly use generic type:" + type.getTypeName());
 		}
-		return type == null ? this.unresolvedType : type;
-	}
-
-	/**
-	 * get generic base type.
-	 * @param typeName
-	 * @return
-	 * - if type is undefined, throw exception.
-	 */
-	public Type getGenericBaseType(String typeName) {
-		Type type = this.typeMap.get(typeName);
-		if(!(type instanceof GenericBaseType)) {
-			throw new RuntimeException("undefined generic base type: " + typeName);
-		}
-		return type;
+		return type == null ? TypePool.unresolvedType : type;
 	}
 
 	/**
 	 * get type except generic base type.
 	 * @param typeName
 	 * @return
-	 * - if type is not defined, throw exception.
+	 * - if type is undefined, throw exception.
 	 */
 	public Type getTypeAndThrowIfUndefined(String typeName) {
 		Type type = this.getType(typeName);
@@ -211,6 +141,26 @@ public class TypePool {
 		return type;
 	}
 
+	/**
+	 * get generic base type.
+	 * @param typeName
+	 * @return
+	 * - if type is undefined, throw exception.
+	 */
+	public GenericBaseType getGenericBaseType(String typeName) {
+		Type type = this.getTypeAndThrowIfUndefined(typeName);
+		if(type instanceof GenericBaseType) {
+			return (GenericBaseType) type;
+		}
+		throw new RuntimeException(typeName + " is not generic base type");
+	}
+
+	/**
+	 * get class type.
+	 * @param typeName
+	 * @return
+	 * - if undefined, throw exception.
+	 */
 	public ClassType getClassType(String typeName) {
 		Type type = this.getTypeAndThrowIfUndefined(typeName);
 		if(type instanceof ClassType) {
@@ -219,22 +169,41 @@ public class TypePool {
 		throw new RuntimeException(typeName + " is not class type");
 	}
 
-	private Type createAndGetTypeIfUndefined(Type type) {
-		Type gottenType = this.getType(type.getTypeName());
-		if(gottenType instanceof UnresolvedType) {
-			return this.setTypeAndThrowIfDefined(type, true);
+	// type creator api
+	/**
+	 * create class and set to typemap.
+	 * @param className
+	 * - user defined class name.
+	 * @param superType
+	 * @return
+	 * - generated class type
+	 */
+	public ClassType createAndSetClassType(String className, Type superType) {
+		if(!superType.allowExtends()) {
+			throw new RuntimeException(superType.getTypeName() + " is not inheritable");
 		}
-		return gottenType;
+		if(!(this.getType(className) instanceof UnresolvedType)) {
+			throw new RuntimeException(className + " is already defined.");
+		}
+		ClassType classType = new ClassType(className, generatedClassNamePrefix + className, superType, true);
+		this.typeMap.put(className, classType);
+		return classType;
 	}
 
-	public Type createAndGetArrayTypeIfUndefined(Type elementType) {
-		return this.createAndGetTypeIfUndefined(new GenericArrayType((GenericBaseType) this.baseArrayType, elementType));
+	public GenericArrayType createAndGetArrayTypeIfUndefined(Type elementType) {
+		String typeName = toGenericArrayTypeName(elementType);
+		Type arrayType = this.getType(typeName);
+		if(arrayType instanceof UnresolvedType) {
+			arrayType = new GenericArrayType(this.baseArrayType, elementType);
+			assert typeName.equals(arrayType.getTypeName());
+			this.typeMap.put(typeName, arrayType);
+		}
+		return (GenericArrayType) arrayType;
 	}
 
-	public Type createAndGetMapTypeIfUndefined(Type elementType) {
-		return this.createAndGetTypeIfUndefined(new GenericMapType((GenericBaseType) this.baseMapType, elementType));
+	public GenericType createAndGetMapTypeIfUndefined(Type elementType) {
+		return this.createAndGetGenericTypeIfUndefined("Map", new Type[]{elementType});
 	}
-
 	/**
 	 * Currently user defined generic class not supported.
 	 * Future may be supported.
@@ -242,44 +211,66 @@ public class TypePool {
 	 * @param types
 	 * @return
 	 */
-	public Type createAndGetGenericTypeIfUndefined(String baseTypeName, Type[] types) {
-		GenericBaseType baseType = (GenericBaseType) this.getTypeAndThrowIfUndefined(baseTypeName);
-		return this.createAndGetTypeIfUndefined(new GenericType(baseType, types));
+	public GenericType createAndGetGenericTypeIfUndefined(String baseTypeName, Type[] types) {
+		GenericBaseType baseType = this.getGenericBaseType(baseTypeName);
+		String typeName = toGenericTypeName(baseType, types);
+		Type genericType = this.getType(typeName);
+		if(genericType instanceof UnresolvedType) {
+			List<Type> typeList = new ArrayList<>(types.length);
+			for(Type elementType : types) {
+				typeList.add(elementType);
+			}
+			genericType = new GenericType(typeName, baseType, typeList);
+			this.typeMap.put(typeName, genericType);
+		}
+		return (GenericType) genericType;
 	}
 
-	public Type createAndGetFuncTypeIfUndefined(Type returnType, Type[] paramsType) {
-		return this.createAndGetTypeIfUndefined(new FunctionType(returnType, paramsType));
+	public FunctionType createAndGetFuncTypeIfUndefined(Type returnType, Type[] paramTypes) {
+		String typeName = toFuncTypeName(returnType, paramTypes);
+		Type funcType = this.getType(typeName);
+		if(funcType instanceof UnresolvedType) {
+			List<Type> typeList = new ArrayList<>(paramTypes.length);
+			for(Type paramType : paramTypes) {
+				typeList.add(paramType);
+			}
+			String internalName = generatedFuncNamePrefix + "FuncType" + ++funcNameSuffix;
+			funcType = new FunctionType(typeName, internalName, returnType, typeList);
+			this.typeMap.put(typeName, funcType);
+		}
+		return (FunctionType) funcType;
 	}
 
-	public static String toGenericTypeName(GenericBaseType baseType, Type type) {
-		return toGenericTypeName(baseType, new Type[]{type});
-	}
-
+	// type name creator api.
+	/**
+	 * crate generic type name except for generic array.
+	 * @param baseType
+	 * @param types
+	 * @return
+	 */
 	public static String toGenericTypeName(GenericBaseType baseType, Type[] types) {
 		StringBuilder sBuilder = new StringBuilder();
-		if(baseType.getTypeName().equals(baseArrayName)) {
-			sBuilder.append(types[0].toString());
-			sBuilder.append("[]");
-		}
-		else {
-			sBuilder.append(baseType.getTypeName());
-			sBuilder.append("<");
-			for(int i = 0; i < types.length; i++) {
-				if(i > 0) {
-					sBuilder.append(",");
-				}
-				sBuilder.append(types[i].getTypeName());
+		sBuilder.append(baseType.getTypeName());
+		sBuilder.append("<");
+		for(int i = 0; i < types.length; i++) {
+			if(i > 0) {
+				sBuilder.append(",");
 			}
-			sBuilder.append(">");
+			sBuilder.append(types[i].getTypeName());
 		}
+		sBuilder.append(">");
 		return sBuilder.toString();
 	}
 
-	public static String toFuncTypeName(Type returnType, Type[] paramsType) {
+	public static String toGenericArrayTypeName(Type elementType) {
+		return elementType.getTypeName() + "[]";
+	}
+
+	public static String toFuncTypeName(Type returnType, Type[] paramTypes) {
 		StringBuilder sBuilder = new StringBuilder();
 		sBuilder.append("Func<");
 		sBuilder.append(returnType.toString());
-		for(Type paramType : paramsType) {
+		for(Type paramType : paramTypes) {
 			sBuilder.append(",");
 			sBuilder.append(paramType.toString());
 		}
@@ -300,31 +291,31 @@ public class TypePool {
 		private final String typeName;
 
 		/**
-		 * Corresponding java class.
+		 * Represent fully qualify class name.
 		 */
-		private final Class<?> nativeClass;
+		private final String internalName;
 
 		/**
 		 * If true, represents final type.
 		 */
 		private final boolean allowExtends;
 
-		protected Type(String typeName, Class<?> nativeClass) {
-			this(typeName, nativeClass, true);
+		protected Type(String typeName, String internalName) {
+			this(typeName, internalName, true);
 		}
 
-		protected Type(String typeName, Class<?> nativeClass, boolean allowExtends) {
+		protected Type(String typeName, String internalName, boolean allowExtends) {
 			this.typeName = typeName;
-			this.nativeClass = nativeClass;
+			this.internalName = internalName;
 			this.allowExtends = allowExtends;
-		}
-
-		public Class<?> getNativeClass() {
-			return this.nativeClass;
 		}
 
 		public String getTypeName() {
 			return this.typeName;
+		}
+
+		public String getInternalName() {
+			return this.internalName;
 		}
 
 		@Override
@@ -340,12 +331,50 @@ public class TypePool {
 			return allowExtends;
 		}
 
-		public boolean hasPairedClass() {
-			return true;
-		}
-
+		/**
+		 * check inheritance of targetType.
+		 * @param targetType
+		 * @return
+		 * - if this type is the super type of target type, return true;
+		 */
 		public boolean isAssignableFrom(Type targetType) {
 			return this.getTypeName().equals(targetType.getTypeName());
+		}
+
+		/**
+		 * get constructor handle list.
+		 * handle list is unmodified.
+		 * @return
+		 * - if constructor is undefined in this type, return null.
+		 */
+		public List<ConstructorHandle> getConstructorHandleList() {
+			return null;
+		}
+
+		/**
+		 * get field handle map.
+		 * handle map is unmodified.
+		 * @return
+		 * - if field is undefined in this type, return null.
+		 */
+		public Map<String, FieldHandle> getFieldHandleMap() {
+			return null;
+		}
+
+		/**
+		 * get method handle map.
+		 * handle map is unmodified.
+		 * @return
+		 * - if method is undefined in this type, return null.
+		 */
+		public Map<String, MethodHandle> getMethodHandleMap() {
+			return null;
+		}
+
+		/**
+		 * if called, cannot change this class element.
+		 */
+		public void finalizeType() {
 		}
 	}
 
@@ -355,38 +384,8 @@ public class TypePool {
 	 *
 	 */
 	public static class PrimitiveType extends Type {
-		private final Class<?> wrapperClass;
-		private final Class<?> proxyClass;
-
-		private PrimitiveType(String typeName, Class<?> nativeClass) {
-			super(typeName, nativeClass, false);
-			if(nativeClass.equals(long.class)) {
-				this.wrapperClass = Long.class;
-				this.proxyClass = IntProxy.class;
-			} else if(nativeClass.equals(double.class)) {
-				this.wrapperClass = Double.class;
-				this.proxyClass = FloatProxy.class;
-			} else if(nativeClass.equals(boolean.class)) {
-				this.wrapperClass = Boolean.class;
-				this.proxyClass = BooleanProxy.class;
-			} else {
-				throw new RuntimeException(nativeClass.getCanonicalName() + " is unsupported class");
-			}
-		}
-
-		/**
-		 * get primitive wrapper class
-		 * @return
-		 */
-		public Class<?> getWrapperClass() {
-			return this.wrapperClass;
-		}
-
-		/**
-		 * get method call proxy class
-		 */
-		public Class<?> getProxyClass() {
-			return this.proxyClass;
+		private PrimitiveType(String typeName, String internalName) {
+			super(typeName, internalName, false);
 		}
 	}
 
@@ -397,134 +396,42 @@ public class TypePool {
 	 */
 	public static class VoidType extends Type {
 		private VoidType() {
-			super("void", Void.class, false);
+			super("void", "void", false);
 		}
 	}
 
 	/**
-	 * Represents generic type (array type or map type).
-	 * It contains elements type.
+	 * Represent class root type.
+	 * it is equivalent for java.lang.object
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class GenericType extends Type {
-		private final String actualTypeName;
-		private final GenericBaseType baseType;
-		private final Type[] elementsType;
-
-		protected GenericType(GenericBaseType baseType, Type[] elementsType) {
-			super("", null, false);
-			this.baseType = baseType;
-			this.elementsType = elementsType;
-			this.actualTypeName = TypePool.toGenericTypeName(this.baseType, this.elementsType);
+	public final static class RootClassType extends Type {
+		private RootClassType() {
+			super("$Super$", "java.lang.Object");
 		}
-
-		@Override
-		public Class<?> getNativeClass() {
-			return this.baseType.getNativeClass();
-		}
-
-		@Override
-		public String getTypeName() {
-			return this.actualTypeName;
-		}
-
-		@Override
-		public String toString() {
-			return this.actualTypeName;
-		}
-
-		public GenericBaseType getBaseType() {
-			return this.baseType;
-		}
-
-		public Type[] getElementsType() {
-			return this.elementsType;
-		}
-
-		@Override
-		public boolean hasPairedClass() {
-			return false;
+	}
+	
+	/**
+	 * It is an initial value of expression node.
+	 * Type checker replaces this type to resolved type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public final static class UnresolvedType extends Type {
+		private UnresolvedType(){
+			super("$unresolved$", "$unresolved$", false);
 		}
 	}
 
 	/**
-	 * Represents base type of generic type.
-	 * Do not use it directly.
+	 * Represent dshell function type interface.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class GenericBaseType extends Type {
-		private GenericBaseType(String typeName, Class<?> nativeClass) {
-			super(typeName, nativeClass, false);
-		}
-	}
-
-	/**
-	 * Represents generic array type.
-	 * It contains element type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class GenericArrayType extends GenericType {
-		private GenericArrayType(GenericBaseType baseType, Type elementType) {
-			super(baseType, new Type[]{elementType});
-		}
-	}
-
-	public final static class PrimitiveArrayType extends GenericArrayType {
-		private final Class<?> primitiveArrayClass;
-
-		private PrimitiveArrayType(GenericBaseType baseType, PrimitiveType elementType) {
-			super(baseType, elementType);
-			if(elementType.getNativeClass().equals(long.class)) {
-				this.primitiveArrayClass = IntArray.class;
-			} else if(elementType.getNativeClass().equals(double.class)) {
-				this.primitiveArrayClass = FloatArray.class;
-			} else if(elementType.getNativeClass().equals(boolean.class)) {
-				this.primitiveArrayClass = BooleanArray.class;
-			} else {
-				throw new RuntimeException(elementType.getNativeClass().getCanonicalName() + " is unsupported class");
-			}
-		}
-
-		@Override
-		public Class<?> getNativeClass() {
-			return this.primitiveArrayClass;
-		}
-
-		@Override
-		public boolean hasPairedClass() {
-			return true;
-		}
-	}
-
-	/**
-	 * Represents generic map type.
-	 * It contains element type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public final static class GenericMapType extends GenericType {
-		private GenericMapType(GenericBaseType baseType, Type elementType) {
-			super(baseType, new Type[]{elementType});
-		}
-	}
-
-	public static class UserDefinedType extends Type {
-		protected Class<?> generatedClass;
-
-		protected UserDefinedType(boolean allowExtends) {
-			super("", null, allowExtends);
-		}
-
-		public void setGeneratedClass(Class<?> generatedClass) {
-			this.generatedClass = generatedClass;
-		}
-
-		@Override
-		public Class<?> getNativeClass() {
-			return this.generatedClass;
+	public static final class FunctionBaseType extends Type {
+		protected FunctionBaseType() {
+			super("Func", "dshell/lang/Function");
 		}
 	}
 
@@ -534,38 +441,28 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class FunctionType extends UserDefinedType {
-		private final String funcTypeName;
+	public static class FunctionType extends Type {
 		private final Type returnType;
-		private final Type[] paramTypes;
+		private List<Type> paramTypeList;
+		private final FunctionHandle handle;
 
-		private FunctionType(Type returnType, Type[] paramTypes) {
-			super(false);
+		protected FunctionType(String funcTypeName, String internalName, Type returnType, List<Type> paramTypeList) {
+			super(funcTypeName, internalName, true);
 			this.returnType = returnType;
-			this.paramTypes = paramTypes;
-			this.funcTypeName = TypePool.toFuncTypeName(this.returnType, this.paramTypes);
-		}
-
-		@Override
-		public String getTypeName() {
-			return this.funcTypeName;
+			this.paramTypeList = Collections.unmodifiableList(paramTypeList);
+			this.handle = new FunctionHandle(this);
 		}
 
 		public Type getReturnType() {
 			return this.returnType;
 		}
 
-		public Type getParamTypeAt(int index) {
-			return this.paramTypes[index];
+		public List<Type> getParamTypeList() {
+			return this.paramTypeList;
 		}
 
-		public Type[] getParamTypes() {
-			return this.paramTypes;
-		}
-
-		@Override
-		public String toString() {
-			return this.funcTypeName;
+		public FunctionHandle getHandle() {
+			return this.handle;
 		}
 	}
 
@@ -576,27 +473,32 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ClassType extends UserDefinedType {
+	public static class ClassType extends Type {
 		protected final Type superType;
 
-		protected final ArrayList<ConstructorHandle> constructorHandleList;
+		protected List<ConstructorHandle> constructorHandleList;
 
 		/**
 		 * key is field name.
 		 */
-		protected final HashMap<String, FieldHandle> fieldHandleMap;
+		protected Map<String, FieldHandle> fieldHandleMap;
 
 		/**
 		 * key is method name.
 		 */
-		protected final HashMap<String, MethodHandle> methodHandlMap;
+		protected Map<String, MethodHandle> methodHandleMap;
 
-		protected ClassType(String className, Type superType) {
-			super(true);
+		/**
+		 * true after called finalizeType.
+		 */
+		protected boolean finalized = false;
+
+		protected ClassType(String className, String internalName, Type superType, boolean allowExtends) {
+			super(className, internalName, allowExtends);
 			this.superType = superType;
 			this.constructorHandleList = new ArrayList<>();
 			this.fieldHandleMap = new HashMap<>();
-			this.methodHandlMap = new HashMap<>();
+			this.methodHandleMap = new HashMap<>();
 		}
 
 		public Type getSuperType() {
@@ -610,79 +512,96 @@ public class TypePool {
 			}
 			if(targetType instanceof ClassType) {
 				Type superType = ((ClassType)targetType).getSuperType();
-				if(!(superType instanceof rootClassType)) {
+				if(!(superType instanceof RootClassType)) {
 					return this.isAssignableFrom(superType);
 				}
 			}
 			return false;
 		}
 
-		public ArrayList<ConstructorHandle> getConstructorHandleList() {
-			return constructorHandleList;
+		@Override
+		public List<ConstructorHandle> getConstructorHandleList() {
+			return this.constructorHandleList;
 		}
 
-		public HashMap<String, FieldHandle> getFieldHandleMap() {
-			return fieldHandleMap;
+		@Override
+		public Map<String, FieldHandle> getFieldHandleMap() {
+			return this.fieldHandleMap;
 		}
 
-		public HashMap<String, MethodHandle> getMethodHandlMap() {
-			return methodHandlMap;
-		}
-	}
-
-	public static class NativeClassType extends ClassType {
-		private final TypePool typePool;
-		private final String classSignature;
-
-		private NativeClassType(TypePool pool, String className, String classSignature) {
-			this(pool, className, classSignature, pool.objectType);
+		@Override
+		public Map<String, MethodHandle> getMethodHandleMap() {
+			return this.methodHandleMap;
 		}
 
-		private NativeClassType(TypePool pool, String className, String classSignature, Type superType) {
-			super(className, superType);
-			this.typePool = pool;
-			this.classSignature = classSignature;
+		@Override
+		public void finalizeType() {
+			if(!this.finalized) {
+				this.finalized = true;
+				this.constructorHandleList = Collections.unmodifiableList(this.constructorHandleList);
+				this.fieldHandleMap = Collections.unmodifiableMap(this.fieldHandleMap);
+				this.methodHandleMap = Collections.unmodifiableMap(this.methodHandleMap);
+			}
 		}
 	}
 
-	public final static class rootClassType extends Type {
-		private rootClassType() {
-			super("$Super$", Object.class);
-		}
-	}
-	
 	/**
-	 * It is an initial value of expression node.
-	 * Type checker replaces this type to actual type.
+	 * Represent base type of generic type.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public final static class UnresolvedType extends Type {
-		private UnresolvedType(){
-			super("$unresolved$", null, false);
+	public static class GenericBaseType extends ClassType {
+		protected GenericBaseType(String className, String internalName, Type superType, boolean allowExtends) {
+			super(className, internalName, superType, allowExtends);
 		}
-
-		@Override
-		public Class<?> getNativeClass() {
-			throw new RuntimeException("cannot call this method");
-		}
-
-		@Override
-		public boolean hasPairedClass() {
-			return false;
-		}
-	}
-
-	// holder class
-	private static class Holder {
-		private final static TypePool INSTANCE = new TypePool();
 	}
 
 	/**
-	 * get type pool instance
-	 * @return
+	 * Represents generic type (array type or map type).
+	 * It contains elements type.
+	 * @author skgchxngsxyz-osx
+	 *
 	 */
-	public static TypePool getInstance() {
-		return Holder.INSTANCE;
+	public static class GenericType extends Type {
+		private final GenericBaseType baseType;
+		private final List<Type> elementTypeList;
+
+		protected GenericType(String typeName, GenericBaseType baseType, List<Type> elementTypeList) {
+			super(typeName, baseType.getInternalName(), false);
+			this.baseType = baseType;
+			this.elementTypeList = Collections.unmodifiableList(elementTypeList);
+		}
+
+		public GenericBaseType getBaseType() {
+			return this.baseType;
+		}
+
+		public List<Type> getElementTypeList() {
+			return this.elementTypeList;
+		}
+	}
+
+	/**
+	 * Represents generic array type.
+	 * It contains element type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class GenericArrayType extends GenericType {
+		private GenericArrayType(GenericBaseType baseType, Type elementType) {
+			super(TypePool.toGenericArrayTypeName(elementType), baseType, toTypeList(elementType));
+		}
+
+		private static List<Type> toTypeList(Type type) {
+			List<Type> typeList = new ArrayList<>(1);
+			typeList.add(type);
+			return typeList;
+		}
+	}
+
+	public final static class PrimitiveArrayType extends GenericArrayType {
+		private PrimitiveArrayType(GenericBaseType baseType, PrimitiveType elementType) {
+			super(baseType, elementType);
+		}
 	}
 }

@@ -7,6 +7,25 @@ import dshell.internal.parser.Node;
 import dshell.internal.parser.NodeUtils;
 }
 
+@parser::members {
+/**
+ * require for type resolving
+ */
+private TypePool pool;
+
+/**
+ * call it before parsing.
+ */
+public void setTypePool(TypePool typePool) {
+	this.pool = typePool;
+}
+
+public TypePool getTypePool() {
+	return this.pool;
+}
+
+}
+
 // ######################
 // #        parse       #
 // ######################
@@ -46,22 +65,22 @@ variableDeclarationWithType returns [NodeUtils.ArgDecl arg]
 	: SymbolName ':' typeName {$arg = new NodeUtils.ArgDecl($SymbolName, $typeName.type);}
 	;
 typeName returns [TypePool.Type type] locals [TypePool.Type[] types]
-	: Int {$type = TypePool.getInstance().intType;}
-	| Float {$type = TypePool.getInstance().floatType;}
-	| Boolean {$type = TypePool.getInstance().booleanType;}
-	| Void {$type = TypePool.getInstance().voidType;}
-	| ClassName {$type = TypePool.getInstance().getClassType(NodeUtils.resolveClassName($ClassName));}
-	| typeName '[]' {$type = TypePool.getInstance().createAndGetArrayTypeIfUndefined($typeName.type);}
-	| 'Map' '<' typeName '>' {$type = TypePool.getInstance().createAndGetMapTypeIfUndefined($typeName.type);}
+	: Int {$type = pool.intType;}
+	| Float {$type = pool.floatType;}
+	| Boolean {$type = pool.booleanType;}
+	| Void {$type = pool.voidType;}
+	| ClassName {$type = pool.getClassType($ClassName.getText());}
+	| typeName '[]' {$type = pool.createAndGetArrayTypeIfUndefined($typeName.type);}
+	| 'Map' '<' typeName '>' {$type = pool.createAndGetMapTypeIfUndefined($typeName.type);}
 	| 'Func' '<' returnType ',' paramTypes '>'
-		{$type = TypePool.getInstance().createAndGetFuncTypeIfUndefined($returnType.type, $paramTypes.types);}
+		{$type = pool.createAndGetFuncTypeIfUndefined($returnType.type, $paramTypes.types);}
 	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypePool.Type[$a.size()];
 			for(int i = 0; i < $types.length; i++) {
 				$types[i] = $a.get(i).type;
 			}
-			$type = TypePool.getInstance().createAndGetGenericTypeIfUndefined(NodeUtils.resolveClassName($ClassName), $types);
+			$type = pool.createAndGetGenericTypeIfUndefined($ClassName.getText(), $types);
 		}
 	;
 returnType returns [TypePool.Type type]
@@ -86,14 +105,14 @@ block returns [Node node] locals [NodeUtils.Block blockModel]
 			$node = new Node.BlockNode($blockModel);
 		}
 	;
-classDeclaration returns [Node node] locals [NodeUtils.SuperTypeResolver resolver]
+classDeclaration returns [Node node] locals [NodeUtils.ClassTypeResolver resolver]
 	: Class ClassName (Extends a+=typeName)? classBody
 		{
-			$resolver = new NodeUtils.SuperTypeResolver();
+			$resolver = new NodeUtils.ClassTypeResolver($ClassName, pool);
 			if($a.size() == 1) {
-				$resolver.setType($a.get(0).type);
+				$resolver.setSuperType($a.get(0).type);
 			}
-			$node = new Node.ClassNode($Class, NodeUtils.resolveClassName($ClassName), $resolver.getType(), $classBody.body);
+			$node = new Node.ClassNode($Class, $resolver.getClassType(), $classBody.body.getNodeList());
 		}
 	;
 classBody returns [NodeUtils.ClassBody body]
@@ -245,7 +264,7 @@ assignStatement returns [Node node]
 expression returns [Node node] //FIXME: right join
 	: primary {$node = $primary.node;}
 	| expression '.' SymbolName {$node = new Node.FieldGetterNode($expression.node, $SymbolName);}
-	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($New, NodeUtils.resolveClassName($ClassName), $arguments.args);}
+	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($New, $ClassName.getText(), $arguments.args);}
 	| expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($expression.node, $SymbolName, $arguments.args);}
 	| SymbolName '(' arguments ')' {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
