@@ -43,38 +43,38 @@ public class TypePool {
 	/**
 	 * Equivalent to java long.
 	 */
-	public final static Type intType = new PrimitiveType("int", "long");
+	public final Type intType;
 
 	/**
 	 * Equivalent to java double.
 	 */
-	public final static Type floatType = new PrimitiveType("float", "double");
+	public final Type floatType;
 
 	/**
 	 * Equivalent to java boolean.
 	 */
-	public final static Type booleanType = new PrimitiveType("boolean", "boolean");
+	public final Type booleanType;
 
 	/**
 	 * Represents D-Shell root class type.
 	 * It is equivalent to java Object.
 	 */
-	public final static Type objectType = new RootClassType();
+	public final Type objectType;
 
 	/**
 	 * Represents D-Shell string type.
 	 */
-	public final static Type stringType = new ClassType("String", "dshell/lang/DShellString", objectType, false);
+	public final ClassType stringType;
 
 	/**
 	 * Represents D-Shell root exception type.
 	 */
-	public final static Type exceptionType = new ClassType("Exception", "dshell/lang/Exception", objectType, true);
+	public final ClassType exceptionType;
 
-	private final GenericBaseType baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
-	private final GenericBaseType baseMapType = new GenericBaseType("Map", "dshell/lang/GenericMap", objectType, false);
+	private final GenericBaseType baseArrayType;
+	private final GenericBaseType baseMapType;
 
-	private final FunctionBaseType baseFuncType = new FunctionBaseType();
+	private final FunctionBaseType baseFuncType;
 
 	/**
 	 * type name to type translation table
@@ -83,18 +83,21 @@ public class TypePool {
 
 	public TypePool() {
 		this.typeMap = new HashMap<>();
-
 		/**
-		 * add basic type.
+		 * do not set to TypeMap;
 		 */
+		this.objectType = new RootClassType();
+		this.baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
+
 		this.setTypeAndThrowIfDefined(voidType);
-		this.setTypeAndThrowIfDefined(intType);
-		this.setTypeAndThrowIfDefined(floatType);
-		this.setTypeAndThrowIfDefined(booleanType);
-		this.setTypeAndThrowIfDefined(stringType);
-		this.setTypeAndThrowIfDefined(exceptionType);
-		this.setTypeAndThrowIfDefined(baseMapType);
-		this.setTypeAndThrowIfDefined(baseFuncType);
+
+		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
+		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", "double"));
+		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
+		this.stringType    = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("String", "dshell/lang/DShellString", objectType, false));
+		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", objectType, true));
+		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", objectType, false));
+		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
 //
 //		/**
 //		 * add primitive array type.
@@ -104,11 +107,12 @@ public class TypePool {
 //		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.booleanType));
 	}
 
-	private void setTypeAndThrowIfDefined(Type type) {
+	private Type setTypeAndThrowIfDefined(Type type) {
 		if(this.typeMap.containsKey(type.getTypeName())) {
 			throw new RuntimeException(type.getTypeName() + " is already defined");
 		}
 		this.typeMap.put(type.getTypeName(), type);
+		return type;
 	}
 
 	// type getter api
@@ -153,6 +157,20 @@ public class TypePool {
 			return (GenericBaseType) type;
 		}
 		throw new RuntimeException(typeName + " is not generic base type");
+	}
+
+	/**
+	 * get primitive type
+	 * @param typeName
+	 * @return
+	 * - if undefined, throw exception.
+	 */
+	public PrimitiveType getPrimitiveType(String typeName) {
+		Type type = this.getTypeAndThrowIfUndefined(typeName);
+		if(type instanceof PrimitiveType) {
+			return (PrimitiveType) type;
+		}
+		throw new RuntimeException(typeName + " is not primitive type");
 	}
 
 	/**
@@ -335,7 +353,7 @@ public class TypePool {
 		 * check inheritance of targetType.
 		 * @param targetType
 		 * @return
-		 * - if this type is the super type of target type, return true;
+		 * - if this type is equivalent to targte type or is the super type of target type, return true;
 		 */
 		public boolean isAssignableFrom(Type targetType) {
 			return this.getTypeName().equals(targetType.getTypeName());
@@ -410,6 +428,11 @@ public class TypePool {
 		private RootClassType() {
 			super("$Super$", "java.lang.Object");
 		}
+
+		@Override
+		public boolean isAssignableFrom(Type targetType) {
+			return targetType instanceof ClassType;
+		}
 	}
 	
 	/**
@@ -437,28 +460,16 @@ public class TypePool {
 
 	/**
 	 * Represents function type.
-	 * It contains parameters type and return type.
+	 * It contains FunctionHandle.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
 	public static class FunctionType extends Type {
-		private final Type returnType;
-		private List<Type> paramTypeList;
 		private final FunctionHandle handle;
 
 		protected FunctionType(String funcTypeName, String internalName, Type returnType, List<Type> paramTypeList) {
 			super(funcTypeName, internalName, true);
-			this.returnType = returnType;
-			this.paramTypeList = Collections.unmodifiableList(paramTypeList);
-			this.handle = new FunctionHandle(this);
-		}
-
-		public Type getReturnType() {
-			return this.returnType;
-		}
-
-		public List<Type> getParamTypeList() {
-			return this.paramTypeList;
+			this.handle = new FunctionHandle(this, returnType, Collections.unmodifiableList(paramTypeList));
 		}
 
 		public FunctionHandle getHandle() {
@@ -507,14 +518,15 @@ public class TypePool {
 
 		@Override
 		public boolean isAssignableFrom(Type targetType) {
+			if(!(targetType instanceof ClassType)) {
+				return false;
+			}
 			if(this.getTypeName().equals(targetType.getTypeName())) {
 				return true;
 			}
-			if(targetType instanceof ClassType) {
-				Type superType = ((ClassType)targetType).getSuperType();
-				if(!(superType instanceof RootClassType)) {
-					return this.isAssignableFrom(superType);
-				}
+			Type superType = ((ClassType)targetType).getSuperType();
+			if(!(superType instanceof RootClassType)) {
+				return this.isAssignableFrom(superType);
 			}
 			return false;
 		}

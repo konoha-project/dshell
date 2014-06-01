@@ -2,28 +2,9 @@ grammar dshell;
 
 @header {
 package dshell.internal.parser;
-import dshell.internal.parser.TypePool;
 import dshell.internal.parser.Node;
-import dshell.internal.parser.NodeUtils;
-}
-
-@parser::members {
-/**
- * require for type resolving
- */
-private TypePool pool;
-
-/**
- * call it before parsing.
- */
-public void setTypePool(TypePool typePool) {
-	this.pool = typePool;
-}
-
-public TypePool getTypePool() {
-	return this.pool;
-}
-
+import dshell.internal.parser.ParserUtils;
+import dshell.internal.parser.TypeSymbol;
 }
 
 // ######################
@@ -51,74 +32,75 @@ functionDeclaration returns [Node node]
 	: Function SymbolName '(' argumentsDeclaration ')' block
 		{$node = new Node.FunctionNode($Function, $SymbolName, $argumentsDeclaration.decl, $block.node);}
 	;
-argumentsDeclaration returns [NodeUtils.ArgsDecl decl]
+argumentsDeclaration returns [ParserUtils.ArgsDecl decl]
 	: a+=variableDeclarationWithType (',' a+=variableDeclarationWithType)*
 		{
-			$decl = new NodeUtils.ArgsDecl();
+			$decl = new ParserUtils.ArgsDecl();
 			for(int i = 0; i < $a.size(); i++) {
 				$decl.addArgDecl($a.get(i).arg);
 			}
 		}
-	| { $decl = new NodeUtils.ArgsDecl();}
+	| { $decl = new ParserUtils.ArgsDecl();}
 	;
-variableDeclarationWithType returns [NodeUtils.ArgDecl arg]
-	: SymbolName ':' typeName {$arg = new NodeUtils.ArgDecl($SymbolName, $typeName.type);}
+variableDeclarationWithType returns [ParserUtils.ArgDecl arg]
+	: SymbolName ':' typeName {$arg = new ParserUtils.ArgDecl($SymbolName, $typeName.type);}
 	;
-typeName returns [TypePool.Type type] locals [TypePool.Type[] types]
-	: Int {$type = pool.intType;}
-	| Float {$type = pool.floatType;}
-	| Boolean {$type = pool.booleanType;}
-	| Void {$type = pool.voidType;}
-	| ClassName {$type = pool.getClassType($ClassName.getText());}
-	| typeName '[]' {$type = pool.createAndGetArrayTypeIfUndefined($typeName.type);}
-	| 'Map' '<' typeName '>' {$type = pool.createAndGetMapTypeIfUndefined($typeName.type);}
+typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
+	: Int {$type = TypeSymbol.toPrimitive($Int);}
+	| Float {$type = TypeSymbol.toPrimitive($Float);}
+	| Boolean {$type = TypeSymbol.toPrimitive($Boolean);}
+	| Void {$type = TypeSymbol.toVoid($Void);}
+	| ClassName {$type = TypeSymbol.toClass($ClassName);}
+	| typeName '[]' {$type = TypeSymbol.toArray($typeName.type);}
+	| 'Map' '<' typeName '>' {$type = TypeSymbol.toMap($typeName.type);}
 	| 'Func' '<' returnType ',' paramTypes '>'
-		{$type = pool.createAndGetFuncTypeIfUndefined($returnType.type, $paramTypes.types);}
+		{$type = TypeSymbol.toFunc($returnType.type, $paramTypes.types);}
 	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
 		{
-			$types = new TypePool.Type[$a.size()];
+			$types = new TypeSymbol[$a.size()];
 			for(int i = 0; i < $types.length; i++) {
 				$types[i] = $a.get(i).type;
 			}
-			$type = pool.createAndGetGenericTypeIfUndefined($ClassName.getText(), $types);
+			$type = TypeSymbol.toGeneric($ClassName, $types);
 		}
 	;
-returnType returns [TypePool.Type type]
+returnType returns [TypeSymbol type]
 	: typeName {$type = $typeName.type;}
 	;
-paramTypes returns [TypePool.Type[] types]
+paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver resolver]
 	: '[' a+=typeName (',' a+=typeName)* ']'
 		{
-			$types = new TypePool.Type[$a.size()];
-			for(int i = 0; i < $types.length; i++) {
-				$types[i] = $a.get(i).type;
+			$resolver = new ParserUtils.ParamTypeResolver();
+			for(int i = 0; i < $a.size(); i++) {
+				$resolver.addTypeSymbol($a.get(i).type);
 			}
+			$types = $resolver.getTypeSymbols();
 		}
 	;
-block returns [Node node] locals [NodeUtils.Block blockModel]
+block returns [Node node] locals [ParserUtils.Block blockModel]
 	: '{' b+=statement+ '}' 
 		{
-			$blockModel = new NodeUtils.Block();
+			$blockModel = new ParserUtils.Block();
 			for(int i = 0; i < $b.size(); i++) {
 				$blockModel.addNode($b.get(i).node);
 			}
 			$node = new Node.BlockNode($blockModel);
 		}
 	;
-classDeclaration returns [Node node] locals [NodeUtils.ClassTypeResolver resolver]
-	: Class ClassName (Extends a+=typeName)? classBody
+classDeclaration returns [Node node] locals [String superName]
+	: Class name=ClassName (Extends a+=ClassName)? classBody
 		{
-			$resolver = new NodeUtils.ClassTypeResolver($ClassName, pool);
+			$superName = null;
 			if($a.size() == 1) {
-				$resolver.setSuperType($a.get(0).type);
+				$superName = $a.get(0).getText();
 			}
-			$node = new Node.ClassNode($Class, $resolver.getClassType(), $classBody.body.getNodeList());
+			$node = new Node.ClassNode($Class, $name, $superName, $classBody.body.getNodeList());
 		}
 	;
-classBody returns [NodeUtils.ClassBody body]
+classBody returns [ParserUtils.ClassBody body]
 	: '{' (a+=classElement statementEnd)+ '}'
 		{
-			$body = new NodeUtils.ClassBody();
+			$body = new ParserUtils.ClassBody();
 			for(int i = 0; i < $a.size(); i++) {
 				$body.addNode($a.get(i).node);
 			}
@@ -187,10 +169,10 @@ forIter returns [Node node]
 foreachStatement returns [Node node]
 	: For '(' SymbolName In expression ')' block {$node = new Node.ForInNode($For, $SymbolName, $expression.node, $block.node);}
 	;
-ifStatement returns [Node node] locals [NodeUtils.IfElseBlock ifElseBlock]
+ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 	: If '(' expression ')' b+=block (Else b+=block)?
 		{
-			$ifElseBlock = new NodeUtils.IfElseBlock($b.get(0).node);
+			$ifElseBlock = new ParserUtils.IfElseBlock($b.get(0).node);
 			if($b.size() > 1) {
 				$ifElseBlock.setElseBlockNode($b.get(1).node);
 			}
@@ -203,10 +185,10 @@ importEnvStatement returns [Node node]	//FIXME:
 importCommandStatement returns [Node node]	//FIXME:
 	: Import Command {$node = new Node.EmptyNode();}
 	;
-returnStatement returns [Node node] locals [NodeUtils.ReturnExpr returnExpr]
+returnStatement returns [Node node] locals [ParserUtils.ReturnExpr returnExpr]
 	: Return e+=expression?
 		{
-			$returnExpr = new NodeUtils.ReturnExpr();
+			$returnExpr = new ParserUtils.ReturnExpr();
 			if($e.size() == 1) {
 				$returnExpr.setNode($e.get(0).node);
 			}
@@ -234,25 +216,24 @@ finallyBlock returns [Node node]
 	| {$node = new Node.EmptyBlockNode();}
 	;
 catchStatement returns [Node.CatchNode node]
-	: Catch '(' exceptDeclaration ')' block { $node = new Node.CatchNode($Catch, $exceptDeclaration.except, $block.node);}
+	: Catch '(' exceptDeclaration ')' block
+		{
+			$node = new Node.CatchNode($Catch, $exceptDeclaration.except.getName(), $exceptDeclaration.except.getTypeSymbol(), $block.node);
+		}
 	;
-exceptDeclaration returns [NodeUtils.CatchedException except]
+exceptDeclaration returns [ParserUtils.CatchedException except]
 	: SymbolName (':' t+=typeName)?
 		{
-			$except = new NodeUtils.CatchedException($SymbolName);
+			$except = new ParserUtils.CatchedException($SymbolName);
 			if($t.size() == 1) {
-				$except.setType($t.get(0).type);
+				$except.setTypeSymbol($t.get(0).type);
 			}
 		}
 	;
-variableDeclaration returns [Node node] locals [Node.VarDeclNode varDeclNode]
-	: flag=(Let | Var) SymbolName (':' t+=typeName)? '=' expression
+variableDeclaration returns [Node node]
+	: flag=(Let | Var) SymbolName '=' expression
 		{
-			$varDeclNode = new Node.VarDeclNode($flag, $SymbolName, $expression.node);
-			if($t.size() == 1) {
-				$varDeclNode.setValueType($t.get(0).type);
-			}
-			$node = $varDeclNode;
+			$node = new Node.VarDeclNode($flag, $SymbolName, $expression.node);
 		}
 	;
 assignStatement returns [Node node]
@@ -311,23 +292,23 @@ mapLiteral returns [Node node] locals [Node.MapNode mapNode]
 		{
 			$mapNode = new Node.MapNode();
 			for(int i = 0; i < $entrys.size(); i++) {
-				$mapNode.addEntry($entrys.get(i).entry);
+				$mapNode.addEntry($entrys.get(i).entry.keyNode, $entrys.get(i).entry.valueNode);
 			}
 			$node = $mapNode;
 		}
 	;
-mapEntry returns [NodeUtils.MapEntry entry]
-	: key=expression ':' value=expression {$entry = new NodeUtils.MapEntry($key.node, $value.node);}
+mapEntry returns [ParserUtils.MapEntry entry]
+	: key=expression ':' value=expression {$entry = new ParserUtils.MapEntry($key.node, $value.node);}
 	;
-arguments returns [NodeUtils.Arguments args]
+arguments returns [ParserUtils.Arguments args]
 	: a+=argument (',' a+=argument)* 
 		{
-			$args = new NodeUtils.Arguments();
+			$args = new ParserUtils.Arguments();
 			for(int i = 0; i < $a.size(); i++) {
 				$args.addNode($a.get(i).node);
 			}
 		}
-	| {$args = new NodeUtils.Arguments();}
+	| {$args = new ParserUtils.Arguments();}
 	;
 argument returns [Node node]
 	: expression {$node = $expression.node;}

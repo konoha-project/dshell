@@ -206,8 +206,8 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class FunctionHandle extends MethodHandle {
-		protected FunctionHandle(TypePool.FunctionType funcType) {
-			super("invoke", funcType, funcType.getReturnType(), funcType.getParamTypeList());
+		protected FunctionHandle(TypePool.FunctionType funcType, Type returnType, List<Type> paramTypeList) {
+			super("invoke", funcType, returnType, paramTypeList);
 		}
 
 		/**

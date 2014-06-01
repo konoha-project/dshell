@@ -7,10 +7,9 @@ import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.SymbolNode;
-import dshell.internal.parser.TypePool.ClassType;
-import dshell.internal.parser.TypePool.Type;
+import dshell.internal.parser.TypeSymbol.VoidTypeSymbol;
 
-public class NodeUtils {
+public class ParserUtils {
 	public static class MapEntry {
 		public final Node keyNode;
 		public final Node valueNode;
@@ -88,24 +87,29 @@ public class NodeUtils {
 	}
 
 	public static class CatchedException {
-		private Type type;
-		private String name;
+		private TypeSymbol typeSymbol;
+		private final String name;
 
 		public CatchedException(Token token) {
 			this.name = token.getText();
-			this.type = TypePool.exceptionType;
+			this.typeSymbol = null;
 		}
 
-		public void setType(Type type) {
-			this.type = type;
+		public void setTypeSymbol(TypeSymbol typeSymbol) {
+			this.typeSymbol = typeSymbol;
 		}
 
 		public String getName() {
 			return this.name;
 		}
 
-		public Type getType() {
-			return this.type;
+		/**
+		 * 
+		 * @return
+		 * - return null, if has no type annotation
+		 */
+		public TypeSymbol getTypeSymbol() {
+			return this.typeSymbol;
 		}
 	}
 
@@ -128,9 +132,9 @@ public class NodeUtils {
 	public static class ArgDecl {
 		private final SymbolNode argDeclNode;
 
-		public ArgDecl(Token token, Type type) {
+		public ArgDecl(Token token, TypeSymbol typeSymbol) {
 			this.argDeclNode = new SymbolNode(token);
-			this.argDeclNode.setType(type);
+			this.argDeclNode.setTypeSymbol(typeSymbol);
 		}
 
 		public SymbolNode getArgNode() {
@@ -154,32 +158,26 @@ public class NodeUtils {
 		}
 	}
 
-	public static class ClassTypeResolver {
-		private final String className;
-		private final TypePool pool;
-		private Type superType = TypePool.objectType;
-		private ClassType classType;
+	public static class ParamTypeResolver {
+		private final List<TypeSymbol> symbolList;
 
-		public ClassTypeResolver(Token token, TypePool pool) {
-			this.className = token.getText();
-			this.pool = pool;
-			if(className.equals("Func")) {
-				throw new RuntimeException("Func is forbidden class name");
+		public ParamTypeResolver() {
+			this.symbolList = new ArrayList<>();
+		}
+
+		public void addTypeSymbol(TypeSymbol typeSymbol) {
+			if(!(typeSymbol instanceof VoidTypeSymbol)) {
+				this.symbolList.add(typeSymbol);
 			}
 		}
 
-		public void setSuperType(Type type) {
-			if(type instanceof ClassType) {
-				this.superType = type;
+		public TypeSymbol[] getTypeSymbols() {
+			int size = this.symbolList.size();
+			TypeSymbol[] symbols = new TypeSymbol[size];
+			for(int i = 0; i < size; i++) {
+				symbols[i] = this.symbolList.get(i);
 			}
-			throw new RuntimeException(type.getTypeName() + " is not class type");
-		}
-
-		public ClassType getClassType() {
-			if(this.classType == null) {
-				this.classType = this.pool.createAndSetClassType(this.className, this.superType);
-			}
-			return this.classType;
+			return symbols;
 		}
 	}
 }

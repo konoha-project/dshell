@@ -5,13 +5,14 @@ import java.util.List;
 
 import org.antlr.v4.runtime.Token;
 
-import dshell.internal.parser.NodeUtils.ArgsDecl;
-import dshell.internal.parser.NodeUtils.Arguments;
-import dshell.internal.parser.NodeUtils.Block;
-import dshell.internal.parser.NodeUtils.CatchedException;
-import dshell.internal.parser.NodeUtils.IfElseBlock;
-import dshell.internal.parser.NodeUtils.MapEntry;
-import dshell.internal.parser.NodeUtils.ReturnExpr;
+import dshell.internal.parser.CalleeHandle.FieldHandle;
+import dshell.internal.parser.CalleeHandle.FunctionHandle;
+import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.ParserUtils.ArgsDecl;
+import dshell.internal.parser.ParserUtils.Arguments;
+import dshell.internal.parser.ParserUtils.Block;
+import dshell.internal.parser.ParserUtils.IfElseBlock;
+import dshell.internal.parser.ParserUtils.ReturnExpr;
 import dshell.internal.parser.TypePool.ClassType;
 import dshell.internal.parser.TypePool.FunctionType;
 import dshell.internal.parser.TypePool.Type;
@@ -27,12 +28,45 @@ public abstract class Node {
 	 */
 	protected Token token;
 
+	protected Node parentNode;
+
 	public void setToken(Token token) {
 		this.token = token;
 	}
 
 	public Token getToken() {
 		return this.token;
+	}
+
+	/**
+	 * set parent node reference
+	 * @param parentNode
+	 */
+	public void setParentNode(Node parentNode) {
+		this.parentNode = parentNode;
+	}
+
+	/**
+	 * set node as this node's child
+	 * @param childNode
+	 * @return
+	 * - childNode
+	 */
+	public Node setNodeAsChild(Node childNode) {
+		/**
+		 * set child node parent.
+		 */
+		childNode.setParentNode(this);
+		return childNode;
+	}
+
+	/**
+	 * get parent node.
+	 * @return
+	 * - return null, if this node is RootNode.
+	 */
+	public Node getParentNode() {
+		return this.parentNode;
 	}
 
 	abstract public <T> T accept(NodeVisitor<T> visitor);
@@ -209,17 +243,17 @@ public abstract class Node {
 	 *
 	 */
 	public static class ArrayNode extends ExprNode {
-		private final ArrayList<Node> nodeList;
+		private final List<ExprNode> nodeList;
 
 		public ArrayNode() {
 			this.nodeList = new ArrayList<>();
 		}
 
 		public void addNode(Node node) {
-			this.nodeList.add(node);
+			this.nodeList.add((ExprNode) this.setNodeAsChild(node));
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<ExprNode> getNodeList() {
 			return this.nodeList;
 		}
 
@@ -235,24 +269,24 @@ public abstract class Node {
 	 *
 	 */
 	public static class MapNode extends ExprNode {
-		private final ArrayList<Node> keyList;
-		private final ArrayList<Node> valueList;
+		private final List<ExprNode> keyList;
+		private final List<ExprNode> valueList;
 
 		public MapNode() {
 			this.keyList = new ArrayList<>();
 			this.valueList = new ArrayList<>();
 		}
 
-		public void addEntry(MapEntry entry) {
-			this.keyList.add(entry.keyNode);
-			this.valueList.add(entry.valueNode);
+		public void addEntry(Node keyNode, Node valueNode) {
+			this.keyList.add((ExprNode) this.setNodeAsChild(keyNode));
+			this.valueList.add((ExprNode) this.setNodeAsChild(valueNode));
 		}
 
-		public ArrayList<Node> getKeyList() {
+		public List<ExprNode> getKeyList() {
 			return this.keyList;
 		}
 
-		public ArrayList<Node> getValueList() {
+		public List<ExprNode> getValueList() {
 			return this.valueList;
 		}
 
@@ -263,20 +297,61 @@ public abstract class Node {
 	}
 
 	/**
+	 * Represent left node of AssignNode.
+	 * @author skgchxngsxyz-opensuse
+	 *
+	 */
+	public static abstract class AssignableNode extends ExprNode {
+	}
+	/**
 	 * This node represents local variable.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class SymbolNode extends ExprNode {
+	public static class SymbolNode extends AssignableNode {
 		private final String symbolName;
+		private TypeSymbol typeSymbol;
+		private boolean isGlobal;
+		private boolean isReadOnly;
 
 		public SymbolNode(Token token) {
 			this.setToken(token);
 			this.symbolName = this.token.getText();
+			this.isGlobal = false;
+			this.isReadOnly = false;
 		}
 
 		public String getSymbolName() {
 			return this.symbolName;
+		}
+
+		public void setTypeSymbol(TypeSymbol typeSymbol) {
+			this.typeSymbol = typeSymbol;
+		}
+
+		/**
+		 * get type symbol
+		 * @return
+		 * - return null, if has no TypeSymbol.
+		 */
+		public TypeSymbol getTypeSymbol() {
+			return this.typeSymbol;
+		}
+
+		public void setReadOnly(boolean isReadOnly) {
+			this.isReadOnly = isReadOnly;
+		}
+
+		public boolean isReadOnly() {
+			return this.isReadOnly;
+		}
+
+		public void setGlobal(boolean isGlobal) {
+			this.isGlobal = isGlobal;
+		}
+
+		public boolean isGlobal() {
+			return this.isGlobal;
 		}
 
 		@Override
@@ -290,21 +365,30 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ElementGetterNode extends ExprNode {
-		private final Node recvNode;
-		private final Node indexNode;
+	public static class ElementGetterNode extends AssignableNode {
+		private final ExprNode recvNode;
+		private final ExprNode indexNode;
+		private MethodHandle handle;
 
 		public ElementGetterNode(Node recvNode, Node indexNode) {
-			this.recvNode = recvNode;
-			this.indexNode = indexNode;
+			this.recvNode = (ExprNode) this.setNodeAsChild(recvNode);
+			this.indexNode = (ExprNode) this.setNodeAsChild(indexNode);
 		}
 
-		public Node getRecvNode() {
+		public ExprNode getRecvNode() {
 			return this.recvNode;
 		}
 
-		public Node getIndexNode() {
+		public ExprNode getIndexNode() {
 			return this.indexNode;
+		}
+
+		public void setHandle(MethodHandle handle) {
+			this.handle = handle;
+		}
+
+		public MethodHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -318,17 +402,18 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class FieldGetterNode extends ExprNode {
-		private final Node recvNode;
+	public static class FieldGetterNode extends AssignableNode {
+		private final ExprNode recvNode;
 		private final String fieldName;
+		private FieldHandle handle;
 
 		public FieldGetterNode(Node recvNode, Token token) {
 			this.setToken(token);
-			this.recvNode = recvNode;
+			this.recvNode = (ExprNode) this.setNodeAsChild(recvNode);
 			this.fieldName = this.token.getText();
 		}
 
-		public Node getRecvNode() {
+		public ExprNode getRecvNode() {
 			return this.recvNode;
 		}
 
@@ -336,6 +421,13 @@ public abstract class Node {
 			return this.fieldName;
 		}
 
+		public void setHandle(FieldHandle handle) {
+			this.handle = handle;
+		}
+
+		public FieldHandle getHandle() {
+			return this.handle;
+		}
 		@Override
 		public <T> T accept(NodeVisitor<T> visitor) {
 			return visitor.visit(this);
@@ -343,24 +435,33 @@ public abstract class Node {
 	}
 
 	/**
-	 * This node represents type cast.
+	 * This node represents type cast and primitive type boxing.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
 	public static class CastNode extends ExprNode {
-		private final Type targetType;
-		private final Node exprNode;
+		private Type targetType;
+		private final TypeSymbol targetTypeSymbol;
+		private final ExprNode exprNode;
 
-		public CastNode(Type targetType, Node exprNode) {
-			this.targetType = targetType;
-			this.exprNode = exprNode;
+		public CastNode(TypeSymbol targetTypeSymbol, Node exprNode) {
+			this.targetTypeSymbol = targetTypeSymbol;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
+		}
+
+		public TypeSymbol getTypeSymbol() {
+			return this.targetTypeSymbol;
+		}
+
+		public void setTargteType(Type type) {
+			this.targetType = type;
 		}
 
 		public Type getTargetType() {
 			return this.targetType;
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -376,17 +477,26 @@ public abstract class Node {
 	 *
 	 */
 	public static class InstanceofNode extends ExprNode {
-		private final Node exprNode;
-		private final Type targetType;
+		private final ExprNode exprNode;
+		private final TypeSymbol typeSymbol;
+		private Type targetType;
 
-		public InstanceofNode(Token token, Node exprNode, Type targetType) {
+		public InstanceofNode(Token token, Node exprNode, TypeSymbol targetTypeSymbol) {
 			this.setToken(token);
-			this.exprNode = exprNode;
-			this.targetType = targetType;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
+			this.typeSymbol = targetTypeSymbol;
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
+		}
+
+		public TypeSymbol getTypeSymbol() {
+			return this.typeSymbol;
+		}
+
+		public void setTargetType(Type type) {
+			this.targetType = type;
 		}
 
 		public Type getTargetType() {
@@ -405,16 +515,16 @@ public abstract class Node {
 	 *
 	 */
 	public static class SuffixIncrementNode extends ExprNode {
-		private final Node exprNode;
+		private final ExprNode exprNode;
 		private final String op;
 
 		public SuffixIncrementNode(Node exprNode, Token token) {
 			this.setToken(token);
-			this.exprNode = exprNode;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 			this.op = this.token.getText();
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -435,8 +545,8 @@ public abstract class Node {
 	 */
 	public static class OperatorCallNode extends ExprNode {
 		private final String funcName;
-		private final ArrayList<Node> argNodeList;
-		private final ArrayList<Type> argTyeList;
+		private final List<ExprNode> argNodeList;
+		private final List<Type> argTyeList;
 
 		/**
 		 * For prefix op
@@ -449,7 +559,7 @@ public abstract class Node {
 			this.setToken(token);
 			this.funcName = this.token.getText();
 			this.argNodeList = new ArrayList<>();
-			this.argNodeList.add(node);
+			this.argNodeList.add((ExprNode) this.setNodeAsChild(node));
 			this.argTyeList = new ArrayList<>();
 		}
 
@@ -467,19 +577,19 @@ public abstract class Node {
 			this.funcName = this.token.getText();
 			this.argTyeList = new ArrayList<>();
 			this.argNodeList = new ArrayList<>();
-			this.argNodeList.add(leftNode);
-			this.argNodeList.add(rightNode);
+			this.argNodeList.add((ExprNode) this.setNodeAsChild(leftNode));
+			this.argNodeList.add((ExprNode) this.setNodeAsChild(rightNode));
 		}
 
 		public String getFuncName() {
 			return this.funcName;
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<ExprNode> getNodeList() {
 			return this.argNodeList;
 		}
 
-		public ArrayList<Type> getArgTypeList() {
+		public List<Type> getArgTypeList() {
 			return this.argTyeList;
 		}
 
@@ -497,29 +607,32 @@ public abstract class Node {
 	 */
 	public static class FuncCallNode extends ExprNode {
 		private final String funcName;
-		private final ArrayList<Node> argNodeList;
-		private FunctionType funcType;
+		private final List<ExprNode> argNodeList;
+		private FunctionHandle handle;
 
 		public FuncCallNode(Token token, Arguments args) {
 			this.setToken(token);
 			this.funcName = this.token.getText();
-			this.argNodeList = args.nodeList;
+			this.argNodeList = new ArrayList<>();
+			for(Node node : args.nodeList) {
+				argNodeList.add((ExprNode) this.setNodeAsChild(node));
+			}
 		}
 
 		public String getFuncName() {
 			return this.funcName;
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<ExprNode> getNodeList() {
 			return this.argNodeList;
 		}
 
-		public void setCalledFuncType(FunctionType type) {
-			this.funcType = type;
+		public void setHandle(FunctionHandle handle) {
+			this.handle = handle;
 		}
 
-		public FunctionType getCalledFuncType() {
-			return this.funcType;
+		public FunctionHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -534,19 +647,22 @@ public abstract class Node {
 	 *
 	 */
 	public static class MethodCallNode extends ExprNode {
-		private FunctionType methodType;
-		private final Node recvNode;
+		private final ExprNode recvNode;
 		private final String methodName;
-		private final ArrayList<Node> argNodeList;
+		private final List<ExprNode> argNodeList;
+		private MethodHandle handle;
 
 		public MethodCallNode(Node recvNode, Token token, Arguments args) {
 			this.setToken(token);
-			this.recvNode = recvNode;
+			this.recvNode = (ExprNode) this.setNodeAsChild(recvNode);
 			this.methodName = this.token.getText();
-			this.argNodeList = args.nodeList;
+			this.argNodeList = new ArrayList<>();
+			for(Node node : args.nodeList) {
+				argNodeList.add((ExprNode) this.setNodeAsChild(node));
+			}
 		}
 
-		public Node getRecvNode() {
+		public ExprNode getRecvNode() {
 			return this.recvNode;
 		}
 
@@ -554,16 +670,16 @@ public abstract class Node {
 			return this.methodName;
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<ExprNode> getNodeList() {
 			return this.argNodeList;
 		}
 
-		public void setMethodType(FunctionType type) {
-			this.methodType = type;
+		public void setHandle(MethodHandle handle) {
+			this.handle = handle;
 		}
 
-		public FunctionType getMethodType() {
-			return this.methodType;
+		public MethodHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -579,19 +695,22 @@ public abstract class Node {
 	 */
 	public static class ConstructorCallNode extends ExprNode {
 		private final String className;
-		private final ArrayList<Node> argNodeList;
+		private final List<ExprNode> argNodeList;
 
 		public ConstructorCallNode(Token token, String className, Arguments args) {
 			this.setToken(token);
 			this.className = className;
-			this.argNodeList = args.nodeList;
+			this.argNodeList = new ArrayList<>();
+			for(Node node : args.nodeList) {
+				argNodeList.add((ExprNode) this.setNodeAsChild(node));
+			}
 		}
 
 		public String getClassName() {
 			return this.className;
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<ExprNode> getNodeList() {
 			return this.argNodeList;
 		}
 
@@ -608,25 +727,25 @@ public abstract class Node {
 	 */
 	public static class CondOpNode extends ExprNode {
 		private final String condOp;
-		private final Node leftNode;
-		private final Node rightNode;
+		private final ExprNode leftNode;
+		private final ExprNode rightNode;
 
 		public CondOpNode(Token token, Node leftNode, Node rightNode) {
 			this.setToken(token);
 			this.condOp = this.token.getText();
-			this.leftNode = leftNode;
-			this.rightNode = rightNode;
+			this.leftNode = (ExprNode) this.setNodeAsChild(leftNode);
+			this.rightNode = (ExprNode) this.setNodeAsChild(rightNode);
 		}
 
 		public String getConditionalOp() {
 			return this.condOp;
 		}
 
-		public Node getLeftNode() {
+		public ExprNode getLeftNode() {
 			return this.leftNode;
 		}
 
-		public Node getRightNode() {
+		public ExprNode getRightNode() {
 			return this.rightNode;
 		}
 
@@ -647,11 +766,11 @@ public abstract class Node {
 	 *
 	 */
 	public static class AssertNode extends Node {
-		private final Node exprNode;
+		private final ExprNode exprNode;
 
 		public AssertNode(Token token, Node exprNode) {
 			this.setToken(token);
-			this.exprNode = exprNode;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 		}
 
 		public Node getExprNode() {
@@ -671,13 +790,16 @@ public abstract class Node {
 	 *
 	 */
 	public static class BlockNode extends Node {
-		private final ArrayList<Node> nodeList;
+		private final List<Node> nodeList;
 
 		public BlockNode(Block block) {
-			this.nodeList = block.getNodeList();
+			this.nodeList = new ArrayList<>();
+			for(Node node : block.getNodeList()) {
+				this.nodeList.add(this.setNodeAsChild(node));
+			}
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<Node> getNodeList() {
 			return this.nodeList;
 		}
 
@@ -726,19 +848,19 @@ public abstract class Node {
 	 */
 	public static class ExportEnvNode extends Node {
 		private final String envName;
-		private final Node exprNode;
+		private final ExprNode exprNode;
 
 		public ExportEnvNode(Token token, Node exprNode) {
 			this.setToken(token);
 			this.envName = this.token.getText();
-			this.exprNode = exprNode;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 		}
 
 		public String getEnvName() {
 			return this.envName;
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -785,7 +907,7 @@ public abstract class Node {
 		/**
 		 * May be EmptyNode
 		 */
-		private final Node condNode;
+		private final ExprNode condNode;
 
 		/**
 		 * May be EmptyNode
@@ -795,17 +917,17 @@ public abstract class Node {
 
 		public ForNode(Token token, Node initNode, Node condNode, Node iterNode, Node blockNode) {
 			this.setToken(token);
-			this.initNode = initNode;
-			this.condNode = condNode;
-			this.iterNode = iterNode;
-			this.blockNode = (BlockNode) blockNode;
+			this.initNode = this.setNodeAsChild(initNode);
+			this.condNode = (ExprNode) this.setNodeAsChild(condNode);
+			this.iterNode = this.setNodeAsChild(iterNode);
+			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
 		}
 
 		public Node getInitNode() {
 			return this.initNode;
 		}
 
-		public Node getCondNode() {
+		public ExprNode getCondNode() {
 			return this.condNode;
 		}
 
@@ -830,21 +952,21 @@ public abstract class Node {
 	 */
 	public static class ForInNode extends Node {
 		private final String initName;
-		private final Node exprNode;
+		private final ExprNode exprNode;
 		private final BlockNode blockNode;
 
 		public ForInNode(Token token, Token nameToken, Node exprNode, Node blockNode) {
 			this.setToken(token);
 			this.initName = nameToken.getText();
-			this.exprNode = exprNode;
-			this.blockNode = (BlockNode) blockNode;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
+			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
 		}
 
 		public String getInitName() {
 			return this.initName;
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -864,16 +986,16 @@ public abstract class Node {
 	 *
 	 */
 	public static class WhileNode extends Node {
-		private final Node condNode;
+		private final ExprNode condNode;
 		private final BlockNode blockNode;
 
 		public WhileNode(Token token, Node condNode, Node blockNode) {
 			this.setToken(token);
-			this.condNode = condNode;
-			this.blockNode = (BlockNode) blockNode;
+			this.condNode = (ExprNode) this.setNodeAsChild(condNode);
+			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
 		}
 
-		public Node getCondNode() {
+		public ExprNode getCondNode() {
 			return this.condNode;
 		}
 
@@ -893,7 +1015,7 @@ public abstract class Node {
 	 *
 	 */
 	public static class IfNode extends Node {
-		private final Node condNode;
+		private final ExprNode condNode;
 		private final BlockNode thenBlockNode;
 		/**
 		 * May be EmptyblockNode
@@ -902,12 +1024,12 @@ public abstract class Node {
 
 		public IfNode(Token token, Node condNode, IfElseBlock block) {
 			this.setToken(token);
-			this.condNode = condNode;
-			this.thenBlockNode = block.getThenBlockNode();
-			this.elseBlockNode = block.getElseBlockNode();
+			this.condNode = (ExprNode) this.setNodeAsChild(condNode);
+			this.thenBlockNode = (BlockNode) this.setNodeAsChild(block.getThenBlockNode());
+			this.elseBlockNode = (BlockNode) this.setNodeAsChild(block.getElseBlockNode());
 		}
 
-		public Node getCondNode() {
+		public ExprNode getCondNode() {
 			return this.condNode;
 		}
 
@@ -934,14 +1056,14 @@ public abstract class Node {
 		/**
 		 * May be EmptyNode.
 		 */
-		private final Node exprNode;
+		private final ExprNode exprNode;
 
 		public ReturnNode(Token token, ReturnExpr returnExpr) {
 			this.setToken(token);
-			this.exprNode = returnExpr.getExprNode();
+			this.exprNode = (ExprNode) this.setNodeAsChild(returnExpr.getExprNode());
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -957,14 +1079,14 @@ public abstract class Node {
 	 *
 	 */
 	public static class ThrowNode extends Node {
-		private final Node exprNode;
+		private final ExprNode exprNode;
 
 		public ThrowNode(Token token, Node exprNode) {
 			this.setToken(token);
-			this.exprNode = exprNode;
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 
@@ -981,7 +1103,7 @@ public abstract class Node {
 	 */
 	public static class TryNode extends Node {
 		private final BlockNode tryBlockNode;
-		private final ArrayList<CatchNode> catchNodeList;
+		private final List<CatchNode> catchNodeList;
 		/**
 		 * May be EmptyBlockNode.
 		 */
@@ -989,9 +1111,9 @@ public abstract class Node {
 
 		public TryNode(Token token, Node tryBlockNode, Node finallyBlockNode) {
 			this.setToken(token);
-			this.tryBlockNode = (BlockNode) tryBlockNode;
+			this.tryBlockNode = (BlockNode) this.setNodeAsChild(tryBlockNode);
 			this.catchNodeList = new ArrayList<>();
-			this.finallyBlockNode = (BlockNode) finallyBlockNode;
+			this.finallyBlockNode = (BlockNode) this.setNodeAsChild(finallyBlockNode);
 		}
 
 		public BlockNode getTryBlockNode() {
@@ -1004,10 +1126,10 @@ public abstract class Node {
 		 * @param node
 		 */
 		public void setCatchNode(CatchNode node) {
-			this.catchNodeList.add(node);
+			this.catchNodeList.add((CatchNode) this.setNodeAsChild(node));
 		}
 
-		public ArrayList<CatchNode> getCatchNodeList() {
+		public List<CatchNode> getCatchNodeList() {
 			return this.catchNodeList;
 		}
 
@@ -1028,18 +1150,32 @@ public abstract class Node {
 	 *
 	 */
 	public static class CatchNode extends Node {
-		private final Type exceptionType;
+		private ClassType exceptionType;
 		private final String exceptionName;
+		private final TypeSymbol exceptionTypeSymbol;
 		private final BlockNode catchBlockNode;
 
-		public CatchNode(Token token, CatchedException catchedExcept, Node catchBlockNode) {
+		public CatchNode(Token token, String exceptionName, TypeSymbol typeSymbol, Node catchBlockNode) {
 			this.setToken(token);
-			this.exceptionType = catchedExcept.getType();
-			this.exceptionName = catchedExcept.getName();
-			this.catchBlockNode = (BlockNode) catchBlockNode;
+			this.exceptionName = exceptionName;
+			this.exceptionTypeSymbol = typeSymbol;
+			this.catchBlockNode = (BlockNode) this.setNodeAsChild(catchBlockNode);
 		}
 
-		public Type getExceptionType() {
+		/**
+		 * 
+		 * @return
+		 * - return null, if has no type annotation.
+		 */
+		public TypeSymbol getTypeSymbol() {
+			return this.exceptionTypeSymbol;
+		}
+
+		public void setExceptionType(ClassType exceptionType) {
+			this.exceptionType = exceptionType;
+		}
+
+		public ClassType getExceptionType() {
 			return this.exceptionType;
 		}
 
@@ -1064,33 +1200,37 @@ public abstract class Node {
 	 *
 	 */
 	public static class VarDeclNode extends Node {
-		public final boolean isReadOnly;
+		private final boolean isReadOnly;
+		private boolean isGlobal;
 		private final String varName;
-		private final Node initValueNode;
-		private Type valueType;
+		private final ExprNode initValueNode;
 
 		public VarDeclNode(Token token, Token nameToken, Node initValueNode) {
 			this.setToken(token);
 			this.varName = nameToken.getText();
-			this.initValueNode = initValueNode;
-			this.valueType = TypePool.unresolvedType;
+			this.initValueNode = (ExprNode) this.setNodeAsChild(initValueNode);
 			this.isReadOnly = !token.getText().equals("var");
+			this.isGlobal = false;
 		}
 
 		public String getVarName() {
 			return this.varName;
 		}
 
-		public Node getInitValueNode() {
+		public ExprNode getInitValueNode() {
 			return this.initValueNode;
 		}
 
-		public void setValueType(Type type) {
-			this.valueType = type;
+		public void setGlobal(boolean isGlobal) {
+			this.isGlobal = isGlobal;
 		}
 
-		public Type getValueType() {
-			return this.valueType;
+		public boolean isGlobal() {
+			return this.isGlobal;
+		}
+
+		public boolean isReadOnly() {
+			return this.isReadOnly;
 		}
 
 		@Override
@@ -1109,25 +1249,25 @@ public abstract class Node {
 		/**
 		 * requires SymbolNode, ElementGetterNode or FieldGetterNode.
 		 */
-		private final Node leftNode;
-		private final Node rightNode;
+		private final AssignableNode leftNode;
+		private final ExprNode rightNode;
 
 		public AssignNode(Token token, Node leftNode, Node rightNode) {
 			this.setToken(token);
 			this.assignOp = this.token.getText();
-			this.leftNode = leftNode;
-			this.rightNode = rightNode;
+			this.leftNode = (AssignableNode) this.setNodeAsChild(leftNode);
+			this.rightNode = (ExprNode) this.setNodeAsChild(rightNode);
 		}
 
 		public String getAssignOp() {
 			return this.assignOp;
 		}
 
-		public Node getLeftNode() {
+		public AssignableNode getLeftNode() {
 			return this.leftNode;
 		}
 
-		public Node getRightNode() {
+		public ExprNode getRightNode() {
 			return this.rightNode;
 		}
 
@@ -1144,21 +1284,24 @@ public abstract class Node {
 	 */
 	public static class FunctionNode extends Node {
 		private final String funcName;
-		private final ArrayList<SymbolNode> nodeList;
+		private final List<SymbolNode> nodeList;
 		private final BlockNode blockNode;
 
 		public FunctionNode(Token token, Token nameToken, ArgsDecl decl, Node blockNode) {
 			this.setToken(token);
 			this.funcName = nameToken.getText();
-			this.nodeList = decl.getNodeList();
-			this.blockNode = (BlockNode) blockNode;
+			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
+			this.nodeList = new ArrayList<>();
+			for(Node node : decl.getNodeList()) {
+				this.nodeList.add((SymbolNode) this.setNodeAsChild(node));
+			}
 		}
 
 		public String getFuncName() {
 			return this.funcName;
 		}
 
-		public ArrayList<SymbolNode> getArgDeclNodeList() {
+		public List<SymbolNode> getArgDeclNodeList() {
 			return this.nodeList;
 		}
 
@@ -1179,20 +1322,49 @@ public abstract class Node {
 	 *
 	 */
 	public static class ClassNode extends Node {
-		private final ClassType classType;
+		private final String className;
+		/**
+		 * may be null, if not super class.
+		 */
+		private final String superName;
+		private ClassType classType;
 		private final List<Node> classElementList;
 
 		/**
 		 * 
 		 * @param token
-		 * @param classType
-		 * - unfinished class type.
-		 * @param body
+		 * @param nameToken
+		 * - class name token
+		 * @param superName
+		 * - super class name (may be null if had no super class).
+		 * @param elementList
+		 * - class elements
 		 */
-		public ClassNode(Token token, ClassType classType, List<Node> elementList) {
+		public ClassNode(Token token, Token nameToken, String superName, List<Node> elementList) {
 			this.setToken(token);
-			this.classType = classType;
-			this.classElementList = elementList;
+			this.className = nameToken.getText();
+			this.superName = superName;
+			this.classElementList = new ArrayList<>();
+			for(Node node : elementList) {
+				this.classElementList.add(this.setNodeAsChild(node));
+			}
+		}
+
+		public String getClassName() {
+			return this.className;
+		}
+
+		/**
+		 * 
+		 * @return
+		 * - return null. if has no super class.
+		 */
+		public String getSuperName() {
+			return this.superName;
+		}
+
+		public void setClassType(ClassType type) {
+			this.classType = type;
 		}
 
 		public ClassType getClassType() {
@@ -1216,14 +1388,17 @@ public abstract class Node {
 	 */
 	public static class ConstructorNode extends Node {
 		private Type recvType;
-		private final ArrayList<SymbolNode> nodeList;
+		private final List<SymbolNode> nodeList;
 		private final BlockNode blockNode;
 
 		public ConstructorNode(Token token, ArgsDecl decl, Node blockNode) {
 			this.setToken(token);
 			this.recvType = TypePool.unresolvedType;
-			this.nodeList = decl.getNodeList();
-			this.blockNode = (BlockNode) blockNode;
+			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
+			this.nodeList = new ArrayList<>();
+			for(Node node : decl.getNodeList()) {
+				this.nodeList.add((SymbolNode) this.setNodeAsChild(node));
+			}
 		}
 
 		public void setRecvType(Type type) {
@@ -1234,7 +1409,7 @@ public abstract class Node {
 			return this.recvType;
 		}
 
-		public ArrayList<SymbolNode> getArgDeclNodeList() {
+		public List<SymbolNode> getArgDeclNodeList() {
 			return this.nodeList;
 		}
 
@@ -1285,17 +1460,17 @@ public abstract class Node {
 	 *
 	 */
 	public static class RootNode extends Node {
-		private final ArrayList<Node> nodeList;
+		private final List<Node> nodeList;
 
 		public RootNode() {
 			this.nodeList = new ArrayList<>();
 		}
 
 		public void addNode(Node node) {
-			this.nodeList.add(node);
+			this.nodeList.add(this.setNodeAsChild(node));
 		}
 
-		public ArrayList<Node> getNodeList() {
+		public List<Node> getNodeList() {
 			return this.nodeList;
 		}
 
