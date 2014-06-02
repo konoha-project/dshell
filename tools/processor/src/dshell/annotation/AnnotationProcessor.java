@@ -203,7 +203,6 @@ class OpTableBuilder extends SourceBuilder {
 		this.appendLine("}");
 		try {
 			JavaFileObject fileObject = filer.createSourceFile("dshell.internal.parser.OperatorTable");
-			//JavaFileObject fileObject = filer.createClassFile("dshell.internal.parser.OperatorTable");
 			Writer writer = fileObject.openWriter();
 			for(String line : this.lineList) {
 				writer.write(line);

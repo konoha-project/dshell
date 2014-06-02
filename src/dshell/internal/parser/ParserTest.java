@@ -17,7 +17,7 @@ public class ParserTest {
 		//String ex = "12 +??+ 12";
 		//String ex = "12 * 12 + 12 / 3 instanceof int";
 		//String ex = "for(var i = 0; i < 12; i++) { return 12; }";
-		String ex = "assert(false);";
+		String ex = "assert(true == false);";
 		ANTLRInputStream input = new ANTLRInputStream(ex);
 		Lexer lexer = new dshellLexer(null);
 		lexer.setInputStream(input);
@@ -31,6 +31,6 @@ public class ParserTest {
 		System.out.println(tree.toStringTree(parser));
 		TypePool pool = new TypePool();
 		TypeChecker checker = new TypeChecker(pool);
-		tree.node.accept(checker);
+		RootNode checkedNode = checker.checkTypeRootNode(tree.node);
 	}
 }

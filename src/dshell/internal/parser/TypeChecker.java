@@ -6,6 +6,7 @@ import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
@@ -278,17 +279,44 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(SuffixIncrementNode node) {	//TODO:
-		return null;
+	public Node visit(SuffixIncrementNode node) {
+		String op = node.getOperator();
+		if(!op.equals("++") && !op.equals("--")) {
+			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
+		}
+		this.checkType(node.getExprNode());
+		Type exprType = node.getExprNode().getType();
+		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
+			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
+		}
+		node.setType(exprType);
+		return node;
 	}
 
 	@Override
-	public Node visit(OperatorCallNode node) {	//TODO:
-		return null;
+	public Node visit(OperatorCallNode node) {
+		int size = node.getNodeList().size();
+		assert (size > 0 && size < 3);
+		List<ExprNode> paramNodeList = node.getNodeList();
+		for(Node paramNode : paramNodeList) {
+			this.checkType(paramNode);
+		}
+		OperatorHandle handle;
+		if(size == 1) {
+			handle = this.opTable.getOperatorHandle(node.getFuncName(), paramNodeList.get(0).getType());
+		} else {
+			handle = this.opTable.getOperatorHandle(node.getFuncName(), paramNodeList.get(0).getType(), paramNodeList.get(1).getType());
+		}
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined operator: " + node.getFuncName());
+		}
+		node.setHandle(handle);
+		node.setType(handle.getReturnType());
+		return node;
 	}
 
 	@Override
-	public Node visit(FuncCallNode node) {
+	public Node visit(FuncCallNode node) {	//TODO: static func call
 		SymbolEntry entry = this.symbolTable.getEntry(node.getFuncName());
 		if(entry == null) {
 			this.throwAndReportTypeError(node, "undefined function: " + node.getFuncName());
@@ -472,8 +500,23 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(AssignNode node) {	//TODO:
-		return null;
+	public Node visit(AssignNode node) {	//TODO: int to float assign
+		String op = node.getAssignOp();
+		Type leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
+		Type rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
+		if(op.equals("=")) {
+			if(!leftType.isAssignableFrom(rightType)) {
+				this.throwAndReportTypeError(node, "illegal assginment: " + rightType + " -> " + leftType);
+			}
+		} else {
+			String opPrefix = op.substring(0, op.length() - 1);
+			OperatorHandle handle = this.opTable.getOperatorHandle(opPrefix, leftType, rightType);
+			if(handle == null) {
+				this.throwAndReportTypeError(node, "undefined self assignment: " + op);
+			}
+			node.setHandle(handle);
+		}
+		return node;
 	}
 
 	@Override
@@ -504,11 +547,21 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(RootNode node) {	//TODO: global symbol table
+	public Node visit(RootNode node) {
 		for(Node statementNode : node.getNodeList()) {
 			this.checkTypeAsStatement(statementNode);
 		}
 		return node;
+	}
+
+	public RootNode checkTypeRootNode(RootNode node) {
+		try {
+			return (RootNode) node.accept(this);
+		} catch(TypeError e) {
+			this.symbolTable.popAllLocal();
+			System.err.println(e.getMessage());
+		}
+		return null;
 	}
 
 	private void throwAndReportTypeError(Node node, String message) {

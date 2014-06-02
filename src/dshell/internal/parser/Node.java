@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.Token;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
@@ -68,6 +69,11 @@ public abstract class Node {
 		return this.parentNode;
 	}
 
+	@Override
+	public String toString() {
+		return this.getClass().getSimpleName() + ":voidType";
+	}
+
 	abstract public <T> T accept(NodeVisitor<T> visitor);
 	
 	// ##################
@@ -120,6 +126,11 @@ public abstract class Node {
 		 */
 		public Type getType() {
 			return this.type;
+		}
+
+		@Override
+		public String toString() {
+			return this.getClass().getSimpleName() + ":" + this.type;
 		}
 	}
 
@@ -545,7 +556,7 @@ public abstract class Node {
 	public static class OperatorCallNode extends ExprNode {
 		private final String funcName;
 		private final List<ExprNode> argNodeList;
-		private final List<Type> argTyeList;
+		private OperatorHandle handle;
 
 		/**
 		 * For prefix op
@@ -559,7 +570,6 @@ public abstract class Node {
 			this.funcName = this.token.getText();
 			this.argNodeList = new ArrayList<>();
 			this.argNodeList.add((ExprNode) this.setNodeAsChild(node));
-			this.argTyeList = new ArrayList<>();
 		}
 
 		/**
@@ -574,7 +584,6 @@ public abstract class Node {
 		public OperatorCallNode(Token token, Node leftNode, Node rightNode) {
 			this.setToken(token);
 			this.funcName = this.token.getText();
-			this.argTyeList = new ArrayList<>();
 			this.argNodeList = new ArrayList<>();
 			this.argNodeList.add((ExprNode) this.setNodeAsChild(leftNode));
 			this.argNodeList.add((ExprNode) this.setNodeAsChild(rightNode));
@@ -588,8 +597,12 @@ public abstract class Node {
 			return this.argNodeList;
 		}
 
-		public List<Type> getArgTypeList() {
-			return this.argTyeList;
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		public OperatorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -1245,6 +1258,12 @@ public abstract class Node {
 	 */
 	public static class AssignNode extends Node {
 		private final String assignOp;
+
+		/**
+		 * if assingOp is '=', it is null.
+		 */
+		private OperatorHandle handle;
+
 		/**
 		 * requires SymbolNode, ElementGetterNode or FieldGetterNode.
 		 */
@@ -1268,6 +1287,19 @@ public abstract class Node {
 
 		public ExprNode getRightNode() {
 			return this.rightNode;
+		}
+
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		/**
+		 * 
+		 * @return
+		 * return null, if operator is '='.
+		 */
+		public OperatorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override

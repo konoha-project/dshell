@@ -70,6 +70,16 @@ public class SymbolTable implements SymbolTableOp {
 		}
 	}
 
+	/**
+	 * pop all local symbol table.
+	 */
+	public void popAllLocal() {
+		int size = this.tableStack.size();
+		for(int i = 0; i < size; i++) {
+			this.popCurrentTable();
+		}
+	}
+
 	private static class ChildTable implements SymbolTableOp {
 		/**
 		 * parent symbol table reference.
