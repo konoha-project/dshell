@@ -1,4 +1,4 @@
-package dshell.lang.annotation;
+package dshell.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  * @author skgchxngsxyz-osx
  *
  */
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Target({ElementType.METHOD, ElementType.FIELD})
 public @interface Shared {
 

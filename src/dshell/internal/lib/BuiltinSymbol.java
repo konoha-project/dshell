@@ -11,8 +11,8 @@ public enum BuiltinSymbol {
 		@Override
 		public String getDetail() {
 			return "    Changing the current directory to DIR. The Environment variable" + "\n" +
-				   "    HOME is the default DIR.  A null directory name is the same as " + "\n" +
-				   "    the current directory.";
+			       "    HOME is the default DIR.  A null directory name is the same as " + "\n" +
+			       "    the current directory.";
 		}
 	},
 	exit {
@@ -23,7 +23,7 @@ public enum BuiltinSymbol {
 		@Override
 		public String getDetail() {
 			return "    Exit the shell with a status of N.  If N is omitted, the exit  " + "\n" +
-				   "    status is 0.";
+			       "    status is 0.";
 		}
 	},
 	help {
@@ -44,9 +44,9 @@ public enum BuiltinSymbol {
 		@Override
 		public String getDetail() {
 			return "    Logging Command.  Display SYMBOL.  If shell option " + "\n" +
-				   "    --logging:stout or --logging:stderr is set, display value to " + "\n" +
-				   "    stdout or stderr.  If shell option --logging:syslog is set, " + "\n" +
-				   "    write value to syslog.";
+			       "    --logging:stdout or --logging:stderr is set, display value to " + "\n" +
+			       "    stdout or stderr.  If shell option --logging:syslog is set, " + "\n" +
+			       "    write value to syslog.";
 		}
 	};
 

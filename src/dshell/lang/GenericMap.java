@@ -3,12 +3,12 @@ package dshell.lang;
 import java.util.LinkedHashMap;
 import java.util.Map.Entry;
 
+import dshell.annotation.GenericClass;
+import dshell.annotation.MapOp;
+import dshell.annotation.Shared;
+import dshell.annotation.TypeParameter;
+import dshell.annotation.MapOp.MapOpType;
 import dshell.internal.lib.Utils;
-import dshell.lang.annotation.Shared;
-import dshell.lang.annotation.GenericClass;
-import dshell.lang.annotation.MapOp;
-import dshell.lang.annotation.TypeParameter;
-import dshell.lang.annotation.MapOp.MapOpType;
 
 /**
  * Generic map for all of values.

@@ -1,8 +1,8 @@
 package dshell.lang;
 
-import dshell.lang.annotation.ArrayOp;
-import dshell.lang.annotation.Shared;
-import dshell.lang.annotation.ArrayOp.ArrayOpType;
+import dshell.annotation.ArrayOp;
+import dshell.annotation.Shared;
+import dshell.annotation.ArrayOp.ArrayOpType;
 
 /**
  * String class for D-Shell.

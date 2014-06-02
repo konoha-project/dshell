@@ -14,7 +14,6 @@ import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
 import dshell.internal.parser.ParserUtils.ReturnExpr;
 import dshell.internal.parser.TypePool.ClassType;
-import dshell.internal.parser.TypePool.FunctionType;
 import dshell.internal.parser.TypePool.Type;
 
 /**

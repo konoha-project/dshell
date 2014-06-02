@@ -83,3 +83,4 @@ tools/rec/build
 tools/rec/bin
 gensrc
 generated-array
+/.apt_generated

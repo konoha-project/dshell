@@ -1,0 +1,36 @@
+<project name="processor" default="jar">
+	<!-- directory / file definition -->
+	<property name="source_dir" value="src" />
+	<property name="build_dir"  value="build" />
+	<property name="processor_jar" value="processor.jar" />
+
+	<!-- ================================== -->
+	<!--                BUILD               -->
+	<!-- ================================== -->
+	<target name="build">
+		<mkdir dir="${build_dir}" />
+		<javac srcdir="${source_dir}" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false" >
+			<include name="**/*.java" />
+			<compilerarg value="-Xlint:deprecation" />
+			<compilerarg value="-Xlint:unchecked" />
+		</javac>
+	</target>
+
+	<!-- ================================== -->
+	<!--            GENERATE JAR            -->
+	<!-- ================================== -->
+	<target name="jar" depends="build">
+		<jar jarfile="${processor_jar}" >
+			<fileset dir="${build_dir}" includes="**/*.class" />
+			<fileset dir="${source_dir}" includes="META-INF/services/**" />
+		</jar>
+	</target>
+
+	<!-- ================================== -->
+	<!--               CLEAN                -->
+	<!-- ================================== -->
+	<target name="clean">
+		<delete dir="${build_dir}"/>
+		<delete file="${processor_jar}" />
+	</target>
+</project>

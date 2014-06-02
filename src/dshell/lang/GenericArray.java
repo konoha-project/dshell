@@ -2,12 +2,12 @@ package dshell.lang;
 
 import java.util.Arrays;
 
+import dshell.annotation.ArrayOp;
+import dshell.annotation.GenericClass;
+import dshell.annotation.Shared;
+import dshell.annotation.TypeParameter;
+import dshell.annotation.ArrayOp.ArrayOpType;
 import dshell.internal.lib.Utils;
-import dshell.lang.annotation.ArrayOp;
-import dshell.lang.annotation.ArrayOp.ArrayOpType;
-import dshell.lang.annotation.Shared;
-import dshell.lang.annotation.GenericClass;
-import dshell.lang.annotation.TypeParameter;
 
 /**
  * Generic array for class Type value.

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="tools/processor/src"/>
 	<classpathentry kind="src" path="generated-array"/>
 	<classpathentry kind="src" path="gensrc"/>
 	<classpathentry kind="src" path="tools/test-dshell/src"/>
@@ -17,5 +18,6 @@
 	<classpathentry kind="lib" path="tools/rec/ext/httpcore-4.3.jar"/>
 	<classpathentry kind="lib" path="tools/rec/ext/jsonic-1.3.1.jar"/>
 	<classpathentry kind="lib" path="ext/antlr-runtime-4.2.2.jar"/>
+	<classpathentry kind="lib" path="tools/processor/processor.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -56,11 +56,13 @@ import dshell.internal.parser.TypePool.UnresolvedType;
 public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
 	private final SymbolTable symbolTable;
+	private final AbstractOperatorTable opTable;
 	private Type requiredType;
 
 	public TypeChecker(TypePool typePool) {
 		this.typePool = typePool;
 		this.symbolTable = new SymbolTable();
+		this.opTable = new OperatorTable(this.typePool);
 	}
 
 	private boolean hasUnresolvedType(ExprNode targetNode) {

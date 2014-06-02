@@ -61,7 +61,7 @@ public abstract class CalleeHandle {
 		 */
 		private org.objectweb.asm.Type fieldTypeDesc;
 
-		protected FieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
+		public FieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
 			super(calleeName, ownerType);
 			assert fieldType != null;
 			this.fieldType = fieldType;
@@ -136,7 +136,7 @@ public abstract class CalleeHandle {
 		 * @param paramTypes
 		 * - if has no parameters, it is empty array;
 		 */
-		protected MethodHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		public MethodHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
 			super(calleeName, ownerType);
 			assert returnType != null;
 			assert paramTypeList != null;
@@ -177,7 +177,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class ConstructorHandle extends MethodHandle {
-		protected ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
+		public ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
 			super("<init>", ownerType, TypePool.voidType, paramTypeList);
 		}
 
@@ -206,7 +206,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class FunctionHandle extends MethodHandle {
-		protected FunctionHandle(TypePool.FunctionType funcType, Type returnType, List<Type> paramTypeList) {
+		public FunctionHandle(TypePool.FunctionType funcType, Type returnType, List<Type> paramTypeList) {
 			super("invoke", funcType, returnType, paramTypeList);
 		}
 
@@ -216,6 +216,7 @@ public abstract class CalleeHandle {
 		 */
 		@Override
 		public void call(GeneratorAdapter adapter) {
+			this.initMethodDesc();
 			adapter.invokeInterface(this.ownerTypeDesc, this.methodDesc);
 		}
 	}
@@ -226,8 +227,31 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class OperatorHandle extends MethodHandle {
-		protected OperatorHandle(String calleeName, Type ownerType, Type returnType, List<TypePool.Type> paramTypeList) {
-			super(calleeName, ownerType, returnType, paramTypeList);
+		/**
+		 * must be fully qualified name.
+		 */
+		private final String ownerName;
+
+		public OperatorHandle(String calleeName, String ownerName, Type returnType, List<TypePool.Type> paramTypeList) {
+			super(calleeName, null, returnType, paramTypeList);
+			this.ownerName = ownerName;
+		}
+
+		private void initOperatorDesc() {
+			if(this.ownerTypeDesc == null || this.methodDesc == null) {
+				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerName);
+				this.methodDesc = TypeUtils.toMehtodDescriptor(this.returnType, this.calleeName, this.paramTypeList);
+			}
+		}
+
+		/**
+		 * used for code generation.
+		 * generate invokestatic instruction.
+		 */
+		@Override
+		public void call(GeneratorAdapter adapter) {
+			this.initOperatorDesc();
+			adapter.invokeStatic(this.ownerTypeDesc, this.methodDesc);
 		}
 	}
 }
