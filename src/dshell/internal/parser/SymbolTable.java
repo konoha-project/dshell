@@ -4,6 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
+import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
+import dshell.internal.parser.TypePool.FunctionType;
 import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.SymbolTable.SymbolEntry;
 
@@ -142,7 +145,7 @@ public class SymbolTable implements SymbolTableOp {
 		private final boolean isGlobal;
 		private final Type type;
 
-		private SymbolEntry(Type type, boolean isReadOnly, boolean isGlobal) {
+		protected SymbolEntry(Type type, boolean isReadOnly, boolean isGlobal) {
 			this.type = type;
 			this.isReadOnly = isReadOnly;
 			this.isGlobal = isGlobal;
@@ -158,6 +161,25 @@ public class SymbolTable implements SymbolTableOp {
 
 		public boolean isGlobal() {
 			return this.isGlobal;
+		}
+	}
+
+	public static class FuncSymbolEntry extends SymbolEntry {
+		protected final StaticFieldHandle fieldHandle;
+		protected final StaticFunctionHandle funcHandle;
+
+		protected FuncSymbolEntry(FunctionType type, StaticFieldHandle fieldHandle, StaticFunctionHandle funcHandle) {
+			super(type, true, true);
+			this.fieldHandle = fieldHandle;
+			this.funcHandle = funcHandle;
+		}
+
+		public StaticFieldHandle getFieldHandle() {
+			return this.fieldHandle;
+		}
+
+		public StaticFunctionHandle getFunctionHandle() {
+			return this.funcHandle;
 		}
 	}
 }

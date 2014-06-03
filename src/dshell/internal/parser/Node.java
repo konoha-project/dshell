@@ -10,6 +10,7 @@ import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
+import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
@@ -87,30 +88,9 @@ public abstract class Node {
 	 */
 	public static abstract class ExprNode extends Node {
 		/**
-		 * If true, this node is considered as statement.
-		 * Evaluating after statement, jvm operand stack is empty.
-		 */
-		protected boolean asStatement = false;
-
-		/**
 		 * It represents expression return type.
 		 */
 		protected Type type = TypePool.unresolvedType;
-
-		/**
-		 * Consider this node as statement.
-		 */
-		public final void requireStatement() {
-			this.asStatement = true;
-		}
-
-		/**
-		 * If true, this node is considered as statement.
-		 * @return
-		 */
-		public final boolean isStatement() {
-			return this.asStatement && (this.getType() instanceof TypePool.VoidType);
-		}
 
 		/**
 		 * Set evaluated value type of this node.
@@ -217,9 +197,28 @@ public abstract class Node {
 			this.value = parseTokenText(this.token);
 		}
 
-		//TODO: escape sequence
 		public static String parseTokenText(Token token) {
-			return token.getText();
+			StringBuilder sBuilder = new StringBuilder();
+			String text = token.getText();
+			int size = text.length();
+			for(int i = 1; i < size - 1; i++) {
+				char ch = text.charAt(i);
+				if(ch == '\\') {
+					char nextCh = text.charAt(++i);
+					switch(nextCh) {
+					case 't' : ch = '\t'; break;
+					case 'b' : ch = '\b'; break;
+					case 'n' : ch = '\n'; break;
+					case 'r' : ch = '\r'; break;
+					case 'f' : ch = '\f'; break;
+					case '\'': ch = '\''; break;
+					case '"' : ch = '"';  break;
+					case '\\': ch = '\\'; break;
+					}
+				}
+				sBuilder.append(ch);
+			}
+			return sBuilder.toString();
 		}
 
 		public String getValue() {
@@ -326,6 +325,11 @@ public abstract class Node {
 		private boolean isGlobal;
 		private boolean isReadOnly;
 
+		/**
+		 * used for getting function object from static field.
+		 */
+		private StaticFieldHandle handle;
+
 		public SymbolNode(Token token) {
 			this.setToken(token);
 			this.symbolName = this.token.getText();
@@ -364,6 +368,14 @@ public abstract class Node {
 
 		public boolean isGlobal() {
 			return this.isGlobal;
+		}
+
+		public void setHandle(StaticFieldHandle handle) {
+			this.handle = handle;
+		}
+
+		public StaticFieldHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -459,6 +471,18 @@ public abstract class Node {
 		public CastNode(TypeSymbol targetTypeSymbol, Node exprNode) {
 			this.targetTypeSymbol = targetTypeSymbol;
 			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
+		}
+
+		/**
+		 * called from type checker.
+		 * @param targetType
+		 * @param exprNode
+		 */
+		public CastNode(Type targetType, ExprNode exprNode) {
+			this.targetTypeSymbol = null; //FIXME:
+			this.exprNode = exprNode;
+			this.targetType = targetType;
+			this.type = targetType;
 		}
 
 		public TypeSymbol getTypeSymbol() {
@@ -622,7 +646,7 @@ public abstract class Node {
 	public static class FuncCallNode extends ExprNode {
 		private final String funcName;
 		private final List<ExprNode> argNodeList;
-		private FunctionHandle handle;
+		private MethodHandle handle;
 
 		public FuncCallNode(Token token, Arguments args) {
 			this.setToken(token);
@@ -641,11 +665,11 @@ public abstract class Node {
 			return this.argNodeList;
 		}
 
-		public void setHandle(FunctionHandle handle) {
+		public void setHandle(MethodHandle handle) {
 			this.handle = handle;
 		}
 
-		public FunctionHandle getHandle() {
+		public MethodHandle getHandle() {
 			return this.handle;
 		}
 

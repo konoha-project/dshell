@@ -47,17 +47,17 @@ public abstract class CalleeHandle {
 		/**
 		 * Represent instance field type.
 		 */
-		private final TypePool.Type fieldType;
+		protected final TypePool.Type fieldType;
 
 		/**
 		 * asm type descriptor for owner type.
 		 */
-		private org.objectweb.asm.Type ownerTypeDesc;
+		protected org.objectweb.asm.Type ownerTypeDesc;
 
 		/**
 		 * asm type descriptor for field type.
 		 */
-		private org.objectweb.asm.Type fieldTypeDesc;
+		protected org.objectweb.asm.Type fieldTypeDesc;
 
 		public FieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
 			super(calleeName, ownerType);
@@ -69,7 +69,7 @@ public abstract class CalleeHandle {
 			return this.fieldType;
 		}
 
-		private void initTypeDesc() {
+		protected void initTypeDesc() {
 			if(this.ownerTypeDesc == null || this.fieldTypeDesc == null) {
 				assert this.ownerType != null;
 				assert this.fieldType != null;
@@ -101,6 +101,22 @@ public abstract class CalleeHandle {
 		}
 	}
 
+	public static class StaticFieldHandle extends FieldHandle {
+		public StaticFieldHandle(String calleeName, Type ownerType, Type fieldType) {
+			super(calleeName, ownerType, fieldType);
+		}
+
+		@Override
+		public void callGetter(GeneratorAdapter adapter) {
+			this.initTypeDesc();
+			adapter.getStatic(this.ownerTypeDesc, this.calleeName, this.fieldTypeDesc);
+		}
+
+		@Override
+		public void callSetter(GeneratorAdapter adapter) {
+			// do nothing, future may be used.
+		}
+	}
 	/**
 	 * Represent instance method.
 	 * It contains return type, param types, and jvm method descriptor.
@@ -228,6 +244,41 @@ public abstract class CalleeHandle {
 		public void call(GeneratorAdapter adapter) {
 			this.initMethodDesc();
 			adapter.invokeInterface(this.ownerTypeDesc, this.methodDesc);
+		}
+	}
+
+	/**
+	 * represent static function.
+	 * @author skgchxngsxyz-opensuse
+	 *
+	 */
+	public static class StaticFunctionHandle extends MethodHandle {
+		/**
+		 * must be fully qualified name.
+		 */
+		private final String ownerName;
+
+		public StaticFunctionHandle(String calleeName, String ownerName, Type returnType, List<Type> paramTypeList) {
+			super(calleeName, null, returnType, paramTypeList);
+			this.ownerName = ownerName;
+		}
+
+		@Override
+		protected void initMethodDesc() {
+			if(this.ownerTypeDesc == null || this.methodDesc == null) {
+				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerName);
+				this.methodDesc = TypeUtils.toMehtodDescriptor(this.returnType, this.calleeName, this.paramTypeList);
+			}
+		}
+
+		/**
+		 * used for code generation.
+		 * generate invokestatic instruction.
+		 */
+		@Override
+		public void call(GeneratorAdapter adapter) {
+			this.initMethodDesc();
+			adapter.invokeStatic(this.ownerTypeDesc, this.methodDesc);
 		}
 	}
 

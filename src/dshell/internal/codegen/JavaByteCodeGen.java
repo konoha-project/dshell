@@ -57,6 +57,7 @@ import dshell.internal.parser.TypePool.PrimitiveType;
 import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.Node;
 import dshell.internal.parser.NodeVisitor;
+import dshell.internal.parser.TypePool.VoidType;
 import dshell.internal.parser.TypeUtils;
 
 /**
@@ -301,10 +302,10 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(BlockNode node) {
-		for(Node statementNode : node.getNodeList()) {
-			statementNode.accept(this);
-			if((statementNode instanceof ExprNode) && ((ExprNode)statementNode).isStatement()) {
-				this.getCurrentMethodBuilder().pop(TypeUtils.toTypeDescriptor(((ExprNode) statementNode).getType()));
+		for(Node targetNode : node.getNodeList()) {
+			targetNode.accept(this);
+			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
+				this.getCurrentMethodBuilder().pop(TypeUtils.toTypeDescriptor(((ExprNode) targetNode).getType()));
 			}
 		}
 		return null;
@@ -445,11 +446,11 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		}
 		ClassBuilder classBuilder = new ClassBuilder();
 		this.methodBuilders.push(classBuilder.createNewMethodBuilder(null));
-		for(Node statementNode : node.getNodeList()) {
-			statementNode.accept(this);
-			if((statementNode instanceof ExprNode) && !((ExprNode)statementNode).isStatement()) {
+		for(Node targetNode : node.getNodeList()) {
+			targetNode.accept(this);
+			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
 				GeneratorAdapter adapter = this.getCurrentMethodBuilder();
-				Type type = ((ExprNode)statementNode).getType();
+				Type type = ((ExprNode)targetNode).getType();
 				if(type instanceof PrimitiveType) {
 					adapter.box(TypeUtils.toTypeDescriptor(type));
 				}

@@ -370,35 +370,35 @@ public class TypePool {
 		}
 
 		/**
-		 * get constructor handle list.
-		 * handle list is unmodified.
+		 * loop up constructor handle.
+		 * @param paramTypeList
 		 * @return
-		 * - if constructor is undefined in this type, return null.
+		 * - return null, has no matched constructor.
 		 */
-		public List<ConstructorHandle> getConstructorHandleList() {
+		public ConstructorHandle lookupConstructorHandle(List<Type> paramTypeList) {
 			return null;
 		}
 
 		/**
-		 * get field handle map.
-		 * handle map is unmodified.
+		 * loop up field handle.
+		 * @param fieldName
 		 * @return
-		 * - if field is undefined in this type, return null.
+		 * - return null, has no matched field.
 		 */
-		public Map<String, FieldHandle> getFieldHandleMap() {
+		public FieldHandle lookupFieldHandle(String fieldName) {
 			return null;
 		}
 
 		/**
-		 * get method handle map.
-		 * handle map is unmodified.
+		 * look up method handle.
+		 * @param methodName
+		 * @param paramTypeList
 		 * @return
-		 * - if method is undefined in this type, return null.
+		 * - return null. has no matched method.
 		 */
-		public Map<String, MethodHandle> getMethodHandleMap() {
+		public MethodHandle lookupMethodHandle(String methodName) {
 			return null;
 		}
-
 		/**
 		 * if called, cannot change this class element.
 		 */
@@ -542,18 +542,42 @@ public class TypePool {
 		}
 
 		@Override
-		public List<ConstructorHandle> getConstructorHandleList() {
-			return this.constructorHandleList;
+		public ConstructorHandle lookupConstructorHandle(List<Type> paramTypeList) {
+			for(ConstructorHandle handle : this.constructorHandleList) {
+				final int size = handle.getParamTypeList().size();
+				if(size != paramTypeList.size()) {
+					continue;
+				}
+				int matchCount = 0;
+				for(int i = 0; i < size; i++) {
+					if(!handle.getParamTypeList().get(i).isAssignableFrom(paramTypeList.get(i))) {
+						break;
+					}
+					matchCount++;
+				}
+				if(matchCount == size) {
+					return handle;
+				}
+			}
+			return null;
 		}
 
 		@Override
-		public Map<String, FieldHandle> getFieldHandleMap() {
-			return this.fieldHandleMap;
+		public FieldHandle lookupFieldHandle(String fieldName) {
+			FieldHandle handle = this.fieldHandleMap.get(fieldName);
+			if(handle == null) {
+				return this.superType.lookupFieldHandle(fieldName);
+			}
+			return handle;
 		}
 
 		@Override
-		public Map<String, MethodHandle> getMethodHandleMap() {
-			return this.methodHandleMap;
+		public MethodHandle lookupMethodHandle(String methodName) {
+			MethodHandle handle = this.methodHandleMap.get(methodName);
+			if(handle == null) {
+				return this.superType.lookupMethodHandle(methodName);
+			}
+			return handle;
 		}
 
 		@Override

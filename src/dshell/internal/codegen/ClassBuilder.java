@@ -1,9 +1,5 @@
 package dshell.internal.codegen;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Stack;
 
 import org.objectweb.asm.ClassVisitor;
