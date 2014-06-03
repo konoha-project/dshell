@@ -6,13 +6,17 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This is just a marker annotation.
- * It represent shared method or field from dshell.
+ * represent D-Shell class.
  * @author skgchxngsxyz-osx
  *
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
-public @interface Shared {
-
+@Target(ElementType.TYPE)
+public @interface SharedClass {
+	/**
+	 * containa super class name(not internal name).
+	 * @return
+	 * if has no super class, return empty string.
+	 */
+	String value() default "";
 }

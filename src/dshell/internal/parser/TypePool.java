@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import dshell.internal.codegen.JavaByteCodeGen;
+import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
@@ -38,7 +40,7 @@ public class TypePool {
 	/**
 	 * Equivalent to java void.
 	 */
-	public final static Type voidType = new VoidType();
+	public final Type voidType;
 
 	/**
 	 * Equivalent to java long.
@@ -81,7 +83,14 @@ public class TypePool {
 	 */
 	protected final HashMap<String, Type> typeMap;
 
-	public TypePool() {
+	/**
+	 * class loader for FuncType generation.
+	 * do not use it for other purpose.
+	 */
+	protected final DShellClassLoader classLoader;
+
+	public TypePool(DShellClassLoader classLoader) {
+		this.classLoader = classLoader;
 		this.typeMap = new HashMap<>();
 		/**
 		 * do not set to TypeMap;
@@ -89,14 +98,13 @@ public class TypePool {
 		this.objectType = new RootClassType();
 		this.baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
 
-		this.setTypeAndThrowIfDefined(voidType);
-
+		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
 		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
 		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", "double"));
 		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
-		this.stringType    = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("String", "dshell/lang/DShellString", objectType, false));
-		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", objectType, true));
-		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", objectType, false));
+		this.stringType    = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("String", "java/lang/String", this.objectType, false));
+		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", this.objectType, true));
+		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", this.objectType, false));
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
 //
 //		/**
@@ -222,6 +230,7 @@ public class TypePool {
 	public GenericType createAndGetMapTypeIfUndefined(Type elementType) {
 		return this.createAndGetGenericTypeIfUndefined("Map", new Type[]{elementType});
 	}
+
 	/**
 	 * Currently user defined generic class not supported.
 	 * Future may be supported.
@@ -255,6 +264,7 @@ public class TypePool {
 			String internalName = generatedFuncNamePrefix + "FuncType" + ++funcNameSuffix;
 			funcType = new FunctionType(typeName, internalName, returnType, typeList);
 			this.typeMap.put(typeName, funcType);
+			this.classLoader.definedAndLoadClass(internalName, JavaByteCodeGen.generateFuncTypeInterface((FunctionType) funcType));
 		}
 		return (FunctionType) funcType;
 	}
@@ -413,7 +423,7 @@ public class TypePool {
 	 *
 	 */
 	public static class VoidType extends Type {
-		private VoidType() {
+		public VoidType() {
 			super("void", "void", false);
 		}
 	}
@@ -426,12 +436,12 @@ public class TypePool {
 	 */
 	public final static class RootClassType extends Type {
 		private RootClassType() {
-			super("$Super$", "java.lang.Object");
+			super("$Super$", "java/lang/Object");
 		}
 
 		@Override
 		public boolean isAssignableFrom(Type targetType) {
-			return targetType instanceof ClassType;
+			return targetType instanceof ClassType || targetType instanceof RootClassType;
 		}
 	}
 	

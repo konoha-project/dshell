@@ -63,7 +63,7 @@ public abstract class TypeSymbol {
 	public static class VoidTypeSymbol extends TypeSymbol {
 		@Override
 		public Type toType(TypePool pool) {
-			return TypePool.voidType;
+			return pool.voidType;
 		}
 	}
 

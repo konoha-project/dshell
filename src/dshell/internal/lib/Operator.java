@@ -10,7 +10,7 @@ import dshell.lang.ArithmeticException;
  * @author skgchxngsxyz-osx
  *
  */
-public class Operator {
+public class Operator { //TODO: unary op
 	// bainary op
 	// ADD
 	@Shared @OpType(OpName.ADD) public static long   add(long left, long right)      { return left + right; }
@@ -22,6 +22,10 @@ public class Operator {
 	@Shared @OpType(OpName.ADD) public static String add(String left, double right)  { return left + right; }
 	@Shared @OpType(OpName.ADD) public static String add(String left, boolean right) { return left + right; }
 	@Shared @OpType(OpName.ADD) public static String add(String left, Object right)  { return left + right; }
+	@Shared @OpType(OpName.ADD) public static String add(long left, String right)    { return left + right; }
+	@Shared @OpType(OpName.ADD) public static String add(double left, String right)  { return left + right; }
+	@Shared @OpType(OpName.ADD) public static String add(boolean left, String right) { return left + right; }
+	@Shared @OpType(OpName.ADD) public static String add(Object left, String right)  { return left + right; }
 
 	// SUB
 	@Shared @OpType(OpName.SUB) public static long   sub(long left, long right)     { return left - right; }
@@ -115,4 +119,26 @@ public class Operator {
 
 	// XOR
 	@Shared @OpType(OpName.XOR) public static long xor(long left, long right) { return left ^ right; }
+
+	// additional operator
+	// ASSERT
+	@Shared @OpType(OpName.ASSERT) public static void assertDShell(boolean result) {
+		if(!result) {
+			new AssertionError("").printStackTrace();
+			System.exit(1);
+		}
+	}
+
+	private static class AssertionError extends dshell.lang.Exception {
+		private static final long serialVersionUID = 5837757502752361730L;
+
+		public AssertionError(String message) {
+			super(message);
+		}
+	}
+
+	// PRINT
+	@Shared @OpType(OpName.PRINT) public static void printValue(Object value, String typeName) {
+		System.out.println("(" + typeName + ") " + value);
+	}
 }

@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
 
+import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.dshellParser.ToplevelContext;
 
@@ -17,7 +18,7 @@ public class ParserTest {
 		//String ex = "12 +??+ 12";
 		//String ex = "12 * 12 + 12 / 3 instanceof int";
 		//String ex = "for(var i = 0; i < 12; i++) { return 12; }";
-		String ex = "assert(true == false);";
+		String ex = "assert(\"fhuie\" == false);";
 		ANTLRInputStream input = new ANTLRInputStream(ex);
 		Lexer lexer = new dshellLexer(null);
 		lexer.setInputStream(input);
@@ -29,7 +30,8 @@ public class ParserTest {
 		ToplevelContext tree = parser.toplevel();
 		tree.inspect(parser);
 		System.out.println(tree.toStringTree(parser));
-		TypePool pool = new TypePool();
+		DShellClassLoader classLoader = new DShellClassLoader();
+		TypePool pool = new TypePool(classLoader);
 		TypeChecker checker = new TypeChecker(pool);
 		RootNode checkedNode = checker.checkTypeRootNode(tree.node);
 	}

@@ -1,7 +1,10 @@
 package dshell.lang;
 
+import dshell.annotation.Shared;
+import dshell.annotation.SharedClass;
 import dshell.internal.lib.RuntimeContext;
 
+@SharedClass("Exception")
 public class NativeException extends Exception {
 	private static final long serialVersionUID = -846806025039854L;
 
@@ -19,6 +22,7 @@ public class NativeException extends Exception {
 		return new NativeException(t);
 	}
 
+	@Shared
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName() + " -> " + this.internalException.getClass().getCanonicalName();
@@ -31,11 +35,18 @@ public class NativeException extends Exception {
 		sBuilder.append(this.toString() +  ": " + message + "\n");
 	}
 
+	@Shared
 	@Override
 	public void printStackTrace() {
 		super.printStackTrace();
 		if(RuntimeContext.getContext().isDebugMode()) {
 			this.internalException.printStackTrace();
 		}
+	}
+
+	@Shared
+	@Override
+	public String getMessage() {
+		return this.internalException.getMessage();
 	}
 }

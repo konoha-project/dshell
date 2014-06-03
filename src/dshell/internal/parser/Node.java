@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.antlr.v4.runtime.Token;
 
+import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
@@ -108,7 +109,7 @@ public abstract class Node {
 		 * @return
 		 */
 		public final boolean isStatement() {
-			return this.asStatement;
+			return this.asStatement && (this.getType() instanceof TypePool.VoidType);
 		}
 
 		/**
@@ -313,6 +314,7 @@ public abstract class Node {
 	 */
 	public static abstract class AssignableNode extends ExprNode {
 	}
+
 	/**
 	 * This node represents local variable.
 	 * @author skgchxngsxyz-osx
@@ -708,6 +710,7 @@ public abstract class Node {
 	public static class ConstructorCallNode extends ExprNode {
 		private final String className;
 		private final List<ExprNode> argNodeList;
+		private ConstructorHandle handle;
 
 		public ConstructorCallNode(Token token, String className, Arguments args) {
 			this.setToken(token);
@@ -724,6 +727,14 @@ public abstract class Node {
 
 		public List<ExprNode> getNodeList() {
 			return this.argNodeList;
+		}
+
+		public void setHandle(ConstructorHandle handle) {
+			this.handle = handle;
+		}
+
+		public ConstructorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -778,7 +789,9 @@ public abstract class Node {
 	 *
 	 */
 	public static class AssertNode extends Node {
+		public final static String opName = "assert";
 		private final ExprNode exprNode;
+		private OperatorHandle handle;
 
 		public AssertNode(Token token, Node exprNode) {
 			this.setToken(token);
@@ -787,6 +800,14 @@ public abstract class Node {
 
 		public Node getExprNode() {
 			return this.exprNode;
+		}
+
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		public OperatorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -906,11 +927,19 @@ public abstract class Node {
 	}
 
 	/**
+	 * represent loop statement.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static abstract class LoopNode extends Node {
+	}
+
+	/**
 	 * This node represents for statement.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ForNode extends Node {
+	public static class ForNode extends LoopNode {
 		/**
 		 * May be EmptyNode
 		 */
@@ -962,7 +991,7 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ForInNode extends Node {
+	public static class ForInNode extends LoopNode {
 		private final String initName;
 		private final ExprNode exprNode;
 		private final BlockNode blockNode;
@@ -997,7 +1026,7 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class WhileNode extends Node {
+	public static class WhileNode extends LoopNode {
 		private final ExprNode condNode;
 		private final BlockNode blockNode;
 
@@ -1491,7 +1520,13 @@ public abstract class Node {
 	 *
 	 */
 	public static class RootNode extends Node {
+		public final static String opName = "printValue";
 		private final List<Node> nodeList;
+
+		/**
+		 * used for interactive mode.
+		 */
+		private OperatorHandle handle;
 
 		public RootNode() {
 			this.nodeList = new ArrayList<>();
@@ -1505,9 +1540,17 @@ public abstract class Node {
 			return this.nodeList;
 		}
 
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		public OperatorHandle getHandle() {
+			return this.handle;
+		}
+
 		@Override
-		public <T> T accept(NodeVisitor<T> visitor) {
-			return visitor.visit(this);
+		public <T> T accept(NodeVisitor<T> visitor) { // do not call it
+			throw new RuntimeException("RootNode do not support NodeVisitor");
 		}
 	}
 }

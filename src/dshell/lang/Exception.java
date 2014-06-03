@@ -2,27 +2,41 @@ package dshell.lang;
 
 import java.util.LinkedList;
 
+import dshell.annotation.Shared;
+import dshell.annotation.SharedClass;
+
 /**
  * D-shell basis exception class
  * @author skgchxngsxyz-osx
  *
  */
+@SharedClass
 public class Exception extends RuntimeException {
 	private static final long serialVersionUID = -8494693504521057747L;
 
+	@Shared
 	public Exception() {
 		super();
 	}
 
+	@Shared
 	public Exception(String message) {
 		super(message);
 	}
 
+	@Shared
 	@Override
 	public String toString() {
 		return this.getClass().getSimpleName();
 	}
 
+	@Shared
+	@Override
+	public String getMessage() {
+		return super.getMessage();
+	}
+
+	@Shared
 	@Override
 	public void printStackTrace() {
 		StringBuilder sBuilder = new StringBuilder();

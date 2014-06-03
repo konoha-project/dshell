@@ -11,6 +11,8 @@ import dshell.internal.console.AbstractConsole;
 import dshell.internal.console.DShellConsole;
 import dshell.internal.exe.EngineFactory;
 import dshell.internal.exe.ExecutionEngine;
+import dshell.internal.exe.NewEngineFactory;
+import dshell.internal.exe.TraditionalEngineFactory;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestReceiver;
@@ -40,6 +42,7 @@ public class DShell {
 	private final boolean enablePseudoTerminal;
 	private String specificArg = null;
 	protected String[] scriptArgs;
+	protected boolean useNewParser = false;
 
 	public DShell(String[] args) {
 		this(args, false);
@@ -88,6 +91,10 @@ public class DShell {
 					else {
 						RuntimeContext.getContext().changeAppender(AppenderType.syslog);
 					}
+				}
+				else if(optionSymbol.equals("--without-bun")) {
+					this.useNewParser = true;
+					this.autoImportCommand = false;
 				}
 				else if(optionSymbol.equals("--receive") && i + 1 < args.length && args.length == 2) {	// never return
 					this.mode = ExecutionMode.receiverMode;
@@ -139,7 +146,8 @@ public class DShell {
 
 	public void execute() {
 		RuntimeContext.getContext();
-		ExecutionEngine engine = new EngineFactory().getEngine();
+		EngineFactory factory = this.useNewParser ? new NewEngineFactory() : new TraditionalEngineFactory();
+		ExecutionEngine engine = factory.getEngine();
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return

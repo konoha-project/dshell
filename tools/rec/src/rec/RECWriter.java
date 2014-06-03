@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import libbun.util.LibBunSystem;
-
 import net.arnx.jsonic.JSON;
 
 import org.apache.http.HttpResponse;
@@ -20,10 +19,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 
-
-import dshell.internal.exe.EngineFactory;
 import dshell.internal.exe.ExecutionEngine;
-import dshell.internal.jvm.JavaByteCodeGenerator;
+import dshell.internal.exe.TraditionalEngineFactory;
 import dshell.internal.lib.Utils;
 import dshell.internal.main.DShell;
 
@@ -92,7 +89,7 @@ public class RECWriter extends DShell {
 			this.invoke(this.recURL, this.scriptArgs);
 		}
 		else {
-			ExecutionEngine engine = new EngineFactory(Generator4REC.class, TypeChecker4REC.class).getEngine();
+			ExecutionEngine engine = new TraditionalEngineFactory(Generator4REC.class, TypeChecker4REC.class).getEngine();
 			this.runScriptingMode(engine);
 		}
 	}

@@ -29,7 +29,9 @@ public @interface OpType {
 		NE  { @Override public String getOpSymbol() { return "!="; } },
 		AND { @Override public String getOpSymbol() { return "&"; } },
 		OR  { @Override public String getOpSymbol() { return "|"; } },
-		XOR { @Override public String getOpSymbol() { return "^"; } };
+		XOR { @Override public String getOpSymbol() { return "^"; } },
+		ASSERT { @Override public String getOpSymbol() { return "assert"; } },
+		PRINT { @Override public String getOpSymbol() { return "printValue"; } };
 
 		/**
 		 * must override

@@ -44,7 +44,7 @@ public abstract class AbstractOperatorTable {
 		for(Type paramType : paramTypes) {
 			paramTypeList.add(paramType);
 		}
-		OperatorHandle handle = new OperatorHandle(operatorSymbol, ownerName, returnType, paramTypeList);
+		OperatorHandle handle = new OperatorHandle(internalName, ownerName, returnType, paramTypeList);
 		if(size == 1) {
 			this.addToUnaryEntryMap(operatorSymbol, handle);
 		} else {

@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import libbun.ast.BNode;
 import libbun.util.LibBunSystem;
 import dshell.internal.console.AbstractConsole;
-import dshell.internal.exe.EngineFactory;
-import dshell.internal.exe.ExecutionEngine;
+import dshell.internal.exe.TraditionalEngineFactory;
+import dshell.internal.exe.TraditionalExecutionEngine;
 import dshell.internal.grammar.DShellGrammar;
 import dshell.internal.jvm.JavaByteCodeGenerator;
 import dshell.internal.lib.RuntimeContext;
@@ -45,7 +45,7 @@ public class DShellTest extends DShell {
 	@Override
 	public void execute() {
 		RuntimeContext.getContext();
-		ExecutionEngine engine = new TestableEngineFactory().getEngine();
+		TraditionalExecutionEngine engine = new TestableEngineFactory().getEngine();
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(null);	// never return
@@ -67,7 +67,7 @@ public class DShellTest extends DShell {
 	}
 }
 
-class TestableEngine extends ExecutionEngine {
+class TestableEngine extends TraditionalExecutionEngine {
 	TestableEngine(JavaByteCodeGenerator generator) {
 		super(generator);
 	}
@@ -89,9 +89,9 @@ class TestableEngine extends ExecutionEngine {
 	}
 }
 
-class TestableEngineFactory extends EngineFactory {
+class TestableEngineFactory extends TraditionalEngineFactory {
 	@Override
-	public ExecutionEngine getEngine() {
+	public TraditionalExecutionEngine getEngine() {
 		if(this.called) {
 			throw new RuntimeException("already called");
 		}

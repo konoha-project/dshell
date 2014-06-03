@@ -43,6 +43,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 		this.typeMap.put("String", "pool.stringType");
 		this.typeMap.put("java.lang.Object", "pool.objectType");
 		this.typeMap.put("Object", "pool.objectType");
+		this.typeMap.put("void", "pool.voidType");
 	}
 
 	
@@ -115,7 +116,6 @@ public class AnnotationProcessor extends AbstractProcessor {
 	 */
 	private void reportErrorAndExit(String message, Element element) {
 		this.processingEnv.getMessager().printMessage(Kind.ERROR, message, element);
-		System.exit(1);
 	}
 
 	/**
@@ -189,7 +189,7 @@ class OpTableBuilder extends SourceBuilder {
 		sBuilder.append("this.setOperator(");
 		sBuilder.append(returnTypeName);
 		sBuilder.append(", " + "\"" + opSymbol + "\"");
-		sBuilder.append(", \"dshell.internal.lib.Operator\", ");
+		sBuilder.append(", \"dshell/internal/lib/Operator\", ");
 		sBuilder.append("\"" + internalName + "\"");
 		for(String paramTypeName : paramTypeNames) {
 			sBuilder.append(", " + paramTypeName);

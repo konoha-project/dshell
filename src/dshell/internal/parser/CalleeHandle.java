@@ -34,8 +34,6 @@ public abstract class CalleeHandle {
 	}
 
 	protected CalleeHandle(String calleeName, TypePool.Type ownerType) {
-		assert calleeName != null;
-		assert ownerType != null;
 		this.calleeName = calleeName;
 		this.ownerType = ownerType;
 	}
@@ -73,6 +71,8 @@ public abstract class CalleeHandle {
 
 		private void initTypeDesc() {
 			if(this.ownerTypeDesc == null || this.fieldTypeDesc == null) {
+				assert this.ownerType != null;
+				assert this.fieldType != null;
 				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerType);
 				this.fieldTypeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
 			}
@@ -160,6 +160,15 @@ public abstract class CalleeHandle {
 		}
 
 		/**
+		 * get method descriptor for method generation.
+		 * @return
+		 */
+		public org.objectweb.asm.commons.Method getMethodDesc() {
+			this.initMethodDesc();
+			return this.methodDesc;
+		}
+
+		/**
 		 * used for code generation.
 		 * generation invoke virtual instruction
 		 * @param adapter
@@ -178,10 +187,11 @@ public abstract class CalleeHandle {
 	 */
 	public static class ConstructorHandle extends MethodHandle {
 		public ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
-			super("<init>", ownerType, TypePool.voidType, paramTypeList);
+			super("<init>", ownerType, new TypePool.VoidType(), paramTypeList);
 		}
 
-		private <T> void initConstructorDesc() {
+		@Override
+		protected void initMethodDesc() {
 			if(this.ownerTypeDesc == null || this.methodDesc == null) {
 				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerType);
 				this.methodDesc = TypeUtils.toConstructorDescriptor(this.paramTypeList);
@@ -195,7 +205,7 @@ public abstract class CalleeHandle {
 		 */
 		@Override
 		public void call(GeneratorAdapter adapter) {
-			this.initConstructorDesc();
+			this.initMethodDesc();
 			adapter.invokeConstructor(this.ownerTypeDesc, methodDesc);
 		}
 	}
@@ -237,7 +247,8 @@ public abstract class CalleeHandle {
 			this.ownerName = ownerName;
 		}
 
-		private void initOperatorDesc() {
+		@Override
+		protected void initMethodDesc() {
 			if(this.ownerTypeDesc == null || this.methodDesc == null) {
 				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerName);
 				this.methodDesc = TypeUtils.toMehtodDescriptor(this.returnType, this.calleeName, this.paramTypeList);
@@ -250,7 +261,7 @@ public abstract class CalleeHandle {
 		 */
 		@Override
 		public void call(GeneratorAdapter adapter) {
-			this.initOperatorDesc();
+			this.initMethodDesc();
 			adapter.invokeStatic(this.ownerTypeDesc, this.methodDesc);
 		}
 	}

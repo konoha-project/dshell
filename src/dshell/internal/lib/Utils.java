@@ -7,7 +7,6 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import dshell.lang.DShellString;
 import dshell.lang.NativeException;
 
 public class Utils {
@@ -204,7 +203,7 @@ public class Utils {
 		if(value == null) {
 			sb.append("$null$");
 		}
-		if(value instanceof DShellString) {
+		if(value instanceof String) {
 			sb.append('"');
 			sb.append(value.toString());
 			sb.append('"');

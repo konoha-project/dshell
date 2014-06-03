@@ -5,6 +5,7 @@ import java.util.Arrays;
 import dshell.annotation.ArrayOp;
 import dshell.annotation.GenericClass;
 import dshell.annotation.Shared;
+import dshell.annotation.SharedClass;
 import dshell.annotation.TypeParameter;
 import dshell.annotation.ArrayOp.ArrayOpType;
 import dshell.internal.lib.Utils;
@@ -15,6 +16,7 @@ import dshell.internal.lib.Utils;
  * @author skgchxngsxyz-osx
  *
  */
+@SharedClass
 @GenericClass
 public class GenericArray implements Cloneable {
 	private final static int defaultArraySize = 16;
@@ -140,6 +142,7 @@ public class GenericArray implements Cloneable {
 		return clonedArray;
 	}
 
+	@Shared
 	@Override
 	public String toString() {
 		StringBuilder sBuilder = new StringBuilder();

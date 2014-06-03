@@ -60,7 +60,7 @@ public class TypeUtils {
 	}
 
 	/**
-	 * create type descriptor.
+	 * create type descriptor from type.
 	 * @param type
 	 * @return
 	 */
@@ -68,6 +68,12 @@ public class TypeUtils {
 		return toTypeDescriptor(type.getInternalName());
 	}
 
+	/**
+	 * create type descriptor from internal class name.
+	 * @param internalName
+	 * fully qualified class name.
+	 * @return
+	 */
 	public static org.objectweb.asm.Type toTypeDescriptor(String internalName) {
 		if(internalName.equals("long")) {
 			return org.objectweb.asm.Type.LONG_TYPE;
@@ -75,11 +81,20 @@ public class TypeUtils {
 			return org.objectweb.asm.Type.DOUBLE_TYPE;
 		} else if(internalName.equals("boolean")) {
 			return org.objectweb.asm.Type.BOOLEAN_TYPE;
+		} else if(internalName.equals("void")) {
+			return org.objectweb.asm.Type.VOID_TYPE;
 		} else {
 			return org.objectweb.asm.Type.getType( "L" + internalName + ";");
 		}
 	}
 
+	/**
+	 * create mrthod descriptor from types.
+	 * @param returnType
+	 * @param methodName
+	 * @param paramTypeList
+	 * @return
+	 */
 	public static org.objectweb.asm.commons.Method toMehtodDescriptor(Type returnType, String methodName, List<Type> paramTypeList) {
 		int size = paramTypeList.size();
 		org.objectweb.asm.Type[] paramtypeDecs = size == 0 ? null : new org.objectweb.asm.Type[size];
@@ -91,6 +106,6 @@ public class TypeUtils {
 	}
 
 	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<Type> paramTypeList) {
-		return toMehtodDescriptor(TypePool.voidType, "<int>", paramTypeList);
+		return toMehtodDescriptor(new TypePool.VoidType(), "<int>", paramTypeList);
 	}
 } 

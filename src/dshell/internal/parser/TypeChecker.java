@@ -2,6 +2,8 @@ package dshell.internal.parser;
 
 import java.util.List;
 
+import org.omg.CORBA.PUBLIC_MEMBER;
+
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
@@ -238,7 +240,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(SymbolNode node) {
+	public Node visit(SymbolNode node) {	//TODO: func object
 		this.setPropertyToSymbolNode(node);
 		return node;
 	}
@@ -303,12 +305,18 @@ public class TypeChecker implements NodeVisitor<Node>{
 		}
 		OperatorHandle handle;
 		if(size == 1) {
-			handle = this.opTable.getOperatorHandle(node.getFuncName(), paramNodeList.get(0).getType());
+			Type rightType = paramNodeList.get(0).getType();
+			handle = this.opTable.getOperatorHandle(node.getFuncName(), rightType);
+			if(handle == null) {
+				this.throwAndReportTypeError(node, "undefined operator: " + node.getFuncName() + " " + rightType);
+			}
 		} else {
-			handle = this.opTable.getOperatorHandle(node.getFuncName(), paramNodeList.get(0).getType(), paramNodeList.get(1).getType());
-		}
-		if(handle == null) {
-			this.throwAndReportTypeError(node, "undefined operator: " + node.getFuncName());
+			Type leftType = paramNodeList.get(0).getType();
+			Type rightType = paramNodeList.get(1).getType();
+			handle = this.opTable.getOperatorHandle(node.getFuncName(), leftType, rightType);
+			if(handle == null) {
+				this.throwAndReportTypeError(node, "undefined operator: " + leftType + " " + node.getFuncName() + " " + rightType);
+			}
 		}
 		node.setHandle(handle);
 		node.setType(handle.getReturnType());
@@ -380,6 +388,11 @@ public class TypeChecker implements NodeVisitor<Node>{
 	@Override
 	public Node visit(AssertNode node) {
 		this.checkType(this.typePool.booleanType, node.getExprNode());
+		OperatorHandle handle = this.opTable.getOperatorHandle(AssertNode.opName, this.typePool.booleanType);
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined operator: " + AssertNode.opName + " " + this.typePool.booleanType);
+		}
+		node.setHandle(handle);
 		return node;
 	}
 
@@ -468,7 +481,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(CatchNode node) {	//TODO: add entry to symboltable
+	public Node visit(CatchNode node) {
 		/**
 		 * resolve exception type.
 		 */
@@ -482,7 +495,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		}
 		node.setExceptionType((ClassType) exceptionType);
 		/**
-		 * checl type catch block.
+		 * check type catch block.
 		 */
 		this.symbolTable.createAndPushNewTable();
 		this.addEntryAndThrowIfDefined(node, node.getExceptionVarName(), exceptionType, true);
@@ -546,17 +559,17 @@ public class TypeChecker implements NodeVisitor<Node>{
 		return node;	// do nothing
 	}
 
-	@Override
-	public Node visit(RootNode node) {
-		for(Node statementNode : node.getNodeList()) {
-			this.checkTypeAsStatement(statementNode);
-		}
-		return node;
-	}
-
 	public RootNode checkTypeRootNode(RootNode node) {
 		try {
-			return (RootNode) node.accept(this);
+			for(Node statementNode : node.getNodeList()) {
+				this.checkTypeAsStatement(statementNode);
+			}
+			OperatorHandle handle = this.opTable.getOperatorHandle(RootNode.opName, this.typePool.objectType, this.typePool.stringType);
+			if(handle == null) {
+				this.throwAndReportTypeError(node, "undefine operator: " + RootNode.opName + "(" + this.typePool.objectType + ", " + this.typePool.stringType + ")");
+			}
+			node.setHandle(handle);
+			return node;
 		} catch(TypeError e) {
 			this.symbolTable.popAllLocal();
 			System.err.println(e.getMessage());

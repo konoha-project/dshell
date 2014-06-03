@@ -6,13 +6,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This is just a marker annotation.
- * It represent shared method or field from dshell.
+ * represent wrapper method.
  * @author skgchxngsxyz-osx
  *
  */
 @Retention(RetentionPolicy.SOURCE)
-@Target({ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
-public @interface Shared {
+@Target(ElementType.METHOD)
+public @interface Wrapper {
 
 }
