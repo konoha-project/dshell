@@ -90,7 +90,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.endMethod();
 		// generate static field containing FuncType name
 		String fieldDesc = org.objectweb.asm.Type.getType(String.class).getDescriptor();
-		//writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "funcTypeName", fieldDesc, null, funcType.getTypeName());
+		writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL, "funcTypeName", fieldDesc, null, funcType.getTypeName());
 		writer.visitEnd();
 		return writer.toByteArray();
 	}
@@ -524,12 +524,12 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(FunctionNode node) {	//TODO: func object
+	public Void visit(FunctionNode node) {
 		ClassBuilder classBuilder = new ClassBuilder(node.getHolderType(), null);
-//		// create static field.
-//		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
-//		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
-//		classBuilder.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
+		// create static field.
+		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
+		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
+		classBuilder.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
 
 		// generate static method.
 		MethodBuilder mBuilder = classBuilder.createNewMethodBuilder(node.getHolderType().getFuncHanle());
@@ -546,7 +546,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		mBuilder.removeCurrentLocalScope();
 		this.methodBuilders.pop().endMethod();
 
-		// generate func interface.
+		// generate interface method
 		MethodHandle handle = ((FunctionType)node.getHolderType().getFieldHandle().getFieldType()).getHandle();
 		mBuilder = classBuilder.createNewMethodBuilder(handle);
 		mBuilder.loadArgs();
@@ -554,17 +554,25 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		mBuilder.returnValue();
 		mBuilder.endMethod();
 
-//		// generate constructor.
-//		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC, new org.objectweb.asm.commons.Method("<init>", "()V"), null, null, classBuilder);
-//		org.objectweb.asm.Type ownerTypeDesc = TypeUtils.toTypeDescriptor(handle.getOwnerType());
-//		adapter.loadThis();
-//		adapter.loadArgs();
-////		adapter.invokeConstructor(ownerTypeDesc, TypeUtils.toConstructorDescriptor(new ArrayList<Type>()));
-//		adapter.returnValue();
-//		adapter.endMethod();
-		
-		
-		
+		// generate constructor.
+		org.objectweb.asm.commons.Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<Type>());
+		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC, initDesc, null, null, classBuilder);
+		adapter.loadThis();
+		adapter.invokeConstructor(org.objectweb.asm.Type.getType("java/lang/Object"), initDesc);
+		adapter.returnValue();
+		adapter.endMethod();
+
+		// generate static initializer
+		org.objectweb.asm.commons.Method cinitDesc = org.objectweb.asm.commons.Method.getMethod("void <clinit> ()");
+		adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, cinitDesc, null, null, classBuilder);
+		org.objectweb.asm.Type ownerType = TypeUtils.toTypeDescriptor(fieldHandle.getOwnerType());
+		adapter.newInstance(ownerType);
+		adapter.dup();
+		adapter.invokeConstructor(ownerType, initDesc);
+		fieldHandle.callSetter(adapter);
+		adapter.returnValue();
+		adapter.endMethod();
+
 		classBuilder.generateClass(this.classLoader);
 		return null;
 	}

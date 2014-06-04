@@ -112,7 +112,8 @@ public abstract class CalleeHandle {
 
 		@Override
 		public void callSetter(GeneratorAdapter adapter) {
-			// do nothing, future may be used.
+			this.initTypeDesc();
+			adapter.putStatic(this.ownerTypeDesc, this.calleeName, this.fieldTypeDesc);
 		}
 	}
 	/**
