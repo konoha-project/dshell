@@ -12,6 +12,8 @@ import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
+import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 
 /**
  * It contains builtin types ant user defined types.
@@ -269,6 +271,12 @@ public class TypePool {
 		return (FunctionType) funcType;
 	}
 
+	public FuncHolderType createFuncHolderType(FunctionType funcType) {
+		String typeName = "FuncHolder" + ++funcNameSuffix + "of" + funcType.getTypeName();
+		String internalName = generatedFuncNamePrefix + "FuncHolder" + funcNameSuffix;
+		return new FuncHolderType(typeName, internalName, funcType);
+	}
+
 	// type name creator api.
 	/**
 	 * crate generic type name except for generic array.
@@ -484,6 +492,32 @@ public class TypePool {
 
 		public FunctionHandle getHandle() {
 			return this.handle;
+		}
+	}
+
+	/**
+	 * represent function holder type.
+	 * used for function call and func field getter.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class FuncHolderType extends Type {
+		protected final StaticFieldHandle fieldHandle;
+		protected final StaticFunctionHandle funcHandle;
+
+		protected FuncHolderType(String typeName, String internalName, FunctionType funcType) {
+			super(typeName, internalName, false);
+			this.fieldHandle = new StaticFieldHandle("funcField", this, funcType);
+			FunctionHandle handle = funcType.getHandle();
+			this.funcHandle = new StaticFunctionHandle("invokeDirect", this, handle.getReturnType(), handle.getParamTypeList());
+		}
+
+		public StaticFieldHandle getFieldHandle() {
+			return this.fieldHandle;
+		}
+
+		public StaticFunctionHandle getFuncHanle() {
+			return this.funcHandle;
 		}
 	}
 

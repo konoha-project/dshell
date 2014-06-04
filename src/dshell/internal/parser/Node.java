@@ -11,12 +11,14 @@ import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
+import dshell.internal.parser.ParserUtils.ArgDecl;
 import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
 import dshell.internal.parser.ParserUtils.ReturnExpr;
 import dshell.internal.parser.TypePool.ClassType;
+import dshell.internal.parser.TypePool.FuncHolderType;
 import dshell.internal.parser.TypePool.Type;
 
 /**
@@ -312,6 +314,15 @@ public abstract class Node {
 	 *
 	 */
 	public static abstract class AssignableNode extends ExprNode {
+		protected boolean isReadOnly;
+
+		public void setReadOnly(boolean isReadOnly) {
+			this.isReadOnly = isReadOnly;
+		}
+
+		public boolean isReadOnly() {
+			return this.isReadOnly;
+		}
 	}
 
 	/**
@@ -321,9 +332,7 @@ public abstract class Node {
 	 */
 	public static class SymbolNode extends AssignableNode {
 		private final String symbolName;
-		private TypeSymbol typeSymbol;
 		private boolean isGlobal;
-		private boolean isReadOnly;
 
 		/**
 		 * used for getting function object from static field.
@@ -334,32 +343,10 @@ public abstract class Node {
 			this.setToken(token);
 			this.symbolName = this.token.getText();
 			this.isGlobal = false;
-			this.isReadOnly = false;
 		}
 
 		public String getSymbolName() {
 			return this.symbolName;
-		}
-
-		public void setTypeSymbol(TypeSymbol typeSymbol) {
-			this.typeSymbol = typeSymbol;
-		}
-
-		/**
-		 * get type symbol
-		 * @return
-		 * - return null, if has no TypeSymbol.
-		 */
-		public TypeSymbol getTypeSymbol() {
-			return this.typeSymbol;
-		}
-
-		public void setReadOnly(boolean isReadOnly) {
-			this.isReadOnly = isReadOnly;
-		}
-
-		public boolean isReadOnly() {
-			return this.isReadOnly;
 		}
 
 		public void setGlobal(boolean isGlobal) {
@@ -1368,16 +1355,22 @@ public abstract class Node {
 	 */
 	public static class FunctionNode extends Node {
 		private final String funcName;
+		private final List<TypeSymbol> paramTypeSymbolList;
 		private final List<SymbolNode> nodeList;
 		private final BlockNode blockNode;
+		private final TypeSymbol returnTypeSymbol;
+		private FuncHolderType holderType;
 
-		public FunctionNode(Token token, Token nameToken, ArgsDecl decl, Node blockNode) {
+		public FunctionNode(Token token, Token nameToken, TypeSymbol returnTypeSymbol, ArgsDecl decls, Node blockNode) {
 			this.setToken(token);
 			this.funcName = nameToken.getText();
+			this.returnTypeSymbol = returnTypeSymbol;
 			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
+			this.paramTypeSymbolList = new ArrayList<>();
 			this.nodeList = new ArrayList<>();
-			for(Node node : decl.getNodeList()) {
-				this.nodeList.add((SymbolNode) this.setNodeAsChild(node));
+			for(ArgDecl decl : decls.getDeclList()) {
+				this.paramTypeSymbolList.add(decl.getTypeSymbol());
+				this.nodeList.add((SymbolNode) this.setNodeAsChild(decl.getArgNode()));
 			}
 		}
 
@@ -1389,8 +1382,24 @@ public abstract class Node {
 			return this.nodeList;
 		}
 
+		public List<TypeSymbol> getParamTypeSymbolList() {
+			return this.paramTypeSymbolList;
+		}
+
 		public BlockNode getBlockNode() {
 			return this.blockNode;
+		}
+
+		public TypeSymbol getRetunrTypeSymbol() {
+			return this.returnTypeSymbol;
+		}
+
+		public void setHolderType(FuncHolderType holderType) {
+			this.holderType = holderType;
+		}
+
+		public FuncHolderType getHolderType() {
+			return this.holderType;
 		}
 
 		@Override
@@ -1472,16 +1481,19 @@ public abstract class Node {
 	 */
 	public static class ConstructorNode extends Node {
 		private Type recvType;
+		private final List<TypeSymbol> typeSymbolList;
 		private final List<SymbolNode> nodeList;
 		private final BlockNode blockNode;
 
-		public ConstructorNode(Token token, ArgsDecl decl, Node blockNode) {
+		public ConstructorNode(Token token, ArgsDecl decls, Node blockNode) {
 			this.setToken(token);
 			this.recvType = TypePool.unresolvedType;
 			this.blockNode = (BlockNode) this.setNodeAsChild(blockNode);
+			this.typeSymbolList = new ArrayList<>();
 			this.nodeList = new ArrayList<>();
-			for(Node node : decl.getNodeList()) {
-				this.nodeList.add((SymbolNode) this.setNodeAsChild(node));
+			for(ArgDecl decl : decls.getDeclList()) {
+				this.typeSymbolList.add(decl.getTypeSymbol());
+				this.nodeList.add((SymbolNode) this.setNodeAsChild(decl.getArgNode()));
 			}
 		}
 

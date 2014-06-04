@@ -37,7 +37,7 @@ interface SymbolTableOp {
 	public boolean addEntry(String symbolName, Type type, boolean isReadOnly);
 }
 
-public class SymbolTable implements SymbolTableOp {
+public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 	private final Stack<SymbolTableOp> tableStack;
 
 	public SymbolTable() {
@@ -161,25 +161,6 @@ public class SymbolTable implements SymbolTableOp {
 
 		public boolean isGlobal() {
 			return this.isGlobal;
-		}
-	}
-
-	public static class FuncSymbolEntry extends SymbolEntry {
-		protected final StaticFieldHandle fieldHandle;
-		protected final StaticFunctionHandle funcHandle;
-
-		protected FuncSymbolEntry(FunctionType type, StaticFieldHandle fieldHandle, StaticFunctionHandle funcHandle) {
-			super(type, true, true);
-			this.fieldHandle = fieldHandle;
-			this.funcHandle = funcHandle;
-		}
-
-		public StaticFieldHandle getFieldHandle() {
-			return this.fieldHandle;
-		}
-
-		public StaticFunctionHandle getFunctionHandle() {
-			return this.funcHandle;
 		}
 	}
 }

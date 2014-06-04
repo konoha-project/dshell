@@ -1,5 +1,6 @@
 package dshell.internal.codegen;
 
+import java.util.ArrayList;
 import java.util.Stack;
 
 import org.objectweb.asm.ClassWriter;
@@ -9,9 +10,14 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
 import dshell.internal.lib.DShellClassLoader;
+import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.OperatorHandle;
+import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
+import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
+import dshell.internal.parser.Node.AssignableNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
 import dshell.internal.parser.Node.BreakNode;
@@ -78,13 +84,13 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	public static byte[] generateFuncTypeInterface(FunctionType funcType) {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		writer.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE, funcType.getInternalName(), null, "dshell/lang/Function", null);
+		writer.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT, funcType.getInternalName(), null, "java/lang/Object", null);
 		// generate method stub
-		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC, funcType.getHandle().getMethodDesc(), null, null, writer);
+		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, funcType.getHandle().getMethodDesc(), null, null, writer);
 		adapter.endMethod();
 		// generate static field containing FuncType name
 		String fieldDesc = org.objectweb.asm.Type.getType(String.class).getDescriptor();
-		writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "funcTypeName", fieldDesc, null, funcType.getTypeName());
+		//writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, "funcTypeName", fieldDesc, null, funcType.getTypeName());
 		writer.visitEnd();
 		return writer.toByteArray();
 	}
@@ -95,6 +101,27 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	private MethodBuilder getCurrentMethodBuilder() {
 		return this.methodBuilders.peek();
+	}
+
+	private void visitBlockWithCurrentScope(BlockNode blockNode) {
+		blockNode.accept(this);
+	}
+
+	private void visitBlockWithNewScope(BlockNode blockNode) {
+		this.getCurrentMethodBuilder().createNewLocalScope();
+		this.visitBlockWithCurrentScope(blockNode);
+		this.getCurrentMethodBuilder().removeCurrentLocalScope();
+	}
+
+	private void createPopInsIfExprNode(Node node) {
+		if(!(node instanceof ExprNode)) {
+			return;
+		}
+		Type type = ((ExprNode) node).getType();
+		if(type instanceof VoidType) {
+			return;
+		}
+		this.getCurrentMethodBuilder().pop(TypeUtils.toTypeDescriptor(type));
 	}
 
 	@Override
@@ -181,8 +208,17 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(SymbolNode node) {
-		// TODO Auto-generated method stub
+	public Void visit(SymbolNode node) { //TODO: global variable.
+		// get func object from static field
+		StaticFieldHandle handle = node.getHandle();
+		if(handle != null) {
+			handle.callGetter(this.getCurrentMethodBuilder());
+			return null;
+		}
+		if(!node.isGlobal()) {
+			MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+			mBuilder.loadValueFromLocalVar(node.getSymbolName(), node.getType());
+		}
 		return null;
 	}
 
@@ -227,7 +263,11 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(FuncCallNode node) {	// TODO: invokestatic or invokeinterface
+	public Void visit(FuncCallNode node) {
+		MethodHandle handle = node.getHandle();
+		if(!(handle instanceof StaticFunctionHandle)) {
+			this.getCurrentMethodBuilder().loadValueFromLocalVar(node.getFuncName(), node.getHandle().getOwnerType());
+		}
 		for(Node paramNode : node.getNodeList()) {
 			paramNode.accept(this);
 		}
@@ -304,9 +344,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	public Void visit(BlockNode node) {
 		for(Node targetNode : node.getNodeList()) {
 			targetNode.accept(this);
-			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
-				this.getCurrentMethodBuilder().pop(TypeUtils.toTypeDescriptor(((ExprNode) targetNode).getType()));
-			}
+			this.createPopInsIfExprNode(targetNode);
 		}
 		return null;
 	}
@@ -339,7 +377,28 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(ForNode node) {
-		// TODO Auto-generated method stub
+		// init label
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		Label continueLabel = mBuilder.newLabel();
+		Label breakLabel = mBuilder.newLabel();
+		mBuilder.continueLabels.push(continueLabel);
+		mBuilder.breakLabels.push(breakLabel);
+
+		mBuilder.createNewLocalScope();
+		node.getInitNode().accept(this);
+		mBuilder.mark(continueLabel);
+		mBuilder.push(true);
+		node.getCondNode().accept(this);
+		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
+		this.visitBlockWithCurrentScope(node.getBlockNode());
+		node.getIterNode().accept(this);
+		mBuilder.goTo(continueLabel);
+		mBuilder.mark(breakLabel);
+
+		mBuilder.removeCurrentLocalScope();
+		// remove label
+		mBuilder.continueLabels.pop();
+		mBuilder.breakLabels.pop();
 		return null;
 	}
 
@@ -351,7 +410,24 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(WhileNode node) {
-		// TODO Auto-generated method stub
+		// init label
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		Label continueLabel = mBuilder.newLabel();
+		Label breakLabel = mBuilder.newLabel();
+		mBuilder.continueLabels.push(continueLabel);
+		mBuilder.breakLabels.push(breakLabel);
+
+		mBuilder.mark(continueLabel);
+		mBuilder.push(true);
+		node.getCondNode().accept(this);
+		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
+		this.visitBlockWithNewScope(node.getBlockNode());
+		mBuilder.goTo(continueLabel);
+		mBuilder.mark(breakLabel);
+
+		// remove label
+		mBuilder.continueLabels.pop();
+		mBuilder.breakLabels.pop();
 		return null;
 	}
 
@@ -365,11 +441,11 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.push(true);
 		adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, elseLabel);
 		// then block
-		node.getThenBlockNode().accept(this);
+		this.visitBlockWithNewScope(node.getThenBlockNode());
 		adapter.goTo(mergeLabel);
 		// else block
 		adapter.mark(elseLabel);
-		node.getElseBlockNode().accept(this);
+		this.visitBlockWithNewScope(node.getElseBlockNode());
 		adapter.mark(mergeLabel);
 		return null;
 	}
@@ -401,20 +477,95 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(VarDeclNode node) {
-		// TODO Auto-generated method stub
+	public Void visit(VarDeclNode node) {	//TODO: global variable.
+		if(!node.isGlobal()) {
+			MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+			node.getInitValueNode().accept(this);
+			mBuilder.createNewLocalVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
+		}
 		return null;
 	}
 
 	@Override
 	public Void visit(AssignNode node) {
-		// TODO Auto-generated method stub
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		OperatorHandle handle = node.getHandle();
+		if(handle != null) {	// self assgin
+			node.getLeftNode().accept(this);
+			node.getRightNode().accept(this);
+			handle.call(mBuilder);
+		} else {
+			node.getRightNode().accept(this);
+		}
+		AssignableNode leftNode = node.getLeftNode();
+		if(leftNode instanceof SymbolNode) {
+			this.visitAssignLeft((SymbolNode)leftNode);
+		} else if(leftNode instanceof FieldGetterNode) {
+			this.visitAssignLeft((FieldGetterNode)leftNode);
+		} else if(leftNode instanceof ElementGetterNode) {
+			this.visitAssignLeft((ElementGetterNode)leftNode);
+		}
 		return null;
 	}
 
+	private void visitAssignLeft(SymbolNode leftNode) {	//TODO: global variable
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		if(!leftNode.isGlobal()) {
+			mBuilder.storeValueToLocalVar(leftNode.getSymbolName(), leftNode.getType());
+		}
+	}
+
+	private void visitAssignLeft(FieldGetterNode leftNode) {
+		leftNode.getHandle().callSetter(this.getCurrentMethodBuilder());
+	}
+
+	private void visitAssignLeft(ElementGetterNode leftNode) {	//TODO:
+		
+	}
+
 	@Override
-	public Void visit(FunctionNode node) {
-		// TODO Auto-generated method stub
+	public Void visit(FunctionNode node) {	//TODO: func object
+		ClassBuilder classBuilder = new ClassBuilder(node.getHolderType(), null);
+//		// create static field.
+//		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
+//		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
+//		classBuilder.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
+
+		// generate static method.
+		MethodBuilder mBuilder = classBuilder.createNewMethodBuilder(node.getHolderType().getFuncHanle());
+		this.methodBuilders.push(mBuilder);
+		mBuilder.createNewLocalScope();
+		// set argument decl
+		int size = node.getArgDeclNodeList().size();
+		for(int i = 0; i < size; i++) {
+			SymbolNode argNode = node.getArgDeclNodeList().get(i);
+			Type argType = node.getHolderType().getFuncHanle().getParamTypeList().get(i);
+			mBuilder.defineArgument(argNode.getSymbolName(), argType);
+		}
+		this.visitBlockWithCurrentScope(node.getBlockNode());
+		mBuilder.removeCurrentLocalScope();
+		this.methodBuilders.pop().endMethod();
+
+		// generate func interface.
+		MethodHandle handle = ((FunctionType)node.getHolderType().getFieldHandle().getFieldType()).getHandle();
+		mBuilder = classBuilder.createNewMethodBuilder(handle);
+		mBuilder.loadArgs();
+		node.getHolderType().getFuncHanle().call(mBuilder);
+		mBuilder.returnValue();
+		mBuilder.endMethod();
+
+//		// generate constructor.
+//		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC, new org.objectweb.asm.commons.Method("<init>", "()V"), null, null, classBuilder);
+//		org.objectweb.asm.Type ownerTypeDesc = TypeUtils.toTypeDescriptor(handle.getOwnerType());
+//		adapter.loadThis();
+//		adapter.loadArgs();
+////		adapter.invokeConstructor(ownerTypeDesc, TypeUtils.toConstructorDescriptor(new ArrayList<Type>()));
+//		adapter.returnValue();
+//		adapter.endMethod();
+		
+		
+		
+		classBuilder.generateClass(this.classLoader);
 		return null;
 	}
 

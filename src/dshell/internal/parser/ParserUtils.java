@@ -114,31 +114,36 @@ public class ParserUtils {
 	}
 
 	public static class ArgsDecl {
-		private final ArrayList<SymbolNode> argsNodeList;
+		private final List<ArgDecl> declList;
 
 		public ArgsDecl() {
-			this.argsNodeList = new ArrayList<>();
+			this.declList = new ArrayList<>();
 		}
 
-		public ArrayList<SymbolNode> getNodeList() {
-			return this.argsNodeList;
+		public List<ArgDecl> getDeclList() {
+			return this.declList;
 		}
 
 		public void addArgDecl(ArgDecl decl) {
-			this.argsNodeList.add(decl.getArgNode());
+			this.declList.add(decl);
 		}
 	}
 
 	public static class ArgDecl {
 		private final SymbolNode argDeclNode;
+		private final TypeSymbol typeSymbol;
 
 		public ArgDecl(Token token, TypeSymbol typeSymbol) {
 			this.argDeclNode = new SymbolNode(token);
-			this.argDeclNode.setTypeSymbol(typeSymbol);
+			this.typeSymbol = typeSymbol;
 		}
 
 		public SymbolNode getArgNode() {
 			return this.argDeclNode;
+		}
+
+		public TypeSymbol getTypeSymbol() {
+			return this.typeSymbol;
 		}
 	}
 

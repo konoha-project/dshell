@@ -29,8 +29,8 @@ statementEnd
 	: (';' | '\r' | '\n')+
 	;
 functionDeclaration returns [Node node]
-	: Function SymbolName '(' argumentsDeclaration ')' block
-		{$node = new Node.FunctionNode($Function, $SymbolName, $argumentsDeclaration.decl, $block.node);}
+	: Function SymbolName '(' argumentsDeclaration ')' ':' typeName block
+		{$node = new Node.FunctionNode($Function, $SymbolName, $typeName.type, $argumentsDeclaration.decl, $block.node);}
 	;
 argumentsDeclaration returns [ParserUtils.ArgsDecl decl]
 	: a+=variableDeclarationWithType (',' a+=variableDeclarationWithType)*

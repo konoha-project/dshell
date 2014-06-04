@@ -97,7 +97,7 @@ public class TypeUtils {
 	 */
 	public static org.objectweb.asm.commons.Method toMehtodDescriptor(Type returnType, String methodName, List<Type> paramTypeList) {
 		int size = paramTypeList.size();
-		org.objectweb.asm.Type[] paramtypeDecs = size == 0 ? null : new org.objectweb.asm.Type[size];
+		org.objectweb.asm.Type[] paramtypeDecs = new org.objectweb.asm.Type[size];
 		for(int i = 0; i < size; i++) {
 			paramtypeDecs[i] = toTypeDescriptor(paramTypeList.get(i));
 		}

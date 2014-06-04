@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.objectweb.asm.commons.GeneratorAdapter;
 
-import dshell.internal.parser.TypePool.Type;
-
 /**
  * Represents method or instance field.
  * Used for type checker and code generator.
@@ -102,7 +100,7 @@ public abstract class CalleeHandle {
 	}
 
 	public static class StaticFieldHandle extends FieldHandle {
-		public StaticFieldHandle(String calleeName, Type ownerType, Type fieldType) {
+		public StaticFieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
 			super(calleeName, ownerType, fieldType);
 		}
 
@@ -232,7 +230,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class FunctionHandle extends MethodHandle {
-		public FunctionHandle(TypePool.FunctionType funcType, Type returnType, List<Type> paramTypeList) {
+		public FunctionHandle(TypePool.FunctionType funcType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
 			super("invoke", funcType, returnType, paramTypeList);
 		}
 
@@ -253,22 +251,8 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class StaticFunctionHandle extends MethodHandle {
-		/**
-		 * must be fully qualified name.
-		 */
-		private final String ownerName;
-
-		public StaticFunctionHandle(String calleeName, String ownerName, Type returnType, List<Type> paramTypeList) {
-			super(calleeName, null, returnType, paramTypeList);
-			this.ownerName = ownerName;
-		}
-
-		@Override
-		protected void initMethodDesc() {
-			if(this.ownerTypeDesc == null || this.methodDesc == null) {
-				this.ownerTypeDesc = TypeUtils.toTypeDescriptor(this.ownerName);
-				this.methodDesc = TypeUtils.toMehtodDescriptor(this.returnType, this.calleeName, this.paramTypeList);
-			}
+		public StaticFunctionHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+			super(calleeName, ownerType, returnType, paramTypeList);
 		}
 
 		/**
@@ -293,7 +277,7 @@ public abstract class CalleeHandle {
 		 */
 		private final String ownerName;
 
-		public OperatorHandle(String calleeName, String ownerName, Type returnType, List<TypePool.Type> paramTypeList) {
+		public OperatorHandle(String calleeName, String ownerName, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
 			super(calleeName, null, returnType, paramTypeList);
 			this.ownerName = ownerName;
 		}
