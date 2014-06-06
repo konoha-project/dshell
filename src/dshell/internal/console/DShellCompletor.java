@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-import dshell.internal.grammar.ShellGrammar;
 import dshell.internal.lib.BuiltinSymbol;
 import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.TaskBuilder;
 import dshell.internal.lib.Utils;
 import jline.Completor;
 
@@ -69,7 +69,7 @@ public class DShellCompletor implements Completor {
 		}
 		else {
 			String prevArg = args[argIndex - 1];
-			if(prevArg.equals(ShellGrammar.timeout) || prevArg.equals(ShellGrammar.trace)) {
+			if(prevArg.equals(TaskBuilder.timeout_sym) || prevArg.equals(TaskBuilder.trace_sym)) {
 				return this.commandCompletor;
 			}
 			if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {

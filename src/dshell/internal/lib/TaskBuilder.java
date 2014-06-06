@@ -1,10 +1,10 @@
 package dshell.internal.lib;
 
 import java.util.ArrayList;
-import libbun.util.BArray;
-import dshell.internal.grammar.DShellGrammar;
-import dshell.internal.grammar.ShellGrammar;
+
+import dshell.annotation.TypeParameter;
 import dshell.internal.remote.RequestSender;
+import dshell.lang.GenericArray;
 import dshell.lang.Task;
 import static dshell.internal.lib.TaskOption.Behavior.background;
 import static dshell.internal.lib.TaskOption.Behavior.printable;
@@ -17,6 +17,11 @@ import static dshell.internal.lib.TaskOption.RetType.TaskType;
 import static dshell.internal.lib.TaskOption.RetType.VoidType;
 
 public class TaskBuilder {
+	public final static String background_sym = "&";
+	public final static String trace_sym = "trace";
+	public final static String timeout_sym = "timeout";
+	public final static String location_sym = "localtion";
+
 	// called by VisitCommandNode
 	public static void execCommandVoid(CommandArg[][] cmds) {
 		TaskOption option = TaskOption.of(VoidType, printable, throwable);
@@ -37,8 +42,9 @@ public class TaskBuilder {
 		return (String)TaskBuilder.createTask(toCmdsList(cmds), option);
 	}
 
-	public static BArray<String> execCommandStringArray(CommandArg[][] cmds) {
-		return new BArray<String>(0, Utils.splitWithDelim(execCommandString(cmds)));
+	@TypeParameter("String")
+	public static GenericArray execCommandStringArray(CommandArg[][] cmds) {	//TODO:
+		return new GenericArray(Utils.splitWithDelim(execCommandString(cmds)));
 	}
 
 	public static Task execCommandTask(CommandArg[][] cmds) {
@@ -46,10 +52,10 @@ public class TaskBuilder {
 		return (Task)TaskBuilder.createTask(toCmdsList(cmds), option);
 	}
 
-	@SuppressWarnings("unchecked")
-	public static BArray<Task> execCommandTaskArray(CommandArg[][] cmds) {
+	@TypeParameter("Task")
+	public static GenericArray execCommandTaskArray(CommandArg[][] cmds) {	//TODO:
 		TaskOption option = TaskOption.of(TaskArrayType, printable, returnable, throwable);
-		return (BArray<Task>)TaskBuilder.createTask(toCmdsList(cmds), option);
+		return (GenericArray)TaskBuilder.createTask(toCmdsList(cmds), option);
 	}
 
 	public static Object createTask(ArrayList<ArrayList<CommandArg>> cmdsList, TaskOption option) {
@@ -93,7 +99,7 @@ public class TaskBuilder {
 	private static ArrayList<ArrayList<CommandArg>> setInternalOption(final TaskOption option, ArrayList<ArrayList<CommandArg>> cmdsList) {
 		ArrayList<ArrayList<CommandArg>> newCmdsBuffer = new ArrayList<ArrayList<CommandArg>>();
 		for(ArrayList<CommandArg> currentCmds : cmdsList) {
-			if(currentCmds.get(0).eq(ShellGrammar.background)) {
+			if(currentCmds.get(0).eq(background_sym)) {
 				option.setFlag(background, option.isRetType(TaskType) || option.isRetType(VoidType));
 				continue;
 			}
@@ -140,7 +146,7 @@ public class TaskBuilder {
 				prevProc.mergeErrorToOut();
 				prevProc.setOutputRedirect(PseudoProcess.STDOUT_FILENO, currentCmds.get(1), true);
 			}
-			else if(cmdSymbol.eq(DShellGrammar.location)) {
+			else if(cmdSymbol.eq(location_sym)) {
 				ArrayList<ArrayList<CommandArg>> sendingCmdsList = new ArrayList<ArrayList<CommandArg>>();
 				for(int j = i + 1; j < size; j++) {
 					sendingCmdsList.add(cmdsList.get(j));
@@ -151,11 +157,11 @@ public class TaskBuilder {
 				option.setFlag(background, false);
 				break;
 			}
-			else if(cmdSymbol.eq(ShellGrammar.trace)) {
+			else if(cmdSymbol.eq(trace_sym)) {
 				foundTraceOption = true;
 				continue;
 			}
-			else if(cmdSymbol.eq(ShellGrammar.timeout)) {
+			else if(cmdSymbol.eq(timeout_sym)) {
 				option.setTimeout(currentCmds.get(1));
 				continue;
 			}

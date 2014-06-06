@@ -1,11 +1,9 @@
 package dshell.lang;
 
-import libbun.util.BArray;
-
-public class MultipleException extends DShellException {
+public class MultipleException extends DShellException {	//TODO:
 	private static final long serialVersionUID = 164898266354483402L;
 	private DShellException[] exceptions;
-	transient private BArray<DShellException> exceptionArray;
+	transient private GenericArray exceptionArray;
 
 	public MultipleException(String message, DShellException[] exceptions) {
 		super(message);
@@ -16,9 +14,9 @@ public class MultipleException extends DShellException {
 		}
 	}
 
-	public BArray<DShellException> getExceptions() {
+	public GenericArray getExceptions() {
 		if(this.exceptionArray == null) {
-			this.exceptionArray = new BArray<DShellException>(0, exceptions);
+			this.exceptionArray = new GenericArray(exceptions);
 		}
 		return this.exceptionArray;
 	}

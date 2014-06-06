@@ -2,7 +2,6 @@
 	<!-- directory / file definition -->
 	<property name="dshell_source_dir" value="src" />
 	<property name="build_dir"  value="build" />
-	<property name="libbun_jar"  value="ext/libbun/libbun-0.1.jar" />
 	<property name="dshell_jar" value="dshell.jar" />
 
 	<!-- ================================== -->
@@ -10,7 +9,6 @@
 	<!-- ================================== -->
 
 	<target name="pre-build">
-		<ant antfile="build.xml" dir="ext/libbun/" target="jar" />
 		<ant antfile="build.xml" dir="tools/processor/" target="jar" />
 	</target>
 	<!-- ================================== -->
@@ -19,17 +17,16 @@
 	<target name="build" depends="pre-build">
 		<mkdir dir="${build_dir}" />
 		<javac srcdir="${dshell_source_dir}; ./gensrc; ./generated-array" destdir="${build_dir}" debug="on" target="1.7" source="1.7" includeantruntime="false" >
-			<classpath path="${libbun_jar}" />
-			<classpath path="ext/jna-4.0.0.jar" />
-			<classpath path="ext/log4j-1.2.17.jar" />
-			<classpath path="ext/commons-codec-1.9.jar" />
-			<classpath path="ext/antlr-runtime-4.2.2.jar" />
+			<classpath path="lib/asm-all-4.0.jar" />
+			<classpath path="lib/jline-1.0.jar" />
+			<classpath path="lib/jna-4.0.0.jar" />
+			<classpath path="lib/log4j-1.2.17.jar" />
+			<classpath path="lib/commons-codec-1.9.jar" />
+			<classpath path="lib/antlr-runtime-4.2.2.jar" />
 			<classpath path="tools/processor/processor.jar" />
 			<include name="**/*.java" />
 			<compilerarg value="-Xlint:deprecation" />
 			<compilerarg value="-Xlint:unchecked" />
-			<!--<compilerarg line="-processorpath ./tools/processor/processor.jar"/>
-			<compilerarg line="-processor dshell.annotation.AnnotationProcessor"/>-->
 		</javac>
 	</target>
 
@@ -44,11 +41,12 @@
 			<manifest>
 				<attribute name="Main-Class" value="dshell.internal.main.DShell" />
 			</manifest>
-			<zipfileset src="${libbun_jar}" />
-			<zipfileset src="ext/jna-4.0.0.jar" />
-			<zipfileset src="ext/log4j-1.2.17.jar" />
-			<zipfileset src="ext/commons-codec-1.9.jar" />
-			<zipfileset src="ext/antlr-runtime-4.2.2.jar" />
+			<zipfileset src="lib/asm-all-4.0.jar" />
+			<zipfileset src="lib/jline-1.0.jar" />
+			<zipfileset src="lib/jna-4.0.0.jar" />
+			<zipfileset src="lib/log4j-1.2.17.jar" />
+			<zipfileset src="lib/commons-codec-1.9.jar" />
+			<zipfileset src="lib/antlr-runtime-4.2.2.jar" />
 			<zipfileset src="tools/processor/processor.jar" />
 		</jar>
 	</target>
@@ -57,7 +55,6 @@
 	<!--               CLEAN                -->
 	<!-- ================================== -->
 	<target name="clean">
-		<ant antfile="build.xml" dir="ext/libbun/" target="clean" />
 		<ant antfile="build.xml" dir="tools/processor/" target="clean" />
 		<delete dir="${build_dir}"/>
 		<delete file="${dshell_jar}" />

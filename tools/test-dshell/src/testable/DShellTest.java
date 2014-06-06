@@ -45,7 +45,7 @@ public class DShellTest extends DShell {
 	@Override
 	public void execute() {
 		RuntimeContext.getContext();
-		TraditionalExecutionEngine engine = new TestableEngineFactory().getEngine();
+		NewExecutionEngine engine = new TestableEngineFactory().getEngine();
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(null);	// never return

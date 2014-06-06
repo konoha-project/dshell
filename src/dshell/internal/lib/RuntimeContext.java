@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import libbun.util.LibBunSystem;
-
 import org.apache.log4j.Appender;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.ConsoleAppender;
@@ -120,7 +118,6 @@ public class RuntimeContext implements Serializable {
 
 	public void setDebugMode(boolean debugMode) {
 		this.debugMode = debugMode;
-		LibBunSystem.DebugMode = debugMode;
 	}
 
 	public boolean isDebugMode() {

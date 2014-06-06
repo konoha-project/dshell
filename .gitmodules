@@ -1,4 +1,0 @@
-[submodule "ext/libbun"]
-	path = ext/libbun
-	url = git@github.com:libbun/libbun.git
-	ignore = dirty

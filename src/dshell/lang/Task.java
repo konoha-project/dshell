@@ -5,8 +5,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
-import libbun.util.BArray;
-
+import dshell.annotation.TypeParameter;
 import dshell.internal.lib.PipeStreamHandler.MessageStreamHandlerOp;
 import dshell.internal.lib.PipeStreamHandler.MessageStreamHandler;
 import dshell.internal.lib.PipeStreamHandler.EmptyMessageStreamHandler;
@@ -15,7 +14,6 @@ import dshell.internal.lib.ShellExceptionBuilder;
 import dshell.internal.lib.TaskOption;
 import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestSender;
-
 import static dshell.internal.lib.TaskOption.Behavior.background;
 import static dshell.internal.lib.TaskOption.Behavior.printable;
 import static dshell.internal.lib.TaskOption.Behavior.receiver;
@@ -224,11 +222,12 @@ public class Task implements Serializable {
 		}
 	}
 
-	public static BArray<Task> getTaskArray(Task task) {
+	@TypeParameter("Task")
+	public static GenericArray getTaskArray(Task task) {	//TODO:
 		Task[] values = new Task[task.taskList.size()];
 		for(int i = 0; i < values.length; i++) {
 			values[i] = task.taskList.get(i);
 		}
-		return new BArray<Task>(0, values);
+		return new GenericArray(values);
 	}
 }
