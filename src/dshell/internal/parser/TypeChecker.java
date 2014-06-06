@@ -223,7 +223,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(entry == null) {
 			this.throwAndReportTypeError(node, "undefined symbol: " + node.getSymbolName());
 		}
-		node.setGlobal(entry.isGlobal());
 		node.setReadOnly(entry.isReadOnly());
 		Type type = entry.getType();
 		if(type instanceof FuncHolderType) {	// function field
@@ -447,7 +446,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(ForNode node) {	//TODO: add entry to symbolTable
+	public Node visit(ForNode node) {
 		this.symbolTable.createAndPushNewTable();
 		this.checkType(node.getInitNode());
 		this.checkType(this.typePool.booleanType, node.getCondNode());
@@ -534,12 +533,12 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(AssignNode node) {	//TODO: int to float assign
+		Type leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
+		Type rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
 		if(node.getLeftNode().isReadOnly()) {
 			this.throwAndReportTypeError(node, "read only variable");
 		}
 		String op = node.getAssignOp();
-		Type leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
-		Type rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
 		if(op.equals("=")) {
 			if(!leftType.isAssignableFrom(rightType)) {
 				this.throwAndReportTypeError(node, "illegal assginment: " + rightType + " -> " + leftType);
@@ -629,7 +628,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	public static class TypeError extends RuntimeException {
 		private static final long serialVersionUID = -6490540925854900348L;
 		private TypeError(String message) {
-			super(message);
+			super("[TypeError] " + message);
 		}
 	}
 }

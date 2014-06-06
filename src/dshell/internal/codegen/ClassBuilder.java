@@ -1,8 +1,6 @@
 package dshell.internal.codegen;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -14,6 +12,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 import dshell.internal.lib.DShellClassLoader;
+import dshell.internal.lib.GlobalVariableTable;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.TypePool.ClassType;
@@ -104,21 +103,28 @@ public class ClassBuilder extends ClassWriter {
 		return this.internalClassName;
 	}
 
+	/**
+	 * wrapper class of generator adapter
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
 	public static class MethodBuilder extends GeneratorAdapter {
 		protected final Stack<Label> continueLabels;
 		protected final Stack<Label> breakLabels;
+		protected final Stack<TryBlockLabels> tryLabels;
 
-		protected final LocalVarScopes varScopes;
+		protected final VarScopes varScopes;
 
 		protected MethodBuilder(int arg0, Method arg1, String arg2, org.objectweb.asm.Type[] arg3, ClassVisitor arg4) {
 			super(arg0, arg1, arg2, arg3, arg4);
 			this.continueLabels = new Stack<>();
 			this.breakLabels = new Stack<>();
+			this.tryLabels = new Stack<>();
 			int startIndex = 0;
 			if((arg0 & Opcodes.ACC_STATIC) != Opcodes.ACC_STATIC) {
 				startIndex = 1;
 			}
-			this.varScopes = new LocalVarScopes(startIndex);
+			this.varScopes = new VarScopes(startIndex);
 		}
 
 		public Stack<Label> getContinueLabels() {
@@ -127,6 +133,14 @@ public class ClassBuilder extends ClassWriter {
 
 		public Stack<Label> getBreakLabels() {
 			return this.breakLabels;
+		}
+
+		public Stack<TryBlockLabels> getTryLabels() {
+			return this.tryLabels;
+		}
+
+		public TryBlockLabels createNewTryLabel() {
+			return new TryBlockLabels(this);
 		}
 
 		/**
@@ -153,35 +167,129 @@ public class ClassBuilder extends ClassWriter {
 
 		public void defineArgument(String argName, Type argType) {
 			assert this.varScopes.scopeDepth() == 2;
-			this.varScopes.addLocalVar(argName, argType);
+			this.varScopes.addVarEntry(argName, argType);
 		}
 
 		public void createNewLocalVarAndStoreValue(String varName, Type type) {
-			int varIndex = this.varScopes.addLocalVar(varName, type);
+			VarEntry entry = this.varScopes.addVarEntry(varName, type);
+			// global variable
+			if(entry.isGlobaVar()) {
+				this.storeValueToGlobal(entry.getVarIndex(), type);
+				return;
+			}
+			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), varIndex);
+			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), entry.getVarIndex());
+			return;
 		}
 
 		public void storeValueToLocalVar(String varName, Type type) {
-			int varIndex = this.varScopes.getVarIndex(varName);
-			if(varIndex == -1) {
-				throw new RuntimeException("undefined variable: " + varName);
+			VarEntry entry = this.varScopes.getVarEntry(varName);
+			assert entry != null : "undefined variable: " + varName;
+			// global variable
+			if(entry.isGlobaVar()) {
+				this.storeValueToGlobal(entry.getVarIndex(), type);
+				return;
 			}
+			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), varIndex);
+			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), entry.getVarIndex());
 		}
 
 		public void loadValueFromLocalVar(String varName, Type type) {
-			int varIndex = this.varScopes.getVarIndex(varName);
-			if(varIndex == -1) {
-				throw new RuntimeException("undefined variable:" + varName);
+			VarEntry entry = this.varScopes.getVarEntry(varName);
+			assert entry != null : "undefined variable: " + varName;
+			// global variable
+			if(entry.isGlobaVar()) {
+				this.loadValueFromGlobal(entry.getVarIndex(), type);
+				return;
 			}
+			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ILOAD), varIndex);
+			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ILOAD), entry.getVarIndex());
+		}
+
+		private void storeValueToGlobal(int index, Type type) {
+			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
+			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
+			switch(typeDesc.getSort()) {
+			case org.objectweb.asm.Type.LONG:
+				this.getStatic(ownerTypeDesc, "longVarTable", org.objectweb.asm.Type.getType(long[].class));
+				this.push(index);
+				this.dup2X2();
+				this.pop2();
+				this.arrayStore(typeDesc);
+				break;
+			case org.objectweb.asm.Type.DOUBLE:
+				this.getStatic(ownerTypeDesc, "doubleVarTable", org.objectweb.asm.Type.getType(double[].class));
+				this.push(index);
+				this.dup2X2();
+				this.pop2();
+				this.arrayStore(typeDesc);
+				break;
+			case org.objectweb.asm.Type.BOOLEAN:
+				this.getStatic(ownerTypeDesc, "booleanVarTable", org.objectweb.asm.Type.getType(boolean[].class));
+				this.swap();
+				this.push(index);
+				this.swap();
+				this.arrayStore(typeDesc);
+				break;
+			case org.objectweb.asm.Type.OBJECT:
+				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
+				this.swap();
+				this.push(index);
+				this.swap();
+				this.arrayStore(typeDesc);
+				break;
+			default:
+				throw new RuntimeException("illegal type: " + type);
+			}
+		}
+
+		private void loadValueFromGlobal(int index, Type type) {
+			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
+			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
+			switch(typeDesc.getSort()) {
+			case org.objectweb.asm.Type.LONG:
+				this.getStatic(ownerTypeDesc, "longVarTable", org.objectweb.asm.Type.getType(long[].class));
+				this.push(index);
+				this.arrayLoad(typeDesc);
+				break;
+			case org.objectweb.asm.Type.DOUBLE:
+				this.getStatic(ownerTypeDesc, "doubleVarTable", org.objectweb.asm.Type.getType(double[].class));
+				this.push(index);
+				this.arrayLoad(typeDesc);
+				break;
+			case org.objectweb.asm.Type.BOOLEAN:
+				this.getStatic(ownerTypeDesc, "booleanVarTable", org.objectweb.asm.Type.getType(boolean[].class));
+				this.push(index);
+				this.arrayLoad(typeDesc);
+				break;
+			case org.objectweb.asm.Type.OBJECT:
+				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
+				this.push(index);
+				this.arrayLoad(typeDesc);
+				this.cast(org.objectweb.asm.Type.getType(Object.class), typeDesc);
+				break;
+			default:
+				throw new RuntimeException("illegal type: " + type);
+			}
 		}
 	}
 
-	private static class LocalVarScopes {
+	public static class TryBlockLabels {
+		public final Label startLabel;
+		public final Label endLabel;
+		public final Label finallyLabel;
+
+		private TryBlockLabels(GeneratorAdapter adapter) {
+			this.startLabel = adapter.newLabel();
+			this.endLabel = adapter.newLabel();
+			this.finallyLabel = adapter.newLabel();
+		}
+	}
+
+	private static class VarScopes {
 		/**
 		 * contains local variable scopes
 		 */
@@ -194,11 +302,10 @@ public class ClassBuilder extends ClassWriter {
 		 */
 		protected final int startVarIndex;
 
-		private LocalVarScopes(int startIndex) {
+		private VarScopes(int startIndex) {
 			this.scopes = new Stack<>();
-			this.scopes.push(new GlobalVarScope());	//FIXME:
+			this.scopes.push(GlobalVarScope.getInstance());
 			this.startVarIndex = startIndex;
-			
 		}
 
 		/**
@@ -212,8 +319,8 @@ public class ClassBuilder extends ClassWriter {
 		 * - local var index.
 		 * throw if variable has already defined in this scope.
 		 */
-		public int addLocalVar(String varName, Type type) {
-			return this.scopes.peek().addLocalVar(varName, type);
+		public VarEntry addVarEntry(String varName, Type type) {
+			return this.scopes.peek().addVarEntry(varName, type);
 		}
 
 		/**
@@ -221,10 +328,10 @@ public class ClassBuilder extends ClassWriter {
 		 * @param varName
 		 * - variable index.
 		 * @return
-		 * - if has no variable, return -1.
+		 * - if has no variable, return null.
 		 */
-		public int getVarIndex(String varName) {
-			return this.scopes.peek().getLocalVar(varName);
+		public VarEntry getVarEntry(String varName) {
+			return this.scopes.peek().getVarEntry(varName);
 		}
 
 		public void createNewScope() {
@@ -258,16 +365,16 @@ public class ClassBuilder extends ClassWriter {
 		 * - local var index.
 		 * throw if variable has already defined in this scope.
 		 */
-		public int addLocalVar(String varName, Type type);
+		public VarEntry addVarEntry(String varName, Type type);
 
 		/**
 		 * get local variable index.
 		 * @param varName
 		 * - variable index.
 		 * @return
-		 * - if has no variable, return -1.
+		 * - if has no var entry, return null.
 		 */
-		public int getLocalVar(String varName);
+		public VarEntry getVarEntry(String varName);
 
 		/**
 		 * get start index of local variable in this scope.
@@ -300,37 +407,36 @@ public class ClassBuilder extends ClassWriter {
 		private int currentLocalVarIndex;
 
 		/**
-		 * contain var index. key is variable name.
+		 * contain var entry. key is variable name.
 		 */
-		private final Map<String, Integer> varIndexMap;
+		private final Map<String, VarEntry> varEntryMap;
 
 		private LocalVarScope(VarScope parentScope, int localVarBaseIndex) {
 			this.parentScope = parentScope;
-			this.varIndexMap = new HashMap<>();
+			this.varEntryMap = new HashMap<>();
 			this.localVarBaseIndex = localVarBaseIndex;
 			this.currentLocalVarIndex = this.localVarBaseIndex;
 		}
 
 		@Override
-		public int addLocalVar(String varName, Type type) {
-			if(this.varIndexMap.containsKey(varName)) {
-				throw new RuntimeException(varName + " is already defined");
-			}
+		public VarEntry addVarEntry(String varName, Type type) {
+			assert this.varEntryMap.containsKey(varName) : varName + " is already defined";
 			int valueSize = TypeUtils.toTypeDescriptor(type).getSize();
 			assert valueSize > 0;
 			int index = this.currentLocalVarIndex;
-			this.varIndexMap.put(varName, index);
+			VarEntry entry = new VarEntry(index, false);
+			this.varEntryMap.put(varName, entry);
 			this.currentLocalVarIndex += valueSize;
-			return index;
+			return entry;
 		}
 
 		@Override
-		public int getLocalVar(String varName) {
-			Integer index = this.varIndexMap.get(varName);
-			if(index == null) {
-				return this.parentScope.getLocalVar(varName);
+		public VarEntry getVarEntry(String varName) {
+			VarEntry entry = this.varEntryMap.get(varName);
+			if(entry == null) {
+				return this.parentScope.getVarEntry(varName);
 			}
-			return index;
+			return entry;
 		}
 
 		@Override
@@ -344,15 +450,47 @@ public class ClassBuilder extends ClassWriter {
 		}
 	}
 
-	private static class GlobalVarScope implements VarScope {	// TODO:
-		@Override
-		public int addLocalVar(String varName, Type type) {
-			throw new RuntimeException("unimplemented operation.");
+	/**
+	 * contains global variable entry
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	private static class GlobalVarScope implements VarScope {
+		private final Map<String, VarEntry> globalVarEntryMap;
+
+		private GlobalVarScope() {
+			this.globalVarEntryMap = new HashMap<>();
 		}
 
 		@Override
-		public int getLocalVar(String varName) {
-			return -1;
+		public VarEntry addVarEntry(String varName, Type type) {
+			assert !this.globalVarEntryMap.containsKey(varName) : varName + " is already defined";
+			int varIndex = -1;
+			switch(TypeUtils.toTypeDescriptor(type).getSort()) {
+			case org.objectweb.asm.Type.LONG:
+				varIndex = GlobalVariableTable.reserveLongVarTable();
+				break;
+			case org.objectweb.asm.Type.DOUBLE:
+				varIndex = GlobalVariableTable.reserveDoubleVarTable();
+				break;
+			case org.objectweb.asm.Type.BOOLEAN:
+				varIndex = GlobalVariableTable.reserveBooleanVarTable();
+				break;
+			case org.objectweb.asm.Type.OBJECT:
+				varIndex = GlobalVariableTable.reserveObjectVarTable();
+				break;
+			default:
+				throw new RuntimeException("illegal type: " + type);
+			}
+			assert varIndex != -1;
+			VarEntry entry = new VarEntry(varIndex, true);
+			this.globalVarEntryMap.put(varName, entry);
+			return entry;
+		}
+
+		@Override
+		public VarEntry getVarEntry(String varName) {
+			return this.globalVarEntryMap.get(varName);
 		}
 
 		@Override
@@ -364,5 +502,45 @@ public class ClassBuilder extends ClassWriter {
 		public int getEndIndex() {
 			return 0;
 		}
+
+		private static class Holder {
+			private final static GlobalVarScope INSTANCE = new GlobalVarScope();
+		}
+
+		public static GlobalVarScope getInstance() {
+			return Holder.INSTANCE;
+		}
 	}
+
+	/**
+	 * contains var index and var flag(isGlobal)
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	private static class VarEntry {
+		/**
+		 * In local variable, this index represents jvm local variable table' s index.
+		 * In global variable, represents global var table index.
+		 */
+		private final int varIndex;
+
+		/**
+		 * represent variable scope.
+		 * if true, variable is global variable.
+		 */
+		private final boolean isGlobal;
+
+		private VarEntry(int varIndex, boolean isGlobal) {
+			this.varIndex = varIndex;
+			this.isGlobal = isGlobal;
+		}
+
+		private int getVarIndex() {
+			return this.varIndex;
+		}
+
+		private boolean isGlobaVar() {
+			return this.isGlobal;
+		}
+ 	}
 }

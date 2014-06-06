@@ -332,7 +332,6 @@ public abstract class Node {
 	 */
 	public static class SymbolNode extends AssignableNode {
 		private final String symbolName;
-		private boolean isGlobal;
 
 		/**
 		 * used for getting function object from static field.
@@ -342,19 +341,10 @@ public abstract class Node {
 		public SymbolNode(Token token) {
 			this.setToken(token);
 			this.symbolName = this.token.getText();
-			this.isGlobal = false;
 		}
 
 		public String getSymbolName() {
 			return this.symbolName;
-		}
-
-		public void setGlobal(boolean isGlobal) {
-			this.isGlobal = isGlobal;
-		}
-
-		public boolean isGlobal() {
-			return this.isGlobal;
 		}
 
 		public void setHandle(StaticFieldHandle handle) {

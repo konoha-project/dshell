@@ -10,6 +10,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.GeneratorAdapter;
 
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
+import dshell.internal.codegen.ClassBuilder.TryBlockLabels;
 import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
@@ -203,17 +204,15 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(SymbolNode node) { //TODO: global variable.
+	public Void visit(SymbolNode node) {
 		// get func object from static field
 		StaticFieldHandle handle = node.getHandle();
 		if(handle != null) {
 			handle.callGetter(this.getCurrentMethodBuilder());
 			return null;
 		}
-		if(!node.isGlobal()) {
-			MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-			mBuilder.loadValueFromLocalVar(node.getSymbolName(), node.getType());
-		}
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		mBuilder.loadValueFromLocalVar(node.getSymbolName(), node.getType());
 		return null;
 	}
 
@@ -243,23 +242,21 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(SuffixIncrementNode node) {	//TODO: global variable
+	public Void visit(SuffixIncrementNode node) {
 		long incSize = node.getOperator().equals("++") ? 1 : -1;
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder(); 
-		if(!node.getSymbolNode().isGlobal()) {
-			SymbolNode symbolNode = node.getSymbolNode();
-			symbolNode.accept(this);
-			mBuilder.dup2();
-			Type symbolType = symbolNode.getType();
-			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(symbolType);
-			if(typeDesc.equals(org.objectweb.asm.Type.DOUBLE_TYPE)) {
-				mBuilder.push((double) incSize);
-			} else {
-				mBuilder.push(incSize);
-			}
-			mBuilder.math(GeneratorAdapter.ADD, typeDesc);
-			mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolType);
+		SymbolNode symbolNode = node.getSymbolNode();
+		symbolNode.accept(this);
+		mBuilder.dup2();
+		Type symbolType = symbolNode.getType();
+		org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(symbolType);
+		if(typeDesc.equals(org.objectweb.asm.Type.DOUBLE_TYPE)) {
+			mBuilder.push((double) incSize);
+		} else {
+			mBuilder.push(incSize);
 		}
+		mBuilder.math(GeneratorAdapter.ADD, typeDesc);
+		mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolType);
 		return null;
 	}
 
@@ -482,23 +479,45 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(TryNode node) {
-		// TODO Auto-generated method stub
+		// init labels
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		TryBlockLabels labels = mBuilder.createNewTryLabel();
+		mBuilder.getTryLabels().push(labels);
+		// try block
+		mBuilder.mark(labels.startLabel);
+		this.visitBlockWithNewScope(node.getTryBlockNode());
+		mBuilder.mark(labels.endLabel);
+		mBuilder.goTo(labels.finallyLabel);
+		// catch block
+		for(CatchNode catchNode : node.getCatchNodeList()) {
+			catchNode.accept(this);
+		}
+		// finally block
+		mBuilder.mark(labels.finallyLabel);
+		this.visitBlockWithNewScope(node.getFinallyBlockNode());
+		mBuilder.getTryLabels().pop();
 		return null;
 	}
 
 	@Override
 	public Void visit(CatchNode node) {
-		// TODO Auto-generated method stub
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		TryBlockLabels labels = mBuilder.getTryLabels().peek();
+		mBuilder.createNewLocalScope();
+		Type exceptionType = node.getExceptionType();
+		mBuilder.catchException(labels.startLabel, labels.endLabel, TypeUtils.toTypeDescriptor(exceptionType));
+		mBuilder.createNewLocalVarAndStoreValue(node.getExceptionVarName(), exceptionType);
+		this.visitBlockWithCurrentScope(node.getCatchBlockNode());
+		mBuilder.goTo(labels.finallyLabel);
+		mBuilder.removeCurrentLocalScope();
 		return null;
 	}
 
 	@Override
-	public Void visit(VarDeclNode node) {	//TODO: global variable.
-		if(!node.isGlobal()) {
-			MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-			node.getInitValueNode().accept(this);
-			mBuilder.createNewLocalVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
-		}
+	public Void visit(VarDeclNode node) {
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		node.getInitValueNode().accept(this);
+		mBuilder.createNewLocalVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
 		return null;
 	}
 
@@ -526,9 +545,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	private void visitAssignLeft(SymbolNode leftNode) {	//TODO: global variable
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		if(!leftNode.isGlobal()) {
-			mBuilder.storeValueToLocalVar(leftNode.getSymbolName(), leftNode.getType());
-		}
+		mBuilder.storeValueToLocalVar(leftNode.getSymbolName(), leftNode.getType());
 	}
 
 	private void visitAssignLeft(FieldGetterNode leftNode) {

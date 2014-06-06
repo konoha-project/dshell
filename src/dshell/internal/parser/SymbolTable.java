@@ -4,9 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
-import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
-import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
-import dshell.internal.parser.TypePool.FunctionType;
 import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.SymbolTable.SymbolEntry;
 
@@ -42,7 +39,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 
 	public SymbolTable() {
 		this.tableStack = new Stack<>();
-		this.tableStack.push(new ChildTable(new EmptyTable()));
+		this.tableStack.push((new RootTable()));
 	}
 
 	@Override
@@ -118,25 +115,45 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 			if(this.entryMap.containsKey(symbolName)) {
 				return false;
 			}
-			boolean isGlobal = (this.getParentTable() instanceof EmptyTable);
-			SymbolEntry entry = new SymbolEntry(type, isReadOnly, isGlobal);
+			SymbolEntry entry = new SymbolEntry(type, isReadOnly, false);
 			this.entryMap.put(symbolName, entry);
 			return true;
 		}
 	}
 
-	private static class EmptyTable implements SymbolTableOp {
+	/**
+	 * contains global variable symbol
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	private static class RootTable implements SymbolTableOp {
+		/**
+		 * contain symbol entry.
+		 * key is symbol name.
+		 */
+		private final Map<String, SymbolEntry> entryMap;
+
+		private RootTable() {
+			this.entryMap = new HashMap<>();
+		}
+
 		@Override
 		public SymbolEntry getEntry(String symbolName) {
-			return null;
+			return this.entryMap.get(symbolName);
 		}
 
 		@Override
 		public boolean addEntry(String symbolName, Type type, boolean isReadOnly) {
-			return false;	// do not call this.
+			if(this.entryMap.containsKey(symbolName)) {
+				return false;
+			}
+			SymbolEntry entry = new SymbolEntry(type, isReadOnly, true);
+			this.entryMap.put(symbolName, entry);
+			return true;
 		}
 	}
-
+	
+	
 	public static class SymbolEntry {
 		/**
 		 * represent read only symbol (constant variable, function).

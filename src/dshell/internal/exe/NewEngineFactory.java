@@ -67,6 +67,9 @@ public class NewEngineFactory implements EngineFactory {
 				tree.inspect(parser);
 				System.out.println(tree.toStringTree(parser));
 				RootNode checkedNode = checker.checkTypeRootNode(tree.node);
+				if(checkedNode == null) {
+					return;
+				}
 				Class<?> generatedClass = this.codeGen.generateTopLevelClass(checkedNode, true);
 				Method staticMethod = generatedClass.getMethod("invoke");
 				staticMethod.invoke(null);
