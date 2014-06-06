@@ -365,7 +365,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ConstructorCallNode node) {
-		ClassType classType = this.typePool.getClassType(node.getClassName());
+		ClassType classType = (ClassType) node.getTypeSymbol().toType(this.typePool);
 		List<Type> paramTypeList = new ArrayList<>();
 		for(ExprNode paramNode : node.getNodeList()) {
 			this.checkType(paramNode);

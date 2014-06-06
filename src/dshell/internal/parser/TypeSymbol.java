@@ -27,6 +27,10 @@ public abstract class TypeSymbol {
 		return new VoidTypeSymbol();
 	}
 
+	public static TypeSymbol toVoid() {
+		return new VoidTypeSymbol();
+	}
+
 	public static TypeSymbol toClass(Token token) {
 		return new ClassTypeSymbol(token);
 	}

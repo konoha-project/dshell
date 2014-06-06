@@ -7,6 +7,19 @@ import dshell.internal.parser.ParserUtils;
 import dshell.internal.parser.TypeSymbol;
 }
 
+@parser::members {
+	private boolean isLineEnd() {
+		int lineEndIndex = this.getCurrentToken().getTokenIndex() - 1;
+		Token lineEndToken = _input.get(lineEndIndex);
+		if(lineEndToken.getChannel() != Lexer.HIDDEN) {
+			return false;
+		}
+
+		int type = lineEndToken.getType();
+		return type == LineEnd;
+	}
+}
+
 // ######################
 // #        parse       #
 // ######################
@@ -26,11 +39,17 @@ toplevelStatement returns [Node node]
 	| statement {$node = $statement.node;}
 	;
 statementEnd
-	: (';' | '\r' | '\n')+
+	: EOF
+	| ';'
+	| {isLineEnd()}?
 	;
 functionDeclaration returns [Node node]
-	: Function SymbolName '(' argumentsDeclaration ')' ':' typeName block
-		{$node = new Node.FunctionNode($Function, $SymbolName, $typeName.type, $argumentsDeclaration.decl, $block.node);}
+	: Function SymbolName '(' argumentsDeclaration ')' returnType block
+		{$node = new Node.FunctionNode($Function, $SymbolName, $returnType.type, $argumentsDeclaration.decl, $block.node);}
+	;
+returnType returns [TypeSymbol type]
+	: ':' typeName { $type = $typeName.type;}
+	| { $type = TypeSymbol.toVoid(); }
 	;
 argumentsDeclaration returns [ParserUtils.ArgsDecl decl]
 	: a+=variableDeclarationWithType (',' a+=variableDeclarationWithType)*
@@ -50,11 +69,11 @@ typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 	| Float {$type = TypeSymbol.toPrimitive($Float);}
 	| Boolean {$type = TypeSymbol.toPrimitive($Boolean);}
 	| Void {$type = TypeSymbol.toVoid($Void);}
-	| ClassName {$type = TypeSymbol.toClass($ClassName);}
+	| SymbolName {$type = TypeSymbol.toClass($SymbolName);}
 	| typeName '[]' {$type = TypeSymbol.toArray($typeName.type);}
 	| 'Map' '<' typeName '>' {$type = TypeSymbol.toMap($typeName.type);}
-	| 'Func' '<' returnType ',' paramTypes '>'
-		{$type = TypeSymbol.toFunc($returnType.type, $paramTypes.types);}
+	| 'Func' '<' typeName paramTypes '>'
+		{$type = TypeSymbol.toFunc($typeName.type, $paramTypes.types);}
 	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypeSymbol[$a.size()];
@@ -64,11 +83,8 @@ typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 			$type = TypeSymbol.toGeneric($ClassName, $types);
 		}
 	;
-returnType returns [TypeSymbol type]
-	: typeName {$type = $typeName.type;}
-	;
 paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver resolver]
-	: '[' a+=typeName (',' a+=typeName)* ']'
+	: ',' '[' a+=typeName (',' a+=typeName)* ']'
 		{
 			$resolver = new ParserUtils.ParamTypeResolver();
 			for(int i = 0; i < $a.size(); i++) {
@@ -76,6 +92,7 @@ paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver re
 			}
 			$types = $resolver.getTypeSymbols();
 		}
+	| { $resolver = new ParserUtils.ParamTypeResolver(); $types = $resolver.getTypeSymbols();}
 	;
 block returns [Node node] locals [ParserUtils.Block blockModel]
 	: '{' b+=statement+ '}' 
@@ -244,22 +261,25 @@ assignStatement returns [Node node]
 	;
 expression returns [Node node] //FIXME: right join
 	: primary {$node = $primary.node;}
-	| expression '.' SymbolName {$node = new Node.FieldGetterNode($expression.node, $SymbolName);}
-	| New ClassName '(' arguments ')' {$node = new Node.ConstructorCallNode($New, $ClassName.getText(), $arguments.args);}
-	| expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($expression.node, $SymbolName, $arguments.args);}
+	| a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
+	| New classType'(' arguments ')' {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
+	| a=expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
 	| SymbolName '(' arguments ')' {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
-	| '(' typeName ')' expression {$node = new Node.CastNode($typeName.type, $expression.node);}
-	| expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($expression.node, $op);}
-	| op=(PLUS | MINUS) expression {$node = new Node.OperatorCallNode($op, $expression.node);}
-	| op=(BIT_NOT | NOT) expression {$node = new Node.OperatorCallNode($op, $expression.node);}
+	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
+	| a=expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($a.node, $op);}
+	| op=(PLUS | MINUS) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
+	| op=(BIT_NOT | NOT) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
 	| left=expression op=(MUL | DIV | MOD) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(ADD | SUB) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(LT | LE | GT | GE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| expression Instanceof typeName {$node = new Node.InstanceofNode($Instanceof, $expression.node, $typeName.type);}
+	| left=expression Instanceof typeName {$node = new Node.InstanceofNode($Instanceof, $left.node, $typeName.type);}
 	| left=expression op=(EQ | NE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(COND_AND | COND_OR) right=expression {$node = new Node.CondOpNode($op, $left.node, $right.node);}
+	;
+classType returns [TypeSymbol type]
+	: ClassName {$type = TypeSymbol.toClass($ClassName);}
 	;
 primary returns [Node node]
 	: literal {$node = $literal.node;}
@@ -439,22 +459,22 @@ SymbolName
 	: [_a-zA-Z] [_0-9a-zA-Z]*
 	;
 ClassName
-	: [A-Z] [0-9a-zA-Z]*
+	: [A-Z] [_0-9a-zA-Z]*
 	;
 CommandName	//FIXME:
 	: [0-9a-zA-Z]+
 	;
 
-//// statement end
-//StmtEnd
-//	: ';'
-//	| [\r\n]
-//	;
-
 // comment & space
 Comment
 	: '#' ~[\r\n]* -> skip
 	;
-WhileSpace
-	: [ \t\r\n\u000C]+ -> skip
+//WhiteSpace
+//	: [ \t\r\n\u000C]+ -> skip
+//	;
+WhiteSpace
+	: [ \t\u000C]+ -> channel(HIDDEN)
+	;
+LineEnd
+	: [\r\n] -> channel(HIDDEN)
 	;

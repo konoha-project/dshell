@@ -306,9 +306,16 @@ public class TypePool {
 		StringBuilder sBuilder = new StringBuilder();
 		sBuilder.append("Func<");
 		sBuilder.append(returnType.toString());
-		for(Type paramType : paramTypes) {
-			sBuilder.append(",");
-			sBuilder.append(paramType.toString());
+		
+		if(paramTypes.length > 0) {
+			sBuilder.append(",[");
+			for(int i = 0; i < paramTypes.length; i++) {
+				if(i > 0) {
+					sBuilder.append(",");
+				}
+				sBuilder.append(paramTypes[i].toString());
+			}
+			sBuilder.append("]");
 		}
 		sBuilder.append(">");
 		return sBuilder.toString();

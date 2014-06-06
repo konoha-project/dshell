@@ -73,12 +73,10 @@ import dshell.internal.parser.TypeUtils;
  */
 public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line number
 	protected final DShellClassLoader classLoader;
-	protected final Stack<ClassBuilder> classBuilders;
 	protected final Stack<MethodBuilder> methodBuilders;
 
 	public JavaByteCodeGen(DShellClassLoader classLoader) {
 		this.classLoader = classLoader;
-		this.classBuilders = new Stack<>();
 		this.methodBuilders = new Stack<>();
 	}
 
@@ -93,10 +91,6 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL, "funcTypeName", fieldDesc, null, funcType.getTypeName());
 		writer.visitEnd();
 		return writer.toByteArray();
-	}
-
-	private ClassBuilder getCurrentClassBuilder() {
-		return this.classBuilders.peek();
 	}
 
 	private MethodBuilder getCurrentMethodBuilder() {

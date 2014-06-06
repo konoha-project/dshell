@@ -61,7 +61,7 @@ public class DShellConsole implements AbstractConsole {
 		int level = 0;
 		while((level = this.checkBraceLevel(line, level)) > 0) {
 			line = this.readLine(prompt2);
-			lineBuilder.append("\n");
+			lineBuilder.append('\n');
 			lineBuilder.append(line);
 		}
 		if(level < 0) {

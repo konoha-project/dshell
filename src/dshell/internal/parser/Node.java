@@ -719,21 +719,21 @@ public abstract class Node {
 	 *
 	 */
 	public static class ConstructorCallNode extends ExprNode {
-		private final String className;
+		private final TypeSymbol typeSymbol;
 		private final List<ExprNode> argNodeList;
 		private ConstructorHandle handle;
 
-		public ConstructorCallNode(Token token, String className, Arguments args) {
+		public ConstructorCallNode(Token token, TypeSymbol typeSymbol, Arguments args) {
 			this.setToken(token);
-			this.className = className;
+			this.typeSymbol = typeSymbol;
 			this.argNodeList = new ArrayList<>();
 			for(Node node : args.nodeList) {
 				argNodeList.add((ExprNode) this.setNodeAsChild(node));
 			}
 		}
 
-		public String getClassName() {
-			return this.className;
+		public TypeSymbol getTypeSymbol() {
+			return this.typeSymbol;
 		}
 
 		public List<ExprNode> getNodeList() {
