@@ -276,8 +276,11 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(!op.equals("++") && !op.equals("--")) {
 			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
 		}
-		this.checkType(node.getExprNode());
-		Type exprType = node.getExprNode().getType();
+		this.checkType(node.getSymbolNode());
+		if(node.getSymbolNode().isReadOnly) {
+			this.throwAndReportTypeError(node, "read only variable: " + node.getSymbolNode().getSymbolName());
+		}
+		Type exprType = node.getSymbolNode().getType();
 		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
 			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
 		}

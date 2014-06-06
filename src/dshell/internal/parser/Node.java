@@ -538,17 +538,17 @@ public abstract class Node {
 	 *
 	 */
 	public static class SuffixIncrementNode extends ExprNode {
-		private final ExprNode exprNode;
+		private final SymbolNode symbolNode;
 		private final String op;
 
 		public SuffixIncrementNode(Node exprNode, Token token) {
 			this.setToken(token);
-			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
+			this.symbolNode = (SymbolNode) this.setNodeAsChild(exprNode);
 			this.op = this.token.getText();
 		}
 
-		public ExprNode getExprNode() {
-			return this.exprNode;
+		public SymbolNode getSymbolNode() {
+			return this.symbolNode;
 		}
 
 		public String getOperator() {

@@ -14,7 +14,6 @@ import dshell.internal.parser.TypeSymbol;
 		if(lineEndToken.getChannel() != Lexer.HIDDEN) {
 			return false;
 		}
-
 		int type = lineEndToken.getType();
 		return type == LineEnd;
 	}
@@ -260,14 +259,13 @@ assignStatement returns [Node node]
 		}
 	;
 expression returns [Node node] //FIXME: right join
-	: primary {$node = $primary.node;}
-	| a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
+	: a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
 	| New classType'(' arguments ')' {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
 	| a=expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
 	| SymbolName '(' arguments ')' {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
-	| a=expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($a.node, $op);}
+	| symbol op=(INC | DEC) {$node = new Node.SuffixIncrementNode($symbol.node, $op);}
 	| op=(PLUS | MINUS) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
 	| op=(BIT_NOT | NOT) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
 	| left=expression op=(MUL | DIV | MOD) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
@@ -277,7 +275,8 @@ expression returns [Node node] //FIXME: right join
 	| left=expression op=(EQ | NE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(COND_AND | COND_OR) right=expression {$node = new Node.CondOpNode($op, $left.node, $right.node);}
-	;
+	| primary {$node = $primary.node;}
+	;	
 classType returns [TypeSymbol type]
 	: ClassName {$type = TypeSymbol.toClass($ClassName);}
 	;

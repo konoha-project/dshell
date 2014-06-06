@@ -3,6 +3,7 @@ package dshell.internal.codegen;
 import java.util.ArrayList;
 import java.util.Stack;
 
+import org.antlr.v4.runtime.atn.SemanticContext.OR;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -242,8 +243,23 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	}
 
 	@Override
-	public Void visit(SuffixIncrementNode node) {
-		// TODO Auto-generated method stub
+	public Void visit(SuffixIncrementNode node) {	//TODO: global variable
+		long incSize = node.getOperator().equals("++") ? 1 : -1;
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder(); 
+		if(!node.getSymbolNode().isGlobal()) {
+			SymbolNode symbolNode = node.getSymbolNode();
+			symbolNode.accept(this);
+			mBuilder.dup2();
+			Type symbolType = symbolNode.getType();
+			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(symbolType);
+			if(typeDesc.equals(org.objectweb.asm.Type.DOUBLE_TYPE)) {
+				mBuilder.push((double) incSize);
+			} else {
+				mBuilder.push(incSize);
+			}
+			mBuilder.math(GeneratorAdapter.ADD, typeDesc);
+			mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolType);
+		}
 		return null;
 	}
 
@@ -379,13 +395,19 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		mBuilder.breakLabels.push(breakLabel);
 
 		mBuilder.createNewLocalScope();
+		// init
 		node.getInitNode().accept(this);
+		this.createPopInsIfExprNode(node.getInitNode());
+		// cond
 		mBuilder.mark(continueLabel);
 		mBuilder.push(true);
 		node.getCondNode().accept(this);
 		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
+		// block
 		this.visitBlockWithCurrentScope(node.getBlockNode());
+		// iter
 		node.getIterNode().accept(this);
+		this.createPopInsIfExprNode(node.getIterNode());
 		mBuilder.goTo(continueLabel);
 		mBuilder.mark(breakLabel);
 
