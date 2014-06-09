@@ -1,20 +1,22 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.util.ArrayList;
 
 import dshell.annotation.TypeParameter;
+import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestSender;
 import dshell.lang.GenericArray;
 import dshell.lang.Task;
-import static dshell.internal.lib.TaskOption.Behavior.background;
-import static dshell.internal.lib.TaskOption.Behavior.printable;
-import static dshell.internal.lib.TaskOption.Behavior.returnable;
-import static dshell.internal.lib.TaskOption.Behavior.throwable;
-import static dshell.internal.lib.TaskOption.RetType.IntType;
-import static dshell.internal.lib.TaskOption.RetType.StringType;
-import static dshell.internal.lib.TaskOption.RetType.TaskArrayType;
-import static dshell.internal.lib.TaskOption.RetType.TaskType;
-import static dshell.internal.lib.TaskOption.RetType.VoidType;
+import static dshell.internal.process.TaskOption.Behavior.background;
+import static dshell.internal.process.TaskOption.Behavior.printable;
+import static dshell.internal.process.TaskOption.Behavior.returnable;
+import static dshell.internal.process.TaskOption.Behavior.throwable;
+import static dshell.internal.process.TaskOption.RetType.IntType;
+import static dshell.internal.process.TaskOption.RetType.StringType;
+import static dshell.internal.process.TaskOption.RetType.TaskArrayType;
+import static dshell.internal.process.TaskOption.RetType.TaskType;
+import static dshell.internal.process.TaskOption.RetType.VoidType;
 
 public class TaskBuilder {
 	public final static String background_sym = "&";

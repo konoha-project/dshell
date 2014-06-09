@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-import dshell.internal.lib.BuiltinSymbol;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.TaskBuilder;
 import dshell.internal.lib.Utils;
+import dshell.internal.process.BuiltinSymbol;
+import dshell.internal.process.TaskBuilder;
 import jline.Completor;
 
 public class DShellCompletor implements Completor {

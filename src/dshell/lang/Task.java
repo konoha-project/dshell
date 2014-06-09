@@ -6,19 +6,19 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import dshell.annotation.TypeParameter;
-import dshell.internal.lib.PipeStreamHandler.MessageStreamHandlerOp;
-import dshell.internal.lib.PipeStreamHandler.MessageStreamHandler;
-import dshell.internal.lib.PipeStreamHandler.EmptyMessageStreamHandler;
-import dshell.internal.lib.PseudoProcess;
-import dshell.internal.lib.ShellExceptionBuilder;
-import dshell.internal.lib.TaskOption;
 import dshell.internal.lib.Utils;
+import dshell.internal.process.PseudoProcess;
+import dshell.internal.process.ShellExceptionBuilder;
+import dshell.internal.process.TaskOption;
+import dshell.internal.process.PipeStreamHandler.EmptyMessageStreamHandler;
+import dshell.internal.process.PipeStreamHandler.MessageStreamHandler;
+import dshell.internal.process.PipeStreamHandler.MessageStreamHandlerOp;
 import dshell.internal.remote.RequestSender;
-import static dshell.internal.lib.TaskOption.Behavior.background;
-import static dshell.internal.lib.TaskOption.Behavior.printable;
-import static dshell.internal.lib.TaskOption.Behavior.receiver;
-import static dshell.internal.lib.TaskOption.Behavior.sender;
-import static dshell.internal.lib.TaskOption.Behavior.throwable;
+import static dshell.internal.process.TaskOption.Behavior.background;
+import static dshell.internal.process.TaskOption.Behavior.printable;
+import static dshell.internal.process.TaskOption.Behavior.receiver;
+import static dshell.internal.process.TaskOption.Behavior.sender;
+import static dshell.internal.process.TaskOption.Behavior.throwable;
 
 public class Task implements Serializable {
 	private static final long serialVersionUID = 7531968866962967914L;

@@ -1,4 +1,4 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.io.File;
 import java.io.IOException;
@@ -6,6 +6,7 @@ import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.NativeException;
 
 public class SubProc extends PseudoProcess {

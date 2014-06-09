@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
-import static dshell.internal.lib.TaskOption.Behavior.background;
-import dshell.internal.lib.CommandArg;
+import static dshell.internal.process.TaskOption.Behavior.background;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.TaskBuilder;
-import dshell.internal.lib.TaskOption;
 import dshell.internal.lib.Utils;
+import dshell.internal.process.CommandArg;
+import dshell.internal.process.TaskBuilder;
+import dshell.internal.process.TaskOption;
 import dshell.lang.Task;
 
 public class RequestReceiver {

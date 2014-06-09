@@ -42,22 +42,22 @@ public class TypePool {
 	/**
 	 * Equivalent to java void.
 	 */
-	public final Type voidType;
+	public final VoidType voidType;
 
 	/**
 	 * Equivalent to java long.
 	 */
-	public final Type intType;
+	public final PrimitiveType intType;
 
 	/**
 	 * Equivalent to java double.
 	 */
-	public final Type floatType;
+	public final PrimitiveType floatType;
 
 	/**
 	 * Equivalent to java boolean.
 	 */
-	public final Type booleanType;
+	public final PrimitiveType booleanType;
 
 	/**
 	 * Represents D-Shell root class type.
@@ -100,10 +100,10 @@ public class TypePool {
 		this.objectType = new RootClassType();
 		this.baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
 
-		this.voidType      = this.setTypeAndThrowIfDefined(new VoidType());
-		this.intType       = this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
-		this.floatType     = this.setTypeAndThrowIfDefined(new PrimitiveType("float", "double"));
-		this.booleanType   = this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
+		this.voidType      = (VoidType) this.setTypeAndThrowIfDefined(new VoidType());
+		this.intType       = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
+		this.floatType     = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("float", "double"));
+		this.booleanType   = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
 		this.stringType    = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("String", "java/lang/String", this.objectType, false));
 		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", this.objectType, true));
 		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", this.objectType, false));
@@ -384,6 +384,10 @@ public class TypePool {
 			return this.getTypeName().equals(targetType.getTypeName());
 		}
 
+		public boolean equals(Type targetType) {
+			return this.getTypeName().equals(targetType.getTypeName());
+		}
+
 		/**
 		 * loop up constructor handle.
 		 * @param paramTypeList
@@ -629,6 +633,83 @@ public class TypePool {
 				this.fieldHandleMap = Collections.unmodifiableMap(this.fieldHandleMap);
 				this.methodHandleMap = Collections.unmodifiableMap(this.methodHandleMap);
 			}
+		}
+
+		/**
+		 * create and add new filed handle. used for type checker.
+		 * @param fieldName
+		 * @param fieldType
+		 * @return
+		 * - return false, if field has already defined.
+		 */
+		public boolean addNewFieldHandle(String fieldName, Type fieldType) {
+			if(this.fieldHandleMap.containsKey(fieldName)) {
+				return false;
+			}
+			this.fieldHandleMap.put(fieldName, new FieldHandle(fieldName, this, fieldType));
+			return true;
+		}
+
+		/**
+		 * create and add new method handle. used for type checker.
+		 * @param methodName
+		 * - method name
+		 * @param returnType
+		 * @param paramTypes
+		 * - if has no parameter, it is empty array
+		 * @return
+		 * - return false, id method has already defined.
+		 */
+		public boolean addNewMethodHandle(String methodName, Type returnType, Type[] paramTypes) {
+			if(this.methodHandleMap.containsKey(methodName)) {
+				return false;
+			}
+			List<Type> paramTypeList = new ArrayList<>();
+			for(Type paramType : paramTypes) {
+				paramTypeList.add(paramType);
+			}
+			this.methodHandleMap.put(methodName, new MethodHandle(methodName, this, returnType, paramTypeList));
+			return true;
+		}
+
+		/**
+		 * create and add new constructor handle. used for type checker.
+		 * @param paramTypes
+		 * - if has no parameter, it is empty array
+		 * @return
+		 * - return false, id method has already defined.
+		 */
+		public boolean addNewConstructorHandle(Type[] paramTypes) {
+			for(ConstructorHandle handle : this.constructorHandleList) {
+				List<Type> paramTypeList = handle.getParamTypeList();
+				int size = paramTypeList.size();
+				if(size != paramTypes.length) {
+					continue;
+				}
+				int count = 0;
+				for(int i = 0; i < size; i++) {
+					if(!paramTypeList.get(i).equals(paramTypes[i])) {
+						break;
+					}
+					count++;
+				}
+				if(count == size) {
+					return false;
+				}
+			}
+			List<Type> paramTypeList = new ArrayList<>();
+			for(Type paramType : paramTypes) {
+				paramTypeList.add(paramType);
+			}
+			this.constructorHandleList.add(new ConstructorHandle(this, paramTypeList));
+			return true;
+		}
+
+		public void addMethodHandle(MethodHandle handle) {
+			if(this.methodHandleMap.containsKey(handle.getCalleeName())) {
+				throw new RuntimeException(handle.getCalleeName() + "is already defined");
+			}
+			this.methodHandleMap.put(handle.getCalleeName(), handle);
 		}
 	}
 

@@ -1,4 +1,4 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.Errno;
 
 public interface CauseInferencer {

@@ -5,7 +5,6 @@ import java.lang.reflect.Method;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
-import org.antlr.v4.runtime.Parser;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
@@ -57,24 +56,22 @@ public class NewEngineFactory implements EngineFactory {
 			ANTLRInputStream input = new ANTLRInputStream(source);
 			this.lexer.setInputStream(input);
 			this.lexer.setLine(lineNum);
-			CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+			CommonTokenStream tokenStream = new CommonTokenStream(this.lexer);
 			tokenStream.fill();
 			this.parser.setTokenStream(tokenStream);
-			parser.setTrace(true);
-			
+//			this.parser.setTrace(true);
+
 			try {
 				ToplevelContext tree = this.parser.toplevel();
-				tree.inspect(parser);
-				System.out.println(tree.toStringTree(parser));
-				RootNode checkedNode = checker.checkTypeRootNode(tree.node);
+//				tree.inspect(this.parser);
+				RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
 				if(checkedNode == null) {
 					return;
 				}
 				Class<?> generatedClass = this.codeGen.generateTopLevelClass(checkedNode, true);
 				Method staticMethod = generatedClass.getMethod("invoke");
 				staticMethod.invoke(null);
-			}
-			catch(Throwable t) {
+			} catch(Throwable t) {
 				t.printStackTrace();
 			}
 		}

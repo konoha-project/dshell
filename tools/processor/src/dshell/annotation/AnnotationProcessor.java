@@ -23,11 +23,17 @@ import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileObject;
 import javax.tools.Diagnostic.Kind;
 
+import dshell.internal.parser.ClassWrapper;
+import dshell.internal.parser.TypePool;
+import dshell.internal.parser.TypePool.ClassType;
+
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
-@SupportedAnnotationTypes({"dshell.annotation.Shared", "dshell.annotation.OpType"})
+@SupportedAnnotationTypes({"dshell.annotation.Shared", "dshell.annotation.OpType", "dshell.annotation.Wrapper"})
 public class AnnotationProcessor extends AbstractProcessor {
 	private final static String A_SHARED = "dshell.annotation.Shared";
 	private final static String A_OPTYPE = "dshell.annotation.OpType";
+	private final static String A_WRAPPER = "dshell.annotation.Wrapper";
+	
 
 	private OpTableBuilder opTableBuilder;
 	private Map<String, String> typeMap;
@@ -109,6 +115,10 @@ public class AnnotationProcessor extends AbstractProcessor {
 		this.opTableBuilder.appendLine(returnTypeName, op, methodName, paramTypeNames);
 	}
 
+	private void generateWrapper(Element element) {
+		
+	}
+
 	/**
 	 * report error and exit processing.
 	 * @param message
@@ -176,9 +186,9 @@ abstract class SourceBuilder {
  */
 class OpTableBuilder extends SourceBuilder {
 	public OpTableBuilder() {
+		this.appendLine("// auto-generated source code, do not fix me.");
 		this.appendLine("package dshell.internal.parser;");
 		this.appendLine("");
-		this.appendLine("// auto-generated source code, do not fix me.");
 		this.appendLine("public class OperatorTable extends AbstractOperatorTable {");
 		this.appendLine("\tpublic OperatorTable(TypePool pool) {");
 	}
@@ -203,6 +213,37 @@ class OpTableBuilder extends SourceBuilder {
 		this.appendLine("}");
 		try {
 			JavaFileObject fileObject = filer.createSourceFile("dshell.internal.parser.OperatorTable");
+			Writer writer = fileObject.openWriter();
+			for(String line : this.lineList) {
+				writer.write(line);
+				writer.write("\n");
+			}
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+class StringWrapperBuilder extends SourceBuilder {
+	public StringWrapperBuilder() {
+		this.appendLine("// auto-generated source code, do not fix me.");
+		this.appendLine("package dshell.internal.parser;");
+		this.appendLine("");
+		this.appendLine("import dshell.internal.parser.TypePool.ClassType;");
+		this.appendLine("");
+		this.appendLine("public class StringWrapper extends ClassWrapper {");
+		this.appendLine("\tpublic void set(ClassType classType, TypePool pool) {");
+		this.appendLine("\t\tthis.classType = classType;");
+		this.appendLine("\t\tthis.pool = pool;");
+		this.appendLine("\t\tthis.createOwnerType();");
+	}
+
+	void writeToFile(Filer filer) {
+		this.appendLine("\t}");
+		this.appendLine("}");
+		try {
+			JavaFileObject fileObject = filer.createSourceFile("dshell.internal.parser.StringWrapper");
 			Writer writer = fileObject.openWriter();
 			for(String line : this.lineList) {
 				writer.write(line);

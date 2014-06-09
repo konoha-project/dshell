@@ -1,11 +1,11 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
-import static dshell.internal.lib.TaskOption.Behavior.returnable;
-import static dshell.internal.lib.TaskOption.Behavior.sender;
-import static dshell.internal.lib.TaskOption.Behavior.throwable;
-import static dshell.internal.lib.TaskOption.Behavior.timeout;
-import static dshell.internal.lib.TaskOption.RetType.StringType;
-import static dshell.internal.lib.TaskOption.RetType.TaskType;
+import static dshell.internal.process.TaskOption.Behavior.returnable;
+import static dshell.internal.process.TaskOption.Behavior.sender;
+import static dshell.internal.process.TaskOption.Behavior.throwable;
+import static dshell.internal.process.TaskOption.Behavior.timeout;
+import static dshell.internal.process.TaskOption.RetType.StringType;
+import static dshell.internal.process.TaskOption.RetType.TaskType;
 
 import java.io.Serializable;
 import java.util.EnumSet;

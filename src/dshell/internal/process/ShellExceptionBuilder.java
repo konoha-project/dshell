@@ -1,14 +1,15 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
-import static dshell.internal.lib.TaskOption.Behavior.sender;
-import static dshell.internal.lib.TaskOption.Behavior.throwable;
-import static dshell.internal.lib.TaskOption.Behavior.timeout;
+import static dshell.internal.process.TaskOption.Behavior.sender;
+import static dshell.internal.process.TaskOption.Behavior.throwable;
+import static dshell.internal.process.TaskOption.Behavior.timeout;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.DShellException;
 import dshell.lang.Errno;
 import dshell.lang.MultipleException;

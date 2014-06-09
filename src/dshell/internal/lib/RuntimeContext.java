@@ -18,6 +18,9 @@ import org.apache.log4j.PatternLayout;
 import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.varia.NullAppender;
 
+import dshell.internal.process.BuiltinCommandHolder;
+import dshell.internal.process.CommandArg;
+
 public class RuntimeContext implements Serializable {
 	private static final long serialVersionUID = -2807505115721639912L;
 	private final static String defaultPattern = "%d{ISO8601}: %m%n";

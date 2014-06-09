@@ -441,7 +441,9 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ImportEnvNode node) {
-		this.symbolTable.addEntry(node.getEnvName(), this.typePool.stringType, true);
+		if(!this.symbolTable.addEntry(node.getEnvName(), this.typePool.stringType, true)) {
+			this.throwAndReportTypeError(node, node.getEnvName() + " is already defined");
+		}
 		return node;
 	}
 
@@ -565,7 +567,9 @@ public class TypeChecker implements NodeVisitor<Node>{
 		Type returnType = node.getRetunrTypeSymbol().toType(this.typePool);
 		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
 		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType);
-		this.symbolTable.addEntry(node.getFuncName(), holderType, true);
+		if(!this.symbolTable.addEntry(node.getFuncName(), holderType, true)) {
+			this.throwAndReportTypeError(node, node.getFuncName() + " is already defined");
+		}
 		// check type func body
 		this.symbolTable.createAndPushNewTable();
 		for(int i = 0; i < size; i++) {
@@ -578,7 +582,9 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	private void visitParamDecl(SymbolNode paramDeclNode, Type paramType) {
-		this.symbolTable.addEntry(paramDeclNode.getSymbolName(), paramType, true);
+		if(!this.symbolTable.addEntry(paramDeclNode.getSymbolName(), paramType, true)) {
+			this.throwAndReportTypeError(paramDeclNode, paramDeclNode.getSymbolName() + " is already defined");
+		}
 	}
 
 	@Override

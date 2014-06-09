@@ -93,6 +93,9 @@ public class DShellClassLoader extends ClassLoader {
 	 * for debug purpose.
 	 */
 	private void dump() {
+		if(!RuntimeContext.getContext().isDebugMode()) {
+			return;
+		}
 		int index = this.className.lastIndexOf('.');
 		String classFileName = this.className.substring(index + 1) + ".class";
 		System.err.println("@@@@ Dump ByteCode: " + classFileName + " @@@@");

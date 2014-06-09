@@ -156,20 +156,6 @@ public class Utils {
 		return defaultDelimPattern.matcher(targetValue).replaceAll(" ").split(" ");
 	}
 
-	public static void assertDShell(boolean result) {
-		if(!result) {
-			new AssertionError("").printStackTrace();
-			System.exit(1);
-		}
-	}
-
-	public static class AssertionError extends dshell.lang.Exception {
-		private static final long serialVersionUID = 1160350956527375486L;
-		public AssertionError(String message) {
-			super(message);
-		}
-	}
-
 	public static long stringToLong(String value) {
 		return Long.parseLong(value);
 	}

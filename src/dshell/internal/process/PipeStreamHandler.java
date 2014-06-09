@@ -1,4 +1,4 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,6 +7,9 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+
+import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.Utils;
 
 public class PipeStreamHandler extends Thread {
 	public final static int defaultBufferSize = 512;

@@ -1,10 +1,12 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
-import dshell.internal.lib.CommandArg.SubstitutedArg;
+import dshell.internal.process.CommandArg.SubstitutedArg;
+import dshell.internal.process.PipeStreamHandler.NullInputStream;
+import dshell.internal.process.PipeStreamHandler.NullOutputStream;
 
 public abstract class PseudoProcess {
 	public static final int STDOUT_FILENO = 1;

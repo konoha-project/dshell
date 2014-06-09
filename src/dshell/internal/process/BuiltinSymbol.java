@@ -1,4 +1,4 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.util.ArrayList;
 

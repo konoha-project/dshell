@@ -1,8 +1,10 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
+
+import dshell.internal.lib.Utils;
 
 public class CommandArg implements Serializable {
 	private static final long serialVersionUID = -6997096301505284658L;

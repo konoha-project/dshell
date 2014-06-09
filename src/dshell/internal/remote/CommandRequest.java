@@ -1,12 +1,12 @@
 package dshell.internal.remote;
 
-import static dshell.internal.lib.TaskOption.Behavior.background;
-import static dshell.internal.lib.TaskOption.Behavior.printable;
-import static dshell.internal.lib.TaskOption.Behavior.receiver;
-import static dshell.internal.lib.TaskOption.Behavior.returnable;
-import static dshell.internal.lib.TaskOption.Behavior.throwable;
-import static dshell.internal.lib.TaskOption.RetType.TaskType;
-import static dshell.internal.lib.TaskOption.RetType.VoidType;
+import static dshell.internal.process.TaskOption.Behavior.background;
+import static dshell.internal.process.TaskOption.Behavior.printable;
+import static dshell.internal.process.TaskOption.Behavior.receiver;
+import static dshell.internal.process.TaskOption.Behavior.returnable;
+import static dshell.internal.process.TaskOption.Behavior.throwable;
+import static dshell.internal.process.TaskOption.RetType.TaskType;
+import static dshell.internal.process.TaskOption.RetType.VoidType;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,10 +18,10 @@ import java.util.ArrayList;
 
 import org.apache.commons.codec.binary.Base64;
 
-import dshell.internal.lib.CommandArg;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.TaskOption;
 import dshell.internal.lib.Utils;
+import dshell.internal.process.CommandArg;
+import dshell.internal.process.TaskOption;
 
 public class CommandRequest implements Serializable {
 	private static final long serialVersionUID = -2526526893412679466L;

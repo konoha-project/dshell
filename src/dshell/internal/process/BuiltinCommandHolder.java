@@ -1,7 +1,14 @@
-package dshell.internal.lib;
+package dshell.internal.process;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import dshell.internal.lib.CommandContext;
+import dshell.internal.lib.CommandRunner;
+import dshell.internal.lib.ExecutableAsCommand;
+import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.StreamUtils;
+import dshell.internal.lib.StreamUtils.OutputStream;
 
 public class BuiltinCommandHolder {
 	private final HashMap<BuiltinSymbol, ExecutableAsCommand> builtinCommandMap;

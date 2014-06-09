@@ -7,7 +7,6 @@ import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
-import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;

@@ -1,5 +1,8 @@
 package dshell.internal.lib;
 
+import dshell.internal.process.CommandArg;
+import dshell.internal.process.PseudoProcess;
+
 public class CommandRunner extends PseudoProcess {
 	private final ExecutableAsCommand executor;
 	private CommandContext context;

@@ -5,9 +5,9 @@ import java.io.ObjectInputStream;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.ArrayList;
 
-import dshell.internal.lib.CommandArg;
-import dshell.internal.lib.PseudoProcess;
 import dshell.internal.lib.Utils;
+import dshell.internal.process.CommandArg;
+import dshell.internal.process.PseudoProcess;
 import dshell.lang.Task;
 
 public class RequestSender extends PseudoProcess {
