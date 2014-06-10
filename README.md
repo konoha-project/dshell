@@ -1,6 +1,6 @@
 D-Shell
 ======
-
+**This code is under heavy development. Language specification is subject to change without notice.**
 ## Build Requirement
 
 * ant
