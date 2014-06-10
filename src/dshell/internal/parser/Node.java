@@ -10,6 +10,7 @@ import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
+import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.ParserUtils.ArgDecl;
 import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
@@ -843,11 +844,19 @@ public abstract class Node {
 	}
 
 	/**
+	 * represent end of block stattement (break, continue, return throw)
+	 * @author skgchxngsxyz-opensuse
+	 *
+	 */
+	public abstract static class BlockEndNode extends Node {
+	}
+
+	/**
 	 * This node represents break statement.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class BreakNode extends Node {
+	public static class BreakNode extends BlockEndNode {
 		public BreakNode(Token token) {
 			this.setToken(token);
 		}
@@ -863,7 +872,7 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ContinueNode extends Node {
+	public static class ContinueNode extends BlockEndNode {
 		public ContinueNode(Token token) {
 			this.setToken(token);
 		}
@@ -882,10 +891,11 @@ public abstract class Node {
 	public static class ExportEnvNode extends Node {
 		private final String envName;
 		private final ExprNode exprNode;
+		private OperatorHandle handle;
 
-		public ExportEnvNode(Token token, Node exprNode) {
+		public ExportEnvNode(Token token, Token nameToken, Node exprNode) {
 			this.setToken(token);
-			this.envName = this.token.getText();
+			this.envName = nameToken.getText();
 			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 		}
 
@@ -895,6 +905,14 @@ public abstract class Node {
 
 		public ExprNode getExprNode() {
 			return this.exprNode;
+		}
+
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		public OperatorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -910,6 +928,7 @@ public abstract class Node {
 	 */
 	public static class ImportEnvNode extends Node {
 		private final String envName;
+		private OperatorHandle handle;
 
 		public ImportEnvNode(Token token) {
 			this.setToken(token);
@@ -918,6 +937,14 @@ public abstract class Node {
 
 		public String getEnvName() {
 			return this.envName;
+		}
+
+		public void setHandle(OperatorHandle handle) {
+			this.handle = handle;
+		}
+
+		public OperatorHandle getHandle() {
+			return this.handle;
 		}
 
 		@Override
@@ -1093,7 +1120,7 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ReturnNode extends Node {
+	public static class ReturnNode extends BlockEndNode {
 		/**
 		 * May be EmptyNode.
 		 */
@@ -1119,7 +1146,7 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class ThrowNode extends Node {
+	public static class ThrowNode extends BlockEndNode {
 		private final ExprNode exprNode;
 
 		public ThrowNode(Token token, Node exprNode) {
@@ -1509,12 +1536,13 @@ public abstract class Node {
 	}
 
 	/**
-	 * Represents empty statement.
-	 * It is ignored in type checking or code generation.
+	 * Represents empty expression. used for for statement and return statement.
+	 * it is always void type
+	 * It is ignored in code generation.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class EmptyNode extends Node {
+	public static class EmptyNode extends ExprNode {
 
 		@Override
 		public <T> T accept(NodeVisitor<T> visitor) {

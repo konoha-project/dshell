@@ -36,10 +36,12 @@ interface SymbolTableOp {
 
 public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 	private final Stack<SymbolTableOp> tableStack;
+	private final Stack<Type> returnTypetaStack;
 
 	public SymbolTable() {
 		this.tableStack = new Stack<>();
 		this.tableStack.push((new RootTable()));
+		this.returnTypetaStack = new Stack<>();
 	}
 
 	@Override
@@ -78,6 +80,21 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		for(int i = 0; i < size; i++) {
 			this.popCurrentTable();
 		}
+	}
+
+	public void pushReturnType(Type returnType) {
+		this.returnTypetaStack.push(returnType);
+	}
+
+	public void popReturnType() {
+		this.returnTypetaStack.pop();
+	}
+
+	public Type getCurrentReturnType() {
+		if(this.returnTypetaStack.isEmpty()) {
+			return TypePool.unresolvedType;
+		}
+		return this.returnTypetaStack.peek();
 	}
 
 	private static class ChildTable implements SymbolTableOp {

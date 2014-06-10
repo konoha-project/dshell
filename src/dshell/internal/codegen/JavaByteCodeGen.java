@@ -20,6 +20,7 @@ import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
 import dshell.internal.parser.Node.AssignableNode;
+import dshell.internal.parser.Node.BlockEndNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
 import dshell.internal.parser.Node.BreakNode;
@@ -352,6 +353,9 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		for(Node targetNode : node.getNodeList()) {
 			targetNode.accept(this);
 			this.createPopInsIfExprNode(targetNode);
+			if(targetNode instanceof BlockEndNode) {
+				break;
+			}
 		}
 		return null;
 	}
@@ -372,13 +376,20 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(ExportEnvNode node) {
-		// TODO Auto-generated method stub
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		mBuilder.push(node.getEnvName());
+		node.getExprNode().accept(this);
+		node.getHandle().call(mBuilder);
+		mBuilder.createNewLocalVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
 		return null;
 	}
 
 	@Override
 	public Void visit(ImportEnvNode node) {
-		// TODO Auto-generated method stub
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		mBuilder.push(node.getEnvName());
+		node.getHandle().call(mBuilder);
+		mBuilder.createNewLocalVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
 		return null;
 	}
 

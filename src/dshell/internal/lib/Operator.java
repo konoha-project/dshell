@@ -141,4 +141,14 @@ public class Operator { //TODO: unary op
 	@Shared @OpType(OpName.PRINT) public static void printValue(Object value, String typeName) {
 		System.out.println("(" + typeName + ") " + value);
 	}
+
+	@Shared @OpType(OpName.GETENV) public static String getEnv(String key) {
+		String env = RuntimeContext.getContext().getenv(key);
+		return env == null ? "" : env;
+	}
+
+	@Shared @OpType(OpName.SETENV) public static String setEnv(String key, String env) {
+		int ret = RuntimeContext.getContext().setenv(key, env, true);
+		return ret == 0 ? env : "";
+	}
 }

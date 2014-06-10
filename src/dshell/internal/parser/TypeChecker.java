@@ -11,6 +11,7 @@ import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
+import dshell.internal.parser.Node.BlockEndNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
 import dshell.internal.parser.Node.BreakNode;
@@ -36,6 +37,7 @@ import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
+import dshell.internal.parser.Node.LoopNode;
 import dshell.internal.parser.Node.MapNode;
 import dshell.internal.parser.Node.MethodCallNode;
 import dshell.internal.parser.Node.NullNode;
@@ -157,6 +159,29 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(!this.symbolTable.addEntry(symbolName, type, isReadOnly)) {
 			this.throwAndReportTypeError(node, symbolName + " is already defined");
 		}
+	}
+
+	/**
+	 * check node inside loop.
+	 * if node is out of loop, throw exception
+	 * @param node
+	 * - break node or continue node
+	 */
+	private void checkAndThrowIfLoopOutside(Node node) {
+		Node parentNode = node.getParentNode();
+		while(true) {
+			if(parentNode == null) {
+				break;
+			}
+			if((parentNode instanceof FunctionNode) || (parentNode instanceof RootNode)) {
+				break;
+			}
+			if(parentNode instanceof LoopNode) {
+				return;
+			}
+			parentNode = parentNode.getParentNode();
+		}
+		this.throwAndReportTypeError(node, "only available inside loop statement");
 	}
 
 	@Override
@@ -416,34 +441,48 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(BlockNode node) {
+	public Node visit(BlockNode node) {	//TODO:
 		for(Node targetNode : node.getNodeList()) {
 			this.checkType(targetNode);
+			if(targetNode instanceof BlockEndNode) {
+				break;
+			}
 		}
 		return node;
 	}
 
 	@Override
-	public Node visit(BreakNode node) {	//TODO: check inside loop
+	public Node visit(BreakNode node) {
+		this.checkAndThrowIfLoopOutside(node);
 		return node;
 	}
 
 	@Override
-	public Node visit(ContinueNode node) {	//TODO: check inside loop
+	public Node visit(ContinueNode node) {
+		this.checkAndThrowIfLoopOutside(node);
 		return node;
 	}
 
 	@Override
 	public Node visit(ExportEnvNode node) {
+		this.addEntryAndThrowIfDefined(node, node.getEnvName(), this.typePool.stringType, true);
 		this.checkType(this.typePool.stringType, node.getExprNode());
+		OperatorHandle handle = this.opTable.getOperatorHandle("setEnv", this.typePool.stringType, this.typePool.stringType);
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined operator: setEnv");
+		}
+		node.setHandle(handle);
 		return node;
 	}
 
 	@Override
 	public Node visit(ImportEnvNode node) {
-		if(!this.symbolTable.addEntry(node.getEnvName(), this.typePool.stringType, true)) {
-			this.throwAndReportTypeError(node, node.getEnvName() + " is already defined");
+		this.addEntryAndThrowIfDefined(node, node.getEnvName(), this.typePool.stringType, true);
+		OperatorHandle handle = this.opTable.getOperatorHandle("getEnv", this.typePool.stringType);
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined operator: getEnv");
 		}
+		node.setHandle(handle);
 		return node;
 	}
 
@@ -480,8 +519,17 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(ReturnNode node) {	//TODO: check inside function
-		this.checkType(node.getExprNode());
+	public Node visit(ReturnNode node) {
+		Type returnType = this.symbolTable.getCurrentReturnType();
+		if(returnType instanceof TypePool.UnresolvedType) {
+			this.throwAndReportTypeError(node, "only available inside function");
+		}
+		this.checkType(returnType, node.getExprNode());
+		if(node.getExprNode().getType() instanceof TypePool.VoidType) {
+			if(!(node.getExprNode() instanceof EmptyNode)) {
+				this.throwAndReportTypeError(node, "do not need expression");
+			}
+		}
 		return node;
 	}
 
@@ -567,24 +615,23 @@ public class TypeChecker implements NodeVisitor<Node>{
 		Type returnType = node.getRetunrTypeSymbol().toType(this.typePool);
 		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
 		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType);
-		if(!this.symbolTable.addEntry(node.getFuncName(), holderType, true)) {
-			this.throwAndReportTypeError(node, node.getFuncName() + " is already defined");
-		}
+		this.addEntryAndThrowIfDefined(node, node.getFuncName(), holderType, true);
+		
 		// check type func body
+		this.symbolTable.pushReturnType(returnType);
 		this.symbolTable.createAndPushNewTable();
 		for(int i = 0; i < size; i++) {
 			this.visitParamDecl(node.getArgDeclNodeList().get(i), paramTypes[i]);
 		}
 		this.checkTypeWithCurrentBlockScope(node.getBlockNode());
 		this.symbolTable.popCurrentTable();
+		this.symbolTable.popReturnType();
 		node.setHolderType(holderType);
 		return null;
 	}
 
 	private void visitParamDecl(SymbolNode paramDeclNode, Type paramType) {
-		if(!this.symbolTable.addEntry(paramDeclNode.getSymbolName(), paramType, true)) {
-			this.throwAndReportTypeError(paramDeclNode, paramDeclNode.getSymbolName() + " is already defined");
-		}
+		this.addEntryAndThrowIfDefined(paramDeclNode, paramDeclNode.getSymbolName(), paramType, true);
 	}
 
 	@Override
@@ -601,7 +648,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(EmptyNode node) {
-		return node;	//do nothing
+		node.setType(this.typePool.voidType);
+		return node;
 	}
 
 	@Override

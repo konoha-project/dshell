@@ -31,7 +31,9 @@ public @interface OpType {
 		OR  { @Override public String getOpSymbol() { return "|"; } },
 		XOR { @Override public String getOpSymbol() { return "^"; } },
 		ASSERT { @Override public String getOpSymbol() { return "assert"; } },
-		PRINT { @Override public String getOpSymbol() { return "printValue"; } };
+		PRINT { @Override public String getOpSymbol() { return "printValue"; } },
+		GETENV { @Override public String getOpSymbol() { return "getEnv"; } },
+		SETENV { @Override public String getOpSymbol() { return "setEnv"; } };
 
 		/**
 		 * must override

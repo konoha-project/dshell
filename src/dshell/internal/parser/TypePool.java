@@ -110,6 +110,7 @@ public class TypePool {
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
 		
 		new StringWrapper().set(this.stringType, this);
+		this.stringType.finalizeType();
 //
 //		/**
 //		 * add primitive array type.

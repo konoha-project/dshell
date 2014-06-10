@@ -108,11 +108,6 @@ public class Utils {
 		return env == null ? "" : env;
 	}
 
-	public static String setEnv(String key, String env) {
-		int ret = RuntimeContext.getContext().setenv(key, env, true);
-		return ret == 0 ? env : "";
-	}
-
 	public static void setValue(Object targetObject, String fieldName, Object value) {
 		try {
 			Field field = targetObject.getClass().getDeclaredField(fieldName);

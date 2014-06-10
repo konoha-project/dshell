@@ -162,7 +162,7 @@ continueStatement returns [Node node]
 	: Continue {$node = new Node.ContinueNode($Continue);}
 	;
 exportEnvStatement returns [Node node]	//FIXME:
-	: Export 'env' SymbolName '=' expression {$node = new Node.ExportEnvNode($Export, $expression.node);}
+	: Export 'env' SymbolName '=' expression {$node = new Node.ExportEnvNode($Export, $SymbolName, $expression.node);}
 	;
 forStatement returns [Node node]
 	: For '(' forInit ';' forCond ';' forIter ')' block {$node = new Node.ForNode($For, $forInit.node, $forCond.node, $forIter.node, $block.node);}
@@ -259,9 +259,9 @@ assignStatement returns [Node node]
 		}
 	;
 expression returns [Node node] //FIXME: right join
-	: a=expression MethodACC SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
+	: a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
 	| New classType arguments {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
-	| a=expression MethodACC SymbolName arguments {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
+	| a=expression '.' SymbolName arguments {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
 	| SymbolName arguments {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
@@ -320,19 +320,23 @@ mapEntry returns [ParserUtils.MapEntry entry]
 	: key=expression ':' value=expression {$entry = new ParserUtils.MapEntry($key.node, $value.node);}
 	;
 arguments returns [ParserUtils.Arguments args]
-	: '(' a+=argument (',' a+=argument)* ')'
+	: '(' a+=argumentList? ')'
+		{
+			$args = new ParserUtils.Arguments();
+			if($a.size() == 1) {
+				$args = $a.get(0).args;
+			}
+		}
+	;
+argumentList returns [ParserUtils.Arguments args]
+	: a+= expression (',' a+=expression)* 
 		{
 			$args = new ParserUtils.Arguments();
 			for(int i = 0; i < $a.size(); i++) {
 				$args.addNode($a.get(i).node);
 			}
 		}
-	| {$args = new ParserUtils.Arguments();}
 	;
-argument returns [Node node]
-	: expression {$node = $expression.node;}
-	;
-
 
 // ######################
 // #        lexer       #
@@ -407,8 +411,6 @@ MUL_ASSIGN	: '*=';
 DIV_ASSIGN	: '/=';
 MOD_ASSIGN	: '%=';
 
-
-MethodACC : '.';
 
 // literal
 // int literal	//TODO: hex, oct number
