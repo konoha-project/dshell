@@ -23,10 +23,6 @@ import javax.lang.model.element.VariableElement;
 import javax.tools.JavaFileObject;
 import javax.tools.Diagnostic.Kind;
 
-import dshell.internal.parser.ClassWrapper;
-import dshell.internal.parser.TypePool;
-import dshell.internal.parser.TypePool.ClassType;
-
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 @SupportedAnnotationTypes({"dshell.annotation.Shared", "dshell.annotation.OpType", "dshell.annotation.Wrapper"})
 public class AnnotationProcessor extends AbstractProcessor {
@@ -36,11 +32,13 @@ public class AnnotationProcessor extends AbstractProcessor {
 	
 
 	private OpTableBuilder opTableBuilder;
+	private StringWrapperBuilder strBuilder;
 	private Map<String, String> typeMap;
 	private boolean isInitialazed = false;
 
 	private void initialize() {
 		this.opTableBuilder = new OpTableBuilder();
+		this.strBuilder = new StringWrapperBuilder();
 		this.typeMap = new HashMap<>();
 		this.typeMap.put("long", "pool.intType");
 		this.typeMap.put("double", "pool.floatType");
@@ -69,11 +67,18 @@ public class AnnotationProcessor extends AbstractProcessor {
 				Annotation anno = element.getAnnotation(OpType.class);
 				if(anno != null) {
 					this.generateOperator(element, anno);
+					continue;
+				}
+				anno = element.getAnnotation(Wrapper.class);
+				if(anno != null) {
+					this.generateWrapper(element);
+					continue;
 				}
 			}
 		}
 		// write to file
 		this.opTableBuilder.writeToFile(this.processingEnv.getFiler());
+		this.strBuilder.writeToFile(this.processingEnv.getFiler());
 		return true;
 	}
 
@@ -116,7 +121,17 @@ public class AnnotationProcessor extends AbstractProcessor {
 	}
 
 	private void generateWrapper(Element element) {
-		
+		String methodName = element.getSimpleName().toString();
+		@SuppressWarnings("unchecked")
+		List<VariableElement> varElements = (List<VariableElement>) ((ExecutableElement)element).getParameters();
+		String recvTypeName = this.toTypeName(varElements.get(0));
+		int size = varElements.size() - 1;
+		String[] paramTypeNames = new String[size];
+		for(int i = 0; i < size; i++) {
+			paramTypeNames[i] = this.toTypeName(varElements.get(i + 1));
+		}
+		String returnTypeName = this.toReturnTypeName((ExecutableElement) element);
+		this.strBuilder.appendLine(recvTypeName, returnTypeName, methodName, paramTypeNames);
 	}
 
 	/**
@@ -236,7 +251,21 @@ class StringWrapperBuilder extends SourceBuilder {
 		this.appendLine("\tpublic void set(ClassType classType, TypePool pool) {");
 		this.appendLine("\t\tthis.classType = classType;");
 		this.appendLine("\t\tthis.pool = pool;");
-		this.appendLine("\t\tthis.createOwnerType();");
+		this.appendLine("\t\tthis.createOwnerType(\"dshell/lang/StringUtils\");");
+	}
+
+	void appendLine(String recvTypeName, String returnTypeName, String methodName, String[] paramTypeNames) {
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("\t\t");
+		sBuilder.append("this.setStaticMethod(");
+		sBuilder.append(recvTypeName + ", ");
+		sBuilder.append(returnTypeName);
+		sBuilder.append(", " + "\"" + methodName + "\"");
+		for(String paramTypeName : paramTypeNames) {
+			sBuilder.append(", " + paramTypeName);
+		}
+		sBuilder.append(");");
+		this.appendLine(sBuilder.toString());
 	}
 
 	void writeToFile(Filer filer) {

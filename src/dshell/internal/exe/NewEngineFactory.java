@@ -63,7 +63,7 @@ public class NewEngineFactory implements EngineFactory {
 
 			try {
 				ToplevelContext tree = this.parser.toplevel();
-//				tree.inspect(this.parser);
+	//			tree.inspect(this.parser);
 				RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
 				if(checkedNode == null) {
 					return;

@@ -29,13 +29,13 @@ public final class StringUtils {
 	}
 
 	@Shared @Wrapper
-	public static String substring(String recv, long startIndex) {
+	public static String sliceFrom(String recv, long startIndex) {
 		throwIfIndexOutOfRange(recv, startIndex);
 		return recv.substring((int) startIndex);
 	}
 
 	@Shared @Wrapper
-	public static String substring(String recv, long startIndex, long endIndex) {
+	public static String slice(String recv, long startIndex, long endIndex) {
 		throwIfIndexOutOfRange(recv, startIndex);
 		throwIfIndexOutOfRange(recv, endIndex, false);
 		if(startIndex > endIndex) {

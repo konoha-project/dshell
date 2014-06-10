@@ -259,10 +259,10 @@ assignStatement returns [Node node]
 		}
 	;
 expression returns [Node node] //FIXME: right join
-	: a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
-	| New classType'(' arguments ')' {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
-	| a=expression '.' SymbolName '(' arguments ')' {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
-	| SymbolName '(' arguments ')' {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
+	: a=expression MethodACC SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
+	| New classType arguments {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
+	| a=expression MethodACC SymbolName arguments {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
+	| SymbolName arguments {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
 	| symbol op=(INC | DEC) {$node = new Node.SuffixIncrementNode($symbol.node, $op);}
@@ -276,7 +276,7 @@ expression returns [Node node] //FIXME: right join
 	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	| left=expression op=(COND_AND | COND_OR) right=expression {$node = new Node.CondOpNode($op, $left.node, $right.node);}
 	| primary {$node = $primary.node;}
-	;	
+	;
 classType returns [TypeSymbol type]
 	: ClassName {$type = TypeSymbol.toClass($ClassName);}
 	;
@@ -320,7 +320,7 @@ mapEntry returns [ParserUtils.MapEntry entry]
 	: key=expression ':' value=expression {$entry = new ParserUtils.MapEntry($key.node, $value.node);}
 	;
 arguments returns [ParserUtils.Arguments args]
-	: a+=argument (',' a+=argument)* 
+	: '(' a+=argument (',' a+=argument)* ')'
 		{
 			$args = new ParserUtils.Arguments();
 			for(int i = 0; i < $a.size(); i++) {
@@ -332,6 +332,7 @@ arguments returns [ParserUtils.Arguments args]
 argument returns [Node node]
 	: expression {$node = $expression.node;}
 	;
+
 
 // ######################
 // #        lexer       #
@@ -406,6 +407,8 @@ MUL_ASSIGN	: '*=';
 DIV_ASSIGN	: '/=';
 MOD_ASSIGN	: '%=';
 
+
+MethodACC : '.';
 
 // literal
 // int literal	//TODO: hex, oct number

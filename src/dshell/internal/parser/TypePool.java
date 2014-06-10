@@ -108,6 +108,8 @@ public class TypePool {
 		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", this.objectType, true));
 		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", this.objectType, false));
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
+		
+		new StringWrapper().set(this.stringType, this);
 //
 //		/**
 //		 * add primitive array type.
@@ -707,7 +709,7 @@ public class TypePool {
 
 		public void addMethodHandle(MethodHandle handle) {
 			if(this.methodHandleMap.containsKey(handle.getCalleeName())) {
-				throw new RuntimeException(handle.getCalleeName() + "is already defined");
+				throw new RuntimeException(handle.getCalleeName() + " is already defined");
 			}
 			this.methodHandleMap.put(handle.getCalleeName(), handle);
 		}

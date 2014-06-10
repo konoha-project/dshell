@@ -268,8 +268,8 @@ public class ClassBuilder extends ClassWriter {
 			case org.objectweb.asm.Type.OBJECT:
 				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
 				this.push(index);
-				this.arrayLoad(typeDesc);
-				this.cast(org.objectweb.asm.Type.getType(Object.class), typeDesc);
+				this.arrayLoad(org.objectweb.asm.Type.getType(Object.class));
+				this.visitTypeInsn(Opcodes.CHECKCAST, typeDesc.getInternalName());
 				break;
 			default:
 				throw new RuntimeException("illegal type: " + type);
