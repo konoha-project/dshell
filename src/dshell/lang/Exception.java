@@ -47,7 +47,7 @@ public class Exception extends RuntimeException {
 			sBuilder.append(":");
 			sBuilder.append(element.getLineNumber());
 			sBuilder.append(" '");
-			sBuilder.append(this.formateMethodName(element.getClassName(), element.getMethodName()));
+			sBuilder.append(this.formateName(element));
 			sBuilder.append("'\n");
 		}
 		System.err.print(sBuilder.toString());
@@ -69,7 +69,7 @@ public class Exception extends RuntimeException {
 				foundNativeMethod = true;
 				continue;
 			}
-			if(foundNativeMethod && element.getMethodName().equals("f")) {
+			if(foundNativeMethod && element.getClassName().startsWith("dshell.defined.")) {
 				elementStack.add(element);
 			}
 		}
@@ -87,14 +87,18 @@ public class Exception extends RuntimeException {
 		sBuilder.append(this.toString() +  ": " + message + "\n");
 	}
 
-	private String formateMethodName(String className, String methodName) {
-		if(!methodName.equals("f")) {
-			return className + "." + methodName;
+	private String formateName(StackTraceElement element) {
+		String fullyQualifiedClassName = element.getClassName();
+		int index = fullyQualifiedClassName.lastIndexOf('.');
+		String className = fullyQualifiedClassName.substring(index + 1);
+		if(fullyQualifiedClassName.startsWith("dshell.defined.toplevel")) {
+			return "<toplevel>()";
+//		} else if(fullyQualifiedClassName.startsWith("dshell.defined.class")) { //TODO:
+			
+		} else if(fullyQualifiedClassName.startsWith("dshell.defined.func")) {
+			int prefixIndex = className.indexOf('_');
+			return className.substring(prefixIndex + 1) + "()";
 		}
-		String name = className.split("__")[1];
-		if(name.startsWith("Main") || name.equals("main")) {
-			return "TopLevel";
-		}
-		return "function " + name + "()";
+		return "unknown";
 	}
 }

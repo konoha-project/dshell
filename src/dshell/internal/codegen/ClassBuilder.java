@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
+import org.antlr.v4.runtime.Token;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
@@ -35,38 +36,39 @@ public class ClassBuilder extends ClassWriter {
 	 * create new class builder for class generation.
 	 * @param classType
 	 * - target class type.
-	 * @param sourceCode
+	 * @param sourceName
 	 * - class source code, may be null.
 	 */
-	public ClassBuilder(ClassType classType, String sourceCode) {
+	public ClassBuilder(ClassType classType, String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = classType.getInternalName();
 		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, this.internalClassName, null, classType.getSuperType().getInternalName(), null);
-		this.visitSource(sourceCode, null);
+		this.visitSource(sourceName, null);
 	}
 
 	/**
 	 * create new class builder for top level class generation.
 	 */
-	public ClassBuilder() {
+	public ClassBuilder(String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = "dshell/defined/toplevel" + ++topLevelClassPrefix;
 		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, this.internalClassName, null, "java/lang/Object", null);
+		this.visitSource(sourceName, null);
 	}
 
 	/**
 	 * create new class builder for function holder class.
 	 * @param holderType
 	 * - function holder type.
-	 * @param sourceCode
+	 * @param sourceName
 	 * function source code, may be null.
 	 */
-	public ClassBuilder(FuncHolderType holderType, String sourceCode) {
+	public ClassBuilder(FuncHolderType holderType, String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = holderType.getInternalName();
 		FunctionType superType = (FunctionType) holderType.getFieldHandle().getFieldType();
 		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, this.internalClassName, null, "java/lang/Object", new String[]{superType.getInternalName()});
-		this.visitSource(sourceCode, null);
+		this.visitSource(sourceName, null);
 	}
 
 	/**
@@ -109,11 +111,31 @@ public class ClassBuilder extends ClassWriter {
 	 *
 	 */
 	public static class MethodBuilder extends GeneratorAdapter {
+		/**
+		 * used for loop statement and continue statement.
+		 */
 		protected final Stack<Label> continueLabels;
+
+		/**
+		 * used for loop statement and break statement.
+		 */
 		protected final Stack<Label> breakLabels;
+
+		/**
+		 * used for try catch statement.
+		 */
 		protected final Stack<TryBlockLabels> tryLabels;
 
+		/**
+		 * contains variable scope
+		 */
 		protected final VarScopes varScopes;
+
+		/**
+		 * represent current line number.
+		 * used for stack trace.
+		 */
+		protected int currentLineNum = -1;
 
 		protected MethodBuilder(int arg0, Method arg1, String arg2, org.objectweb.asm.Type[] arg3, ClassVisitor arg4) {
 			super(arg0, arg1, arg2, arg3, arg4);
@@ -273,6 +295,20 @@ public class ClassBuilder extends ClassWriter {
 				break;
 			default:
 				throw new RuntimeException("illegal type: " + type);
+			}
+		}
+
+		/**
+		 * generate line number.
+		 * @param token
+		 */
+		public void setLineNum(Token token) {
+			if(token == null) {
+				return;
+			}
+			int lineNum = token.getLine();
+			if(lineNum > this.currentLineNum) {
+				this.visitLineNumber(lineNum, this.mark());
 			}
 		}
 	}

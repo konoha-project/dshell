@@ -612,10 +612,11 @@ public class TypeChecker implements NodeVisitor<Node>{
 		for(int i = 0; i < size; i++) {
 			paramTypes[i] = node.getParamTypeSymbolList().get(i).toType(this.typePool);
 		}
+		String funcName = node.getFuncName();
 		Type returnType = node.getRetunrTypeSymbol().toType(this.typePool);
 		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
-		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType);
-		this.addEntryAndThrowIfDefined(node, node.getFuncName(), holderType, true);
+		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType, funcName);
+		this.addEntryAndThrowIfDefined(node, funcName, holderType, true);
 		
 		// check type func body
 		this.symbolTable.pushReturnType(returnType);

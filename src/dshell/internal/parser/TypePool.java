@@ -274,9 +274,9 @@ public class TypePool {
 		return (FunctionType) funcType;
 	}
 
-	public FuncHolderType createFuncHolderType(FunctionType funcType) {
+	public FuncHolderType createFuncHolderType(FunctionType funcType, String funcName) {
 		String typeName = "FuncHolder" + ++funcNameSuffix + "of" + funcType.getTypeName();
-		String internalName = generatedFuncNamePrefix + "FuncHolder" + funcNameSuffix;
+		String internalName = generatedFuncNamePrefix + "FuncHolder" + funcNameSuffix + "_" + funcName;
 		return new FuncHolderType(typeName, internalName, funcType);
 	}
 

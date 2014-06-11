@@ -1,6 +1,9 @@
 package dshell.internal.exe;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+
+import javax.rmi.CORBA.Util;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -8,6 +11,7 @@ import org.antlr.v4.runtime.Lexer;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
+import dshell.internal.lib.Utils;
 import dshell.internal.parser.TypeChecker;
 import dshell.internal.parser.TypePool;
 import dshell.internal.parser.dshellLexer;
@@ -53,32 +57,63 @@ public class NewEngineFactory implements EngineFactory {
 
 		@Override
 		public void eval(String source, int lineNum) {
+			this.setSource(source, lineNum);
+			ToplevelContext tree = this.parser.toplevel();
+//			tree.inspect(this.parser);
+			RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
+			if(checkedNode == null) {
+				return;
+			}
+			Class<?> generatedClass = this.codeGen.generateTopLevelClass(checkedNode, true);
+			this.startExecution(generatedClass);
+		}
+
+		@Override
+		public void loadDShellRC() {
+			System.err.println("unimplemented");
+		}
+
+		protected void setSource(String source, int lineNum) {
 			ANTLRInputStream input = new ANTLRInputStream(source);
+			input.name = "(stdin)";
+			this.setInputStream(input, lineNum);
+		}
+
+		/**
+		 * set input stream to lexer and set token to parser.
+		 * @param input
+		 * - ANTLRInputstream
+		 * @param lineNum
+		 * - start line number.
+		 */
+		protected void setInputStream(ANTLRInputStream input, int lineNum) {
 			this.lexer.setInputStream(input);
 			this.lexer.setLine(lineNum);
 			CommonTokenStream tokenStream = new CommonTokenStream(this.lexer);
 			tokenStream.fill();
 			this.parser.setTokenStream(tokenStream);
 //			this.parser.setTrace(true);
-
-			try {
-				ToplevelContext tree = this.parser.toplevel();
-	//			tree.inspect(this.parser);
-				RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
-				if(checkedNode == null) {
-					return;
-				}
-				Class<?> generatedClass = this.codeGen.generateTopLevelClass(checkedNode, true);
-				Method staticMethod = generatedClass.getMethod("invoke");
-				staticMethod.invoke(null);
-			} catch(Throwable t) {
-				t.printStackTrace();
-			}
 		}
 
-		@Override
-		public void loadDShellRC() {
-			System.err.println("unimplemented");
+		/**
+		 * start execution from top level class.
+		 * @param entryClass
+		 * - generated top level class.
+		 * @return
+		 * return false, if invocation target exception has raised.
+		 */
+		protected boolean startExecution(Class<?> entryClass) {
+			try {
+				Method staticMethod = entryClass.getMethod("invoke");
+				staticMethod.invoke(null);
+				return true;
+			} catch(InvocationTargetException e) {
+				Utils.printException(e);
+			} catch(Throwable t) {
+				t.printStackTrace();
+				Utils.fatal(1, "invocation problem");
+			}
+			return false;
 		}
 	}
 }

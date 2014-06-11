@@ -3,7 +3,7 @@ package dshell.internal.codegen;
 import java.util.ArrayList;
 import java.util.Stack;
 
-import org.antlr.v4.runtime.atn.SemanticContext.OR;
+import org.antlr.v4.runtime.Token;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
@@ -74,7 +74,7 @@ import dshell.internal.parser.TypeUtils;
  * @author skgchxngsxyz-osx
  *
  */
-public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line number
+public class JavaByteCodeGen implements NodeVisitor<Object> {
 	protected final DShellClassLoader classLoader;
 	protected final Stack<MethodBuilder> methodBuilders;
 
@@ -100,8 +100,13 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		return this.methodBuilders.peek();
 	}
 
+	private void generateCode(Node node) {
+		this.getCurrentMethodBuilder().setLineNum(node.getToken());
+		node.accept(this);
+	}
+
 	private void visitBlockWithCurrentScope(BlockNode blockNode) {
-		blockNode.accept(this);
+		this.generateCode(blockNode);
 	}
 
 	private void visitBlockWithNewScope(BlockNode blockNode) {
@@ -121,6 +126,43 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		this.getCurrentMethodBuilder().pop(TypeUtils.toTypeDescriptor(type));
 	}
 
+	/**
+	 * get source name from token.
+	 * @param token
+	 * @return
+	 * - return null, if token is null.
+	 */
+	private String getSourceName(Token token) {
+		if(token != null) {
+			return token.getTokenSource().getSourceName();
+		}
+		return null;
+	}
+
+	public Class<?> generateTopLevelClass(RootNode node, boolean isInteractive) {	//TODO: 
+		if(!isInteractive) {
+			return null;
+		}
+		ClassBuilder classBuilder = new ClassBuilder(this.getSourceName(node.getToken()));
+		this.methodBuilders.push(classBuilder.createNewMethodBuilder(null));
+		for(Node targetNode : node.getNodeList()) {
+			this.generateCode(targetNode);
+			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
+				GeneratorAdapter adapter = this.getCurrentMethodBuilder();
+				Type type = ((ExprNode)targetNode).getType();
+				if(type instanceof PrimitiveType) {
+					adapter.box(TypeUtils.toTypeDescriptor(type));
+				}
+				adapter.push(type.getTypeName());
+				node.getHandle().call(adapter);
+			}
+		}
+		this.methodBuilders.peek().returnValue();
+		this.methodBuilders.pop().endMethod();
+		return classBuilder.generateClass(this.classLoader.createChild());
+	}
+
+	// visit api
 	@Override
 	public Void visit(IntValueNode node) {
 		this.getCurrentMethodBuilder().push(node.getValue());
@@ -165,7 +207,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.dup();
 		for(int i = 0; i < size; i++) {
 			adapter.push(i);
-			node.getNodeList().get(i).accept(this);
+			this.generateCode(node.getNodeList().get(i));
 			adapter.arrayStore(elementTypeDesc);
 		}
 		//adapter.invokeConstructor(arrayClassDesc, arg1);
@@ -188,7 +230,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.dup();
 		for(int i = 0; i < size; i++) {
 			adapter.push(i);
-			node.getKeyList().get(i).accept(this);
+			this.generateCode(node.getKeyList().get(i));
 			adapter.arrayStore(keyTypeDesc);
 		}
 		// generate value array
@@ -197,7 +239,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.dup();
 		for(int i = 0; i < size; i++) {
 			adapter.push(i);
-			node.getValueList().get(i).accept(this);
+			this.generateCode(node.getValueList().get(i));
 			adapter.arrayStore(valueTypeDesc);
 		}
 		//adapter.invokeConstructor(mapClassDesc, null);
@@ -225,7 +267,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(FieldGetterNode node) {
-		node.getRecvNode().accept(this);
+		this.generateCode(node.getRecvNode());
 		node.getHandle().callGetter(this.getCurrentMethodBuilder());
 		return null;
 	}
@@ -247,7 +289,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		long incSize = node.getOperator().equals("++") ? 1 : -1;
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder(); 
 		SymbolNode symbolNode = node.getSymbolNode();
-		symbolNode.accept(this);
+		this.generateCode(symbolNode);
 		mBuilder.dup2();
 		Type symbolType = symbolNode.getType();
 		org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(symbolType);
@@ -264,7 +306,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	@Override
 	public Void visit(OperatorCallNode node) {
 		for(Node paramNode : node.getNodeList()) {
-			paramNode.accept(this);
+			this.generateCode(paramNode);
 		}
 		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
@@ -277,7 +319,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 			this.getCurrentMethodBuilder().loadValueFromLocalVar(node.getFuncName(), node.getHandle().getOwnerType());
 		}
 		for(Node paramNode : node.getNodeList()) {
-			paramNode.accept(this);
+			this.generateCode(paramNode);
 		}
 		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
@@ -285,9 +327,9 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(MethodCallNode node) {
-		node.getRecvNode().accept(this);
+		this.generateCode(node.getRecvNode());
 		for(Node paramNode : node.getNodeList()) {
-			paramNode.accept(this);
+			this.generateCode(paramNode);
 		}
 		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
@@ -300,7 +342,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		adapter.newInstance(TypeUtils.toTypeDescriptor(revType));
 		adapter.dup();
 		for(Node paramNode : node.getNodeList()) {
-			paramNode.accept(this);
+			this.generateCode(paramNode);
 		}
 		node.getHandle().call(adapter);
 		return null;
@@ -314,28 +356,28 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 			Label rightLabel = adapter.newLabel();
 			Label mergeLabel = adapter.newLabel();
 			// and left
-			node.getLeftNode().accept(this);
+			this.generateCode(node.getLeftNode());
 			adapter.push(true);
 			adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.EQ, rightLabel);
 			adapter.push(false);
 			adapter.goTo(mergeLabel);
 			// and right
 			adapter.mark(rightLabel);
-			node.getRightNode().accept(this);
+			this.generateCode(node.getRightNode());
 			adapter.mark(mergeLabel);
 		// generate or
 		} else {
 			Label rightLabel = adapter.newLabel();
 			Label mergeLabel = adapter.newLabel();
 			// or left
-			node.getLeftNode().accept(this);
+			this.generateCode(node.getLeftNode());
 			adapter.push(true);
 			adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, rightLabel);
 			adapter.push(true);
 			adapter.goTo(mergeLabel);
 			// or right
 			adapter.mark(rightLabel);
-			node.getRightNode().accept(this);
+			this.generateCode(node.getRightNode());
 			adapter.mark(mergeLabel);
 		}
 		return null;
@@ -343,7 +385,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(AssertNode node) {
-		node.getExprNode().accept(this);
+		this.generateCode(node.getExprNode());
 		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
 	}
@@ -351,7 +393,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	@Override
 	public Void visit(BlockNode node) {
 		for(Node targetNode : node.getNodeList()) {
-			targetNode.accept(this);
+			this.generateCode(targetNode);
 			this.createPopInsIfExprNode(targetNode);
 			if(targetNode instanceof BlockEndNode) {
 				break;
@@ -378,7 +420,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	public Void visit(ExportEnvNode node) {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		mBuilder.push(node.getEnvName());
-		node.getExprNode().accept(this);
+		this.generateCode(node.getExprNode());
 		node.getHandle().call(mBuilder);
 		mBuilder.createNewLocalVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
 		return null;
@@ -404,17 +446,17 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 		mBuilder.createNewLocalScope();
 		// init
-		node.getInitNode().accept(this);
+		this.generateCode(node.getInitNode());
 		this.createPopInsIfExprNode(node.getInitNode());
 		// cond
 		mBuilder.mark(continueLabel);
 		mBuilder.push(true);
-		node.getCondNode().accept(this);
+		this.generateCode(node.getCondNode());
 		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
 		// block
 		this.visitBlockWithCurrentScope(node.getBlockNode());
 		// iter
-		node.getIterNode().accept(this);
+		this.generateCode(node.getIterNode());
 		this.createPopInsIfExprNode(node.getIterNode());
 		mBuilder.goTo(continueLabel);
 		mBuilder.mark(breakLabel);
@@ -443,7 +485,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 		mBuilder.mark(continueLabel);
 		mBuilder.push(true);
-		node.getCondNode().accept(this);
+		this.generateCode(node.getCondNode());
 		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
 		this.visitBlockWithNewScope(node.getBlockNode());
 		mBuilder.goTo(continueLabel);
@@ -461,7 +503,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		Label elseLabel = adapter.newLabel();
 		Label mergeLabel = adapter.newLabel();
 		// if cond
-		node.getCondNode().accept(this);
+		this.generateCode(node.getCondNode());
 		adapter.push(true);
 		adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, elseLabel);
 		// then block
@@ -476,14 +518,14 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(ReturnNode node) {
-		node.getExprNode().accept(this);
+		this.generateCode(node.getExprNode());
 		this.getCurrentMethodBuilder().returnValue();
 		return null;
 	}
 
 	@Override
 	public Void visit(ThrowNode node) {
-		node.getExprNode().accept(this);
+		this.generateCode(node.getExprNode());
 		this.getCurrentMethodBuilder().throwException();
 		return null;
 	}
@@ -501,7 +543,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		mBuilder.goTo(labels.finallyLabel);
 		// catch block
 		for(CatchNode catchNode : node.getCatchNodeList()) {
-			catchNode.accept(this);
+			this.generateCode(catchNode);
 		}
 		// finally block
 		mBuilder.mark(labels.finallyLabel);
@@ -527,7 +569,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	@Override
 	public Void visit(VarDeclNode node) {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		node.getInitValueNode().accept(this);
+		this.generateCode(node.getInitValueNode());
 		mBuilder.createNewLocalVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
 		return null;
 	}
@@ -537,11 +579,11 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		OperatorHandle handle = node.getHandle();
 		if(handle != null) {	// self assgin
-			node.getLeftNode().accept(this);
-			node.getRightNode().accept(this);
+			this.generateCode(node.getLeftNode());
+			this.generateCode(node.getRightNode());
 			handle.call(mBuilder);
 		} else {
-			node.getRightNode().accept(this);
+			this.generateCode(node.getRightNode());
 		}
 		AssignableNode leftNode = node.getLeftNode();
 		if(leftNode instanceof SymbolNode) {
@@ -569,7 +611,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 
 	@Override
 	public Void visit(FunctionNode node) {
-		ClassBuilder classBuilder = new ClassBuilder(node.getHolderType(), null);
+		ClassBuilder classBuilder = new ClassBuilder(node.getHolderType(), this.getSourceName(node.getToken()));
 		// create static field.
 		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
 		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
@@ -641,28 +683,5 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {	//TODO: line numbe
 	@Override
 	public Void visit(EmptyBlockNode node) {	// do nothing
 		return null;
-	}
-
-	public Class<?> generateTopLevelClass(RootNode node, boolean isInteractive) {	//TODO: 
-		if(!isInteractive) {
-			return null;
-		}
-		ClassBuilder classBuilder = new ClassBuilder();
-		this.methodBuilders.push(classBuilder.createNewMethodBuilder(null));
-		for(Node targetNode : node.getNodeList()) {
-			targetNode.accept(this);
-			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
-				GeneratorAdapter adapter = this.getCurrentMethodBuilder();
-				Type type = ((ExprNode)targetNode).getType();
-				if(type instanceof PrimitiveType) {
-					adapter.box(TypeUtils.toTypeDescriptor(type));
-				}
-				adapter.push(type.getTypeName());
-				node.getHandle().call(adapter);
-			}
-		}
-		this.methodBuilders.peek().returnValue();
-		this.methodBuilders.pop().endMethod();
-		return classBuilder.generateClass(this.classLoader.createChild());
 	}
 }

@@ -26,7 +26,7 @@ import dshell.internal.parser.TypeSymbol;
 toplevel returns [Node.RootNode node]
 	: (a+=toplevelStatement)+ EOF
 	 {
-	 	$node = new Node.RootNode();
+	 	$node = new Node.RootNode(_input.get(0));
 	 	for(int i = 0; i < $a.size(); i++) {
 	 		$node.addNode($a.get(i).node);
 	 	}
