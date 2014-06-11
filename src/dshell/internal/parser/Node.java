@@ -15,7 +15,6 @@ import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
-import dshell.internal.parser.ParserUtils.ReturnExpr;
 import dshell.internal.parser.TypePool.ClassType;
 import dshell.internal.parser.TypePool.FuncHolderType;
 import dshell.internal.parser.TypePool.Type;
@@ -1146,9 +1145,9 @@ public abstract class Node {
 		 */
 		private final ExprNode exprNode;
 
-		public ReturnNode(Token token, ReturnExpr returnExpr) {
+		public ReturnNode(Token token, ExprNode exprNode) {
 			super(token);
-			this.exprNode = (ExprNode) this.setNodeAsChild(returnExpr.getExprNode());
+			this.exprNode = (ExprNode) this.setNodeAsChild(exprNode);
 		}
 
 		public ExprNode getExprNode() {

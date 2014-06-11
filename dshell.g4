@@ -208,7 +208,7 @@ returnStatement returns [Node node] locals [ParserUtils.ReturnExpr returnExpr]
 			if($e.size() == 1) {
 				$returnExpr.setNode($e.get(0).node);
 			}
-			$node = new Node.ReturnNode($Return, $returnExpr);
+			$node = new Node.ReturnNode($Return, $returnExpr.getExprNode());
 		}
 	;
 throwStatement returns [Node node]

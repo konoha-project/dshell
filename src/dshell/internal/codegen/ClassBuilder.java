@@ -27,7 +27,7 @@ import dshell.internal.parser.TypeUtils;
  * @author skgchxngsxyz-osx
  *
  */
-public class ClassBuilder extends ClassWriter {
+public class ClassBuilder extends ClassWriter implements Opcodes {
 	private static int topLevelClassPrefix = -1;
 
 	private final String internalClassName;
@@ -42,7 +42,7 @@ public class ClassBuilder extends ClassWriter {
 	public ClassBuilder(ClassType classType, String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = classType.getInternalName();
-		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC, this.internalClassName, null, classType.getSuperType().getInternalName(), null);
+		this.visit(V1_7, ACC_PUBLIC, this.internalClassName, null, classType.getSuperType().getInternalName(), null);
 		this.visitSource(sourceName, null);
 	}
 
@@ -52,7 +52,7 @@ public class ClassBuilder extends ClassWriter {
 	public ClassBuilder(String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = "dshell/defined/toplevel" + ++topLevelClassPrefix;
-		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, this.internalClassName, null, "java/lang/Object", null);
+		this.visit(V1_7, ACC_PUBLIC | ACC_FINAL, this.internalClassName, null, "java/lang/Object", null);
 		this.visitSource(sourceName, null);
 	}
 
@@ -67,7 +67,7 @@ public class ClassBuilder extends ClassWriter {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = holderType.getInternalName();
 		FunctionType superType = (FunctionType) holderType.getFieldHandle().getFieldType();
-		this.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL, this.internalClassName, null, "java/lang/Object", new String[]{superType.getInternalName()});
+		this.visit(V1_7, ACC_PUBLIC | ACC_FINAL, this.internalClassName, null, "java/lang/Object", new String[]{superType.getInternalName()});
 		this.visitSource(sourceName, null);
 	}
 
@@ -80,12 +80,12 @@ public class ClassBuilder extends ClassWriter {
 	public MethodBuilder createNewMethodBuilder(MethodHandle handle) {
 		if(handle == null) {
 			org.objectweb.asm.commons.Method methodDesc = org.objectweb.asm.commons.Method.getMethod("void invoke()");
-			return new MethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_FINAL | Opcodes.ACC_STATIC, methodDesc, null, null, this);
+			return new MethodBuilder(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, methodDesc, null, null, this);
 		}
 		if(handle instanceof StaticFunctionHandle) {
-			return new MethodBuilder(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, handle.getMethodDesc(), null, null, this);
+			return new MethodBuilder(ACC_PUBLIC | ACC_STATIC, handle.getMethodDesc(), null, null, this);
 		}
-		return new MethodBuilder(Opcodes.ACC_PUBLIC, handle.getMethodDesc(), null, null, this);
+		return new MethodBuilder(ACC_PUBLIC, handle.getMethodDesc(), null, null, this);
 	}
 
 	/**
@@ -143,7 +143,7 @@ public class ClassBuilder extends ClassWriter {
 			this.breakLabels = new Stack<>();
 			this.tryLabels = new Stack<>();
 			int startIndex = 0;
-			if((arg0 & Opcodes.ACC_STATIC) != Opcodes.ACC_STATIC) {
+			if((arg0 & ACC_STATIC) != ACC_STATIC) {
 				startIndex = 1;
 			}
 			this.varScopes = new VarScopes(startIndex);
@@ -201,7 +201,7 @@ public class ClassBuilder extends ClassWriter {
 			}
 			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), entry.getVarIndex());
+			this.visitVarInsn(typeDesc.getOpcode(ISTORE), entry.getVarIndex());
 			return;
 		}
 
@@ -215,7 +215,7 @@ public class ClassBuilder extends ClassWriter {
 			}
 			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ISTORE), entry.getVarIndex());
+			this.visitVarInsn(typeDesc.getOpcode(ISTORE), entry.getVarIndex());
 		}
 
 		public void loadValueFromLocalVar(String varName, Type type) {
@@ -228,7 +228,7 @@ public class ClassBuilder extends ClassWriter {
 			}
 			// local variable
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			this.visitVarInsn(typeDesc.getOpcode(Opcodes.ILOAD), entry.getVarIndex());
+			this.visitVarInsn(typeDesc.getOpcode(ILOAD), entry.getVarIndex());
 		}
 
 		private void storeValueToGlobal(int index, Type type) {
@@ -291,7 +291,7 @@ public class ClassBuilder extends ClassWriter {
 				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
 				this.push(index);
 				this.arrayLoad(org.objectweb.asm.Type.getType(Object.class));
-				this.visitTypeInsn(Opcodes.CHECKCAST, typeDesc.getInternalName());
+				this.visitTypeInsn(CHECKCAST, typeDesc.getInternalName());
 				break;
 			default:
 				throw new RuntimeException("illegal type: " + type);

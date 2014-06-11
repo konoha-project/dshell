@@ -6,6 +6,7 @@ import java.util.List;
 import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.Node.BlockNode;
+import dshell.internal.parser.Node.ExprNode;
 import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.TypeSymbol.VoidTypeSymbol;
 
@@ -71,17 +72,17 @@ public class ParserUtils {
 	}
 
 	public static class ReturnExpr {
-		private Node exprNode;
+		private ExprNode exprNode;
 
 		public ReturnExpr() {
 			this.exprNode = new Node.EmptyNode();
 		}
 
 		public void setNode(Node node) {
-			this.exprNode = node;
+			this.exprNode = (ExprNode) node;
 		}
 
-		public Node getExprNode() {
+		public ExprNode getExprNode() {
 			return this.exprNode;
 		}
 	}

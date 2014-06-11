@@ -20,7 +20,6 @@ import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
 import dshell.internal.parser.Node.AssignableNode;
-import dshell.internal.parser.Node.BlockEndNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
 import dshell.internal.parser.Node.BreakNode;
@@ -74,7 +73,7 @@ import dshell.internal.parser.TypeUtils;
  * @author skgchxngsxyz-osx
  *
  */
-public class JavaByteCodeGen implements NodeVisitor<Object> {
+public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 	protected final DShellClassLoader classLoader;
 	protected final Stack<MethodBuilder> methodBuilders;
 
@@ -85,13 +84,13 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 
 	public static byte[] generateFuncTypeInterface(FunctionType funcType) {
 		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		writer.visit(Opcodes.V1_7, Opcodes.ACC_PUBLIC | Opcodes.ACC_INTERFACE | Opcodes.ACC_ABSTRACT, funcType.getInternalName(), null, "java/lang/Object", null);
+		writer.visit(V1_7, ACC_PUBLIC | ACC_INTERFACE | ACC_ABSTRACT, funcType.getInternalName(), null, "java/lang/Object", null);
 		// generate method stub
-		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_ABSTRACT, funcType.getHandle().getMethodDesc(), null, null, writer);
+		GeneratorAdapter adapter = new GeneratorAdapter(ACC_PUBLIC | ACC_ABSTRACT, funcType.getHandle().getMethodDesc(), null, null, writer);
 		adapter.endMethod();
 		// generate static field containing FuncType name
 		String fieldDesc = org.objectweb.asm.Type.getType(String.class).getDescriptor();
-		writer.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL, "funcTypeName", fieldDesc, null, funcType.getTypeName());
+		writer.visitField(ACC_PUBLIC | ACC_STATIC | ACC_FINAL, "funcTypeName", fieldDesc, null, funcType.getTypeName());
 		writer.visitEnd();
 		return writer.toByteArray();
 	}
@@ -189,7 +188,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 
 	@Override
 	public Void visit(NullNode node) {
-		this.getCurrentMethodBuilder().visitInsn(Opcodes.ACONST_NULL);
+		this.getCurrentMethodBuilder().visitInsn(ACONST_NULL);
 		return null;
 	}
 
@@ -395,9 +394,6 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 		for(Node targetNode : node.getNodeList()) {
 			this.generateCode(targetNode);
 			this.createPopInsIfExprNode(targetNode);
-			if(targetNode instanceof BlockEndNode) {
-				break;
-			}
 		}
 		return null;
 	}
@@ -615,7 +611,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 		// create static field.
 		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
 		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
-		classBuilder.visitField(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
+		classBuilder.visitField(ACC_PUBLIC | ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
 
 		// generate static method.
 		MethodBuilder mBuilder = classBuilder.createNewMethodBuilder(node.getHolderType().getFuncHanle());
@@ -642,7 +638,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 
 		// generate constructor.
 		org.objectweb.asm.commons.Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<Type>());
-		GeneratorAdapter adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC, initDesc, null, null, classBuilder);
+		GeneratorAdapter adapter = new GeneratorAdapter(ACC_PUBLIC, initDesc, null, null, classBuilder);
 		adapter.loadThis();
 		adapter.invokeConstructor(org.objectweb.asm.Type.getType("java/lang/Object"), initDesc);
 		adapter.returnValue();
@@ -650,7 +646,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object> {
 
 		// generate static initializer
 		org.objectweb.asm.commons.Method cinitDesc = org.objectweb.asm.commons.Method.getMethod("void <clinit> ()");
-		adapter = new GeneratorAdapter(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC, cinitDesc, null, null, classBuilder);
+		adapter = new GeneratorAdapter(ACC_PUBLIC | ACC_STATIC, cinitDesc, null, null, classBuilder);
 		org.objectweb.asm.Type ownerType = TypeUtils.toTypeDescriptor(fieldHandle.getOwnerType());
 		adapter.newInstance(ownerType);
 		adapter.dup();

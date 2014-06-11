@@ -3,6 +3,8 @@ package dshell.internal.parser;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.Token;
+
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
@@ -59,6 +61,7 @@ import dshell.internal.parser.TypePool.PrimitiveType;
 import dshell.internal.parser.TypePool.RootClassType;
 import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.TypePool.UnresolvedType;
+import dshell.internal.parser.TypePool.VoidType;
 
 public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
@@ -167,7 +170,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * @param node
 	 * - break node or continue node
 	 */
-	private void checkAndThrowIfLoopOutside(Node node) {
+	private void checkAndThrowIfOutOfLoop(Node node) {
 		Node parentNode = node.getParentNode();
 		while(true) {
 			if(parentNode == null) {
@@ -182,6 +185,45 @@ public class TypeChecker implements NodeVisitor<Node>{
 			parentNode = parentNode.getParentNode();
 		}
 		this.throwAndReportTypeError(node, "only available inside loop statement");
+	}
+
+	private boolean findBlockEnd(BlockNode blockNode) {
+		if(blockNode instanceof EmptyBlockNode) {
+			return false;
+		}
+		List<Node> nodeList = blockNode.getNodeList();
+		int endIndex = nodeList.size() - 1;
+		if(endIndex < 0) {
+			return false;
+		}
+		Node endNode = nodeList.get(endIndex);
+		if(endNode instanceof BlockEndNode) {
+			return true;
+		}
+		if(endNode instanceof IfNode) {
+			IfNode ifNode = (IfNode) endNode;
+			return this.findBlockEnd(ifNode.getThenBlockNode()) && this.findBlockEnd(ifNode.getElseBlockNode());
+		}
+		return false;
+	}
+
+	/**
+	 * check block end (return, throw) existence in function block.
+	 * @param blockNode
+	 * - function block.
+	 * @param returnType
+	 * - function return type.
+	 */
+	private void checkBlockEndExistence(BlockNode blockNode, Type returnType) {
+		int endIndex = blockNode.getNodeList().size() - 1;
+		Node endNode = blockNode.getNodeList().get(endIndex);
+		if((returnType instanceof VoidType) && !(endNode instanceof BlockEndNode)) {
+			blockNode.getNodeList().add(new ReturnNode(null, new EmptyNode()));
+			return;
+		}
+		if(!this.findBlockEnd(blockNode)) {
+			this.throwAndReportTypeError(endNode, "not found return statement");
+		}
 	}
 
 	@Override
@@ -441,11 +483,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(BlockNode node) {	//TODO:
-		for(Node targetNode : node.getNodeList()) {
+	public Node visit(BlockNode node) {
+		int size = node.getNodeList().size();
+		for(int i = 0; i < size; i++) {
+			Node targetNode = node.getNodeList().get(i);
 			this.checkType(targetNode);
-			if(targetNode instanceof BlockEndNode) {
-				break;
+			if((targetNode instanceof BlockEndNode) && (i != size - 1)) {
+				this.throwAndReportTypeError(node.getNodeList().get(i + 1), "found unreachable code");
 			}
 		}
 		return node;
@@ -453,13 +497,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(BreakNode node) {
-		this.checkAndThrowIfLoopOutside(node);
+		this.checkAndThrowIfOutOfLoop(node);
 		return node;
 	}
 
 	@Override
 	public Node visit(ContinueNode node) {
-		this.checkAndThrowIfLoopOutside(node);
+		this.checkAndThrowIfOutOfLoop(node);
 		return node;
 	}
 
@@ -628,6 +672,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 		this.symbolTable.popCurrentTable();
 		this.symbolTable.popReturnType();
 		node.setHolderType(holderType);
+		// check control structure
+		this.checkBlockEndExistence(node.getBlockNode(), returnType);
 		return null;
 	}
 
@@ -677,13 +723,37 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	private void throwAndReportTypeError(Node node, String message) {
-		throw new TypeError(message);
+		StringBuilder sBuilder = new StringBuilder();
+		sBuilder.append("[error] ");
+		sBuilder.append(message);
+		Token token = node.getToken();
+		if(token != null) {
+			sBuilder.append("\n\t");
+			StringBuilder subBuilder = new StringBuilder();
+			subBuilder.append(token.getTokenSource().getSourceName());
+			subBuilder.append(':');
+			subBuilder.append(token.getLine());
+			subBuilder.append(',');
+			subBuilder.append(token.getCharPositionInLine());
+			subBuilder.append("   ");
+			String errorLocation = subBuilder.toString();
+			int size = errorLocation.length();
+
+			sBuilder.append(errorLocation);
+			sBuilder.append(token.getText());
+			sBuilder.append("\n\t");
+			for(int i = 0; i < size; i++) {
+				sBuilder.append(' ');
+			}
+			sBuilder.append('^');
+		}
+		throw new TypeError(sBuilder.toString());
 	}
 
 	public static class TypeError extends RuntimeException {
 		private static final long serialVersionUID = -6490540925854900348L;
 		private TypeError(String message) {
-			super("[TypeError] " + message);
+			super(message);
 		}
 	}
 }
