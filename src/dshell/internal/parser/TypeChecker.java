@@ -739,13 +739,17 @@ public class TypeChecker implements NodeVisitor<Node>{
 			String errorLocation = subBuilder.toString();
 			int size = errorLocation.length();
 
+			String tokenText = token.getText();
 			sBuilder.append(errorLocation);
-			sBuilder.append(token.getText());
+			sBuilder.append(tokenText);
 			sBuilder.append("\n\t");
 			for(int i = 0; i < size; i++) {
 				sBuilder.append(' ');
 			}
-			sBuilder.append('^');
+			int tokenSize = tokenText.length();
+			for(int i = 0; i < tokenSize; i++) {
+				sBuilder.append('^');
+			}
 		}
 		throw new TypeError(sBuilder.toString());
 	}

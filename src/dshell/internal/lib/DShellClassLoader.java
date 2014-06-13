@@ -12,6 +12,12 @@ import java.io.IOException;
  */
 public class DShellClassLoader extends ClassLoader {
 	/**
+	 * if true, dump byte code.
+	 */
+	private boolean enableDump = false;
+	
+	
+	/**
 	 * fully qualified class name.
 	 */
 	private String className;
@@ -93,7 +99,7 @@ public class DShellClassLoader extends ClassLoader {
 	 * for debug purpose.
 	 */
 	private void dump() {
-		if(!RuntimeContext.getContext().isDebugMode()) {
+		if(!this.enableDump) {
 			return;
 		}
 		int index = this.className.lastIndexOf('.');
@@ -109,5 +115,9 @@ public class DShellClassLoader extends ClassLoader {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void setDump(boolean enableDump) {
+		this.enableDump = enableDump;
 	}
 }

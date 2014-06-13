@@ -57,11 +57,8 @@ public class StreamUtils {
 			if(this.closeable) {
 				try {
 					this.reader.close();
-				}
-				catch(IOException e) {
-					if(RuntimeContext.getContext().isDebugMode()) {
-						e.printStackTrace();
-					}
+				} catch(IOException e) {
+					System.err.println(e.getMessage());
 				}
 			}
 		}
@@ -69,11 +66,8 @@ public class StreamUtils {
 		public String readLine() {
 			try {
 				return this.reader.readLine();
-			}
-			catch(IOException e) {
-				if(RuntimeContext.getContext().isDebugMode()) {
-					e.printStackTrace();
-				}
+			} catch(IOException e) {
+				System.err.println(e.getMessage());
 			}
 			return null;
 		}
@@ -92,11 +86,8 @@ public class StreamUtils {
 			if(this.closeable) {
 				try {
 					this.writer.close();
-				}
-				catch(IOException e) {
-					if(RuntimeContext.getContext().isDebugMode()) {
-						e.printStackTrace();
-					}
+				} catch(IOException e) {
+					System.err.println(e.getMessage());
 				}
 			}
 		}
@@ -106,11 +97,8 @@ public class StreamUtils {
 				this.writer.write(line);
 				this.writer.write("\n");
 				this.writer.flush();
-			}
-			catch(IOException e) {
-				if(RuntimeContext.getContext().isDebugMode()) {
-					e.printStackTrace();
-				}
+			} catch(IOException e) {
+				System.err.println(e.getMessage());
 			}
 		}
 	}

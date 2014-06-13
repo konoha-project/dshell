@@ -1,10 +1,10 @@
 package dshell.internal.exe;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-import javax.rmi.CORBA.Util;
-
+import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
@@ -31,6 +31,7 @@ public class NewEngineFactory implements EngineFactory {
 		protected final DShellClassLoader classLoader;
 		protected final TypeChecker checker;
 		protected final JavaByteCodeGen codeGen;
+		protected EngineConfig config;
 
 		private NewExecutionEngine() {
 			this.lexer = new dshellLexer(null);
@@ -38,16 +39,31 @@ public class NewEngineFactory implements EngineFactory {
 			this.classLoader = new DShellClassLoader();
 			this.checker = new TypeChecker(new TypePool(this.classLoader));
 			this.codeGen = new JavaByteCodeGen(this.classLoader);
+			this.config = new EngineConfig();
 		}
 
 		@Override
-		public void setArg(String[] scriptArgs) {
-			throw new RuntimeException("unimplemented");
+		public void setConfig(EngineConfig config) {
+			this.config = config;
+			this.classLoader.setDump(config.is(EngineConfigRule.bytecodeDump));
+		}
+
+		@Override
+		public void setArg(String[] scriptArgs) {	//TODO:
+			//throw new RuntimeException("unimplemented");
 		}
 
 		@Override
 		public void eval(String scriptName) {
-			throw new RuntimeException("unimplemented");
+			ANTLRFileStream input = null;
+			try {
+				input = new ANTLRFileStream(scriptName);
+			} catch(IOException e) {
+				System.err.println("cannot load file: " + scriptName);
+				System.exit(1);
+			}
+			boolean result = this.eval(input, 1, false);
+			System.exit(result ? 0 : 1);
 		}
 
 		@Override
@@ -57,15 +73,9 @@ public class NewEngineFactory implements EngineFactory {
 
 		@Override
 		public void eval(String source, int lineNum) {
-			this.setSource(source, lineNum);
-			ToplevelContext tree = this.parser.toplevel();
-//			tree.inspect(this.parser);
-			RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
-			if(checkedNode == null) {
-				return;
-			}
-			Class<?> generatedClass = this.codeGen.generateTopLevelClass(checkedNode, true);
-			this.startExecution(generatedClass);
+			ANTLRInputStream input = new ANTLRInputStream(source);
+			input.name = "(stdin)";
+			this.eval(input, lineNum, true);
 		}
 
 		@Override
@@ -73,26 +83,49 @@ public class NewEngineFactory implements EngineFactory {
 			System.err.println("unimplemented");
 		}
 
-		protected void setSource(String source, int lineNum) {
-			ANTLRInputStream input = new ANTLRInputStream(source);
-			input.name = "(stdin)";
-			this.setInputStream(input, lineNum);
-		}
-
 		/**
-		 * set input stream to lexer and set token to parser.
+		 * evaluate input.
 		 * @param input
-		 * - ANTLRInputstream
+		 * - include source and source name.
 		 * @param lineNum
 		 * - start line number.
+		 * @return
+		 * - return true, if evaluation success.
 		 */
-		protected void setInputStream(ANTLRInputStream input, int lineNum) {
+		protected boolean eval(ANTLRInputStream input, int lineNum, boolean enableResultPrint) {
+			/**
+			 * set input stream.
+			 */
 			this.lexer.setInputStream(input);
 			this.lexer.setLine(lineNum);
 			CommonTokenStream tokenStream = new CommonTokenStream(this.lexer);
 			tokenStream.fill();
 			this.parser.setTokenStream(tokenStream);
-//			this.parser.setTrace(true);
+			if(this.config.is(EngineConfigRule.parserTrace)) {
+				this.parser.setTrace(true);
+			}
+			/**
+			 * parse source
+			 */
+			ToplevelContext tree = this.parser.toplevel();
+			if(this.config.is(EngineConfigRule.parserInspect)) {
+				tree.inspect(this.parser);
+			}
+			/**
+			 * check type
+			 */
+			RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
+			if(checkedNode == null) {
+				return false;
+			}
+			/**
+			 * code generation
+			 */
+			Class<?> entryClass = this.codeGen.generateTopLevelClass(checkedNode, enableResultPrint);
+			/**
+			 * invoke
+			 */
+			return startExecution(entryClass);
 		}
 
 		/**

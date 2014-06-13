@@ -136,6 +136,7 @@ constructorDeclaration returns [Node node]
 	;
 statement returns [Node node]
 	: assertStatement statementEnd {$node = $assertStatement.node;}
+	| emptyStatement {$node = $emptyStatement.node;}
 	| breakStatement statementEnd {$node = $breakStatement.node;}
 	| continueStatement statementEnd {$node = $continueStatement.node;}
 	| exportEnvStatement statementEnd {$node = $exportEnvStatement.node;}
@@ -258,6 +259,10 @@ assignStatement returns [Node node]
 			$node = new Node.AssignNode($op, $left.node, $right.node);
 		}
 	;
+emptyStatement returns [Node node]
+	: ';' { $node = new Node.EmptyNode();}
+	;
+	
 expression returns [Node node] //FIXME: right join
 	: a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
 	| New classType arguments {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}

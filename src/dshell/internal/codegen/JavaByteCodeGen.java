@@ -138,22 +138,32 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 		return null;
 	}
 
-	public Class<?> generateTopLevelClass(RootNode node, boolean isInteractive) {	//TODO: 
-		if(!isInteractive) {
-			return null;
-		}
+	/**
+	 * generate class from RootNode
+	 * @param node
+	 * - root node
+	 * @param enableResultPrint
+	 * - if true, insert print instruction.
+	 * @return
+	 * - generated class.
+	 */
+	public Class<?> generateTopLevelClass(RootNode node, boolean enableResultPrint) {
 		ClassBuilder classBuilder = new ClassBuilder(this.getSourceName(node.getToken()));
 		this.methodBuilders.push(classBuilder.createNewMethodBuilder(null));
 		for(Node targetNode : node.getNodeList()) {
 			this.generateCode(targetNode);
 			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
-				GeneratorAdapter adapter = this.getCurrentMethodBuilder();
+				MethodBuilder adapter = this.getCurrentMethodBuilder();
 				Type type = ((ExprNode)targetNode).getType();
-				if(type instanceof PrimitiveType) {
-					adapter.box(TypeUtils.toTypeDescriptor(type));
+				if(enableResultPrint) {	// if true, insert print ins
+					if(type instanceof PrimitiveType) {
+						adapter.box(TypeUtils.toTypeDescriptor(type));
+					}
+					adapter.push(type.getTypeName());
+					node.getHandle().call(adapter);
+				} else {	// if false, pop stack
+					adapter.pop(TypeUtils.toTypeDescriptor(type));
 				}
-				adapter.push(type.getTypeName());
-				node.getHandle().call(adapter);
 			}
 		}
 		this.methodBuilders.peek().returnValue();

@@ -14,33 +14,33 @@ public @interface OpType {
 		/**
 		 * dummy 
 		 */
-		DUMMY { @Override public String getOpSymbol() { return ""; } },
+		DUMMY  (""),
 
-		ADD { @Override public String getOpSymbol() { return "+"; } },
-		SUB { @Override public String getOpSymbol() { return "-"; } },
-		MUL { @Override public String getOpSymbol() { return "*"; } },
-		DIV { @Override public String getOpSymbol() { return "/"; } },
-		MOD { @Override public String getOpSymbol() { return "%"; } },
-		LT  { @Override public String getOpSymbol() { return "<"; } },
-		GT  { @Override public String getOpSymbol() { return ">"; } },
-		LE  { @Override public String getOpSymbol() { return "<="; } },
-		GE  { @Override public String getOpSymbol() { return ">="; } },
-		EQ  { @Override public String getOpSymbol() { return "=="; } },
-		NE  { @Override public String getOpSymbol() { return "!="; } },
-		AND { @Override public String getOpSymbol() { return "&"; } },
-		OR  { @Override public String getOpSymbol() { return "|"; } },
-		XOR { @Override public String getOpSymbol() { return "^"; } },
-		ASSERT { @Override public String getOpSymbol() { return "assert"; } },
-		PRINT { @Override public String getOpSymbol() { return "printValue"; } },
-		GETENV { @Override public String getOpSymbol() { return "getEnv"; } },
-		SETENV { @Override public String getOpSymbol() { return "setEnv"; } };
+		ADD    ("+"),
+		SUB    ("-"),
+		MUL    ("*"),
+		DIV    ("/"),
+		MOD    ("%"),
+		LT     ("<"),
+		GT     (">"),
+		LE     ("<="),
+		GE     (">="),
+		EQ     ("=="),
+		NE     ("!="),
+		AND    ("&"),
+		OR     ("|"),
+		XOR    ("^"),
+		ASSERT ("assert"),
+		PRINT  ("printValue"),
+		GETENV ("getEnv"),
+		SETENV ("setEnv");
 
-		/**
-		 * must override
-		 * @return
-		 */
+		private final String opSymbol;
+		private OpName(String opSymbol) {
+			this.opSymbol = opSymbol;
+		}
 		public String getOpSymbol() {
-			return "";
+			return this.opSymbol;
 		}
 	}
 }

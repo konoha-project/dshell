@@ -11,6 +11,7 @@ import dshell.internal.console.AbstractConsole;
 import dshell.internal.console.DShellConsole;
 import dshell.internal.exe.EngineFactory;
 import dshell.internal.exe.ExecutionEngine;
+import dshell.internal.exe.ExecutionEngine.EngineConfig;
 import dshell.internal.exe.NewEngineFactory;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
@@ -39,6 +40,7 @@ public class DShell {
 	//protected boolean autoImportCommand = true;	//temporary disable
 	protected boolean autoImportCommand = false;
 	private final boolean enablePseudoTerminal;
+	private final EngineConfig config;
 	private String specificArg = null;
 	protected String[] scriptArgs;
 
@@ -48,6 +50,7 @@ public class DShell {
 
 	public DShell(String[] args, boolean enablePseudoTerminal) {
 		this.enablePseudoTerminal = enablePseudoTerminal;
+		this.config = new EngineConfig();
 		this.parseArguments(args);
 	}
 
@@ -67,6 +70,15 @@ public class DShell {
 				}
 				else if(optionSymbol.equals("--disable-auto-import")) {
 					this.autoImportCommand = false;
+				}
+				else if(optionSymbol.equals("--inspect-parser")) {
+					this.config.enableParserInspect();
+				}
+				else if(optionSymbol.equals("--trace-parser")) {
+					this.config.enableParserTrace();
+				}
+				else if(optionSymbol.equals("--dump-bytecode")) {
+					this.config.enableByteCodeDump();
 				}
 				else if(optionSymbol.equals("--help")) {
 					showHelpAndExit(0, System.out);
@@ -142,6 +154,7 @@ public class DShell {
 		RuntimeContext.getContext();
 		EngineFactory factory = new NewEngineFactory();
 		ExecutionEngine engine = factory.getEngine();
+		engine.setConfig(this.config);
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(this.specificArg);	// never return
@@ -228,6 +241,9 @@ public class DShell {
 		stream.println("    --debug");
 		stream.println("    --disable-auto-import");
 		stream.println("    --help");
+		stream.println("    --inspect-parser");
+		stream.println("    --trace-parser");
+		stream.println("    --dump-bytecode");
 		stream.println("    --logging:file [file path (appendable)]");
 		stream.println("    --logging:stdout");
 		stream.println("    --logging:stderr");
