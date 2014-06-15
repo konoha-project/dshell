@@ -119,7 +119,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		this.checkType(this.typePool.objectType, recvNode);
 		Type resolvedType = recvNode.getType();
 		if(!(resolvedType instanceof ClassType)) {
-			this.throwAndReportTypeError(recvNode, "require class tyep, but is " + resolvedType);
+			this.throwAndReportTypeError(recvNode, "require class type, but is " + resolvedType);
 			return null;
 		}
 		return (ClassType) resolvedType;
@@ -159,7 +159,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	private void addEntryAndThrowIfDefined(Node node, String symbolName, Type type, boolean isReadOnly) {
 		if(!this.symbolTable.addEntry(symbolName, type, isReadOnly)) {
-			this.throwAndReportTypeError(node, symbolName + " is already defined");
+			this.throwAndReportTypeError(node, "already defined symbol: " + symbolName);
 		}
 	}
 
@@ -393,7 +393,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		// check param type
 		int paramSize = handle.getParamTypeList().size();
 		if(handle.getParamTypeList().size() != node.getArgList().size()) {
-			this.throwAndReportTypeError(node, "not match parameter size: function is " + paramSize + "but params size is " + node.getArgList().size());
+			this.throwAndReportTypeError(node, "not match parameter size: function is " + paramSize + ", but params size is " + node.getArgList().size());
 		}
 		for(int i = 0; i < paramSize; i++) {
 			this.checkParamTypeAt(handle.getParamTypeList(), node.getArgList(), i);
@@ -433,7 +433,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		}
 		int paramSize = handle.getParamTypeList().size();
 		if(handle.getParamTypeList().size() != node.getArgList().size()) {
-			this.throwAndReportTypeError(node, "not match parameter size: method is " + paramSize + "but params size is " + node.getArgList().size());
+			this.throwAndReportTypeError(node, "not match parameter size: method is " + paramSize + ", but params size is " + node.getArgList().size());
 		}
 		for(int i = 0; i < paramSize; i++) {
 			this.checkParamTypeAt(handle.getParamTypeList(), node.getArgList(), i);

@@ -69,10 +69,10 @@ typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 	| Boolean {$type = TypeSymbol.toPrimitive($Boolean);}
 	| Void {$type = TypeSymbol.toVoid($Void);}
 	| Identifier {$type = TypeSymbol.toClass($Identifier);}
-	| typeName '[]' {$type = TypeSymbol.toArray($typeName.type);}
-	| 'Map' '<' typeName '>' {$type = TypeSymbol.toMap($typeName.type);}
-	| 'Func' '<' typeName paramTypes '>'
-		{$type = TypeSymbol.toFunc($typeName.type, $paramTypes.types);}
+	| aa=typeName '[]' {$type = TypeSymbol.toArray($aa.type);}
+	| 'Map' '<' aa=typeName '>' {$type = TypeSymbol.toMap($aa.type);}
+	| 'Func' '<' aa=typeName paramTypes '>'
+		{$type = TypeSymbol.toFunc($aa.type, $paramTypes.types);}
 	| Identifier '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypeSymbol[$a.size()];
@@ -463,12 +463,6 @@ NullLiteral
 	;
 
 // symbol , class and command name
-//SymbolName
-//	: [_a-zA-Z] [_0-9a-zA-Z]*
-//	;
-//ClassName
-//	: [A-Z] [_0-9a-zA-Z]*
-//	;
 Identifier
 	: [_a-zA-Z] [_0-9a-zA-Z]*
 	;
