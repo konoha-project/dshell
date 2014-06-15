@@ -33,15 +33,14 @@ import dshell.internal.parser.Node.FieldGetterNode;
 import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
-import dshell.internal.parser.Node.FuncCallNode;
 import dshell.internal.parser.Node.FunctionNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
+import dshell.internal.parser.Node.InvokeNode;
 import dshell.internal.parser.Node.LoopNode;
 import dshell.internal.parser.Node.MapNode;
-import dshell.internal.parser.Node.MethodCallNode;
 import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
@@ -382,30 +381,62 @@ public class TypeChecker implements NodeVisitor<Node>{
 		return node;
 	}
 
-	@Override
-	public Node visit(FuncCallNode node) {
-		// look up function
-		SymbolEntry entry = this.symbolTable.getEntry(node.getFuncName());
-		if(entry == null) {
-			this.throwAndReportTypeError(node, "undefined function: " + node.getFuncName());
-		}
-		Type symbolType = entry.getType();
-		MethodHandle handle = null;
-		if(symbolType instanceof FuncHolderType) {	//static func
-			handle = ((FuncHolderType)symbolType).getFuncHanle();
-		} else if(symbolType instanceof FunctionType) {	//func object
-			handle = ((FunctionType)symbolType).getHandle();
-		} else {
-			this.throwAndReportTypeError(node, node.getFuncName() + " is not function");
-		}
+	/**
+	 * treat invoke node as function call
+	 * @param node
+	 * @return
+	 */
+	protected Node checkTypeAsFuncCall(InvokeNode node) {
+		node.setAsFuncCallNode();
+		MethodHandle handle = this.lookupFuncHandle(node.getRecvNode());
 
 		// check param type
 		int paramSize = handle.getParamTypeList().size();
-		if(handle.getParamTypeList().size() != node.getNodeList().size()) {
-			this.throwAndReportTypeError(node, "not match parameter size: function is " + paramSize + "but params size is " + node.getNodeList().size());
+		if(handle.getParamTypeList().size() != node.getArgList().size()) {
+			this.throwAndReportTypeError(node, "not match parameter size: function is " + paramSize + "but params size is " + node.getArgList().size());
 		}
 		for(int i = 0; i < paramSize; i++) {
-			this.checkParamTypeAt(handle.getParamTypeList(), node.getNodeList(), i);
+			this.checkParamTypeAt(handle.getParamTypeList(), node.getArgList(), i);
+		}
+		node.setHandle(handle);
+		node.setType(handle.getReturnType());
+		return node;
+	}
+
+	protected MethodHandle lookupFuncHandle(ExprNode recvNode) {
+		// look up static function
+		if(recvNode instanceof SymbolNode) {
+			String funcName = ((SymbolNode) recvNode).getSymbolName();
+			SymbolEntry entry = this.symbolTable.getEntry(funcName);
+			if(entry != null && entry.getType() instanceof FuncHolderType) {
+				return ((FuncHolderType) entry.getType()).getFuncHanle();
+			}
+		}
+		// look up function
+		this.checkType(this.typePool.baseFuncType, recvNode);
+		return ((FunctionType) recvNode.getType()).getHandle();
+	}
+
+	/**
+	 * treat invoke node as method call.
+	 * @param node
+	 * @return
+	 */
+	protected Node checkTypeAsMethodCall(InvokeNode node) {
+		FieldGetterNode getterNode = (FieldGetterNode) node.getRecvNode();
+		String methodName = getterNode.getFieldName();
+		ClassType recvType = this.checkAndGetClassType(getterNode.getRecvNode());
+		MethodHandle handle = recvType.lookupMethodHandle(methodName);
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined method: " + methodName);
+			return null;
+		}
+		int paramSize = handle.getParamTypeList().size();
+		if(handle.getParamTypeList().size() != node.getArgList().size()) {
+			this.throwAndReportTypeError(node, "not match parameter size: method is " + paramSize + "but params size is " + node.getArgList().size());
+		}
+		for(int i = 0; i < paramSize; i++) {
+			this.checkParamTypeAt(handle.getParamTypeList(), node.getArgList(), i);
 		}
 		node.setHandle(handle);
 		node.setType(handle.getReturnType());
@@ -413,23 +444,11 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(MethodCallNode node) {
-		ClassType recvType = this.checkAndGetClassType(node.getRecvNode());
-		MethodHandle handle = recvType.lookupMethodHandle(node.getMethodName());
-		if(handle == null) {
-			this.throwAndReportTypeError(node, "undefined method: " + node.getMethodName());
-			return null;
+	public Node visit(InvokeNode node) {
+		if(node.getRecvNode() instanceof FieldGetterNode) {
+			return this.checkTypeAsMethodCall(node);
 		}
-		int paramSize = handle.getParamTypeList().size();
-		if(handle.getParamTypeList().size() != node.getNodeList().size()) {
-			this.throwAndReportTypeError(node, "not match parameter size: method is " + paramSize + "but params size is " + node.getNodeList().size());
-		}
-		for(int i = 0; i < paramSize; i++) {
-			this.checkParamTypeAt(handle.getParamTypeList(), node.getNodeList(), i);
-		}
-		node.setHandle(handle);
-		node.setType(handle.getReturnType());
-		return node;
+		return this.checkTypeAsFuncCall(node);
 	}
 
 	@Override

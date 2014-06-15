@@ -21,14 +21,13 @@ import dshell.internal.parser.Node.FieldGetterNode;
 import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
-import dshell.internal.parser.Node.FuncCallNode;
 import dshell.internal.parser.Node.FunctionNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
+import dshell.internal.parser.Node.InvokeNode;
 import dshell.internal.parser.Node.MapNode;
-import dshell.internal.parser.Node.MethodCallNode;
 import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
@@ -56,10 +55,10 @@ public interface NodeVisitor <T> {
 	public T visit(InstanceofNode       node);
 	public T visit(SuffixIncrementNode  node);
 	public T visit(OperatorCallNode     node);
-	public T visit(FuncCallNode         node);
-	public T visit(MethodCallNode       node);
+	public T visit(InvokeNode           node);
 	public T visit(ConstructorCallNode  node);
 	public T visit(CondOpNode           node);
+	public T visit(EmptyNode            node);
 	// statement
 	public T visit(AssertNode           node);
 	public T visit(BlockNode            node);
@@ -80,6 +79,5 @@ public interface NodeVisitor <T> {
 	public T visit(FunctionNode         node);
 	public T visit(ClassNode            node);
 	public T visit(ConstructorNode      node);
-	public T visit(EmptyNode            node);
 	public T visit(EmptyBlockNode       node);
 }

@@ -78,7 +78,7 @@ public class TypePool {
 	private final GenericBaseType baseArrayType;
 	private final GenericBaseType baseMapType;
 
-	private final FunctionBaseType baseFuncType;
+	public final FunctionBaseType baseFuncType;
 
 	/**
 	 * type name to type translation table
@@ -381,7 +381,7 @@ public class TypePool {
 		 * check inheritance of targetType.
 		 * @param targetType
 		 * @return
-		 * - if this type is equivalent to targte type or is the super type of target type, return true;
+		 * - if this type is equivalent to target type or is the super type of target type, return true;
 		 */
 		public boolean isAssignableFrom(Type targetType) {
 			return this.getTypeName().equals(targetType.getTypeName());
@@ -487,6 +487,11 @@ public class TypePool {
 	public static final class FunctionBaseType extends Type {
 		protected FunctionBaseType() {
 			super("Func", "dshell/lang/Function");
+		}
+
+		@Override
+		public boolean isAssignableFrom(Type targetType) {
+			return targetType instanceof FunctionType || targetType instanceof FunctionBaseType;
 		}
 	}
 

@@ -43,8 +43,8 @@ statementEnd
 	| {isLineEnd()}?
 	;
 functionDeclaration returns [Node node]
-	: Function SymbolName '(' argumentsDeclaration ')' returnType block
-		{$node = new Node.FunctionNode($Function, $SymbolName, $returnType.type, $argumentsDeclaration.decl, $block.node);}
+	: Function Identifier '(' argumentsDeclaration ')' returnType block
+		{$node = new Node.FunctionNode($Function, $Identifier, $returnType.type, $argumentsDeclaration.decl, $block.node);}
 	;
 returnType returns [TypeSymbol type]
 	: ':' typeName { $type = $typeName.type;}
@@ -61,25 +61,25 @@ argumentsDeclaration returns [ParserUtils.ArgsDecl decl]
 	| { $decl = new ParserUtils.ArgsDecl();}
 	;
 variableDeclarationWithType returns [ParserUtils.ArgDecl arg]
-	: SymbolName ':' typeName {$arg = new ParserUtils.ArgDecl($SymbolName, $typeName.type);}
+	: Identifier ':' typeName {$arg = new ParserUtils.ArgDecl($Identifier, $typeName.type);}
 	;
 typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 	: Int {$type = TypeSymbol.toPrimitive($Int);}
 	| Float {$type = TypeSymbol.toPrimitive($Float);}
 	| Boolean {$type = TypeSymbol.toPrimitive($Boolean);}
 	| Void {$type = TypeSymbol.toVoid($Void);}
-	| SymbolName {$type = TypeSymbol.toClass($SymbolName);}
+	| Identifier {$type = TypeSymbol.toClass($Identifier);}
 	| typeName '[]' {$type = TypeSymbol.toArray($typeName.type);}
 	| 'Map' '<' typeName '>' {$type = TypeSymbol.toMap($typeName.type);}
 	| 'Func' '<' typeName paramTypes '>'
 		{$type = TypeSymbol.toFunc($typeName.type, $paramTypes.types);}
-	| ClassName '<' a+=typeName (',' a+=typeName)* '>'
+	| Identifier '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypeSymbol[$a.size()];
 			for(int i = 0; i < $types.length; i++) {
 				$types[i] = $a.get(i).type;
 			}
-			$type = TypeSymbol.toGeneric($ClassName, $types);
+			$type = TypeSymbol.toGeneric($Identifier, $types);
 		}
 	;
 paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver resolver]
@@ -104,7 +104,7 @@ block returns [Node node] locals [ParserUtils.Block blockModel]
 		}
 	;
 classDeclaration returns [Node node] locals [String superName]
-	: Class name=ClassName (Extends a+=ClassName)? classBody
+	: Class name=Identifier (Extends a+=Identifier)? classBody
 		{
 			$superName = null;
 			if($a.size() == 1) {
@@ -163,7 +163,7 @@ continueStatement returns [Node node]
 	: Continue {$node = new Node.ContinueNode($Continue);}
 	;
 exportEnvStatement returns [Node node]	//FIXME:
-	: Export 'env' SymbolName '=' expression {$node = new Node.ExportEnvNode($Export, $SymbolName, $expression.node);}
+	: Export 'env' Identifier '=' expression {$node = new Node.ExportEnvNode($Export, $Identifier, $expression.node);}
 	;
 forStatement returns [Node node]
 	: For '(' forInit ';' forCond ';' forIter ')' block {$node = new Node.ForNode($For, $forInit.node, $forCond.node, $forIter.node, $block.node);}
@@ -184,7 +184,7 @@ forIter returns [Node node]
 	| {$node = new Node.EmptyNode();}
 	;
 foreachStatement returns [Node node]
-	: For '(' SymbolName In expression ')' block {$node = new Node.ForInNode($For, $SymbolName, $expression.node, $block.node);}
+	: For '(' Identifier In expression ')' block {$node = new Node.ForInNode($For, $Identifier, $expression.node, $block.node);}
 	;
 ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 	: If '(' expression ')' b+=block (Else b+=block)?
@@ -197,7 +197,7 @@ ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 		}
 	;
 importEnvStatement returns [Node node]	//FIXME:
-	: Import 'env' SymbolName {$node = new Node.ImportEnvNode($SymbolName);}
+	: Import 'env' Identifier {$node = new Node.ImportEnvNode($Identifier);}
 	;
 importCommandStatement returns [Node node]	//FIXME:
 	: Import Command {$node = new Node.EmptyNode();}
@@ -239,18 +239,18 @@ catchStatement returns [Node.CatchNode node]
 		}
 	;
 exceptDeclaration returns [ParserUtils.CatchedException except]
-	: SymbolName (':' t+=typeName)?
+	: Identifier (':' t+=typeName)?
 		{
-			$except = new ParserUtils.CatchedException($SymbolName);
+			$except = new ParserUtils.CatchedException($Identifier);
 			if($t.size() == 1) {
 				$except.setTypeSymbol($t.get(0).type);
 			}
 		}
 	;
 variableDeclaration returns [Node node]
-	: flag=(Let | Var) SymbolName '=' expression
+	: flag=(Let | Var) Identifier '=' expression
 		{
-			$node = new Node.VarDeclNode($flag, $SymbolName, $expression.node);
+			$node = new Node.VarDeclNode($flag, $Identifier, $expression.node);
 		}
 	;
 assignStatement returns [Node node]
@@ -264,10 +264,9 @@ emptyStatement returns [Node node]
 	;
 	
 expression returns [Node node] //FIXME: right join
-	: a=expression '.' SymbolName {$node = new Node.FieldGetterNode($a.node, $SymbolName);}
+	: a=expression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
 	| New classType arguments {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
-	| a=expression '.' SymbolName arguments {$node = new Node.MethodCallNode($a.node, $SymbolName, $arguments.args);}
-	| SymbolName arguments {$node = new Node.FuncCallNode($SymbolName, $arguments.args);}
+	| a=expression arguments {$node = new Node.InvokeNode($a.node, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
 	| symbol op=(INC | DEC) {$node = new Node.SuffixIncrementNode($symbol.node, $op);}
@@ -283,7 +282,7 @@ expression returns [Node node] //FIXME: right join
 	| primary {$node = $primary.node;}
 	;
 classType returns [TypeSymbol type]
-	: ClassName {$type = TypeSymbol.toClass($ClassName);}
+	: Identifier {$type = TypeSymbol.toClass($Identifier);}
 	;
 primary returns [Node node]
 	: literal {$node = $literal.node;}
@@ -291,7 +290,7 @@ primary returns [Node node]
 	| '(' expression ')' {$node = $expression.node;}
 	;
 symbol returns [Node node]
-	: SymbolName {$node = new Node.SymbolNode($SymbolName);}
+	: Identifier {$node = new Node.SymbolNode($Identifier);}
 	;
 literal returns [Node node]
 	: IntLiteral {$node = new Node.IntValueNode($IntLiteral);}
@@ -464,11 +463,14 @@ NullLiteral
 	;
 
 // symbol , class and command name
-SymbolName
+//SymbolName
+//	: [_a-zA-Z] [_0-9a-zA-Z]*
+//	;
+//ClassName
+//	: [A-Z] [_0-9a-zA-Z]*
+//	;
+Identifier
 	: [_a-zA-Z] [_0-9a-zA-Z]*
-	;
-ClassName
-	: [A-Z] [_0-9a-zA-Z]*
 	;
 CommandName	//FIXME:
 	: [0-9a-zA-Z]+
@@ -478,9 +480,6 @@ CommandName	//FIXME:
 Comment
 	: '#' ~[\r\n]* -> skip
 	;
-//WhiteSpace
-//	: [ \t\r\n\u000C]+ -> skip
-//	;
 WhiteSpace
 	: [ \t\u000C]+ -> channel(HIDDEN)
 	;

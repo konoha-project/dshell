@@ -22,14 +22,14 @@ public class ParserUtils {
 	}
 
 	public static class Arguments {
-		public final ArrayList<Node> nodeList;
+		public final ArrayList<ExprNode> nodeList;
 
 		public Arguments() {
 			this.nodeList = new ArrayList<>();
 		}
 
 		public void addNode(Node node) {
-			this.nodeList.add(node);
+			this.nodeList.add((ExprNode) node);
 		}
 	}
 

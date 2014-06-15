@@ -12,6 +12,7 @@ import org.objectweb.asm.commons.GeneratorAdapter;
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
 import dshell.internal.codegen.ClassBuilder.TryBlockLabels;
 import dshell.internal.lib.DShellClassLoader;
+import dshell.internal.lib.Utils;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
@@ -39,14 +40,13 @@ import dshell.internal.parser.Node.FieldGetterNode;
 import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
-import dshell.internal.parser.Node.FuncCallNode;
 import dshell.internal.parser.Node.FunctionNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
+import dshell.internal.parser.Node.InvokeNode;
 import dshell.internal.parser.Node.MapNode;
-import dshell.internal.parser.Node.MethodCallNode;
 import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
@@ -73,7 +73,7 @@ import dshell.internal.parser.TypeUtils;
  * @author skgchxngsxyz-osx
  *
  */
-public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
+public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	protected final DShellClassLoader classLoader;
 	protected final Stack<MethodBuilder> methodBuilders;
 
@@ -270,7 +270,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 
 	@Override
 	public Void visit(ElementGetterNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
@@ -283,13 +283,13 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 
 	@Override
 	public Void visit(CastNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
 	@Override
 	public Void visit(InstanceofNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
@@ -321,26 +321,33 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 		return null;
 	}
 
-	@Override
-	public Void visit(FuncCallNode node) {
+	protected void generateAsFuncCall(InvokeNode node) {
 		MethodHandle handle = node.getHandle();
 		if(!(handle instanceof StaticFunctionHandle)) {
-			this.getCurrentMethodBuilder().loadValueFromLocalVar(node.getFuncName(), node.getHandle().getOwnerType());
+			this.generateCode(node.getRecvNode());
 		}
-		for(Node paramNode : node.getNodeList()) {
+		for(Node paramNode : node.getArgList()) {
 			this.generateCode(paramNode);
 		}
 		node.getHandle().call(this.getCurrentMethodBuilder());
-		return null;
+	}
+
+	protected void generateAsMethodCall(InvokeNode node) {
+		FieldGetterNode getterNode = (FieldGetterNode) node.getRecvNode();
+		this.generateCode(getterNode.getRecvNode());
+		for(Node paramNode : node.getArgList()) {
+			this.generateCode(paramNode);
+		}
+		node.getHandle().call(this.getCurrentMethodBuilder());
 	}
 
 	@Override
-	public Void visit(MethodCallNode node) {
-		this.generateCode(node.getRecvNode());
-		for(Node paramNode : node.getNodeList()) {
-			this.generateCode(paramNode);
+	public Void visit(InvokeNode node) {
+		if(node.isFuncCall()) {
+			this.generateAsFuncCall(node);
+		} else {
+			this.generateAsMethodCall(node);
 		}
-		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
 	}
 
@@ -476,7 +483,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 
 	@Override
 	public Void visit(ForInNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
@@ -612,7 +619,7 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 	}
 
 	private void visitAssignLeft(ElementGetterNode leftNode) {	//TODO:
-		
+		Utils.fatal(1, "unimplemented: " + leftNode);
 	}
 
 	@Override
@@ -671,13 +678,13 @@ public class JavaByteCodeGen implements NodeVisitor<Object>, Opcodes {
 
 	@Override
 	public Void visit(ClassNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
 	@Override
 	public Void visit(ConstructorNode node) {
-		// TODO Auto-generated method stub
+		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 

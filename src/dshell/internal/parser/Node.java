@@ -626,79 +626,40 @@ public abstract class Node {
 		}
 	}
 
-	/**
-	 * This node represents function call.
-	 * call user defined function.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class FuncCallNode extends ExprNode {	//FIXME
-		private final String funcName;
-		private final List<ExprNode> argNodeList;
-		private MethodHandle handle;
+	public static class InvokeNode extends ExprNode {
+		protected final ExprNode recvNode;
+		protected final List<ExprNode> argList;
 
-		public FuncCallNode(Token token, Arguments args) {
-			super(token);
-			this.funcName = this.token.getText();
-			this.argNodeList = new ArrayList<>();
-			for(Node node : args.nodeList) {
-				argNodeList.add((ExprNode) this.setNodeAsChild(node));
+		/**
+		 * if true, treat this as function call.
+		 */
+		protected boolean isFuncCall;
+		protected MethodHandle handle;
+
+		protected InvokeNode(Node recvNode, Arguments args) {
+			super(recvNode.getToken());
+			this.recvNode = (ExprNode) recvNode;
+			this.argList = new ArrayList<>();
+			for(ExprNode argNode : args.nodeList) {
+				this.argList.add((ExprNode) this.setNodeAsChild(argNode));
 			}
-		}
-
-		public String getFuncName() {
-			return this.funcName;
-		}
-
-		public List<ExprNode> getNodeList() {
-			return this.argNodeList;
-		}
-
-		public void setHandle(MethodHandle handle) {
-			this.handle = handle;
-		}
-
-		public MethodHandle getHandle() {
-			return this.handle;
-		}
-
-		@Override
-		public <T> T accept(NodeVisitor<T> visitor) {
-			return visitor.visit(this);
-		}
-	}
-
-	/**
-	 * This node represents instance method call.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class MethodCallNode extends ExprNode {
-		private final ExprNode recvNode;
-		private final String methodName;
-		private final List<ExprNode> argNodeList;
-		private MethodHandle handle;
-
-		public MethodCallNode(Node recvNode, Token token, Arguments args) {
-			super(token);
-			this.recvNode = (ExprNode) this.setNodeAsChild(recvNode);
-			this.methodName = this.token.getText();
-			this.argNodeList = new ArrayList<>();
-			for(Node node : args.nodeList) {
-				argNodeList.add((ExprNode) this.setNodeAsChild(node));
-			}
+			this.isFuncCall = false;
 		}
 
 		public ExprNode getRecvNode() {
 			return this.recvNode;
 		}
 
-		public String getMethodName() {
-			return this.methodName;
+		public List<ExprNode> getArgList() {
+			return this.argList;
 		}
 
-		public List<ExprNode> getNodeList() {
-			return this.argNodeList;
+		public void setAsFuncCallNode() {
+			this.isFuncCall = true;
+		}
+
+		public boolean isFuncCall() {
+			return this.isFuncCall;
 		}
 
 		public void setHandle(MethodHandle handle) {
@@ -714,7 +675,6 @@ public abstract class Node {
 			return visitor.visit(this);
 		}
 	}
-
 	/**
 	 * This node represents class constructor call.
 	 * @author skgchxngsxyz-osx

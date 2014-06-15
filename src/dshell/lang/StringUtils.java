@@ -35,6 +35,12 @@ public final class StringUtils {
 	}
 
 	@Shared @Wrapper
+	public static String sliceTo(String recv, long endIndex) {
+		throwIfIndexOutOfRange(recv, endIndex);
+		return recv.substring(0, (int) endIndex);
+	}
+
+	@Shared @Wrapper
 	public static String slice(String recv, long startIndex, long endIndex) {
 		throwIfIndexOutOfRange(recv, startIndex);
 		throwIfIndexOutOfRange(recv, endIndex, false);
