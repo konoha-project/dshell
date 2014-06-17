@@ -1,5 +1,6 @@
 package dshell.internal.lib;
 
+import dshell.annotation.OpHolder;
 import dshell.annotation.OpType;
 import dshell.annotation.Shared;
 import dshell.annotation.OpType.OpName;
@@ -10,6 +11,7 @@ import dshell.lang.ArithmeticException;
  * @author skgchxngsxyz-osx
  *
  */
+@OpHolder
 public class Operator { //TODO: unary op
 	// bainary op
 	// ADD

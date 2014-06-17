@@ -59,7 +59,6 @@ import dshell.internal.parser.Node.TryNode;
 import dshell.internal.parser.Node.VarDeclNode;
 import dshell.internal.parser.Node.WhileNode;
 import dshell.internal.parser.TypePool.FunctionType;
-import dshell.internal.parser.TypePool.GenericArrayType;
 import dshell.internal.parser.TypePool.GenericType;
 import dshell.internal.parser.TypePool.PrimitiveType;
 import dshell.internal.parser.TypePool.Type;
@@ -203,23 +202,25 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(ArrayNode node) {	//TODO: array consturctor
+	public Void visit(ArrayNode node) {
 		int size = node.getNodeList().size();
-		Type elementType = ((GenericArrayType) node.getType()).getElementTypeList().get(0);
+		Type elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
 		org.objectweb.asm.Type elementTypeDesc = TypeUtils.toTypeDescriptor(elementType);
 		org.objectweb.asm.Type arrayClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
 
 		GeneratorAdapter adapter = this.getCurrentMethodBuilder();
 		adapter.newInstance(arrayClassDesc);
+		adapter.dup();
 		adapter.push(size);
 		adapter.newArray(elementTypeDesc);
-		adapter.dup();
 		for(int i = 0; i < size; i++) {
+			adapter.dup();
 			adapter.push(i);
 			this.generateCode(node.getNodeList().get(i));
 			adapter.arrayStore(elementTypeDesc);
 		}
-		//adapter.invokeConstructor(arrayClassDesc, arg1);
+		org.objectweb.asm.commons.Method methodDesc = TypeUtils.toArrayConstructorDescriptor(elementType);
+		adapter.invokeConstructor(arrayClassDesc, methodDesc);
 		return null;
 	}
 

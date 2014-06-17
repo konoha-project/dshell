@@ -3,6 +3,7 @@ package dshell.internal.parser;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
+import dshell.internal.parser.TypePool.PrimitiveType;
 import dshell.internal.parser.TypePool.Type;
 
 public class TypeUtils {
@@ -107,5 +108,16 @@ public class TypeUtils {
 
 	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<Type> paramTypeList) {
 		return toMehtodDescriptor(new TypePool.VoidType(), "<init>", paramTypeList);
+	}
+
+	public static org.objectweb.asm.commons.Method toArrayConstructorDescriptor(Type elementType) {
+		org.objectweb.asm.Type returnTypeDesc = org.objectweb.asm.Type.VOID_TYPE;
+		org.objectweb.asm.Type elementTypeDesc = toTypeDescriptor(elementType);
+		if(!(elementType instanceof PrimitiveType)) {
+			elementTypeDesc = org.objectweb.asm.Type.getType(Object.class);
+		}
+		org.objectweb.asm.Type paramTypeDesc = org.objectweb.asm.Type.getType("[" + elementTypeDesc.getDescriptor());
+		org.objectweb.asm.Type[] paramtypeDecs = new org.objectweb.asm.Type[]{paramTypeDesc};
+		return new org.objectweb.asm.commons.Method("<init>", returnTypeDesc, paramtypeDecs);
 	}
 } 

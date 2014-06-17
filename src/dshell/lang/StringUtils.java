@@ -4,12 +4,14 @@ import dshell.annotation.ArrayOp;
 import dshell.annotation.Shared;
 import dshell.annotation.Wrapper;
 import dshell.annotation.ArrayOp.ArrayOpType;
+import dshell.annotation.WrapperClass;
 
 /**
  * String api for D-Shell.
  * @author skgchxngsxyz-osx
  *
  */
+@WrapperClass
 public final class StringUtils {
 	private static void throwIfIndexOutOfRange(String value, long index) {
 		throwIfIndexOutOfRange(value, index, true);

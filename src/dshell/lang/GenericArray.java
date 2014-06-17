@@ -31,16 +31,24 @@ public class GenericArray implements Cloneable {
 	 */
 	private int size;
 
+	//@Shared
 	public GenericArray(Object[] values) {
 		this.size = values.length;
 		this.values = new Object[this.size < defaultArraySize ? defaultArraySize : this.size];
 		System.arraycopy(values, 0, this.values, 0, this.size);
 	}
 
+	@Shared
+	public GenericArray() {
+		this(new Object[]{});
+	}
+
 	/**
-	 * called from clone()
+	 * called from clone
+	 * @param enableAlloc
+	 * - meaningless parameter.
 	 */
-	private GenericArray() {
+	private GenericArray(boolean enableAlloc) {
 	}
 
 	private void throwIfIndexOutOfRange(long index) {
@@ -129,13 +137,13 @@ public class GenericArray implements Cloneable {
 		return this.values[--this.size];
 	}
 
-	@Shared
+	//@Shared
 	public GenericArray clone() {
 		if(this.isEmpty()) {
 			return new GenericArray(new Object[]{});
 		}
 		Object[] newValues = new Object[this.size];
-		GenericArray clonedArray = new GenericArray();
+		GenericArray clonedArray = new GenericArray(false);
 		clonedArray.size = this.size;
 		System.arraycopy(this.values, 0, newValues, 0, this.size);
 		clonedArray.values = newValues;

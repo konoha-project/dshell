@@ -255,7 +255,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(ArrayNode node) {	//TODO: empty array handling
+	public Node visit(ArrayNode node) {
 		int elementSize = node.getNodeList().size();
 		assert elementSize != 0;
 		ExprNode firstElementNode = node.getNodeList().get(0);
@@ -264,7 +264,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 		for(int i = 1; i < elementSize; i++) {
 			this.checkType(elementType, node.getNodeList().get(i));
 		}
-		node.setType(this.typePool.createAndGetArrayTypeIfUndefined(elementType));
+		String baseArrayName = this.typePool.baseArrayType.getTypeName();
+		node.setType(this.typePool.createAndGetGenericTypeIfUndefined(baseArrayName, new Type[]{elementType}));
 		return node;
 	}
 
@@ -279,7 +280,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.checkType(this.typePool.stringType, node.getKeyList().get(i));
 			this.checkType(valueType, node.getValueList().get(i));
 		}
-		node.setType(this.typePool.createAndGetMapTypeIfUndefined(valueType));
+		String baseMapName = this.typePool.baseMapType.getTypeName();
+		node.setType(this.typePool.createAndGetGenericTypeIfUndefined(baseMapName, new Type[]{valueType}));
 		return node;
 	}
 
@@ -453,13 +455,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ConstructorCallNode node) {
-		ClassType classType = (ClassType) node.getTypeSymbol().toType(this.typePool);
+		Type recvType = node.getTypeSymbol().toType(this.typePool);
 		List<Type> paramTypeList = new ArrayList<>();
 		for(ExprNode paramNode : node.getNodeList()) {
 			this.checkType(paramNode);
 			paramTypeList.add(paramNode.getType());
 		}
-		ConstructorHandle handle = classType.lookupConstructorHandle(paramTypeList);
+		ConstructorHandle handle = recvType.lookupConstructorHandle(paramTypeList);
 		if(handle == null) {
 			StringBuilder sBuilder = new StringBuilder();
 			for(Type paramType : paramTypeList) {
@@ -474,7 +476,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.checkParamTypeAt(handle.getParamTypeList(), node.getNodeList(), i);
 		}
 		node.setHandle(handle);
-		node.setType(handle.getReturnType());
+		node.setType(handle.getOwnerType());
 		return node;
 	}
 

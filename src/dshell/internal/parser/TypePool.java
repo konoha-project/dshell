@@ -14,6 +14,7 @@ import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
+import dshell.internal.initializer.*;
 
 /**
  * It contains builtin types ant user defined types.
@@ -75,8 +76,8 @@ public class TypePool {
 	 */
 	public final ClassType exceptionType;
 
-	private final GenericBaseType baseArrayType;
-	private final GenericBaseType baseMapType;
+	public final GenericBaseType baseArrayType;
+	public final GenericBaseType baseMapType;
 
 	public final FunctionBaseType baseFuncType;
 
@@ -98,7 +99,6 @@ public class TypePool {
 		 * do not set to TypeMap;
 		 */
 		this.objectType = new RootClassType();
-		this.baseArrayType = new GenericBaseType("Array", "dshell/lang/GenericArray", objectType, false);
 
 		this.voidType      = (VoidType) this.setTypeAndThrowIfDefined(new VoidType());
 		this.intType       = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
@@ -106,18 +106,28 @@ public class TypePool {
 		this.booleanType   = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
 		this.stringType    = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("String", "java/lang/String", this.objectType, false));
 		this.exceptionType = (ClassType) this.setTypeAndThrowIfDefined(new ClassType("Exception", "dshell/lang/Exception", this.objectType, true));
+		this.baseArrayType = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Array", "dshell/lang/GenericArray", this.objectType, false));
 		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", this.objectType, false));
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
 		
-		new StringWrapper().set(this.stringType, this);
-		this.stringType.finalizeType();
-//
-//		/**
-//		 * add primitive array type.
-//		 */
-//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.intType));
-//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.floatType));
-//		this.setTypeAndThrowIfDefined(new PrimitiveArrayType((GenericBaseType) this.baseArrayType, (PrimitiveType) this.booleanType));
+		new StringInitializer().initType(this.stringType, this);
+
+		/**
+		 * add primitive array type.
+		 */
+		PrimitiveArrayType intArrayType = 
+				new PrimitiveArrayType("Array<" + this.intType.getTypeName() + ">", "dshell/lang/IntArray", this.objectType, this.intType);
+		new IntArrayInitializer().initType(intArrayType, this);
+		PrimitiveArrayType floatArrayType = 
+				new PrimitiveArrayType("Array<" + this.floatType.getTypeName() + ">", "dshell/lang/FloatArray", this.objectType, this.floatType);
+		new FloatArrayInitializer().initType(floatArrayType, this);
+		PrimitiveArrayType booleanArrayType = 
+				new PrimitiveArrayType("Array<" + this.booleanType.getInternalName() + ">", "dshell/lang/BooleanArray", this.objectType, this.booleanType);
+		new BooleanArrayInitializer().initType(booleanArrayType, this);
+		
+		this.setTypeAndThrowIfDefined(intArrayType);
+		this.setTypeAndThrowIfDefined(floatArrayType);
+		this.setTypeAndThrowIfDefined(booleanArrayType);
 	}
 
 	private Type setTypeAndThrowIfDefined(Type type) {
@@ -165,7 +175,7 @@ public class TypePool {
 	 * - if type is undefined, throw exception.
 	 */
 	public GenericBaseType getGenericBaseType(String typeName) {
-		Type type = this.getTypeAndThrowIfUndefined(typeName);
+		Type type = this.typeMap.get(typeName);
 		if(type instanceof GenericBaseType) {
 			return (GenericBaseType) type;
 		}
@@ -219,21 +229,6 @@ public class TypePool {
 		ClassType classType = new ClassType(className, generatedClassNamePrefix + className, superType, true);
 		this.typeMap.put(className, classType);
 		return classType;
-	}
-
-	public GenericArrayType createAndGetArrayTypeIfUndefined(Type elementType) {
-		String typeName = toGenericArrayTypeName(elementType);
-		Type arrayType = this.getType(typeName);
-		if(arrayType instanceof UnresolvedType) {
-			arrayType = new GenericArrayType(this.baseArrayType, elementType);
-			assert typeName.equals(arrayType.getTypeName());
-			this.typeMap.put(typeName, arrayType);
-		}
-		return (GenericArrayType) arrayType;
-	}
-
-	public GenericType createAndGetMapTypeIfUndefined(Type elementType) {
-		return this.createAndGetGenericTypeIfUndefined("Map", new Type[]{elementType});
 	}
 
 	/**
@@ -299,10 +294,6 @@ public class TypePool {
 		}
 		sBuilder.append(">");
 		return sBuilder.toString();
-	}
-
-	public static String toGenericArrayTypeName(Type elementType) {
-		return elementType.getTypeName() + "[]";
 	}
 
 	public static String toFuncTypeName(Type returnType, Type[] paramTypes) {
@@ -421,6 +412,50 @@ public class TypePool {
 		public MethodHandle lookupMethodHandle(String methodName) {
 			return null;
 		}
+
+		/**
+		 * create and add new filed handle. used for type checker.
+		 * @param fieldName
+		 * @param fieldType
+		 * @return
+		 * - return false, if field has already defined.
+		 */
+		public boolean addNewFieldHandle(String fieldName, Type fieldType) {
+			return false;
+		}
+
+		/**
+		 * create and add new method handle. used for type checker.
+		 * @param methodName
+		 * - method name
+		 * @param returnType
+		 * @param paramTypes
+		 * - if has no parameter, it is empty array
+		 * @return
+		 * - return false, id method has already defined.
+		 */
+		public boolean addNewMethodHandle(String methodName, Type returnType, Type[] paramTypes) {
+			return false;
+		}
+
+		/**
+		 * create and add new constructor handle. used for type checker.
+		 * @param paramTypes
+		 * - if has no parameter, it is empty array
+		 * @return
+		 * - return false, id method has already defined.
+		 */
+		public boolean addNewConstructorHandle(Type[] paramTypes) {
+			return false;
+		}
+
+		/**
+		 * add exist method handle.
+		 * @param handle
+		 */
+		public void addMethodHandle(MethodHandle handle) {
+		}
+
 		/**
 		 * if called, cannot change this class element.
 		 */
@@ -643,13 +678,7 @@ public class TypePool {
 			}
 		}
 
-		/**
-		 * create and add new filed handle. used for type checker.
-		 * @param fieldName
-		 * @param fieldType
-		 * @return
-		 * - return false, if field has already defined.
-		 */
+		@Override
 		public boolean addNewFieldHandle(String fieldName, Type fieldType) {
 			if(this.fieldHandleMap.containsKey(fieldName)) {
 				return false;
@@ -658,16 +687,7 @@ public class TypePool {
 			return true;
 		}
 
-		/**
-		 * create and add new method handle. used for type checker.
-		 * @param methodName
-		 * - method name
-		 * @param returnType
-		 * @param paramTypes
-		 * - if has no parameter, it is empty array
-		 * @return
-		 * - return false, id method has already defined.
-		 */
+		@Override
 		public boolean addNewMethodHandle(String methodName, Type returnType, Type[] paramTypes) {
 			if(this.methodHandleMap.containsKey(methodName)) {
 				return false;
@@ -680,13 +700,7 @@ public class TypePool {
 			return true;
 		}
 
-		/**
-		 * create and add new constructor handle. used for type checker.
-		 * @param paramTypes
-		 * - if has no parameter, it is empty array
-		 * @return
-		 * - return false, id method has already defined.
-		 */
+		@Override
 		public boolean addNewConstructorHandle(Type[] paramTypes) {
 			for(ConstructorHandle handle : this.constructorHandleList) {
 				List<Type> paramTypeList = handle.getParamTypeList();
@@ -713,6 +727,7 @@ public class TypePool {
 			return true;
 		}
 
+		@Override
 		public void addMethodHandle(MethodHandle handle) {
 			if(this.methodHandleMap.containsKey(handle.getCalleeName())) {
 				throw new RuntimeException(handle.getCalleeName() + " is already defined");
@@ -738,46 +753,46 @@ public class TypePool {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class GenericType extends Type {
+	public static class GenericType extends ClassType {
 		private final GenericBaseType baseType;
 		private final List<Type> elementTypeList;
 
 		protected GenericType(String typeName, GenericBaseType baseType, List<Type> elementTypeList) {
-			super(typeName, baseType.getInternalName(), false);
+			super(typeName, baseType.getInternalName(), baseType.superType, false);	//FIXME: super type
 			this.baseType = baseType;
 			this.elementTypeList = Collections.unmodifiableList(elementTypeList);
 		}
 
-		public GenericBaseType getBaseType() {
-			return this.baseType;
+		/**
+		 * used for primitive array type.
+		 * @param typeName
+		 * @param internalName
+		 * @param superType
+		 * @param elementTypeList
+		 */
+		protected GenericType(String typeName, String internalName, Type superType, List<Type> elementTypeList) {
+			super(typeName, internalName, superType, false);
+			this.baseType = null;
+			this.elementTypeList = Collections.unmodifiableList(elementTypeList);
 		}
+//		public GenericBaseType getBaseType() {
+//			return this.baseType;
+//		}
 
 		public List<Type> getElementTypeList() {
 			return this.elementTypeList;
 		}
 	}
 
-	/**
-	 * Represents generic array type.
-	 * It contains element type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class GenericArrayType extends GenericType {
-		private GenericArrayType(GenericBaseType baseType, Type elementType) {
-			super(TypePool.toGenericArrayTypeName(elementType), baseType, toTypeList(elementType));
+	public final static class PrimitiveArrayType extends GenericType {
+		private PrimitiveArrayType(String typeName, String internalName, Type superType, PrimitiveType elementType) {
+			super(typeName, internalName, superType, toTypeList(elementType));
 		}
 
 		private static List<Type> toTypeList(Type type) {
 			List<Type> typeList = new ArrayList<>(1);
 			typeList.add(type);
 			return typeList;
-		}
-	}
-
-	public final static class PrimitiveArrayType extends GenericArrayType {
-		private PrimitiveArrayType(GenericBaseType baseType, PrimitiveType elementType) {
-			super(baseType, elementType);
 		}
 	}
 }

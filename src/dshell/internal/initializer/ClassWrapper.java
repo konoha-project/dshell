@@ -1,28 +1,25 @@
-package dshell.internal.parser;
+package dshell.internal.initializer;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.objectweb.asm.commons.GeneratorAdapter;
 
+import dshell.internal.parser.TypeUtils;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
-import dshell.internal.parser.TypePool.ClassType;
 import dshell.internal.parser.TypePool.Type;
 
-public abstract class ClassWrapper {
-	protected ClassType classType;
-	protected TypePool pool;
+public abstract class ClassWrapper extends TypeInitializer {
 	protected Type ownerType;
 
-	public abstract void set(ClassType classType, TypePool pool);
-
-	protected void setStaticMethod(Type recvType, Type returnType, String methodName, Type... paramTypes) {
+	@Override
+	protected void setMethod(Type returnType, String methodName, Type... paramTypes) {
 		List<Type> paramTypeList = new ArrayList<>();
 		for(Type paramType : paramTypes) {
 			paramTypeList.add(paramType);
 		}
-		WrapperMethodHandle handle = new WrapperMethodHandle(methodName, this.ownerType, recvType, returnType, paramTypeList);
-		this.classType.addMethodHandle(handle);
+		WrapperMethodHandle handle = new WrapperMethodHandle(methodName, this.ownerType, this.targetType, returnType, paramTypeList);
+		this.targetType.addMethodHandle(handle);
 	}
 
 	protected void createOwnerType(String internalName) {

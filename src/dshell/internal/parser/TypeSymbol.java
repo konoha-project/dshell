@@ -35,14 +35,6 @@ public abstract class TypeSymbol {
 		return new ClassTypeSymbol(token);
 	}
 
-	public static TypeSymbol toArray(TypeSymbol typeSymbol) {
-		return new ArrayTypeSymbol(typeSymbol);
-	}
-
-	public static TypeSymbol toMap(TypeSymbol typeSymbol) {
-		return new MapTypeSymbol(typeSymbol);
-	}
-
 	public static TypeSymbol toFunc(TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
 		return new FuncTypeSymbol(returnTypeSymbol, paramTypeSymbols);
 	}
@@ -81,32 +73,6 @@ public abstract class TypeSymbol {
 		@Override
 		public Type toType(TypePool pool) {
 			return pool.getClassType(this.typeName);
-		}
-	}
-
-	public static class ArrayTypeSymbol extends TypeSymbol {
-		private final TypeSymbol elementTypeSymbol;
-
-		private ArrayTypeSymbol(TypeSymbol typeSymbol) {
-			this.elementTypeSymbol = typeSymbol;
-		}
-
-		@Override
-		public Type toType(TypePool pool) {
-			return pool.createAndGetArrayTypeIfUndefined(this.elementTypeSymbol.toType(pool));
-		}
-	}
-
-	public static class MapTypeSymbol extends TypeSymbol {
-		private final TypeSymbol elementTypeSymbol;
-
-		private MapTypeSymbol(TypeSymbol typeSymbol) {
-			this.elementTypeSymbol = typeSymbol;
-		}
-
-		@Override
-		public Type toType(TypePool pool) {
-			return pool.createAndGetMapTypeIfUndefined(this.elementTypeSymbol.toType(pool));
 		}
 	}
 

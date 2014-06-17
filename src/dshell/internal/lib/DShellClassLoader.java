@@ -14,7 +14,7 @@ public class DShellClassLoader extends ClassLoader {
 	/**
 	 * if true, dump byte code.
 	 */
-	private boolean enableDump = false;
+	private static boolean enableDump = false;
 	
 	
 	/**
@@ -99,7 +99,7 @@ public class DShellClassLoader extends ClassLoader {
 	 * for debug purpose.
 	 */
 	private void dump() {
-		if(!this.enableDump) {
+		if(!enableDump) {
 			return;
 		}
 		int index = this.className.lastIndexOf('.');
@@ -117,7 +117,7 @@ public class DShellClassLoader extends ClassLoader {
 		}
 	}
 
-	public void setDump(boolean enableDump) {
-		this.enableDump = enableDump;
+	public void setDump(boolean enableByteCodeDump) {
+		enableDump = enableByteCodeDump;
 	}
 }

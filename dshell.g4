@@ -69,9 +69,7 @@ typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 	| Boolean {$type = TypeSymbol.toPrimitive($Boolean);}
 	| Void {$type = TypeSymbol.toVoid($Void);}
 	| Identifier {$type = TypeSymbol.toClass($Identifier);}
-	| aa=typeName '[]' {$type = TypeSymbol.toArray($aa.type);}
-	| 'Map' '<' aa=typeName '>' {$type = TypeSymbol.toMap($aa.type);}
-	| 'Func' '<' aa=typeName paramTypes '>'
+	| Func '<' aa=typeName paramTypes '>'
 		{$type = TypeSymbol.toFunc($aa.type, $paramTypes.types);}
 	| Identifier '<' a+=typeName (',' a+=typeName)* '>'
 		{
@@ -265,7 +263,7 @@ emptyStatement returns [Node node]
 	
 expression returns [Node node] //FIXME: right join
 	: a=expression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
-	| New classType arguments {$node = new Node.ConstructorCallNode($New, $classType.type, $arguments.args);}
+	| New typeName arguments {$node = new Node.ConstructorCallNode($New, $typeName.type, $arguments.args);}
 	| a=expression arguments {$node = new Node.InvokeNode($a.node, $arguments.args);}
 	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
@@ -359,6 +357,7 @@ Do			: 'do';
 Else		: 'else';
 Extends		: 'extends';
 Export		: 'export';
+Func		: 'Func';
 Function	: 'function';
 Finally		: 'finally';
 Float		: 'float';
