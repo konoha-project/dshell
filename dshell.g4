@@ -471,11 +471,11 @@ CommandName	//FIXME:
 
 // comment & space
 Comment
-	: '#' ~[\r\n]* -> skip
+	: '#' ~[\r\n\u2028\u2029]* -> skip
 	;
 WhiteSpace
-	: [ \t\u000C]+ -> channel(HIDDEN)
+	: [\t\u000B\u000C\u0020\u00A0]+ -> skip
 	;
 LineEnd
-	: [\r\n] -> channel(HIDDEN)
+	: [\r\n\u2028\u2029] -> channel(HIDDEN)
 	;
