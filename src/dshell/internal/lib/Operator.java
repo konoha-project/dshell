@@ -13,7 +13,22 @@ import dshell.lang.ArithmeticException;
  */
 @OpHolder
 public class Operator { //TODO: unary op
-	// bainary op
+	// unary op
+	// PLUS
+	@Shared @OpType(OpName.ADD) public static long   plus(long right)   { return +right; }
+	@Shared @OpType(OpName.ADD) public static double plus(double right) { return +right; }
+
+	// MINUS
+	@Shared @OpType(OpName.SUB) public static long   minus(long right)   { return -right; }
+	@Shared @OpType(OpName.SUB) public static double minus(double right) { return -right; }
+
+	// NOT
+	@Shared @OpType(OpName.NOT) public static boolean not(boolean right) { return !right; }
+
+	// BIT_NOT
+	@Shared @OpType(OpName.BIT_NOT) public static long bitnot(long right) { return ~right; }
+
+	// binary op
 	// ADD
 	@Shared @OpType(OpName.ADD) public static long   add(long left, long right)      { return left + right; }
 	@Shared @OpType(OpName.ADD) public static double add(long left, double right)    { return left + right; }

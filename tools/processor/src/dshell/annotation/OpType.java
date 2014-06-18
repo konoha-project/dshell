@@ -15,7 +15,8 @@ public @interface OpType {
 		 * dummy 
 		 */
 		DUMMY  (""),
-
+		NOT    ("!"),
+		BIT_NOT("~"),
 		ADD    ("+"),
 		SUB    ("-"),
 		MUL    ("*"),

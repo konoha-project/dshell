@@ -12,10 +12,10 @@ import dshell.internal.parser.TypeSymbol.VoidTypeSymbol;
 
 public class ParserUtils {
 	public static class MapEntry {
-		public final Node keyNode;
-		public final Node valueNode;
+		public final ExprNode keyNode;
+		public final ExprNode valueNode;
 
-		public MapEntry(Node keyNode, Node valueNode) {
+		public MapEntry(ExprNode keyNode, ExprNode valueNode) {
 			this.keyNode = keyNode;
 			this.valueNode = valueNode;
 		}

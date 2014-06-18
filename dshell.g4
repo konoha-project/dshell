@@ -23,6 +23,8 @@ import dshell.internal.parser.TypeSymbol;
 // #        parse       #
 // ######################
 
+// statement definition
+
 toplevel returns [Node.RootNode node]
 	: (a+=toplevelStatement)+ EOF
 	 {
@@ -172,7 +174,7 @@ forInit returns [Node node]
 	| assignStatement {$node = $assignStatement.node;}
 	| {$node = new Node.EmptyNode();}
 	;
-forCond returns [Node node]
+forCond returns [Node.ExprNode node]
 	: expression {$node = $expression.node;}
 	| {$node = new Node.EmptyNode();}
 	;
@@ -182,7 +184,7 @@ forIter returns [Node node]
 	| {$node = new Node.EmptyNode();}
 	;
 foreachStatement returns [Node node]
-	: For '(' Identifier In expression ')' block {$node = new Node.ForInNode($For, $Identifier, $expression.node, $block.node);}
+	: For '(' Identifier 'in' expression ')' block {$node = new Node.ForInNode($For, $Identifier, $expression.node, $block.node);}
 	;
 ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 	: If '(' expression ')' b+=block (Else b+=block)?
@@ -258,39 +260,106 @@ assignStatement returns [Node node]
 		}
 	;
 emptyStatement returns [Node node]
-	: ';' { $node = new Node.EmptyNode();}
+	: ';' {$node = new Node.EmptyNode();}
 	;
-	
-expression returns [Node node] //FIXME: right join
-	: a=expression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
-	| New typeName arguments {$node = new Node.ConstructorCallNode($New, $typeName.type, $arguments.args);}
-	| a=expression arguments {$node = new Node.InvokeNode($a.node, $arguments.args);}
-	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
-	| '(' typeName ')' a=expression {$node = new Node.CastNode($typeName.type, $a.node);}
-	| symbol op=(INC | DEC) {$node = new Node.SuffixIncrementNode($symbol.node, $op);}
-	| op=(PLUS | MINUS) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
-	| op=(BIT_NOT | NOT) a=expression {$node = new Node.OperatorCallNode($op, $a.node);}
-	| left=expression op=(MUL | DIV | MOD) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| left=expression op=(ADD | SUB) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| left=expression op=(LT | LE | GT | GE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| left=expression Instanceof typeName {$node = new Node.InstanceofNode($Instanceof, $left.node, $typeName.type);}
-	| left=expression op=(EQ | NE) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| left=expression op=(AND | OR | XOR) right=expression {$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
-	| left=expression op=(COND_AND | COND_OR) right=expression {$node = new Node.CondOpNode($op, $left.node, $right.node);}
-	| primary {$node = $primary.node;}
+
+// expression definition.
+
+expression returns [Node.ExprNode node]
+	: condOrExpression {$node = $condOrExpression.node;}
 	;
-classType returns [TypeSymbol type]
-	: Identifier {$type = TypeSymbol.toClass($Identifier);}
+
+condOrExpression returns [Node.ExprNode node]
+	: condAndExpression {$node = $condAndExpression.node;}
+	| left=condOrExpression COND_OR right=condAndExpression
+		{$node = new Node.CondOpNode($COND_OR, $left.node, $right.node);}
 	;
-primary returns [Node node]
+
+condAndExpression returns [Node.ExprNode node]
+	: bitOrExpression {$node = $bitOrExpression.node;}
+	| left=condAndExpression COND_AND right=bitOrExpression
+		{$node = new Node.CondOpNode($COND_AND, $left.node, $right.node);}
+	;
+
+bitOrExpression returns [Node.ExprNode node]
+	: bitXorExpression {$node = $bitXorExpression.node;}
+	| left=bitOrExpression OR right=bitXorExpression
+		{$node = new Node.OperatorCallNode($OR, $left.node, $right.node);}
+	;
+
+bitXorExpression returns [Node.ExprNode node]
+	: bitAndExpression {$node = $bitAndExpression.node;}
+	| left=bitXorExpression XOR right=bitAndExpression
+		{$node = new Node.OperatorCallNode($XOR, $left.node, $right.node);}
+	;
+
+bitAndExpression returns [Node.ExprNode node]
+	: equalityExpression {$node = $equalityExpression.node;}
+	| left=bitAndExpression AND right=equalityExpression
+		{$node = new Node.OperatorCallNode($AND, $left.node, $right.node);}
+	;
+
+equalityExpression returns [Node.ExprNode node]
+	: instanceofExpression {$node = $instanceofExpression.node;}
+	| left=equalityExpression op=(EQ | NE) right=instanceofExpression
+		{$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	;
+
+instanceofExpression returns [Node.ExprNode node]
+	: relationExpression {$node = $relationExpression.node;}
+	| left=instanceofExpression Instanceof typeName
+		{$node = new Node.InstanceofNode($Instanceof, $left.node, $typeName.type);}
+	;
+
+relationExpression returns [Node.ExprNode node]
+	: addExpression {$node = $addExpression.node;}
+	| left=relationExpression op=(LT | LE | GT | GE) right=addExpression
+		{$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	;
+
+addExpression returns [Node.ExprNode node]
+	: mulExpression {$node = $mulExpression.node;}
+	| left=addExpression op=(ADD | SUB) right=mulExpression
+		{$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	;
+
+mulExpression returns [Node.ExprNode node]
+	: unaryExpression {$node = $unaryExpression.node;}
+	| left=mulExpression op=(MUL | DIV | MOD) right=unaryExpression
+		{$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
+	;
+
+unaryExpression returns [Node.ExprNode node]
+	: callExpression {$node = $callExpression.node;}
+	| op=(ADD | SUB | BIT_NOT | NOT) right=unaryExpression
+		{$node = new Node.OperatorCallNode($op, $right.node);}
+	| '(' typeName ')' right=unaryExpression
+		{$node = new Node.CastNode($typeName.type, $right.node);}
+	;
+
+callExpression returns [Node.ExprNode node]
+	: applyExpression {$node = $applyExpression.node;}
+	| New typeName arguments 
+		{$node = new Node.ConstructorCallNode($New, $typeName.type, $arguments.args);}
+	;
+
+applyExpression returns [Node.ExprNode node]
+	: primaryExpression {$node = $primaryExpression.node;}
+	| a=applyExpression arguments {$node = new Node.InvokeNode($a.node, $arguments.args);}
+	| r=applyExpression '[' i=applyExpression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
+	| a=applyExpression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
+	;
+
+primaryExpression returns [Node.ExprNode node]
 	: literal {$node = $literal.node;}
 	| symbol {$node = $symbol.node;}
 	| '(' expression ')' {$node = $expression.node;}
 	;
-symbol returns [Node node]
+
+symbol returns [Node.ExprNode node]
 	: Identifier {$node = new Node.SymbolNode($Identifier);}
 	;
-literal returns [Node node]
+literal returns [Node.ExprNode node]
 	: IntLiteral {$node = new Node.IntValueNode($IntLiteral);}
 	| FloatLiteral {$node = new Node.FloatValueNode($FloatLiteral);}
 	| BooleanLiteral {$node = new Node.BooleanValueNode($BooleanLiteral);}
@@ -299,7 +368,7 @@ literal returns [Node node]
 	| arrayLiteral {$node = $arrayLiteral.node;}
 	| mapLiteral {$node = $mapLiteral.node;}
 	;
-arrayLiteral returns [Node node] locals [Node.ArrayNode arrayNode]
+arrayLiteral returns [Node.ExprNode node] locals [Node.ArrayNode arrayNode]
 	: '[' expr+=expression (',' expr+=expression)* ']' 
 		{	$arrayNode = new Node.ArrayNode();
 			for(int i = 0; i < $expr.size(); i++) {
@@ -308,7 +377,7 @@ arrayLiteral returns [Node node] locals [Node.ArrayNode arrayNode]
 			$node = $arrayNode;
 		}
 	;
-mapLiteral returns [Node node] locals [Node.MapNode mapNode]
+mapLiteral returns [Node.ExprNode node] locals [Node.MapNode mapNode]
 	: '{' entrys+=mapEntry (',' entrys+=mapEntry)* '}'
 		{
 			$mapNode = new Node.MapNode();
@@ -364,7 +433,6 @@ Float		: 'float';
 For			: 'for';
 If			: 'if';
 Import		: 'import';
-In			: 'in';
 Int			: 'int';
 Instanceof	: 'instanceof';
 Let			: 'let';
@@ -397,8 +465,6 @@ COND_AND	: '&&';
 COND_OR		: '||';
 
 // prefix op
-PLUS	: '+';
-MINUS	: '-';
 BIT_NOT	: '~';
 NOT		: '!';
 
@@ -423,12 +489,12 @@ Number
 	| [1-9] [0-9]*
 	;
 IntLiteral
-	: [+-]? Number
+	: Number
 	;
 
 // float literal	//TODO: exp
 FloatLiteral
-	: [+-]? Number '.' Number
+	: Number '.' Number
 	;
 
 // boolean literal
