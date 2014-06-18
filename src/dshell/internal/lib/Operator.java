@@ -1,5 +1,8 @@
 package dshell.internal.lib;
 
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import dshell.annotation.OpHolder;
 import dshell.annotation.OpType;
 import dshell.annotation.Shared;
@@ -137,6 +140,22 @@ public class Operator { //TODO: unary op
 	// XOR
 	@Shared @OpType(OpName.XOR) public static long xor(long left, long right) { return left ^ right; }
 
+	// regex match
+	@Shared @OpType(OpName.REGEX_MATCH) public static boolean matchRegex(String target, String regex) {
+		try {
+			Pattern pattern = Pattern.compile(regex);
+			return pattern.matcher(target).find();
+		}
+		catch (PatternSyntaxException e) {
+		}
+		return false;
+	}
+
+	@Shared @OpType(OpName.REGEX_UNMATCH) public static boolean unmatchRegex(String target, String regex) {
+		return !matchRegex(target, regex);
+	}
+	
+	
 	// additional operator
 	// ASSERT
 	@Shared @OpType(OpName.ASSERT) public static void assertDShell(boolean result) {

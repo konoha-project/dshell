@@ -1,4 +1,4 @@
-function func(num: int) {
+function func(num: int) : boolean {
   if (num == 2) {
     return true
   }

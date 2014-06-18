@@ -31,6 +31,8 @@ public @interface OpType {
 		AND    ("&"),
 		OR     ("|"),
 		XOR    ("^"),
+		REGEX_MATCH ("=~"),
+		REGEX_UNMATCH ("!~"),
 		ASSERT ("assert"),
 		PRINT  ("printValue"),
 		GETENV ("getEnv"),

@@ -88,20 +88,6 @@ public class Utils {
 		System.exit(status);
 	}
 
-	public static boolean matchRegex(String target, String regex) {
-		try {
-			Pattern pattern = Pattern.compile(regex);
-			return pattern.matcher(target).find();
-		}
-		catch (PatternSyntaxException e) {
-		}
-		return false;
-	}
-
-	public static boolean unmatchRegex(String target, String regex) {
-		return !matchRegex(target, regex);
-	}
-
 	public static void log(String value) {
 		System.out.println(value);
 		RuntimeContext.getContext().getLogger().warn(value);

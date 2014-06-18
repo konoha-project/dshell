@@ -26,7 +26,7 @@ import dshell.internal.parser.TypeSymbol;
 // statement definition
 
 toplevel returns [Node.RootNode node]
-	: (a+=toplevelStatement)+ EOF
+	: (a+=toplevelStatement)* EOF
 	 {
 	 	$node = new Node.RootNode(_input.get(0));
 	 	for(int i = 0; i < $a.size(); i++) {
@@ -301,7 +301,7 @@ bitAndExpression returns [Node.ExprNode node]
 
 equalityExpression returns [Node.ExprNode node]
 	: instanceofExpression {$node = $instanceofExpression.node;}
-	| left=equalityExpression op=(EQ | NE) right=instanceofExpression
+	| left=equalityExpression op=(EQ | NE | REGEX_MATCH | REGEX_UNMATCH) right=instanceofExpression
 		{$node = new Node.OperatorCallNode($op, $left.node, $right.node);}
 	;
 
@@ -463,6 +463,8 @@ OR		: '|';
 XOR		: '^';
 COND_AND	: '&&';
 COND_OR		: '||';
+REGEX_MATCH : '=~';
+REGEX_UNMATCH : '!~';
 
 // prefix op
 BIT_NOT	: '~';
@@ -494,8 +496,14 @@ IntLiteral
 
 // float literal	//TODO: exp
 FloatLiteral
-	: Number '.' Number
+	: Number '.' Number FloatSuffix?
 	;
+
+fragment
+FloatSuffix
+	: [eE] [+-]? Number
+	;
+
 
 // boolean literal
 BooleanLiteral

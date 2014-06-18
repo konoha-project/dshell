@@ -456,7 +456,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 
 		@Override
 		public VarEntry addVarEntry(String varName, Type type) {
-			assert this.varEntryMap.containsKey(varName) : varName + " is already defined";
+			assert !this.varEntryMap.containsKey(varName) : varName + " is already defined";
 			int valueSize = TypeUtils.toTypeDescriptor(type).getSize();
 			assert valueSize > 0;
 			int index = this.currentLocalVarIndex;

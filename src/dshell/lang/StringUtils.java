@@ -76,6 +76,11 @@ public final class StringUtils {
 		return recv.endsWith(target);
 	}
 
+	@Shared @Wrapper
+	public static String replaceAll(String recv, String regex, String replace) {
+		return recv.replaceAll(regex, replace);
+	}
+
 	@ArrayOp(ArrayOpType.Getter)
 	@Shared @Wrapper
 	public static String get(String recv, long index) {
