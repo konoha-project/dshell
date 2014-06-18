@@ -1,15 +1,13 @@
 package testable;
 
-import java.util.ArrayList;
+import org.antlr.v4.runtime.ANTLRInputStream;
 
-import libbun.ast.BNode;
-import libbun.util.LibBunSystem;
 import dshell.internal.console.AbstractConsole;
-import dshell.internal.exe.TraditionalEngineFactory;
-import dshell.internal.exe.TraditionalExecutionEngine;
-import dshell.internal.grammar.DShellGrammar;
-import dshell.internal.jvm.JavaByteCodeGenerator;
+import dshell.internal.exe.DShellEngineFactory.DShellExecutionEngine;
+import dshell.internal.exe.EngineFactory;
+import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.lib.RuntimeContext;
+import dshell.internal.lib.Utils;
 import dshell.internal.main.DShell;
 import dshell.internal.remote.RequestReceiver;
 
@@ -45,7 +43,7 @@ public class DShellTest extends DShell {
 	@Override
 	public void execute() {
 		RuntimeContext.getContext();
-		NewExecutionEngine engine = new TestableEngineFactory().getEngine();
+		ExecutionEngine engine = new TestableEngineFactory().getEngine();
 		switch(this.mode) {
 		case receiverMode:
 			RequestReceiver.invoke(null);	// never return
@@ -67,49 +65,39 @@ public class DShellTest extends DShell {
 	}
 }
 
-class TestableEngine extends TraditionalExecutionEngine {
-	TestableEngine(JavaByteCodeGenerator generator) {
-		super(generator);
+class TestableEngineFactory implements EngineFactory {
+	@Override
+	public ExecutionEngine getEngine() {
+		return new TestableEngine();
 	}
 
-	@Override
-	public void eval(String sourceName, String source, int lineNum) {
-		this.loadGlobalVariable(true);
-		// parse script
-		ArrayList<BNode> nodeList = this.parseScript(source, sourceName, lineNum);
-		if(nodeList == null) {
-			return;
-		}
-		for(BNode node : nodeList) {
-			if(!this.generateStatement(node, true) || !this.invokeStatement()) {
-				this.generator.Logger.OutputErrorsToStdErr();
+	private static class TestableEngine extends DShellExecutionEngine {
+		@Override
+		public void eval(String source, int lineNum) {
+			ANTLRInputStream input = new ANTLRInputStream(source);
+			input.name = "(stdin)";
+			if(!this.eval(input, lineNum, true)) {
+				/**
+				 * if evaluation failed, terminates immediately.
+				 */
 				System.exit(1);
 			}
 		}
 	}
 }
 
-class TestableEngineFactory extends TraditionalEngineFactory {
-	@Override
-	public TraditionalExecutionEngine getEngine() {
-		if(this.called) {
-			throw new RuntimeException("already called");
-		}
-		this.called = true;
-		JavaByteCodeGenerator generator = this.newGenerator();
-		DShellGrammar.ImportGrammar(generator.RootGamma);
-		generator.SetTypeChecker(newTypeChecker(generator));
-		generator.RequireLibrary("common", null);
-		return new TestableEngine(generator);
-	}
-}
-
+/**
+ * read from file, instead of standard input.
+ * used for interactive mode test
+ * @author skgchxngsxyz-osx
+ *
+ */
 class DummyConsole implements AbstractConsole {
 	private String script;
 	private boolean called = false;
 
 	public DummyConsole(String fileName) {
-		this.script = LibBunSystem._LoadTextFile(fileName);
+		this.script = Utils.readFromFile(fileName, false);
 		if(this.script == null) {
 			System.err.println("file not found: " + fileName);
 			System.exit(1);

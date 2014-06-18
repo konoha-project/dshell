@@ -19,13 +19,13 @@ import dshell.internal.parser.dshellParser;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.dshellParser.ToplevelContext;
 
-public class NewEngineFactory implements EngineFactory {
+public class DShellEngineFactory implements EngineFactory {
 	@Override
 	public ExecutionEngine getEngine() {
-		return new NewExecutionEngine();
+		return new DShellExecutionEngine();
 	}
 
-	private static class NewExecutionEngine implements ExecutionEngine {
+	public static class DShellExecutionEngine implements ExecutionEngine {
 		protected final Lexer lexer;
 		protected final dshellParser parser;
 		protected final DShellClassLoader classLoader;
@@ -33,7 +33,7 @@ public class NewEngineFactory implements EngineFactory {
 		protected final JavaByteCodeGen codeGen;
 		protected EngineConfig config;
 
-		private NewExecutionEngine() {
+		protected DShellExecutionEngine() {
 			this.lexer = new dshellLexer(null);
 			this.parser = new dshellParser(null);
 			this.classLoader = new DShellClassLoader();

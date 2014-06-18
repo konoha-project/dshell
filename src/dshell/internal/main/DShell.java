@@ -12,7 +12,7 @@ import dshell.internal.console.DShellConsole;
 import dshell.internal.exe.EngineFactory;
 import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.exe.ExecutionEngine.EngineConfig;
-import dshell.internal.exe.NewEngineFactory;
+import dshell.internal.exe.DShellEngineFactory;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.remote.RequestReceiver;
@@ -152,7 +152,7 @@ public class DShell {
 
 	public void execute() {
 		RuntimeContext.getContext();
-		EngineFactory factory = new NewEngineFactory();
+		EngineFactory factory = new DShellEngineFactory();
 		ExecutionEngine engine = factory.getEngine();
 		engine.setConfig(this.config);
 		switch(this.mode) {

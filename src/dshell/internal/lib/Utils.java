@@ -1,6 +1,10 @@
 package dshell.internal.lib;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.TreeSet;
@@ -191,5 +195,23 @@ public class Utils {
 		} else {
 			sb.append(value.toString());
 		}
+	}
+
+	public static String readFromFile(String fileName, boolean forceExit) {
+		try(FileInputStream input = new FileInputStream(fileName)){
+			ByteArrayOutputStream bufferStream = new ByteArrayOutputStream();
+			byte[] buffer = new byte[512];
+			int readSize = 0;
+			while((readSize = input.read(buffer, 0, buffer.length)) > -1) {
+				bufferStream.write(buffer, 0, readSize);
+			}
+			return bufferStream.toString();
+		} catch (IOException e) {
+			if(forceExit) {
+				System.err.println(e.getMessage());
+				Utils.fatal(1, "cannot read file: " + fileName);
+			}
+		}
+		return null;
 	}
 }

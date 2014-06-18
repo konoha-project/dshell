@@ -66,7 +66,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
 	private final SymbolTable symbolTable;
 	private final AbstractOperatorTable opTable;
-	private Type requiredType;
 
 	public TypeChecker(TypePool typePool) {
 		this.typePool = typePool;
@@ -94,17 +93,41 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * if requiredType is null, do not try matching node type.
 	 */
 	private Node checkType(Type requiredType, Node targetNode) {
+		/**
+		 * if target node is statement, always check type.
+		 */
 		if(!(targetNode instanceof ExprNode)) {
 			return targetNode.accept(this);
 		}
+
+		/**
+		 * if target node is expr node and unresolved type, 
+		 * try type check.
+		 */
 		ExprNode exprNode = (ExprNode) targetNode;
 		if(exprNode.getType() instanceof UnresolvedType) {
 			exprNode = (ExprNode) exprNode.accept(this);
 		}
+
+		/**
+		 * after type checking, if type is still unresolved type, 
+		 * throw exception.
+		 */
+		Type type = exprNode.getType();
+		if(type instanceof UnresolvedType) {
+			this.throwAndReportTypeError(exprNode, "having unresolved type");
+		}
+
+		/**
+		 * do not try type matching.
+		 */
 		if(requiredType == null) {
 			return exprNode;
 		}
-		Type type = exprNode.getType();
+
+		/**
+		 * try type matching.
+		 */
 		if(requiredType.isAssignableFrom(type)) {
 			return exprNode;
 		}
@@ -250,8 +273,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(NullNode node) {	//TODO: context type
-		return null;
+	public Node visit(NullNode node) {	//TODO: future may be used.
+		return node;
 	}
 
 	@Override
@@ -270,7 +293,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(MapNode node) { // TODO: empty map handling
+	public Node visit(MapNode node) {
 		int entrySize = node.getKeyList().size();
 		assert entrySize != 0;
 		ExprNode firstValueNode = node.getValueList().get(0);
@@ -304,6 +327,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ElementGetterNode node) {	//TODO: method handle property
+		this.throwAndReportTypeError(node, "unimplemtned type checker: " + node.getClass().getSimpleName());
 		return null;
 	}
 
@@ -345,7 +369,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		}
 		this.checkType(node.getSymbolNode());
 		if(node.getSymbolNode().isReadOnly) {
-			this.throwAndReportTypeError(node, "read only variable: " + node.getSymbolNode().getSymbolName());
+			this.throwAndReportTypeError(node.getSymbolNode(), "read only variable: " + node.getSymbolNode().getSymbolName());
 		}
 		Type exprType = node.getSymbolNode().getType();
 		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
@@ -564,7 +588,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ForInNode node) {	//TODO: check iterator support, add entry to symbolTable
-		
+		this.throwAndReportTypeError(node, "unimplemtned type checker: " + node.getClass().getSimpleName());
 		return node;
 	}
 
@@ -705,12 +729,14 @@ public class TypeChecker implements NodeVisitor<Node>{
 	@Override
 	public Node visit(ClassNode node) {
 		//TODO
+		this.throwAndReportTypeError(node, "unimplemtned type checker: " + node.getClass().getSimpleName());
 		return null;
 	}
 
 	@Override
 	public Node visit(ConstructorNode node) {
 		// TODO 
+		this.throwAndReportTypeError(node, "unimplemtned type checker: " + node.getClass().getSimpleName());
 		return null;
 	}
 
@@ -745,7 +771,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	private void throwAndReportTypeError(Node node, String message) {
 		StringBuilder sBuilder = new StringBuilder();
-		sBuilder.append("[error] ");
+		sBuilder.append("[TypeError] ");
 		sBuilder.append(message);
 		Token token = node.getToken();
 		if(token != null) {
