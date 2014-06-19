@@ -151,6 +151,7 @@ statement returns [Node node]
 	| tryCatchStatement {$node = $tryCatchStatement.node;}
 	| variableDeclaration statementEnd {$node = $variableDeclaration.node;}
 	| assignStatement statementEnd {$node = $assignStatement.node;}
+	| suffixStatement statementEnd {$node = $suffixStatement.node;}
 	| expression statementEnd {$node = $expression.node;}
 	;
 assertStatement returns [Node node]
@@ -181,6 +182,7 @@ forCond returns [Node.ExprNode node]
 forIter returns [Node node]
 	: expression {$node = $expression.node;}
 	| assignStatement {$node = $assignStatement.node;}
+	| suffixStatement {$node = $suffixStatement.node;}
 	| {$node = new Node.EmptyNode();}
 	;
 foreachStatement returns [Node node]
@@ -261,6 +263,9 @@ assignStatement returns [Node node]
 	;
 emptyStatement returns [Node node]
 	: ';' {$node = new Node.EmptyNode();}
+	;
+suffixStatement returns [Node node]
+	: expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($expression.node, $op);}
 	;
 
 // expression definition.
@@ -345,7 +350,7 @@ callExpression returns [Node.ExprNode node]
 
 applyExpression returns [Node.ExprNode node]
 	: primaryExpression {$node = $primaryExpression.node;}
-	| a=applyExpression arguments {$node = new Node.InvokeNode($a.node, $arguments.args);}
+	| a=applyExpression arguments {$node = new Node.ApplyNode($a.node, $arguments.args);}
 	| r=applyExpression '[' i=applyExpression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
 	| a=applyExpression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
 	;

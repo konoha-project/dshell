@@ -124,6 +124,10 @@ public class TypePool {
 		PrimitiveArrayType booleanArrayType = 
 				new PrimitiveArrayType("Array<" + this.booleanType.getInternalName() + ">", "dshell/lang/BooleanArray", this.objectType, this.booleanType);
 		new BooleanArrayInitializer().initType(booleanArrayType, this);
+
+		new ExceptionInitializer().initType(this.exceptionType, this);
+		
+		
 		
 		this.setTypeAndThrowIfDefined(intArrayType);
 		this.setTypeAndThrowIfDefined(floatArrayType);

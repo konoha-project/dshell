@@ -45,7 +45,7 @@ import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
-import dshell.internal.parser.Node.InvokeNode;
+import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.MapNode;
 import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
@@ -295,25 +295,6 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(SuffixIncrementNode node) {
-		long incSize = node.getOperator().equals("++") ? 1 : -1;
-		MethodBuilder mBuilder = this.getCurrentMethodBuilder(); 
-		SymbolNode symbolNode = node.getSymbolNode();
-		this.generateCode(symbolNode);
-		mBuilder.dup2();
-		Type symbolType = symbolNode.getType();
-		org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(symbolType);
-		if(typeDesc.equals(org.objectweb.asm.Type.DOUBLE_TYPE)) {
-			mBuilder.push((double) incSize);
-		} else {
-			mBuilder.push(incSize);
-		}
-		mBuilder.math(GeneratorAdapter.ADD, typeDesc);
-		mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolType);
-		return null;
-	}
-
-	@Override
 	public Void visit(OperatorCallNode node) {
 		for(Node paramNode : node.getNodeList()) {
 			this.generateCode(paramNode);
@@ -322,7 +303,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		return null;
 	}
 
-	protected void generateAsFuncCall(InvokeNode node) {
+	protected void generateAsFuncCall(ApplyNode node) {
 		MethodHandle handle = node.getHandle();
 		if(!(handle instanceof StaticFunctionHandle)) {
 			this.generateCode(node.getRecvNode());
@@ -333,7 +314,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		node.getHandle().call(this.getCurrentMethodBuilder());
 	}
 
-	protected void generateAsMethodCall(InvokeNode node) {
+	protected void generateAsMethodCall(ApplyNode node) {
 		FieldGetterNode getterNode = (FieldGetterNode) node.getRecvNode();
 		this.generateCode(getterNode.getRecvNode());
 		for(Node paramNode : node.getArgList()) {
@@ -343,7 +324,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(InvokeNode node) {
+	public Void visit(ApplyNode node) {
 		if(node.isFuncCall()) {
 			this.generateAsFuncCall(node);
 		} else {
@@ -599,7 +580,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		} else {
 			this.generateCode(node.getRightNode());
 		}
-		AssignableNode leftNode = node.getLeftNode();
+		AssignableNode leftNode = (AssignableNode) node.getLeftNode();
 		if(leftNode instanceof SymbolNode) {
 			this.visitAssignLeft((SymbolNode)leftNode);
 		} else if(leftNode instanceof FieldGetterNode) {
@@ -610,7 +591,24 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		return null;
 	}
 
-	private void visitAssignLeft(SymbolNode leftNode) {	//TODO: global variable
+	@Override
+	public Void visit(SuffixIncrementNode node) {
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		this.generateCode(node.getLeftNode());
+		mBuilder.push((long)1);
+		node.getHandle().call(mBuilder);
+		AssignableNode leftNode = (AssignableNode) node.getLeftNode();
+		if(leftNode instanceof SymbolNode) {
+			this.visitAssignLeft((SymbolNode)leftNode);
+		} else if(leftNode instanceof FieldGetterNode) {
+			this.visitAssignLeft((FieldGetterNode)leftNode);
+		} else if(leftNode instanceof ElementGetterNode) {
+			this.visitAssignLeft((ElementGetterNode)leftNode);
+		}
+		return null;
+	}
+
+	private void visitAssignLeft(SymbolNode leftNode) {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		mBuilder.storeValueToLocalVar(leftNode.getSymbolName(), leftNode.getType());
 	}

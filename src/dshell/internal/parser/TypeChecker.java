@@ -13,6 +13,7 @@ import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
+import dshell.internal.parser.Node.AssignableNode;
 import dshell.internal.parser.Node.BlockEndNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
@@ -38,7 +39,7 @@ import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
-import dshell.internal.parser.Node.InvokeNode;
+import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.LoopNode;
 import dshell.internal.parser.Node.MapNode;
 import dshell.internal.parser.Node.NullNode;
@@ -362,24 +363,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(SuffixIncrementNode node) {
-		String op = node.getOperator();
-		if(!op.equals("++") && !op.equals("--")) {
-			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
-		}
-		this.checkType(node.getSymbolNode());
-		if(node.getSymbolNode().isReadOnly) {
-			this.throwAndReportTypeError(node.getSymbolNode(), "read only variable: " + node.getSymbolNode().getSymbolName());
-		}
-		Type exprType = node.getSymbolNode().getType();
-		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
-			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
-		}
-		node.setType(exprType);
-		return node;
-	}
-
-	@Override
 	public Node visit(OperatorCallNode node) {
 		int size = node.getNodeList().size();
 		assert (size > 0 && size < 3);
@@ -412,7 +395,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * @param node
 	 * @return
 	 */
-	protected Node checkTypeAsFuncCall(InvokeNode node) {
+	protected Node checkTypeAsFuncCall(ApplyNode node) {
 		node.setAsFuncCallNode();
 		MethodHandle handle = this.lookupFuncHandle(node.getRecvNode());
 
@@ -448,7 +431,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * @param node
 	 * @return
 	 */
-	protected Node checkTypeAsMethodCall(InvokeNode node) {
+	protected Node checkTypeAsMethodCall(ApplyNode node) {
 		FieldGetterNode getterNode = (FieldGetterNode) node.getRecvNode();
 		String methodName = getterNode.getFieldName();
 		ClassType recvType = this.checkAndGetClassType(getterNode.getRecvNode());
@@ -470,7 +453,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(InvokeNode node) {
+	public Node visit(ApplyNode node) {
 		if(node.getRecvNode() instanceof FieldGetterNode) {
 			return this.checkTypeAsMethodCall(node);
 		}
@@ -674,8 +657,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 	public Node visit(AssignNode node) {	//TODO: int to float assign
 		Type leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
 		Type rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
-		if(node.getLeftNode().isReadOnly()) {
-			this.throwAndReportTypeError(node, "read only variable");
+		ExprNode exprNode = node.getLeftNode();
+		if(!(exprNode instanceof AssignableNode)) {
+			this.throwAndReportTypeError(exprNode, "require assignable node");
+		}
+		AssignableNode leftNode = (AssignableNode) exprNode;
+		if(leftNode.isReadOnly()) {
+			this.throwAndReportTypeError(leftNode, "read only variable");
 		}
 		String op = node.getAssignOp();
 		if(op.equals("=")) {
@@ -690,6 +678,34 @@ public class TypeChecker implements NodeVisitor<Node>{
 			}
 			node.setHandle(handle);
 		}
+		return node;
+	}
+
+	@Override
+	public Node visit(SuffixIncrementNode node) {
+		String op = node.getOperator();
+		if(!op.equals("++") && !op.equals("--")) {
+			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
+		}
+		ExprNode exprNode = node.getLeftNode();
+		this.checkType(exprNode);
+		if(!(exprNode instanceof AssignableNode)) {
+			this.throwAndReportTypeError(exprNode, "require assignable node");
+		}
+		AssignableNode leftNode = (AssignableNode) exprNode;
+		if(leftNode.isReadOnly) {
+			this.throwAndReportTypeError(leftNode, "read only variable");
+		}
+		Type exprType = leftNode.getType();
+		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
+			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
+		}
+		String actualOp = op.substring(1);
+		OperatorHandle handle = this.opTable.getOperatorHandle(actualOp, exprType, this.typePool.intType);
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
+		}
+		node.setHandle(handle);
 		return node;
 	}
 
