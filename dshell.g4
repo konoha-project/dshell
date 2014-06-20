@@ -72,7 +72,7 @@ typeName returns [TypeSymbol type] locals [TypeSymbol[] types]
 	| Void {$type = TypeSymbol.toVoid($Void);}
 	| Identifier {$type = TypeSymbol.toClass($Identifier);}
 	| Func '<' aa=typeName paramTypes '>'
-		{$type = TypeSymbol.toFunc($aa.type, $paramTypes.types);}
+		{$type = TypeSymbol.toFunc($Func, $aa.type, $paramTypes.types);}
 	| Identifier '<' a+=typeName (',' a+=typeName)* '>'
 		{
 			$types = new TypeSymbol[$a.size()];

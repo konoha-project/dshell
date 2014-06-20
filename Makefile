@@ -12,7 +12,7 @@ build: preprocess
 
 preprocess:
 	python ./tools/gen-array.py ./src/dshell/lang/GenericArray.java
-	java -jar ./lib/antlr-4.2.2-complete.jar ./dshell.g4 -o ./gensrc/dshell/internal/parser -no-listener -no-visitor -encoding UTF-8
+	java -jar ./lib/antlr-4.3-complete.jar ./dshell.g4 -o ./gensrc/dshell/internal/parser -no-listener -no-visitor -encoding UTF-8
 
 clean: clean-launcher
 	rm -rf ./gensrc

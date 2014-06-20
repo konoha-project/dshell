@@ -1,7 +1,8 @@
+var a = false
 try {
-	throw new DShellException()
-	assert(false)
+	throw new Exception()
 }
-catch(e : DShellException) {
-	assert(true)
+catch(e : Exception) {
+	a = true
 }
+assert(a)

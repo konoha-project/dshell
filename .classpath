@@ -16,11 +16,11 @@
 			<attribute name="optional" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/antlr-runtime-4.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/asm-all-4.0.jar"/>
 	<classpathentry kind="lib" path="lib/commons-codec-1.9.jar"/>
 	<classpathentry kind="lib" path="lib/jline-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/jna-4.0.0.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.17.jar"/>
+	<classpathentry kind="lib" path="lib/antlr-runtime-4.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

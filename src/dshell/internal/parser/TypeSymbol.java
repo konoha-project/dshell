@@ -3,6 +3,7 @@ package dshell.internal.parser;
 import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.TypePool.Type;
+import dshell.internal.parser.error.TypeLookupException;
 
 /**
  * contains parsed type symbol.
@@ -15,7 +16,7 @@ public abstract class TypeSymbol {
 	 * called from TypeChecker
 	 * @param pool
 	 * @return
-	 * - return null, if type not found.
+	 * - throw exception, if type not found.
 	 */
 	public abstract Type toType(TypePool pool);
 
@@ -35,8 +36,8 @@ public abstract class TypeSymbol {
 		return new ClassTypeSymbol(token);
 	}
 
-	public static TypeSymbol toFunc(TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
-		return new FuncTypeSymbol(returnTypeSymbol, paramTypeSymbols);
+	public static TypeSymbol toFunc(Token token, TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
+		return new FuncTypeSymbol(token, returnTypeSymbol, paramTypeSymbols);
 	}
 
 	public static TypeSymbol toGeneric(Token token, TypeSymbol[] typeSymbols) {
@@ -44,15 +45,20 @@ public abstract class TypeSymbol {
 	}
 
 	public static class PrimitiveTypeSymbol extends TypeSymbol {
-		private final String typeName;
+		private final Token token;
 
 		private PrimitiveTypeSymbol(Token token) {
-			this.typeName = token.getText();
+			this.token = token;
 		}
 
 		@Override
 		public Type toType(TypePool pool) {
-			return pool.getPrimitiveType(this.typeName);
+			try {
+				return pool.getPrimitiveType(this.token.getText());
+			} catch(TypeLookupException e) {
+				TypeLookupException.formateAndPropagateException(e, this.token);
+			}
+			return null;
 		}
 	}
 
@@ -64,23 +70,30 @@ public abstract class TypeSymbol {
 	}
 
 	public static class ClassTypeSymbol extends TypeSymbol {
-		private final String typeName;
+		private final Token token;
 
 		private ClassTypeSymbol(Token token) {
-			this.typeName = token.getText();
+			this.token = token;
 		}
 
 		@Override
 		public Type toType(TypePool pool) {
-			return pool.getClassType(this.typeName);
+			try {
+				return pool.getClassType(this.token.getText());
+			} catch(TypeLookupException e) {
+				TypeLookupException.formateAndPropagateException(e, this.token);
+			}
+			return null;
 		}
 	}
 
 	public static class FuncTypeSymbol extends TypeSymbol {
+		private final Token token;
 		private final TypeSymbol returnTypeSymbol;
 		private final TypeSymbol[] paramtypeSymbols;
 
-		private FuncTypeSymbol(TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
+		private FuncTypeSymbol(Token token, TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
+			this.token = token;
 			this.returnTypeSymbol = returnTypeSymbol;
 			this.paramtypeSymbols = paramTypeSymbols;
 		}
@@ -93,16 +106,21 @@ public abstract class TypeSymbol {
 			for(int i = 0; i < size; i++) {
 				paramTypes[i] = this.paramtypeSymbols[i].toType(pool);
 			}
-			return pool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
+			try {
+				return pool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
+			} catch(TypeLookupException e) {
+				TypeLookupException.formateAndPropagateException(e, this.token);
+			}
+			return null;
 		}
 	}
 
 	public static class GenericTypeSymbol extends TypeSymbol {
-		private final String baseTypeName;
+		private final Token token;
 		private final TypeSymbol[] typeSymbols;
 
 		private GenericTypeSymbol(Token token, TypeSymbol[] typeSymbols) {
-			this.baseTypeName = token.getText();
+			this.token = token;
 			this.typeSymbols = typeSymbols;
 		}
 
@@ -110,10 +128,15 @@ public abstract class TypeSymbol {
 		public Type toType(TypePool pool) {
 			int size = this.typeSymbols.length;
 			Type[] types = new Type[size];
-			for(int i =0; i < size; i++) {
+			for(int i = 0; i < size; i++) {
 				types[i] = this.typeSymbols[i].toType(pool);
 			}
-			return pool.createAndGetGenericTypeIfUndefined(this.baseTypeName, types);
+			try {
+				return pool.createAndGetGenericTypeIfUndefined(this.token.getText(), types);
+			} catch(TypeLookupException e) {
+				TypeLookupException.formateAndPropagateException(e, this.token);
+			}
+			return null;
 		}
 	}
 }

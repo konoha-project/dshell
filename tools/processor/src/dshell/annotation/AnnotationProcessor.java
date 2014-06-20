@@ -32,10 +32,16 @@ public class AnnotationProcessor extends AbstractProcessor {
 	private final static String A_WRAPPER_CLASS = "dshell.annotation.WrapperClass";
 	private final static String A_OP_HOLDER = "dshell.annotation.OpHolder";
 
+	private final static boolean debugMode = false;
+
 	private Map<String, String> typeMap;
 	private boolean isInitialazed = false;
 
 	private void initialize() {
+		if(this.isInitialazed) {
+			return;
+		}
+		this.isInitialazed = true;
 		this.typeMap = new HashMap<>();
 		this.typeMap.put("long", "pool.intType");
 		this.typeMap.put("double", "pool.floatType");
@@ -51,10 +57,6 @@ public class AnnotationProcessor extends AbstractProcessor {
 	@Override
 	public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
 		this.debugPrint("call processor");
-		if(this.isInitialazed) {
-			return true;
-		}
-		this.isInitialazed = true;
 		this.initialize();
 		for(TypeElement annotation : annotations) {
 			if(this.matchAnnotation(annotation, A_OP_HOLDER)) {
@@ -119,7 +121,9 @@ public class AnnotationProcessor extends AbstractProcessor {
 	}
 
 	private void debugPrint(String message) {
-		this.processingEnv.getMessager().printMessage(Kind.NOTE, "DEBUG: " + message);
+		if(debugMode) {
+			this.processingEnv.getMessager().printMessage(Kind.NOTE, "DEBUG: " + message);
+		}
 	}
 
 	private String toTypeName(VariableElement variableElement) {

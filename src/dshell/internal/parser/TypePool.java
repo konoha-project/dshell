@@ -14,6 +14,7 @@ import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
+import dshell.internal.parser.error.TypeLookupException;
 import dshell.internal.initializer.*;
 
 /**
@@ -136,7 +137,7 @@ public class TypePool {
 
 	private Type setTypeAndThrowIfDefined(Type type) {
 		if(this.typeMap.containsKey(type.getTypeName())) {
-			throw new RuntimeException(type.getTypeName() + " is already defined");
+			throw new TypeLookupException(type.getTypeName() + " is already defined");
 		}
 		this.typeMap.put(type.getTypeName(), type);
 		return type;
@@ -153,7 +154,7 @@ public class TypePool {
 	public Type getType(String typeName) {
 		Type type = this.typeMap.get(typeName);
 		if(type instanceof GenericBaseType) {
-			throw new RuntimeException("cannot directly use generic type:" + type.getTypeName());
+			throw new TypeLookupException("cannot directly use generic type:" + type.getTypeName());
 		}
 		return type == null ? TypePool.unresolvedType : type;
 	}
@@ -167,7 +168,7 @@ public class TypePool {
 	public Type getTypeAndThrowIfUndefined(String typeName) {
 		Type type = this.getType(typeName);
 		if(type instanceof UnresolvedType) {
-			throw new RuntimeException("undefined type: " + typeName);
+			throw new TypeLookupException("undefined type: " + typeName);
 		}
 		return type;
 	}
@@ -183,7 +184,7 @@ public class TypePool {
 		if(type instanceof GenericBaseType) {
 			return (GenericBaseType) type;
 		}
-		throw new RuntimeException(typeName + " is not generic base type");
+		throw new TypeLookupException(typeName + " is not generic base type");
 	}
 
 	/**
@@ -197,7 +198,7 @@ public class TypePool {
 		if(type instanceof PrimitiveType) {
 			return (PrimitiveType) type;
 		}
-		throw new RuntimeException(typeName + " is not primitive type");
+		throw new TypeLookupException(typeName + " is not primitive type");
 	}
 
 	/**
@@ -211,7 +212,7 @@ public class TypePool {
 		if(type instanceof ClassType) {
 			return (ClassType) type;
 		}
-		throw new RuntimeException(typeName + " is not class type");
+		throw new TypeLookupException(typeName + " is not class type");
 	}
 
 	// type creator api
@@ -225,10 +226,10 @@ public class TypePool {
 	 */
 	public ClassType createAndSetClassType(String className, Type superType) {
 		if(!superType.allowExtends()) {
-			throw new RuntimeException(superType.getTypeName() + " is not inheritable");
+			throw new TypeLookupException(superType.getTypeName() + " is not inheritable");
 		}
 		if(!(this.getType(className) instanceof UnresolvedType)) {
-			throw new RuntimeException(className + " is already defined.");
+			throw new TypeLookupException(className + " is already defined.");
 		}
 		ClassType classType = new ClassType(className, generatedClassNamePrefix + className, superType, true);
 		this.typeMap.put(className, classType);
@@ -734,7 +735,7 @@ public class TypePool {
 		@Override
 		public void addMethodHandle(MethodHandle handle) {
 			if(this.methodHandleMap.containsKey(handle.getCalleeName())) {
-				throw new RuntimeException(handle.getCalleeName() + " is already defined");
+				throw new TypeLookupException(handle.getCalleeName() + " is already defined");
 			}
 			this.methodHandleMap.put(handle.getCalleeName(), handle);
 		}

@@ -3,8 +3,6 @@ package dshell.internal.parser;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.antlr.v4.runtime.Token;
-
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
@@ -62,6 +60,8 @@ import dshell.internal.parser.TypePool.RootClassType;
 import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.TypePool.UnresolvedType;
 import dshell.internal.parser.TypePool.VoidType;
+import dshell.internal.parser.error.TypeCheckException;
+import dshell.internal.parser.error.TypeLookupException;
 
 public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
@@ -471,6 +471,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		ConstructorHandle handle = recvType.lookupConstructorHandle(paramTypeList);
 		if(handle == null) {
 			StringBuilder sBuilder = new StringBuilder();
+			sBuilder.append(" " + recvType);
 			for(Type paramType : paramTypeList) {
 				sBuilder.append(" ");
 				sBuilder.append(paramType.toString());
@@ -778,7 +779,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			}
 			node.setHandle(handle);
 			return node;
-		} catch(TypeError e) {
+		} catch(TypeCheckException e) {
 			this.symbolTable.popAllLocal();
 			System.err.println(e.getMessage());
 		}
@@ -786,41 +787,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	private void throwAndReportTypeError(Node node, String message) {
-		StringBuilder sBuilder = new StringBuilder();
-		sBuilder.append("[TypeError] ");
-		sBuilder.append(message);
-		Token token = node.getToken();
-		if(token != null) {
-			sBuilder.append("\n\t");
-			StringBuilder subBuilder = new StringBuilder();
-			subBuilder.append(token.getTokenSource().getSourceName());
-			subBuilder.append(':');
-			subBuilder.append(token.getLine());
-			subBuilder.append(',');
-			subBuilder.append(token.getCharPositionInLine());
-			subBuilder.append("   ");
-			String errorLocation = subBuilder.toString();
-			int size = errorLocation.length();
-
-			String tokenText = token.getText();
-			sBuilder.append(errorLocation);
-			sBuilder.append(tokenText);
-			sBuilder.append("\n\t");
-			for(int i = 0; i < size; i++) {
-				sBuilder.append(' ');
-			}
-			int tokenSize = tokenText.length();
-			for(int i = 0; i < tokenSize; i++) {
-				sBuilder.append('^');
-			}
-		}
-		throw new TypeError(sBuilder.toString());
-	}
-
-	public static class TypeError extends RuntimeException {
-		private static final long serialVersionUID = -6490540925854900348L;
-		private TypeError(String message) {
-			super(message);
-		}
+		throw new TypeCheckException(node.getToken(), message);
 	}
 }
