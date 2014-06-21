@@ -15,7 +15,7 @@ import dshell.internal.exe.ExecutionEngine.EngineConfig;
 import dshell.internal.exe.DShellEngineFactory;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
-import dshell.internal.remote.RequestReceiver;
+//import dshell.internal.remote.RequestReceiver;
 import static dshell.internal.lib.RuntimeContext.AppenderType;
 
 public class DShell {
@@ -66,7 +66,7 @@ public class DShell {
 					System.exit(0);
 				}
 				else if(optionSymbol.equals("--debug")) {
-					RuntimeContext.getContext().setDebugMode(true);
+					RuntimeContext.getInstance().setDebugMode(true);
 				}
 				else if(optionSymbol.equals("--disable-auto-import")) {
 					this.autoImportCommand = false;
@@ -84,22 +84,22 @@ public class DShell {
 					showHelpAndExit(0, System.out);
 				}
 				else if(optionSymbol.equals("--logging:file") && i + 1 < args.length) {
-					RuntimeContext.getContext().changeAppender(AppenderType.file, args[++i]);
+					RuntimeContext.getInstance().changeAppender(AppenderType.file, args[++i]);
 				}
 				else if(optionSymbol.equals("--logging:stdout")) {
-					RuntimeContext.getContext().changeAppender(AppenderType.stdout);
+					RuntimeContext.getInstance().changeAppender(AppenderType.stdout);
 				}
 				else if(optionSymbol.equals("--logging:stderr")) {
-					RuntimeContext.getContext().changeAppender(AppenderType.stderr);
+					RuntimeContext.getInstance().changeAppender(AppenderType.stderr);
 				}
 				else if(optionSymbol.equals("--logging:syslog")) {
 					int nextIndex = i + 1;
 					if(nextIndex < args.length && !args[nextIndex].startsWith("--")) {
-						RuntimeContext.getContext().changeAppender(AppenderType.syslog, args[nextIndex]);
+						RuntimeContext.getInstance().changeAppender(AppenderType.syslog, args[nextIndex]);
 						i++;
 					}
 					else {
-						RuntimeContext.getContext().changeAppender(AppenderType.syslog);
+						RuntimeContext.getInstance().changeAppender(AppenderType.syslog);
 					}
 				}
 				else if(optionSymbol.equals("--receive") && i + 1 < args.length && args.length == 2) {	// never return
@@ -151,13 +151,13 @@ public class DShell {
 	}
 
 	public void execute() {
-		RuntimeContext.getContext();
+		RuntimeContext.getInstance();
 		EngineFactory factory = new DShellEngineFactory();
 		ExecutionEngine engine = factory.getEngine();
 		engine.setConfig(this.config);
 		switch(this.mode) {
 		case receiverMode:
-			RequestReceiver.invoke(this.specificArg);	// never return
+//			RequestReceiver.invoke(this.specificArg);	// never return
 		case interactiveMode:
 			this.runInteractiveMode(engine, new DShellConsole());	// never return
 		case scriptingMode:

@@ -12,7 +12,7 @@ import dshell.internal.lib.Utils;
 import dshell.lang.Errno;
 
 public interface CauseInferencer {
-	public ArrayList<String> doInference(SubProc proc);
+	public ArrayList<String> doInference(ProcessContext proc);
 }
 
 class CauseInferencer_ltrace implements CauseInferencer {
@@ -52,7 +52,7 @@ class CauseInferencer_ltrace implements CauseInferencer {
 	private CauseInferencer_ltrace() {	// do nothing
 	}
 
-	public ArrayList<String> doInference(SubProc proc) {
+	public ArrayList<String> doInference(ProcessContext proc) {
 		String logFilePath = proc.getLogFilePath();
 		ArrayList<String[]> lineList = new ArrayList<String[]>();
 		try {

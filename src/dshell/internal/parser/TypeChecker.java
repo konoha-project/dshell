@@ -19,6 +19,7 @@ import dshell.internal.parser.Node.BreakNode;
 import dshell.internal.parser.Node.CastNode;
 import dshell.internal.parser.Node.CatchNode;
 import dshell.internal.parser.Node.ClassNode;
+import dshell.internal.parser.Node.CommandNode;
 import dshell.internal.parser.Node.CondOpNode;
 import dshell.internal.parser.Node.ConstructorCallNode;
 import dshell.internal.parser.Node.ConstructorNode;
@@ -61,7 +62,6 @@ import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.TypePool.UnresolvedType;
 import dshell.internal.parser.TypePool.VoidType;
 import dshell.internal.parser.error.TypeCheckException;
-import dshell.internal.parser.error.TypeLookupException;
 
 public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
@@ -497,6 +497,15 @@ public class TypeChecker implements NodeVisitor<Node>{
 		this.checkType(this.typePool.booleanType, node.getLeftNode());
 		this.checkType(this.typePool.booleanType, node.getRightNode());
 		node.setType(this.typePool.booleanType);
+		return node;
+	}
+
+	@Override
+	public Node visit(CommandNode node) {	//TODO: context typing, redirect, pipe .. etc.
+		for(ExprNode argNode : node.getArgNodeList()) {
+			this.checkType(this.typePool.stringType, argNode);
+		}
+		node.setType(this.typePool.intType);
 		return node;
 	}
 

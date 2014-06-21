@@ -1,40 +1,44 @@
 package dshell.internal.lib;
 
-import dshell.internal.process.CommandArg;
-import dshell.internal.process.PseudoProcess;
+import dshell.internal.process.AbstractProcessContext;
 
-public class CommandRunner extends PseudoProcess {
+public class CommandRunner extends AbstractProcessContext {
 	private final ExecutableAsCommand executor;
 	private CommandContext context;
 	private Thread runner;
 	private boolean isTerminated;
 
-	public CommandRunner(ExecutableAsCommand executor) {
+	public CommandRunner(String commandName, ExecutableAsCommand executor) {
+		super(commandName);
 		this.executor = executor;
 		this.isTerminated = false;
 	}
 
 	@Override
-	public void mergeErrorToOut() {
+	public AbstractProcessContext mergeErrorToOut() {
+		return this;
 	}
 
 	@Override
-	public void setInputRedirect(CommandArg readFileName) {
+	public AbstractProcessContext setInputRedirect(String readFileName) {
+		return this;
 	}
 
 	@Override
-	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
+	public AbstractProcessContext setOutputRedirect(int fd, String writeFileName, boolean append) {
+		return this;
 	}
 
 	@Override
-	public void start() {
+	public AbstractProcessContext start() {
 		this.context = new CommandContext(StreamUtils.createStdin(), StreamUtils.createStdout(), StreamUtils.createStderr());
 		this.runner = new Thread() {
 			@Override public void run() {
-				executor.execute(context, commandList);
+				executor.execute(context, argList);
 			}
 		};
 		this.runner.start();
+		return this;
 	}
 
 	@Override

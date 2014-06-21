@@ -215,8 +215,13 @@ public abstract class Node {
 		public static String parseTokenText(Token token) {
 			StringBuilder sBuilder = new StringBuilder();
 			String text = token.getText();
-			int size = text.length();
-			for(int i = 1; i < size - 1; i++) {
+			int startIndex = 1;
+			int endIndex = text.length() - 1;
+			if(!text.startsWith("\"")) {	// for command argument. FIXME:
+				startIndex = 0;
+				endIndex += 1;
+			}
+			for(int i = startIndex; i < endIndex; i++) {
 				char ch = text.charAt(i);
 				if(ch == '\\') {
 					char nextCh = text.charAt(++i);
@@ -732,8 +737,31 @@ public abstract class Node {
 		}
 	}
 
-	//TODO: adding shell command represent nodes
+	public static class CommandNode extends ExprNode {
+		private final List<ExprNode> argNodeList;
 
+		protected CommandNode(Token token) {
+			super(token);
+			this.argNodeList = new ArrayList<>();
+			this.argNodeList.add(this.setExprNodeAsChild(new StringValueNode(token)));
+		}
+
+		public void setArg(ExprNode argNode) {
+			this.argNodeList.add(this.setExprNodeAsChild(argNode));
+		}
+
+		public List<ExprNode> getArgNodeList() {
+			return this.argNodeList;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
+	}
+	
+	
+	
 	// #################
 	// #   statement   #
 	// #################

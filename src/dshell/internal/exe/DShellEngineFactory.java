@@ -11,6 +11,7 @@ import org.antlr.v4.runtime.Lexer;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
+import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.parser.TypeChecker;
 import dshell.internal.parser.TypePool;
@@ -141,7 +142,11 @@ public class DShellEngineFactory implements EngineFactory {
 				staticMethod.invoke(null);
 				return true;
 			} catch(InvocationTargetException e) {
-				Utils.printException(e);
+				if(RuntimeContext.getInstance().isDebugMode()) {
+					e.getCause().printStackTrace();
+				} else {
+					Utils.printException(e);
+				}
 			} catch(Throwable t) {
 				t.printStackTrace();
 				Utils.fatal(1, "invocation problem");

@@ -1,6 +1,7 @@
 package dshell.internal.process;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public enum BuiltinSymbol {
 	cd {
@@ -58,39 +59,24 @@ public enum BuiltinSymbol {
 		return "    currently not defined";
 	}
 
-	public String getExternalName() {
-		return this.name();
-	}
-
 	public boolean isCommandSymbol() {
 		return true;
 	}
 
 	public static boolean match(String symbol) {
-		BuiltinSymbol[] symbols = BuiltinSymbol.values();
-		for(BuiltinSymbol currentSymbol : symbols) {
-			if(currentSymbol.getExternalName().equals(symbol)) {
-				return true;
-			}
+		try {
+			BuiltinSymbol.valueOf(symbol);
+			return true;
+		} catch(IllegalArgumentException e) {
 		}
 		return false;
 	}
 
-	public static BuiltinSymbol valueOfSymbol(String symbol) {
-		BuiltinSymbol[] symbols = BuiltinSymbol.values();
-		for(BuiltinSymbol currentSymbol : symbols) {
-			if(currentSymbol.getExternalName().equals(symbol)) {
-				return currentSymbol;
-			}
-		}
-		throw new IllegalArgumentException("Illegal Symbol: " + symbol);
-	}
-
-	public static ArrayList<String> getCommandSymbolList() {
-		ArrayList<String> symbolList = new ArrayList<String>();
+	public static List<String> getCommandSymbolList() {
+		List<String> symbolList = new ArrayList<String>();
 		for(BuiltinSymbol symbol : BuiltinSymbol.values()) {
 			if(symbol.isCommandSymbol()) {
-				symbolList.add(symbol.getExternalName());
+				symbolList.add(symbol.name());
 			}
 		}
 		return symbolList;

@@ -1,4 +1,7 @@
-grammar dshell;
+parser grammar dshellParser;
+
+options { tokenVocab=dshellLexer; }
+
 
 @header {
 package dshell.internal.parser;
@@ -7,16 +10,16 @@ import dshell.internal.parser.ParserUtils;
 import dshell.internal.parser.TypeSymbol;
 }
 
-@parser::members {
-	private boolean isLineEnd() {
-		int lineEndIndex = this.getCurrentToken().getTokenIndex() - 1;
-		Token lineEndToken = _input.get(lineEndIndex);
-		if(lineEndToken.getChannel() != Lexer.HIDDEN) {
-			return false;
-		}
-		int type = lineEndToken.getType();
-		return type == LineEnd;
+@members {
+private boolean isLineEnd() {
+	int lineEndIndex = this.getCurrentToken().getTokenIndex() - 1;
+	Token lineEndToken = _input.get(lineEndIndex);
+	if(lineEndToken.getChannel() != Lexer.HIDDEN) {
+		return false;
 	}
+	int type = lineEndToken.getType();
+	return type == LineEnd;
+}
 }
 
 // ######################
@@ -41,6 +44,7 @@ toplevelStatement returns [Node node]
 	;
 statementEnd
 	: EOF
+	| CommandEnd
 	| ';'
 	| {isLineEnd()}?
 	;
@@ -153,6 +157,7 @@ statement returns [Node node]
 	| assignStatement statementEnd {$node = $assignStatement.node;}
 	| suffixStatement statementEnd {$node = $suffixStatement.node;}
 	| expression statementEnd {$node = $expression.node;}
+	| commandExpression statementEnd {$node = $commandExpression.node;}
 	;
 assertStatement returns [Node node]
 	: Assert '(' expression ')' {$node = new Node.AssertNode($Assert, $expression.node);}
@@ -269,6 +274,23 @@ suffixStatement returns [Node node]
 	;
 
 // expression definition.
+
+commandExpression returns [Node.ExprNode node]
+	: singleCommandExpr {$node = $singleCommandExpr.node;}
+	;
+singleCommandExpr returns [Node.CommandNode node]
+	: CommandName a+=commandArg*
+		{
+			$node = new Node.CommandNode($CommandName); 
+			for(int i = 0; i < $a.size(); i++) {
+				$node.setArg($a.get(i).node);
+			}
+		}
+	;
+
+commandArg returns [Node.ExprNode node]
+	: CommandArg {$node = new Node.StringValueNode($CommandArg);}
+	;
 
 expression returns [Node.ExprNode node]
 	: condOrExpression {$node = $condOrExpression.node;}
@@ -414,147 +436,3 @@ argumentList returns [ParserUtils.Arguments args]
 		}
 	;
 
-// ######################
-// #        lexer       #
-// ######################
-
-// reserved keyword
-Assert		: 'assert';
-Break		: 'break';
-Boolean		: 'boolean';
-Catch		: 'catch';
-Continue	: 'continue';
-Class		: 'class';
-Command		: 'command';
-Constructor	: 'constructor';
-Do			: 'do';
-Else		: 'else';
-Extends		: 'extends';
-Export		: 'export';
-Func		: 'Func';
-Function	: 'function';
-Finally		: 'finally';
-Float		: 'float';
-For			: 'for';
-If			: 'if';
-Import		: 'import';
-Int			: 'int';
-Instanceof	: 'instanceof';
-Let			: 'let';
-New			: 'new';
-Return		: 'return';
-Super		: 'super';
-Try			: 'try';
-Throw		: 'throw';
-Var			: 'var';
-Void		: 'void';
-While		: 'while';
-
-// operator
-// binary op
-ADD		: '+';
-SUB		: '-';
-MUL		: '*';
-DIV		: '/';
-MOD		: '%';
-LT		: '<';
-GT		: '>';
-LE		: '<=';
-GE		: '>=';
-EQ		: '==';
-NE		: '!=';
-AND		: '&';
-OR		: '|';
-XOR		: '^';
-COND_AND	: '&&';
-COND_OR		: '||';
-REGEX_MATCH : '=~';
-REGEX_UNMATCH : '!~';
-
-// prefix op
-BIT_NOT	: '~';
-NOT		: '!';
-
-// suffix op
-INC		: '++';
-DEC		: '--';
-
-// assign op
-ASSIGN	: '=';
-ADD_ASSIGN	: '+=';
-SUB_ASSIGN	: '-=';
-MUL_ASSIGN	: '*=';
-DIV_ASSIGN	: '/=';
-MOD_ASSIGN	: '%=';
-
-
-// literal
-// int literal	//TODO: hex, oct number
-fragment
-Number
-	: '0'
-	| [1-9] [0-9]*
-	;
-IntLiteral
-	: Number
-	;
-
-// float literal	//TODO: exp
-FloatLiteral
-	: Number '.' Number FloatSuffix?
-	;
-
-fragment
-FloatSuffix
-	: [eE] [+-]? Number
-	;
-
-
-// boolean literal
-BooleanLiteral
-	: 'true'
-	| 'false'
-	;
-
-// String literal	//TODO: interpolation
-StringLiteral
-	: '"' StringChars? '"'
-	| '\'' StringChars? '\''
-	;
-fragment
-StringChars
-	: StringChar+
-	;
-fragment
-StringChar
-	: ~["\\]
-	| EscapeSequence
-	;
-fragment
-EscapeSequence	// TODO: unicode escape
-	: '\\' [btnfr"'\\]
-	;
-
-// null literal
-NullLiteral
-	: 'null'
-	;
-
-// symbol , class and command name
-Identifier
-	: [_a-zA-Z] [_0-9a-zA-Z]*
-	;
-CommandName	//FIXME:
-	: [0-9a-zA-Z]+
-	;
-
-// comment & space
-Comment
-	: '#' ~[\r\n\u2028\u2029]* -> skip
-	;
-WhiteSpace
-	: [\t\u000B\u000C\u0020\u00A0]+ -> skip
-	;
-LineEnd
-	: [\r\n\u2028\u2029] -> channel(HIDDEN)
-	;

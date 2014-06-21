@@ -10,6 +10,11 @@ import static dshell.internal.process.TaskOption.RetType.TaskType;
 import java.io.Serializable;
 import java.util.EnumSet;
 
+/**
+ * represent task option.
+ * @author skgchxngsxyz-opensuse
+ *
+ */
 public class TaskOption implements Serializable {
 	private static final long serialVersionUID = 5651190312973095075L;
 
@@ -31,22 +36,17 @@ public class TaskOption implements Serializable {
 		TaskArrayType,
 	}
 
-	private final RetType retType;
+	/**
+	 * return type of task.
+	 */
+	private RetType retType;
+
 	private final EnumSet<Behavior> flagSet;
 	private long time = -1;
 
-	private TaskOption(RetType retType, EnumSet<Behavior> flagSet) {
-		this.retType = retType;
-		this.flagSet = flagSet;
-	}
-
-	public static TaskOption of(RetType retType, Behavior... optionFlags) {
-		EnumSet<Behavior> flagSet = EnumSet.noneOf(Behavior.class);
-		for(Behavior flag : optionFlags) {
-			flagSet.add(flag);
-		}
-		TaskOption option = new TaskOption(retType, flagSet);
-		return option;
+	public TaskOption() {
+		this.retType = RetType.IntType;
+		this.flagSet = EnumSet.noneOf(Behavior.class);
 	}
 
 	public boolean isRetType(RetType type) {
@@ -57,13 +57,19 @@ public class TaskOption implements Serializable {
 		return this.flagSet.contains(optionFlag);
 	}
 
-	public void setFlag(Behavior optionFlag, boolean set) {
+	public TaskOption setRetType(RetType type) {
+		this.retType = type;
+		return this;
+	}
+
+	public TaskOption setFlag(Behavior optionFlag, boolean set) {
 		if(set) {
 			this.flagSet.add(optionFlag);
 		}
 		else {
 			this.flagSet.remove(optionFlag);
 		}
+		return this;
 	}
 
 	public boolean supportStdoutHandler() {
@@ -74,7 +80,7 @@ public class TaskOption implements Serializable {
 		return !this.is(sender) && this.is(throwable) || this.isRetType(TaskType);
 	}
 
-	public void setTimeout(CommandArg timeSymbol) {
+	public void setTimeout(String timeSymbol) {
 		this.setFlag(timeout, true);
 		this.time = Long.parseLong(timeSymbol.toString());
 	}

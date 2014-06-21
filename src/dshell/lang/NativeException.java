@@ -39,7 +39,7 @@ public class NativeException extends Exception {
 	@Override
 	public void printStackTrace() {
 		super.printStackTrace();
-		if(RuntimeContext.getContext().isDebugMode()) {
+		if(RuntimeContext.getInstance().isDebugMode()) {
 			this.internalException.printStackTrace();
 		}
 	}

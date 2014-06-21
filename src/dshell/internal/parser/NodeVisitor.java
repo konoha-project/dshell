@@ -9,6 +9,7 @@ import dshell.internal.parser.Node.BreakNode;
 import dshell.internal.parser.Node.CastNode;
 import dshell.internal.parser.Node.CatchNode;
 import dshell.internal.parser.Node.ClassNode;
+import dshell.internal.parser.Node.CommandNode;
 import dshell.internal.parser.Node.CondOpNode;
 import dshell.internal.parser.Node.ConstructorCallNode;
 import dshell.internal.parser.Node.ConstructorNode;
@@ -54,9 +55,10 @@ public interface NodeVisitor <T> {
 	public T visit(CastNode             node);
 	public T visit(InstanceofNode       node);
 	public T visit(OperatorCallNode     node);
-	public T visit(ApplyNode           node);
+	public T visit(ApplyNode            node);
 	public T visit(ConstructorCallNode  node);
 	public T visit(CondOpNode           node);
+	public T visit(CommandNode          node);
 	public T visit(EmptyNode            node);
 	// statement
 	public T visit(AssertNode           node);

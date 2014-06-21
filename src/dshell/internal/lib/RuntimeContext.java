@@ -2,7 +2,6 @@ package dshell.internal.lib;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.SortedSet;
@@ -19,7 +18,6 @@ import org.apache.log4j.net.SyslogAppender;
 import org.apache.log4j.varia.NullAppender;
 
 import dshell.internal.process.BuiltinCommandHolder;
-import dshell.internal.process.CommandArg;
 
 public class RuntimeContext implements Serializable {
 	private static final long serialVersionUID = -2807505115721639912L;
@@ -47,9 +45,6 @@ public class RuntimeContext implements Serializable {
 	// environmental variable
 	transient private final TreeSet<String> envSet;
 
-	// commandscope
-	transient public final CommandScope commandScope;
-
 	// builtin command holder
 	transient private final BuiltinCommandHolder commandHolder;
 
@@ -70,7 +65,6 @@ public class RuntimeContext implements Serializable {
 		for(Map.Entry<String, String> entry : envMap.entrySet()) {
 			this.envSet.add(entry.getKey());
 		}
-		this.commandScope = new CommandScope();
 		this.commandHolder = new BuiltinCommandHolder();
 	}
 
@@ -185,21 +179,21 @@ public class RuntimeContext implements Serializable {
 		return CLibraryWrapper.INSTANCE.getenv(key);
 	}
 
-	public CommandRunner getBuiltinCommand(ArrayList<CommandArg> cmds) {
-		return this.commandHolder.createCommand(cmds);
+	public CommandRunner getBuiltinCommand(String commandName) {
+		return this.commandHolder.getCommand(commandName);
 	}
 
 	private static class ContextHolder {
-		private static final RuntimeContext context = new RuntimeContext();
+		private static final RuntimeContext INSTANCE = new RuntimeContext();
 	}
 
-	public static RuntimeContext getContext() {
-		return ContextHolder.context;
+	public static RuntimeContext getInstance() {
+		return ContextHolder.INSTANCE;
 	}
 
 	public static void loadContext(RuntimeContext otherContext) {
-		ContextHolder.context.changeAppender(otherContext.appenderType, otherContext.appenderOptions);
-		ContextHolder.context.setDebugMode(otherContext.isDebugMode());
+		ContextHolder.INSTANCE.changeAppender(otherContext.appenderType, otherContext.appenderOptions);
+		ContextHolder.INSTANCE.setDebugMode(otherContext.isDebugMode());
 	}
 }
 

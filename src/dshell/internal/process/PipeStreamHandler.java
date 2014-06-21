@@ -46,7 +46,7 @@ public class PipeStreamHandler extends Thread {
 			}
 		}
 		catch (IOException e) {
-			if(RuntimeContext.getContext().isDebugMode()) {
+			if(RuntimeContext.getInstance().isDebugMode()) {
 				System.err.println("input problem");
 				e.printStackTrace();
 			}
@@ -66,7 +66,7 @@ public class PipeStreamHandler extends Thread {
 			}
 			catch(IOException e) {
 				iterator.remove();
-				if(RuntimeContext.getContext().isDebugMode()) {
+				if(RuntimeContext.getInstance().isDebugMode()) {
 					System.err.println("output problem");
 					e.printStackTrace();
 				}
@@ -82,7 +82,7 @@ public class PipeStreamHandler extends Thread {
 			this.input.close();
 		}
 		catch (IOException e) {
-			if(RuntimeContext.getContext().isDebugMode()) {
+			if(RuntimeContext.getInstance().isDebugMode()) {
 				System.err.println("close input problem");
 				e.printStackTrace();
 			}
@@ -98,7 +98,7 @@ public class PipeStreamHandler extends Thread {
 				this.outputs[i].close();
 			}
 			catch (IOException e) {
-				if(RuntimeContext.getContext().isDebugMode()) {
+				if(RuntimeContext.getInstance().isDebugMode()) {
 					System.err.println("close output problem");
 					e.printStackTrace();
 				}

@@ -1,13 +1,11 @@
 package dshell.internal.console;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.process.BuiltinSymbol;
-import dshell.internal.process.TaskBuilder;
 import jline.Completor;
 
 public class DShellCompletor implements Completor {
@@ -22,7 +20,7 @@ public class DShellCompletor implements Completor {
 		this.commandCompletor = new jline.SimpleCompletor("dummy");
 		this.commandCompletor.setCandidates(getCommandSet());
 		this.envCompletor = new jline.SimpleCompletor("dummy");
-		this.envCompletor.setCandidates(RuntimeContext.getContext().getEnvSet());
+		this.envCompletor.setCandidates(RuntimeContext.getInstance().getEnvSet());
 		this.importCompletor = new jline.SimpleCompletor(new String[]{"command", "env"});
 		this.fileNameCompletor = new DShellFileNameCompletor();
 		this.nullCompletor = new jline.NullCompletor();
@@ -49,7 +47,7 @@ public class DShellCompletor implements Completor {
 	private static TreeSet<String> getCommandSet() {
 		TreeSet<String> commandSet = Utils.getCommandSetFromPath();
 		// add builtin command
-		ArrayList<String> symbolList = BuiltinSymbol.getCommandSymbolList();
+		List<String> symbolList = BuiltinSymbol.getCommandSymbolList();
 		for(String symbol : symbolList) {
 			commandSet.add(symbol);
 		}
@@ -69,7 +67,7 @@ public class DShellCompletor implements Completor {
 		}
 		else {
 			String prevArg = args[argIndex - 1];
-			if(prevArg.equals(TaskBuilder.timeout_sym) || prevArg.equals(TaskBuilder.trace_sym)) {
+			if(prevArg.equals("timeout") || prevArg.equals("trace")) {
 				return this.commandCompletor;
 			}
 			if(prevArg.equals("|") || prevArg.equals("&&") || prevArg.equals("||") || prevArg.equals(";")) {

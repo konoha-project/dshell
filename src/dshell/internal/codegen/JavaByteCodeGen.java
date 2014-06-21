@@ -8,6 +8,7 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.Method;
 
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
 import dshell.internal.codegen.ClassBuilder.TryBlockLabels;
@@ -27,6 +28,7 @@ import dshell.internal.parser.Node.BreakNode;
 import dshell.internal.parser.Node.CastNode;
 import dshell.internal.parser.Node.CatchNode;
 import dshell.internal.parser.Node.ClassNode;
+import dshell.internal.parser.Node.CommandNode;
 import dshell.internal.parser.Node.CondOpNode;
 import dshell.internal.parser.Node.ConstructorCallNode;
 import dshell.internal.parser.Node.ConstructorNode;
@@ -66,6 +68,8 @@ import dshell.internal.parser.Node;
 import dshell.internal.parser.NodeVisitor;
 import dshell.internal.parser.TypePool.VoidType;
 import dshell.internal.parser.TypeUtils;
+import dshell.internal.process.AbstractProcessContext;
+import dshell.internal.process.TaskContext;
 
 /**
  * generate java byte code from node.
@@ -378,6 +382,39 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			this.generateCode(node.getRightNode());
 			adapter.mark(mergeLabel);
 		}
+		return null;
+	}
+
+	@Override
+	public Void visit(CommandNode node) {	//TODO: pipe, reidirect .. etc.
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		org.objectweb.asm.Type taskCtxDesc = org.objectweb.asm.Type.getType(TaskContext.class);
+		org.objectweb.asm.Type procCtxDesc = org.objectweb.asm.Type.getType(AbstractProcessContext.class);
+
+		mBuilder.newInstance(taskCtxDesc);
+		mBuilder.dup();
+		mBuilder.invokeConstructor(taskCtxDesc, org.objectweb.asm.commons.Method.getMethod("void <init> ()"));
+		int argSize = node.getArgNodeList().size();
+		this.generateCode(node.getArgNodeList().get(0));
+		org.objectweb.asm.commons.Method method = 
+				new org.objectweb.asm.commons.Method("createProcessContext", procCtxDesc, 
+						new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
+		mBuilder.invokeStatic(taskCtxDesc, method);
+
+		method = new org.objectweb.asm.commons.Method("addArg", procCtxDesc, 
+				new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
+		for(int i = 1; i < argSize; i++) {
+			this.generateCode(node.getArgNodeList().get(i));
+			mBuilder.invokeVirtual(procCtxDesc, method);
+		}
+
+		method = new org.objectweb.asm.commons.Method("addContext", taskCtxDesc, 
+				new org.objectweb.asm.Type[]{procCtxDesc});
+		mBuilder.invokeVirtual(taskCtxDesc, method);
+
+		method = new org.objectweb.asm.commons.Method("execAsInt", org.objectweb.asm.Type.LONG_TYPE, 
+				new org.objectweb.asm.Type[]{});
+		mBuilder.invokeVirtual(taskCtxDesc, method);
 		return null;
 	}
 

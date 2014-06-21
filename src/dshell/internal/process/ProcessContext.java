@@ -3,22 +3,21 @@ package dshell.internal.process;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.LinkedList;
 
 import dshell.internal.lib.Utils;
 import dshell.lang.NativeException;
 
-public class SubProc extends PseudoProcess {
+public class ProcessContext extends AbstractProcessContext {
 	public final static int traceBackend_ltrace = 0;
 	public static int traceBackendType = traceBackend_ltrace;
 
 	private final static String logDirPath = "/tmp/dshell-trace-log";
 	private static int logId = 0;
 
-	private ProcessBuilder procBuilder;
+	private final ProcessBuilder procBuilder;
 	private Process proc;
-	private TaskOption taskOption;
 	public boolean isKilled = false;
 	private boolean enableTrace = false;
 	public String logFilePath = null;
@@ -36,66 +35,43 @@ public class SubProc extends PseudoProcess {
 		return logNameHeader.toString();
 	}
 
-	public SubProc(TaskOption taskOption, boolean enableTrace) {
-		super();
-		this.taskOption = taskOption;
-		this.enableTrace = enableTrace;
-		this.initTrace();
+	public ProcessContext(String commandPath) {
+		super(commandPath);
+		this.procBuilder = new ProcessBuilder(this.argList);
+		this.procBuilder.inheritIO();
 	}
 
-	private void initTrace() {
-		if(this.enableTrace) {
-			logFilePath = new String(logDirPath + "/" + createLogNameHeader() + ".log");
-			new File(logDirPath).mkdir();
-			String[] traceCmds;
-			if(traceBackendType == traceBackend_ltrace) {
-				traceCmds = new String[] {"ltrace", "-f", "-S", "-o", logFilePath};
-			}
-			else {
-				Utils.fatal(1, "invalid trace backend type");
-				return;
-			}
-			for(String traceCmd : traceCmds) {
-				this.commandList.add(traceCmd);
-			}
+	public void initTrace(boolean tracable) {
+		if(!tracable) {
+			this.enableTrace = false;
+			return;
 		}
-	}
-
-	@Override
-	public void setArgumentList(ArrayList<CommandArg> argList) {
-		CommandArg arg = argList.get(0);
-		this.cmdNameBuilder.append(arg);
-		if(arg.eq("sudo")) {
-			ArrayList<String> newCommandList = new ArrayList<String>();
-			newCommandList.add(arg.toString());
-			for(String cmd : this.commandList) {
-				newCommandList.add(cmd);
-			}
-			this.commandList = newCommandList;
+		logFilePath = new String(logDirPath + "/" + createLogNameHeader() + ".log");
+		new File(logDirPath).mkdir();
+		String[] traceCmds;
+		if(traceBackendType == traceBackend_ltrace) {
+			traceCmds = new String[] {"ltrace", "-f", "-S", "-o", logFilePath};
 		}
 		else {
-			this.addToCommandList(arg);
+			Utils.fatal(1, "invalid trace backend type");
+			return;
 		}
-		this.sBuilder.append("[");
-		this.sBuilder.append(arg);
-		int size = argList.size();
-		for(int i = 1; i < size; i++) {
-			arg = argList.get(i);
-			this.addToCommandList(arg);
-			this.cmdNameBuilder.append(" " + arg);
-			this.sBuilder.append(", ");
-			this.sBuilder.append(arg);
+		LinkedList<String> list = (LinkedList<String>) this.argList;
+		int size = traceCmds.length;
+		for(int i = 0 ; i < size; i++) {
+			list.add(i, traceCmds[i]);
 		}
-		this.sBuilder.append("]");
-		this.procBuilder = new ProcessBuilder(this.commandList.toArray(new String[this.commandList.size()]));
-		this.procBuilder.redirectError(Redirect.INHERIT);
-		this.stderrIsDirty = true;
 	}
 
 	@Override
-	public void start() {
+	public AbstractProcessContext enableTrace() {
+		this.enableTrace = true;
+		return this;
+	}
+
+	@Override
+	public AbstractProcessContext start() {
 		try {
-			this.setStreamBehavior();
 			this.proc = procBuilder.start();
 			this.stdin = this.proc.getOutputStream();
 			this.stdout = this.proc.getInputStream();
@@ -104,44 +80,44 @@ public class SubProc extends PseudoProcess {
 		catch(IOException e) {
 			throw NativeException.wrapException(e);
 		}
+		return this;
 	}
 
 	@Override
-	public void mergeErrorToOut() {
+	public AbstractProcessContext mergeErrorToOut() {
 		this.procBuilder.redirectErrorStream(true);
-		this.sBuilder.append("&");
 		this.stderrIsDirty = true;
+		return this;
 	}
 
-	private void setStreamBehavior() {
+	public void setStreamBehavior(TaskOption option) {
 		if(this.isFirstProc) {
 			if(this.procBuilder.redirectInput().file() == null) {
-				procBuilder.redirectInput(Redirect.INHERIT);
+				this.procBuilder.redirectInput(Redirect.INHERIT);
 				this.stdinIsDirty = true;
 			}
 		}
 		if(this.isLastProc) {
-			if(this.procBuilder.redirectOutput().file() == null && !this.taskOption.supportStdoutHandler()) {
-				procBuilder.redirectOutput(Redirect.INHERIT);
+			if(this.procBuilder.redirectOutput().file() == null && !option.supportStdoutHandler()) {
+				this.procBuilder.redirectOutput(Redirect.INHERIT);
 				this.stdoutIsDirty = true;
 			}
 		}
-		if(this.procBuilder.redirectError().file() == null && this.taskOption.supportStderrHandler()) {
+		if(this.procBuilder.redirectError().file() == null && option.supportStderrHandler()) {
 			this.procBuilder.redirectError(Redirect.PIPE);
 			this.stderrIsDirty = false;
 		}
 	}
 
 	@Override
-	public void setInputRedirect(CommandArg readFileName) {
+	public AbstractProcessContext setInputRedirect(String readFileName) {
 		this.stdinIsDirty = true;
 		this.procBuilder.redirectInput(new File(readFileName.toString()));
-		this.sBuilder.append(" <");
-		this.sBuilder.append(readFileName);
+		return this;
 	}
 
 	@Override
-	public void setOutputRedirect(int fd, CommandArg writeFileName, boolean append) {
+	public AbstractProcessContext setOutputRedirect(int fd, String writeFileName, boolean append) {
 		File file = new File(writeFileName.toString());
 		Redirect redirDest = Redirect.to(file);
 		if(append) {
@@ -150,25 +126,18 @@ public class SubProc extends PseudoProcess {
 		if(fd == STDOUT_FILENO) {
 			this.stdoutIsDirty = true;
 			this.procBuilder.redirectOutput(redirDest);
-		} 
-		else if(fd == STDERR_FILENO) {
+		} else if(fd == STDERR_FILENO) {
 			this.stderrIsDirty = true;
 			this.procBuilder.redirectError(redirDest);
 		}
-		this.sBuilder.append(" " + fd);
-		this.sBuilder.append(">");
-		if(append) {
-			this.sBuilder.append(">");
-		}
-		this.sBuilder.append(writeFileName);
+		return this;
 	}
 
 	@Override
 	public void waitTermination() {
 		try {
 			this.retValue = this.proc.waitFor();
-		}
-		catch(InterruptedException e) {
+		} catch(InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -178,15 +147,14 @@ public class SubProc extends PseudoProcess {
 		if(System.getProperty("os.name").startsWith("Windows")) {
 			this.proc.destroy();
 			return;
-		} 
+		}
 		try {
 			int pid = (Integer) Utils.getValue(this.proc, "pid");
 			String[] cmds = {"kill", "-9", Integer.toString(pid)};
 			Process procKiller = new ProcessBuilder(cmds).start();
 			procKiller.waitFor();
 			this.isKilled = true;
-		}
-		catch(Exception e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 			Utils.fatal(1, "killing process problem");
 		}
@@ -196,8 +164,7 @@ public class SubProc extends PseudoProcess {
 		try {
 			this.retValue = this.proc.exitValue();
 			return true;
-		}
-		catch(IllegalThreadStateException e) {
+		} catch(IllegalThreadStateException e) {
 			return false;
 		}
 	}
@@ -212,7 +179,8 @@ public class SubProc extends PseudoProcess {
 		}
 	}
 
-	@Override public boolean isTraced() {
+	@Override
+	public boolean isTraced() {
 		return this.enableTrace;
 	}
 }

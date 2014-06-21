@@ -1,7 +1,7 @@
 package dshell.internal.process;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import dshell.internal.lib.CommandContext;
 import dshell.internal.lib.CommandRunner;
@@ -9,6 +9,11 @@ import dshell.internal.lib.ExecutableAsCommand;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.StreamUtils;
 
+/**
+ * contains builtin command object.
+ * @author skgchxngsxyz-opensuse
+ *
+ */
 public class BuiltinCommandHolder {
 	private final HashMap<BuiltinSymbol, ExecutableAsCommand> builtinCommandMap;
 
@@ -20,21 +25,20 @@ public class BuiltinCommandHolder {
 		this.builtinCommandMap.put(BuiltinSymbol.log, new Command_log());
 	}
 
-	public CommandRunner createCommand(ArrayList<CommandArg> cmds) {
-		String commandSymbol = cmds.get(0).toString();
-		try {
-			BuiltinSymbol symbol = BuiltinSymbol.valueOfSymbol(commandSymbol);
-			ExecutableAsCommand executor = this.builtinCommandMap.get(symbol);
-			if(executor == null) {
-				return null;
-			}
-			CommandRunner runner = new CommandRunner(executor);
-			runner.setArgumentList(cmds);
-			return runner;
+	/**
+	 * 
+	 * @param commandName
+	 * @return
+	 * throw exception, if has no builtin command.
+	 */
+	public CommandRunner getCommand(String commandName) {
+		BuiltinSymbol symbol = BuiltinSymbol.valueOf(commandName);
+		ExecutableAsCommand executor = this.builtinCommandMap.get(symbol);
+		if(executor == null) {
+			throw new RuntimeException("unefined builtin command: " + commandName);
 		}
-		catch(IllegalArgumentException e) {
-		}
-		return null;
+		CommandRunner runner = new CommandRunner(commandName, executor);
+		return runner;
 	}
 
 	public static void printArgumentErrorAndSetStatus(BuiltinSymbol symbol, CommandContext context) {
@@ -46,19 +50,19 @@ public class BuiltinCommandHolder {
 
 	public static class Command_cd implements ExecutableAsCommand {
 		@Override
-		public void execute(CommandContext context, ArrayList<String> argList) {
+		public void execute(CommandContext context, List<String> argList) {
 			int size = argList.size();
 			String path = "";
 			if(size > 1) {
 				path = argList.get(1);
 			}
-			context.setExistStatus(RuntimeContext.getContext().changeDirectory(path));
+			context.setExistStatus(RuntimeContext.getInstance().changeDirectory(path));
 		}
 	}
 
 	public static class Command_exit implements ExecutableAsCommand {
 		@Override
-		public void execute(CommandContext context, ArrayList<String> argList) {
+		public void execute(CommandContext context, List<String> argList) {
 			int status;
 			int size = argList.size();
 			if(size == 1) {
@@ -83,7 +87,7 @@ public class BuiltinCommandHolder {
 
 	public static class Command_help implements ExecutableAsCommand {
 		@Override
-		public void execute(CommandContext context, ArrayList<String> argList) {
+		public void execute(CommandContext context, List<String> argList) {
 			StreamUtils.OutputStream stdout = context.getStdout();
 			StreamUtils.OutputStream stderr = context.getStderr();
 			int size = argList.size();
@@ -105,7 +109,7 @@ public class BuiltinCommandHolder {
 				else {
 					if(BuiltinSymbol.match(arg)) {
 						foundValidCommand = true;
-						BuiltinSymbol symbol = BuiltinSymbol.valueOfSymbol(arg);
+						BuiltinSymbol symbol = BuiltinSymbol.valueOf(arg);
 						stdout.writeLine(arg + ": " + symbol.getUsage());
 						if(!isShortHelp) {
 							stdout.writeLine(symbol.getDetail());
@@ -133,7 +137,7 @@ public class BuiltinCommandHolder {
 
 	public static class Command_log implements ExecutableAsCommand {
 		@Override
-		public void execute(CommandContext context, ArrayList<String> argList) {
+		public void execute(CommandContext context, List<String> argList) {
 			int size = argList.size();
 			if(size == 1) {
 				this.log("", context.getStdout());
@@ -150,7 +154,7 @@ public class BuiltinCommandHolder {
 
 		private void log(String value, StreamUtils.OutputStream stdout) {
 			stdout.writeLine(value);
-			RuntimeContext.getContext().getLogger().warn(value);
+			RuntimeContext.getInstance().getLogger().warn(value);
 		}
 	}
 }

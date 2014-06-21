@@ -11,7 +11,18 @@ import java.util.regex.Pattern;
 
 import dshell.lang.NativeException;
 
+/**
+ * some utilities.
+ * @author skgchxngsxyz-opensuse
+ *
+ */
 public class Utils {
+	/**
+	 * get full path of command.
+	 * @param cmd
+	 * @return
+	 * - return null, if has no executable command.
+	 */
 	public final static String getCommandFromPath(String cmd) {
 		if(cmd.equals("")) {
 			return null;
@@ -76,6 +87,11 @@ public class Utils {
 		return commandSet;
 	}
 
+	/**
+	 * print meesage and stack trace before exit.
+	 * @param status
+	 * @param message
+	 */
 	public final static void fatal(int status, String message) {
 		StackTraceElement[] elements = Thread.currentThread().getStackTrace();
 		System.err.println("fatal: " + message);
@@ -88,11 +104,17 @@ public class Utils {
 
 	public static void log(String value) {
 		System.out.println(value);
-		RuntimeContext.getContext().getLogger().warn(value);
+		RuntimeContext.getInstance().getLogger().warn(value);
 	}
 
+	/**
+	 * get environmental variable.
+	 * @param key
+	 * @return
+	 * - if has no env, return empty string.
+	 */
 	public static String getEnv(String key) {
-		String env = RuntimeContext.getContext().getenv(key);
+		String env = RuntimeContext.getInstance().getenv(key);
 		return env == null ? "" : env;
 	}
 
@@ -124,6 +146,12 @@ public class Utils {
 		return null;
 	}
 
+	/**
+	 * replace ~ to home dir path.
+	 * @param path
+	 * - no null string
+	 * @return
+	 */
 	public static String resolveHome(String path) {
 		if(path.equals("~")) {
 			return Utils.getEnv("HOME");

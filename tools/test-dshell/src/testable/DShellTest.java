@@ -9,7 +9,7 @@ import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.main.DShell;
-import dshell.internal.remote.RequestReceiver;
+//import dshell.internal.remote.RequestReceiver;
 
 public class DShellTest extends DShell {
 	public DShellTest(String[] args) {
@@ -42,11 +42,11 @@ public class DShellTest extends DShell {
 
 	@Override
 	public void execute() {
-		RuntimeContext.getContext();
+		RuntimeContext.getInstance();
 		ExecutionEngine engine = new TestableEngineFactory().getEngine();
 		switch(this.mode) {
 		case receiverMode:
-			RequestReceiver.invoke(null);	// never return
+//			RequestReceiver.invoke(null);	// never return
 		case interactiveMode:
 			this.runInteractiveMode(engine, new DummyConsole(this.scriptArgs[0]));	// never return
 		case scriptingMode:

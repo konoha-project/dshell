@@ -20,7 +20,7 @@ public class DShellFileNameCompletor extends FileNameCompletor {
 			translated = new File(Utils.getEnv("HOME")).getParentFile().getAbsolutePath();
 		}
 		else if(!translated.startsWith(File.separator)) {
-			String workingDir = RuntimeContext.getContext().getWorkingDirectory();
+			String workingDir = RuntimeContext.getInstance().getWorkingDirectory();
 			if(workingDir.equals("/")) {
 				workingDir = "";
 			}

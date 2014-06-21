@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.List;
 
 import dshell.internal.lib.Utils;
 import dshell.lang.DShellException;
@@ -15,13 +16,15 @@ import dshell.lang.Errno;
 import dshell.lang.MultipleException;
 
 public class ShellExceptionBuilder {
-	public static DShellException getException(final PseudoProcess[] procs, final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
+	public static DShellException getException(final List<AbstractProcessContext> procs, 
+			final TaskOption option, final ByteArrayOutputStream[] eachBuffers) {
 		if(option.is(sender) || !option.is(throwable) || option.is(timeout)) {
 			return DShellException.createNullException("");
 		}
 		ArrayList<DShellException> exceptionList = new ArrayList<DShellException>();
-		for(int i = 0; i < procs.length; i++) {
-			PseudoProcess proc = procs[i];
+		int procSize = procs.size();
+		for(int i = 0; i < procSize; i++) {
+			AbstractProcessContext proc = procs.get(i);
 			String errorMessage = eachBuffers[i].toString();
 			createAndAddException(exceptionList, proc, errorMessage);
 		}
@@ -45,13 +48,13 @@ public class ShellExceptionBuilder {
 		return DShellException.createNullException("");
 	}
 
-	private static void createAndAddException(ArrayList<DShellException> exceptionList, PseudoProcess proc, String errorMessage) {
+	private static void createAndAddException(ArrayList<DShellException> exceptionList, AbstractProcessContext proc, String errorMessage) {
 		CauseInferencer inferencer = CauseInferencer_ltrace.getInferencer();
 		String message = proc.getCmdName();
 		if(proc.isTraced() || proc.getRet() != 0) {
 			DShellException exception;
 			if(proc.isTraced()) {
-				ArrayList<String> infoList = inferencer.doInference((SubProc)proc);
+				ArrayList<String> infoList = inferencer.doInference((ProcessContext)proc);
 				exception = createException(message, infoList.toArray(new String[infoList.size()]));
 			}
 			else {
@@ -64,8 +67,8 @@ public class ShellExceptionBuilder {
 		else {
 			exceptionList.add(DShellException.createNullException(message));
 		}
-		if(proc instanceof SubProc) {
-			((SubProc)proc).deleteLogFile();
+		if(proc instanceof ProcessContext) {
+			((ProcessContext)proc).deleteLogFile();
 		}
 	}
 

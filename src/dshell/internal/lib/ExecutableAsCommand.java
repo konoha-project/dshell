@@ -1,7 +1,7 @@
 package dshell.internal.lib;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public interface ExecutableAsCommand {
-	public void execute(CommandContext context, ArrayList<String> argList);
+	public void execute(CommandContext context, List<String> argList);
 }

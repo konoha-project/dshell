@@ -5,6 +5,8 @@ JAR_NAME="dshell.jar"
 BIN_NAME="dshell"
 TOOLS_DIR="./tools"
 
+PARSER_OUTDIR="./gensrc/dshell/internal/parser"
+
 all: build
 
 build: preprocess
@@ -12,7 +14,7 @@ build: preprocess
 
 preprocess:
 	python ./tools/gen-array.py ./src/dshell/lang/GenericArray.java
-	java -jar ./lib/antlr-4.3-complete.jar ./dshell.g4 -o ./gensrc/dshell/internal/parser -no-listener -no-visitor -encoding UTF-8
+	java -jar ./lib/antlr-4.3-complete.jar ./dshellLexer.g4 ./dshellParser.g4 -o ${PARSER_OUTDIR} -no-listener -no-visitor -encoding UTF-8
 
 clean: clean-launcher
 	rm -rf ./gensrc

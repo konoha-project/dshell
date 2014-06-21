@@ -15,7 +15,7 @@ import dshell.lang.ArithmeticException;
  *
  */
 @OpHolder
-public class Operator { //TODO: unary op
+public class Operator {
 	// unary op
 	// PLUS
 	@Shared @OpType(OpName.ADD) public static long   plus(long right)   { return +right; }
@@ -179,12 +179,12 @@ public class Operator { //TODO: unary op
 	}
 
 	@Shared @OpType(OpName.GETENV) public static String getEnv(String key) {
-		String env = RuntimeContext.getContext().getenv(key);
+		String env = RuntimeContext.getInstance().getenv(key);
 		return env == null ? "" : env;
 	}
 
 	@Shared @OpType(OpName.SETENV) public static String setEnv(String key, String env) {
-		int ret = RuntimeContext.getContext().setenv(key, env, true);
+		int ret = RuntimeContext.getInstance().setenv(key, env, true);
 		return ret == 0 ? env : "";
 	}
 }

@@ -90,7 +90,7 @@ public class DShellConsole implements AbstractConsole {
 	private String[] getPrompts() {
 		String homeDir = Utils.getEnv("HOME");
 		String[] prompts = new String[2];
-		String currentDir = RuntimeContext.getContext().getWorkingDirectory();
+		String currentDir = RuntimeContext.getInstance().getWorkingDirectory();
 		if(currentDir.startsWith(homeDir)) {
 			int index = homeDir.length();
 			currentDir = "~" + currentDir.substring(index);
