@@ -95,6 +95,12 @@ public class CommandScope {
 		}
 	}
 
+	public void popAllScope() {
+		while(this.scopeStack.size() > 1) {
+			this.scopeStack.pop();
+		}
+	}
+
 	private boolean isQualifiedCommandName(String commandName) {
 		int size = commandName.length();
 		if(commandName.startsWith("./") && size > 2) {

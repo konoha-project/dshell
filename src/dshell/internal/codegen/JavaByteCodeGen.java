@@ -395,7 +395,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.dup();
 		mBuilder.invokeConstructor(taskCtxDesc, org.objectweb.asm.commons.Method.getMethod("void <init> ()"));
 		int argSize = node.getArgNodeList().size();
-		this.generateCode(node.getArgNodeList().get(0));
+		mBuilder.push(node.getCommandPath());
 		org.objectweb.asm.commons.Method method = 
 				new org.objectweb.asm.commons.Method("createProcessContext", procCtxDesc, 
 						new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
@@ -403,7 +403,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 
 		method = new org.objectweb.asm.commons.Method("addArg", procCtxDesc, 
 				new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
-		for(int i = 1; i < argSize; i++) {
+		for(int i = 0; i < argSize; i++) {
 			this.generateCode(node.getArgNodeList().get(i));
 			mBuilder.invokeVirtual(procCtxDesc, method);
 		}

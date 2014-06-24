@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.util.LinkedList;
 import java.util.List;
 
+import dshell.internal.lib.Utils;
 import dshell.lang.GenericArray;
 
 /**
@@ -79,7 +80,7 @@ public abstract class AbstractProcessContext {
 	 * - this.
 	 */
 	public AbstractProcessContext addArg(String arg) {
-		this.argList.add(arg);
+		this.argList.add(Utils.resolveHome(arg));
 		return this;
 	}
 

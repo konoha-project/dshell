@@ -1,4 +1,4 @@
-import command ls, grep
+import command ls grep
 
 function f() {
 	try {

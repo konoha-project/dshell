@@ -11,6 +11,12 @@ import dshell.internal.parser.TypeSymbol;
 }
 
 @members {
+// parser entry point.
+public ToplevelContext startParser() {
+	this.getScope().popAllScope();
+	return this.toplevel();
+}
+
 private boolean isLineEnd() {
 	int lineEndIndex = this.getCurrentToken().getTokenIndex() - 1;
 	Token lineEndToken = _input.get(lineEndIndex);
@@ -19,6 +25,12 @@ private boolean isLineEnd() {
 	}
 	int type = lineEndToken.getType();
 	return type == LineEnd;
+}
+
+private boolean here(final int type) {
+	int index = this.getCurrentToken().getTokenIndex() - 1;
+	Token ahead = _input.get(index);
+	return (ahead.getChannel() == Lexer.HIDDEN) && (ahead.getType() == type);
 }
 
 private void enterCmd() {
@@ -110,7 +122,7 @@ paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver re
 	| { $resolver = new ParserUtils.ParamTypeResolver(); $types = $resolver.getTypeSymbols();}
 	;
 block returns [Node node] locals [ParserUtils.Block blockModel]
-	: '{' b+=statement+ '}' 
+	: {getScope().createNewScope();}'{' b+=statement+ '}' {getScope().removeCurrentScope();}
 		{
 			$blockModel = new ParserUtils.Block();
 			for(int i = 0; i < $b.size(); i++) {
@@ -160,7 +172,7 @@ statement returns [Node node]
 	| foreachStatement {$node = $foreachStatement.node;}
 	| ifStatement {$node = $ifStatement.node;}
 	| importEnvStatement statementEnd {$node = $importEnvStatement.node;}
-	| importCommandStatement statementEnd {$node = $importCommandStatement.node;}
+	| importCommandStatement importCommandEnd {$node = $importCommandStatement.node;}
 	| returnStatement statementEnd {$node = $returnStatement.node;}
 	| throwStatement statementEnd {$node = $throwStatement.node;}
 	| whileStatement {$node = $whileStatement.node;}
@@ -215,13 +227,24 @@ ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 			$node = new Node.IfNode($If, $expression.node, $ifElseBlock);
 		}
 	;
-importEnvStatement returns [Node node]	//FIXME:
+importEnvStatement returns [Node node]
 	: Import 'env' Identifier {$node = new Node.ImportEnvNode($Identifier);}
 	;
 importCommandStatement returns [Node node]	//FIXME:
 	: {enterCmd();} Import Command a+=CommandSymbol+ {exitCmd();}
-		{$node = new Node.EmptyNode(); this.getScope().setCommandPath($a.get(0).getText());}
+		{
+			$node = new Node.EmptyNode();
+			for(int i = 0; i < $a.size(); i++) {
+				this.getScope().setCommandPath($a.get(i).getText());
+			}
+		}
 	;
+importCommandEnd
+	: EOF
+	| ';'
+	| LineEndInCmd
+	;
+
 returnStatement returns [Node node] locals [ParserUtils.ReturnExpr returnExpr]
 	: Return e+=expression?
 		{

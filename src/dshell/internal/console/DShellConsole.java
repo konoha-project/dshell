@@ -11,11 +11,10 @@ import jline.Terminal;
 import jline.ANSIBuffer.ANSICodes;
 import jline.UnixTerminal;
 
-public class DShellConsole implements AbstractConsole {
+public class DShellConsole extends AbstractConsole {
 	private final jline.ConsoleReader consoleReader;
 	private String userName = Utils.getUserName();
 	private final TTYConfigurator ttyConfig;
-	private int lineNumber;
 
 	private final static String welcomeMessage = "Welcome to D-Shell <https://github.com/konoha-project/dshell>";
 
@@ -33,52 +32,24 @@ public class DShellConsole implements AbstractConsole {
 		}
 	}
 
-	public final int getLineNumber() {
-		return this.lineNumber;
-	}
-
-	public void incrementLineNum(String line) {
-		int size = line.length();
-		int count = 1;
-		for(int i = 0; i < size; i++) {
-			char ch = line.charAt(i);
-			if(ch == '\n') {
-				count++;
-			}
-		}
-		this.lineNumber += count;
-	}
-
 	public final String readLine() {
 		String[] prompts = this.getPrompts();
 		String prompt = prompts[0];
 		String prompt2 = prompts[1];
-		StringBuilder lineBuilder = new StringBuilder();
+
 		// load jLine ttyConfig
 		this.ttyConfig.loadJlineConfig();
-		String line = this.readLine(prompt);
-		lineBuilder.append(line);
-		int level = 0;
-		while((level = this.checkBraceLevel(line, level)) > 0) {
-			line = this.readLine(prompt2);
-			lineBuilder.append('\n');
-			lineBuilder.append(line);
-		}
-		if(level < 0) {
-			if(line == null) {
-				return null;
-			}
-			System.out.println(" .. canceled");
-			return "";
-		}
+
+		String line = this.readLineImpl(prompt, prompt2);
+
 		// load original ttyConfig
 		this.ttyConfig.loadOriginalConfig();
-		line = lineBuilder.toString().trim();
 		this.consoleReader.getHistory().addToHistory(line);
 		return line;
 	}
 
-	private String readLine(String prompt) {
+	@Override
+	protected String readLine(String prompt) {
 		try {
 			return this.consoleReader.readLine(prompt);
 		}
@@ -104,45 +75,6 @@ public class DShellConsole implements AbstractConsole {
 		prompts[0] = prompt;
 		prompts[1] = promptBuilder.toString();
 		return prompts;
-	}
-
-	private int checkBraceLevel(String text, int level) {
-		if(text == null) {
-			return -1;
-		}
-		boolean foundDoubleQuote = false;
-		boolean foundSingleQuote = false;
-		int size = text.length();
-		for(int i = 0; i < size; i++) {
-			char ch = text.charAt(i);
-			if(!foundSingleQuote && !foundDoubleQuote) {
-				if(ch == '{' || ch == '[' || ch == '(') {
-					level++;
-				}
-				if(ch == '}' || ch == ']' || ch == ')') {
-					level--;
-				}
-				if(ch == '\'') {
-					foundSingleQuote = true;
-				}
-				if(ch == '"') {
-					foundDoubleQuote = true;
-				}
-			}
-			else {
-				if(ch == '\\') {
-					i++;
-					continue;
-				}
-				if(ch == '\'') {
-					foundSingleQuote = !foundSingleQuote;
-				}
-				if(ch == '"') {
-					foundDoubleQuote = !foundDoubleQuote;
-				}
-			}
-		}
-		return level;
 	}
 }
 

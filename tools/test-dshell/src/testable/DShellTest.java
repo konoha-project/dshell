@@ -1,5 +1,11 @@
 package testable;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 
 import dshell.internal.console.AbstractConsole;
@@ -7,7 +13,6 @@ import dshell.internal.exe.DShellEngineFactory.DShellExecutionEngine;
 import dshell.internal.exe.EngineFactory;
 import dshell.internal.exe.ExecutionEngine;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.Utils;
 import dshell.internal.main.DShell;
 //import dshell.internal.remote.RequestReceiver;
 
@@ -92,33 +97,31 @@ class TestableEngineFactory implements EngineFactory {
  * @author skgchxngsxyz-osx
  *
  */
-class DummyConsole implements AbstractConsole {
-	private String script;
-	private boolean called = false;
+class DummyConsole extends AbstractConsole {
+	private BufferedReader reader;
 
 	public DummyConsole(String fileName) {
-		this.script = Utils.readFromFile(fileName, false);
-		if(this.script == null) {
+		this.lineNumber = 1;
+		try {
+			this.reader = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)));
+		} catch (FileNotFoundException e) {
 			System.err.println("file not found: " + fileName);
 			System.exit(1);
 		}
 	}
 
 	@Override
-	public int getLineNumber() {
-		return 1;
-	}
-
-	@Override
-	public void incrementLineNum(String line) {
-		// do nothing
-	}
-
-	@Override
 	public String readLine() {
-		if(!this.called) {
-			this.called = true;
-			return this.script;
+		return this.readLineImpl("dummy", "dummy");
+	}
+
+	@Override
+	protected String readLine(String prompt) {
+		try {
+			return this.reader.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
 		return null;
 	}

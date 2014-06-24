@@ -746,16 +746,21 @@ public abstract class Node {
 	}
 
 	public static class CommandNode extends ExprNode {
+		private final String commandPath;
 		private final List<ExprNode> argNodeList;
 
 		protected CommandNode(Token token, String commandPath) {
 			super(token);
 			this.argNodeList = new ArrayList<>();
-			this.argNodeList.add(this.setExprNodeAsChild(new StringValueNode(commandPath)));
+			this.commandPath = commandPath;
 		}
 
 		public void setArg(ExprNode argNode) {
 			this.argNodeList.add(this.setExprNodeAsChild(argNode));
+		}
+
+		public String getCommandPath() {
+			return this.commandPath;
 		}
 
 		public List<ExprNode> getArgNodeList() {

@@ -7,7 +7,6 @@ import java.lang.reflect.Method;
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Lexer;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
@@ -19,6 +18,8 @@ import dshell.internal.parser.dshellLexer;
 import dshell.internal.parser.dshellParser;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.dshellParser.ToplevelContext;
+import dshell.internal.parser.error.ParserErrorHandler;
+import dshell.internal.parser.error.ParserErrorHandler.ParserException;
 
 public class DShellEngineFactory implements EngineFactory {
 	@Override
@@ -37,6 +38,7 @@ public class DShellEngineFactory implements EngineFactory {
 		protected DShellExecutionEngine() {
 			this.lexer = new dshellLexer(null);
 			this.parser = new dshellParser(null);
+			this.parser.setErrorHandler(new ParserErrorHandler());
 			this.classLoader = new DShellClassLoader();
 			this.checker = new TypeChecker(new TypePool(this.classLoader));
 			this.codeGen = new JavaByteCodeGen(this.classLoader);
@@ -108,7 +110,12 @@ public class DShellEngineFactory implements EngineFactory {
 			/**
 			 * parse source
 			 */
-			ToplevelContext tree = this.parser.toplevel();
+			ToplevelContext tree;
+			try {
+				tree = this.parser.startParser();
+			} catch(ParserException e) {
+				return false;
+			}
 			if(this.config.is(EngineConfigRule.parserInspect)) {
 				tree.inspect(this.parser);
 			}

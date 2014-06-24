@@ -1,4 +1,4 @@
-import command ls, grep, echo
+import command ls grep echo
 
 echo "hello" | grep "hello"
 echo "hello" > /dev/null

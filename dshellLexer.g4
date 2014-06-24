@@ -5,6 +5,7 @@ package dshell.internal.parser;
 import dshell.internal.parser.Node;
 import dshell.internal.parser.ParserUtils;
 import dshell.internal.parser.TypeSymbol;
+import dshell.internal.parser.error.ParserErrorHandler;
 }
 
 @members {
@@ -16,22 +17,33 @@ private boolean trace = false;
 public Token nextToken() {
 	Token token = super.nextToken();
 	if(this.trace) {
-		System.err.println(token);
+		System.err.println("@nextToken: " + token);
 	}
 	return token;
 }
+
+@Override
+public void recover(LexerNoViableAltException e) {
+	ParserErrorHandler.reportError(e);
+}
+
+@Override
+public void recover(RecognitionException e) {
+	ParserErrorHandler.reportError(e);
+}
+
 private boolean requireCommand = false;
 private boolean requireCommand() {
 	return this.requireCommand;
 }
 
 public void enterCmd() {
-	//System.err.println("enter command");
+	if(this.trace) System.err.println("enter command");
 	this.requireCommand = true;
 }
 
 public void exitCmd() {
-	//System.err.println("exit command");
+	if(this.trace) System.err.println("exit command");
 	this.requireCommand = false;
 }
 
@@ -204,6 +216,10 @@ Comment
 	;
 WhiteSpace
 	: [\t\u000B\u000C\u0020\u00A0]+ -> skip
+	;
+
+LineEndInCmd
+	: {requireCommand()}? [\r\n\u2028\u2029]
 	;
 LineEnd
 	: [\r\n\u2028\u2029] -> channel(HIDDEN)
