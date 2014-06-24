@@ -192,8 +192,8 @@ breakStatement returns [Node node]
 continueStatement returns [Node node]
 	: Continue {$node = new Node.ContinueNode($Continue);}
 	;
-exportEnvStatement returns [Node node]	//FIXME:
-	: Export 'env' Identifier '=' expression {$node = new Node.ExportEnvNode($Export, $Identifier, $expression.node);}
+exportEnvStatement returns [Node node]
+	: ExportEnv Identifier '=' expression {$node = new Node.ExportEnvNode($ExportEnv, $Identifier, $expression.node);}
 	;
 forStatement returns [Node node]
 	: For '(' forInit ';' forCond ';' forIter ')' block {$node = new Node.ForNode($For, $forInit.node, $forCond.node, $forIter.node, $block.node);}
@@ -228,10 +228,10 @@ ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
 		}
 	;
 importEnvStatement returns [Node node]
-	: Import 'env' Identifier {$node = new Node.ImportEnvNode($Identifier);}
+	: ImportEnv Identifier {$node = new Node.ImportEnvNode($Identifier);}
 	;
 importCommandStatement returns [Node node]	//FIXME:
-	: {enterCmd();} Import Command a+=CommandSymbol+ {exitCmd();}
+	: {enterCmd();} ImportCmd a+=CommandSymbol+ {exitCmd();}
 		{
 			$node = new Node.EmptyNode();
 			for(int i = 0; i < $a.size(); i++) {

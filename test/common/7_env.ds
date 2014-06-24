@@ -1,7 +1,7 @@
-import env HOME
-import env HOGE
+import-env HOME
+import-env HOGE
 
-import command pwd
+import-command pwd
 
 cd ~/
 let a = "$(pwd)"
@@ -9,5 +9,5 @@ assert(a == HOME)
 assert(HOGE == "")
 
 let e = "enviroment-test"
-export env ZZZ = a
+export-env ZZZ = a
 assert(ZZZ == a)

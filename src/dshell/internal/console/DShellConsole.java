@@ -41,7 +41,9 @@ public class DShellConsole extends AbstractConsole {
 		this.ttyConfig.loadJlineConfig();
 
 		String line = this.readLineImpl(prompt, prompt2);
-
+		if(line == null) {
+			return null;
+		}
 		// load original ttyConfig
 		this.ttyConfig.loadOriginalConfig();
 		this.consoleReader.getHistory().addToHistory(line);

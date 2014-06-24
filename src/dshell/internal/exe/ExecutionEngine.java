@@ -26,7 +26,7 @@ public interface ExecutionEngine {
 	 * @param scriptName
 	 * - script file name.
 	 */
-	public void eval(String scriptName);
+	public boolean eval(String scriptName);
 
 	/**
 	 * evaluate script from input.
@@ -35,7 +35,7 @@ public interface ExecutionEngine {
 	 * @param source
 	 * - target script.
 	 */
-	public void eval(String scriptName, String source);
+	public boolean eval(String scriptName, String source);
 
 	/**
 	 * evaluate one line script.
@@ -43,13 +43,17 @@ public interface ExecutionEngine {
 	 * - target source
 	 * @param lineNum
 	 * - source line number.
+	 * @return
+	 * return true if exit success.
 	 */
-	public void eval(String source, int lineNum);
+	public boolean eval(String source, int lineNum);
 
 	/**
 	 * load .dshellrc file.
 	 */
 	public void loadDShellRC();
+
+	public void importCommandsFromPath();
 
 	public static class EngineConfig {
 		private EnumSet<EngineConfigRule> ruleSet;

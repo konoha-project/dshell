@@ -3,6 +3,7 @@ package dshell.internal.exe;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.TreeSet;
 
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
@@ -12,6 +13,7 @@ import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
+import dshell.internal.parser.CommandScope;
 import dshell.internal.parser.TypeChecker;
 import dshell.internal.parser.TypePool;
 import dshell.internal.parser.dshellLexer;
@@ -57,33 +59,43 @@ public class DShellEngineFactory implements EngineFactory {
 		}
 
 		@Override
-		public void eval(String scriptName) {
+		public boolean eval(String scriptName) {
 			ANTLRFileStream input = null;
 			try {
 				input = new ANTLRFileStream(scriptName);
 			} catch(IOException e) {
 				System.err.println("cannot load file: " + scriptName);
-				System.exit(1);
+				return false;
 			}
-			boolean result = this.eval(input, 1, false);
-			System.exit(result ? 0 : 1);
+			return this.eval(input, 1, false);
 		}
 
 		@Override
-		public void eval(String scriptName, String source) {
+		public boolean eval(String scriptName, String source) {
 			throw new RuntimeException("unimplemented");
 		}
 
 		@Override
-		public void eval(String source, int lineNum) {
+		public boolean eval(String source, int lineNum) {
 			ANTLRInputStream input = new ANTLRInputStream(source);
 			input.name = "(stdin)";
-			this.eval(input, lineNum, true);
+			return this.eval(input, lineNum, true);
 		}
 
 		@Override
 		public void loadDShellRC() {
-			System.err.println("unimplemented");
+			this.eval(Utils.getEnv("HOME") + "/.dshellrc");
+		}
+
+		@Override
+		public void importCommandsFromPath() {
+			TreeSet<String> commandSet = Utils.getCommandSetFromPath();
+			CommandScope scope = this.lexer.getScope();
+			for(String command : commandSet) {
+				if(scope.setCommandPath(command) && RuntimeContext.getInstance().isDebugMode()) {
+					System.err.println("duplicated command: " + command);
+				}
+			}
 		}
 
 		/**

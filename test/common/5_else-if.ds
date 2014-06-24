@@ -1,8 +1,7 @@
 function func(num : int) : int {
   if(num == 1) {
     return num * 10
-  }
-  else if(num == 2) {
+  } else if(num == 2) {
     return num * 100
   }
   return num * 100

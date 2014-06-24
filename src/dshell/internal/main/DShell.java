@@ -37,8 +37,7 @@ public class DShell {
 	}
 
 	protected ExecutionMode mode;
-	//protected boolean autoImportCommand = true;	//temporary disable
-	protected boolean autoImportCommand = false;
+	protected boolean autoImportCommand = true;
 	private final boolean enablePseudoTerminal;
 	private final EngineConfig config;
 	private String specificArg = null;
@@ -171,17 +170,7 @@ public class DShell {
 		String line = null;
 		this.showVersionInfo();
 		if(this.autoImportCommand) {
-			StringBuilder importBuilder = new StringBuilder();
-			importBuilder.append("import command ");
-			TreeSet<String> commandSet = Utils.getCommandSetFromPath();
-			int size = commandSet.size();
-			for(int i = 0; i < size; i++) {
-				if(i != 0) {
-					importBuilder.append(", ");
-				}
-				importBuilder.append(commandSet.pollFirst());
-			}
-			engine.eval(importBuilder.toString(), 0);
+			engine.importCommandsFromPath();
 		}
 		engine.loadDShellRC();
 		while((line = console.readLine()) != null) {
@@ -197,7 +186,8 @@ public class DShell {
 
 	protected void runScriptingMode(ExecutionEngine engine) {
 		engine.setArg(this.scriptArgs);
-		engine.eval(this.scriptArgs[0]);
+		boolean status = engine.eval(this.scriptArgs[0]);
+		System.exit(status ? 0 : 1);
 	}
 
 	protected void runInputEvalMode(ExecutionEngine engine) {

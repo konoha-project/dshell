@@ -1,9 +1,9 @@
 function f() {
-	import command ls;
+	import-command ls;
 	ls -la
 }
 
 f()
 
-import command ls
+import-command ls
 ls

@@ -1,4 +1,4 @@
-import command echo ls grep
+import-command echo ls grep
 
 echo "hello world"
 var a = echo hello world
