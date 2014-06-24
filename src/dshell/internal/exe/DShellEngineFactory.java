@@ -27,7 +27,7 @@ public class DShellEngineFactory implements EngineFactory {
 	}
 
 	public static class DShellExecutionEngine implements ExecutionEngine {
-		protected final Lexer lexer;
+		protected final dshellLexer lexer;
 		protected final dshellParser parser;
 		protected final DShellClassLoader classLoader;
 		protected final TypeChecker checker;
@@ -100,9 +100,9 @@ public class DShellEngineFactory implements EngineFactory {
 			this.lexer.setInputStream(input);
 			this.lexer.setLine(lineNum);
 			CommonTokenStream tokenStream = new CommonTokenStream(this.lexer);
-			tokenStream.fill();
 			this.parser.setTokenStream(tokenStream);
 			if(this.config.is(EngineConfigRule.parserTrace)) {
+				this.lexer.setTrace(true);
 				this.parser.setTrace(true);
 			}
 			/**

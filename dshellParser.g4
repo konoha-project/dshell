@@ -20,6 +20,18 @@ private boolean isLineEnd() {
 	int type = lineEndToken.getType();
 	return type == LineEnd;
 }
+
+private void enterCmd() {
+	((dshellLexer) _input.getTokenSource()).enterCmd();
+}
+
+private void exitCmd() {
+	((dshellLexer)_input.getTokenSource()).exitCmd();
+}
+
+private CommandScope getScope() {
+	return ((dshellLexer)_input.getTokenSource()).getScope();
+}
 }
 
 // ######################
@@ -207,7 +219,8 @@ importEnvStatement returns [Node node]	//FIXME:
 	: Import 'env' Identifier {$node = new Node.ImportEnvNode($Identifier);}
 	;
 importCommandStatement returns [Node node]	//FIXME:
-	: Import Command {$node = new Node.EmptyNode();}
+	: {enterCmd();} Import Command a+=CommandSymbol+ {exitCmd();}
+		{$node = new Node.EmptyNode(); this.getScope().setCommandPath($a.get(0).getText());}
 	;
 returnStatement returns [Node node] locals [ParserUtils.ReturnExpr returnExpr]
 	: Return e+=expression?
@@ -281,7 +294,7 @@ commandExpression returns [Node.ExprNode node]
 singleCommandExpr returns [Node.CommandNode node]
 	: CommandName a+=commandArg*
 		{
-			$node = new Node.CommandNode($CommandName); 
+			$node = new Node.CommandNode($CommandName, getScope().resolveCommandPath($CommandName.getText()));
 			for(int i = 0; i < $a.size(); i++) {
 				$node.setArg($a.get(i).node);
 			}

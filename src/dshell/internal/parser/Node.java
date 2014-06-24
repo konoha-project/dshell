@@ -212,6 +212,14 @@ public abstract class Node {
 			this.value = parseTokenText(this.token);
 		}
 
+		/**
+		 * used for CommandNode
+		 * @param value
+		 */
+		public StringValueNode(String value) {
+			super(null);
+			this.value = value;
+		}
 		public static String parseTokenText(Token token) {
 			StringBuilder sBuilder = new StringBuilder();
 			String text = token.getText();
@@ -740,10 +748,10 @@ public abstract class Node {
 	public static class CommandNode extends ExprNode {
 		private final List<ExprNode> argNodeList;
 
-		protected CommandNode(Token token) {
+		protected CommandNode(Token token, String commandPath) {
 			super(token);
 			this.argNodeList = new ArrayList<>();
-			this.argNodeList.add(this.setExprNodeAsChild(new StringValueNode(token)));
+			this.argNodeList.add(this.setExprNodeAsChild(new StringValueNode(commandPath)));
 		}
 
 		public void setArg(ExprNode argNode) {

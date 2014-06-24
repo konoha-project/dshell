@@ -9,6 +9,39 @@ import dshell.internal.parser.TypeSymbol;
 
 @members {
 private final CommandScope cmdScope = new CommandScope();
+
+private boolean trace = false;
+
+@Override
+public Token nextToken() {
+	Token token = super.nextToken();
+	if(this.trace) {
+		System.err.println(token);
+	}
+	return token;
+}
+private boolean requireCommand = false;
+private boolean requireCommand() {
+	return this.requireCommand;
+}
+
+public void enterCmd() {
+	//System.err.println("enter command");
+	this.requireCommand = true;
+}
+
+public void exitCmd() {
+	//System.err.println("exit command");
+	this.requireCommand = false;
+}
+
+public CommandScope getScope() {
+	return this.cmdScope;
+}
+
+public void setTrace(boolean trace) {
+	this.trace = trace;
+}
 }
 
 // ######################
@@ -154,6 +187,10 @@ NullLiteral
 // symbol , class and command name
 CommandName	//FIXME:
 	: ~[\n\t\r\u0020|#&$'"\\;<>()]+ {cmdScope.isCommand(getText())}? -> mode(CMD_ARG)
+	;
+
+CommandSymbol
+	: ~[\n\t\r\u0020|#&$'"\\;<>()]+ {requireCommand()}?
 	;
 
 Identifier
