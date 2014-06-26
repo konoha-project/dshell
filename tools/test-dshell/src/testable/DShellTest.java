@@ -78,7 +78,7 @@ class TestableEngineFactory implements EngineFactory {
 
 	private static class TestableEngine extends DShellExecutionEngine {
 		@Override
-		public void eval(String source, int lineNum) {
+		public boolean eval(String source, int lineNum) {
 			ANTLRInputStream input = new ANTLRInputStream(source);
 			input.name = "(stdin)";
 			if(!this.eval(input, lineNum, true)) {
@@ -87,6 +87,7 @@ class TestableEngineFactory implements EngineFactory {
 				 */
 				System.exit(1);
 			}
+			return true;
 		}
 	}
 }

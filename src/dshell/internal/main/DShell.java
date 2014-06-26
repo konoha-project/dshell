@@ -5,7 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.HashMap;
-import java.util.TreeSet;
 
 import dshell.internal.console.AbstractConsole;
 import dshell.internal.console.DShellConsole;
@@ -195,11 +194,11 @@ public class DShell {
 			engine.eval("(command line)", this.specificArg);
 		}
 		else {
-			engine.eval("(stdin)", this.readFromIntput());
+			engine.eval("(stdin)", this.readFromInput());
 		}
 	}
 
-	protected String readFromIntput() {
+	protected String readFromInput() {
 		BufferedInputStream stream = new BufferedInputStream(System.in);
 		ByteArrayOutputStream streamBuffer = new ByteArrayOutputStream();
 		int bufferSize = 2048;

@@ -11,7 +11,6 @@ import java.util.Map;
 
 import dshell.internal.lib.Utils;
 
-
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @interface DerivedFromErrno {

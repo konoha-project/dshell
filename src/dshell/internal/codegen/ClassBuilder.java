@@ -137,13 +137,13 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		 */
 		protected int currentLineNum = -1;
 
-		protected MethodBuilder(int arg0, Method arg1, String arg2, org.objectweb.asm.Type[] arg3, ClassVisitor arg4) {
-			super(arg0, arg1, arg2, arg3, arg4);
+		protected MethodBuilder(int access, Method method, String signature, org.objectweb.asm.Type[] exceptions, ClassVisitor cv) {
+			super(access, method, signature, exceptions, cv);
 			this.continueLabels = new Stack<>();
 			this.breakLabels = new Stack<>();
 			this.tryLabels = new Stack<>();
 			int startIndex = 0;
-			if((arg0 & ACC_STATIC) != ACC_STATIC) {
+			if((access & ACC_STATIC) != ACC_STATIC) {
 				startIndex = 1;
 			}
 			this.varScopes = new VarScopes(startIndex);

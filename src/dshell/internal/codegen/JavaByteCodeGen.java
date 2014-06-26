@@ -8,7 +8,6 @@ import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.commons.GeneratorAdapter;
-import org.objectweb.asm.commons.Method;
 
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
 import dshell.internal.codegen.ClassBuilder.TryBlockLabels;

@@ -154,7 +154,7 @@ IntLiteral
 	: Number
 	;
 
-// float literal	//TODO: exp
+// float literal
 FloatLiteral
 	: Number '.' Number FloatSuffix?
 	;

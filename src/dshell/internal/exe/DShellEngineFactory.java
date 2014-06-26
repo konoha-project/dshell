@@ -41,6 +41,11 @@ public class DShellEngineFactory implements EngineFactory {
 			this.lexer = new dshellLexer(null);
 			this.parser = new dshellParser(null);
 			this.parser.setErrorHandler(new ParserErrorHandler());
+			this.lexer.removeErrorListeners();
+			this.parser.removeErrorListeners();
+			this.lexer.addErrorListener(ParserErrorHandler.getErrorListener());
+			this.parser.addErrorListener(ParserErrorHandler.getErrorListener());
+
 			this.classLoader = new DShellClassLoader();
 			this.checker = new TypeChecker(new TypePool(this.classLoader));
 			this.codeGen = new JavaByteCodeGen(this.classLoader);
@@ -84,7 +89,14 @@ public class DShellEngineFactory implements EngineFactory {
 
 		@Override
 		public void loadDShellRC() {
-			this.eval(Utils.getEnv("HOME") + "/.dshellrc");
+			String dshellrcPath = Utils.getEnv("HOME") + "/.dshellrc";
+			ANTLRFileStream input = null;
+			try {
+				input = new ANTLRFileStream(dshellrcPath);
+			} catch(IOException e) {
+				return;
+			}
+			this.eval(input, 1, false);
 		}
 
 		@Override
