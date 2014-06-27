@@ -273,7 +273,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(ElementGetterNode node) {
+	public Void visit(ElementGetterNode node) {	//TODO
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
@@ -286,13 +286,13 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(CastNode node) {
+	public Void visit(CastNode node) {	//TODO:
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
 	@Override
-	public Void visit(InstanceofNode node) {
+	public Void visit(InstanceofNode node) {	//TODO
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
@@ -339,13 +339,13 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(ConstructorCallNode node) {
 		Type revType = node.getHandle().getOwnerType();
-		GeneratorAdapter adapter = this.getCurrentMethodBuilder();
-		adapter.newInstance(TypeUtils.toTypeDescriptor(revType));
-		adapter.dup();
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		mBuilder.newInstance(TypeUtils.toTypeDescriptor(revType));
+		mBuilder.dup();
 		for(Node paramNode : node.getNodeList()) {
 			this.generateCode(paramNode);
 		}
-		node.getHandle().call(adapter);
+		node.getHandle().call(mBuilder);
 		return null;
 	}
 
@@ -500,7 +500,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(ForInNode node) {
+	public Void visit(ForInNode node) {	//TODO:
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
@@ -666,14 +666,14 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		classBuilder.visitField(ACC_PUBLIC | ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
 
 		// generate static method.
-		MethodBuilder mBuilder = classBuilder.createNewMethodBuilder(node.getHolderType().getFuncHanle());
+		MethodBuilder mBuilder = classBuilder.createNewMethodBuilder(node.getHolderType().getFuncHandle());
 		this.methodBuilders.push(mBuilder);
 		mBuilder.createNewLocalScope();
 		// set argument decl
 		int size = node.getArgDeclNodeList().size();
 		for(int i = 0; i < size; i++) {
 			SymbolNode argNode = node.getArgDeclNodeList().get(i);
-			Type argType = node.getHolderType().getFuncHanle().getParamTypeList().get(i);
+			Type argType = node.getHolderType().getFuncHandle().getParamTypeList().get(i);
 			mBuilder.defineArgument(argNode.getSymbolName(), argType);
 		}
 		this.visitBlockWithCurrentScope(node.getBlockNode());
@@ -684,7 +684,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		MethodHandle handle = ((FunctionType)node.getHolderType().getFieldHandle().getFieldType()).getHandle();
 		mBuilder = classBuilder.createNewMethodBuilder(handle);
 		mBuilder.loadArgs();
-		node.getHolderType().getFuncHanle().call(mBuilder);
+		node.getHolderType().getFuncHandle().call(mBuilder);
 		mBuilder.returnValue();
 		mBuilder.endMethod();
 
@@ -712,13 +712,13 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(ClassNode node) {
+	public Void visit(ClassNode node) {	//TODO:
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}
 
 	@Override
-	public Void visit(ConstructorNode node) {
+	public Void visit(ConstructorNode node) {	//TODO:
 		Utils.fatal(1, "unimplemented: " + node);
 		return null;
 	}

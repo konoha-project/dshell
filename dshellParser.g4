@@ -273,7 +273,7 @@ tryCatchStatement returns [Node node] locals [Node.TryNode tryNode]
 	;
 finallyBlock returns [Node node]
 	: Finally block {$node = $block.node;}
-	| {$node = new Node.EmptyBlockNode();}
+	| {$node = Node.EmptyBlockNode.INSTANCE;}
 	;
 catchStatement returns [Node.CatchNode node]
 	: Catch '(' exceptDeclaration ')' block

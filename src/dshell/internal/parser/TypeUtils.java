@@ -107,7 +107,7 @@ public class TypeUtils {
 	}
 
 	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<Type> paramTypeList) {
-		return toMehtodDescriptor(new TypePool.VoidType(), "<init>", paramTypeList);
+		return toMehtodDescriptor(TypePool.voidType, "<init>", paramTypeList);
 	}
 
 	public static org.objectweb.asm.commons.Method toArrayConstructorDescriptor(Type elementType) {

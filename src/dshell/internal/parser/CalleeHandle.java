@@ -1,9 +1,14 @@
 package dshell.internal.parser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.objectweb.asm.commons.GeneratorAdapter;
+
+import dshell.internal.parser.TypePool.GenericType;
+import dshell.internal.parser.TypePool.ParametricType;
+import dshell.internal.parser.TypePool.PrimitiveType;
 
 /**
  * Represents method or instance field.
@@ -202,7 +207,7 @@ public abstract class CalleeHandle {
 	 */
 	public static class ConstructorHandle extends MethodHandle {
 		public ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
-			super("<init>", ownerType, new TypePool.VoidType(), paramTypeList);
+			super("<init>", ownerType, TypePool.voidType, paramTypeList);
 		}
 
 		@Override
@@ -300,5 +305,93 @@ public abstract class CalleeHandle {
 			this.initMethodDesc();
 			adapter.invokeStatic(this.ownerTypeDesc, this.methodDesc);
 		}
+	}
+
+	// callee handle for generic type
+	public static class ReifiedFieldHandle extends FieldHandle {
+		private final FieldHandle baseHandle;
+
+		private ReifiedFieldHandle(FieldHandle baseHandle, GenericType ownerType, TypePool.Type fieldType) {
+			super(baseHandle.getCalleeName(), ownerType, fieldType);
+			this.baseHandle = baseHandle;
+		}
+
+		@Override
+		public void callGetter(GeneratorAdapter adapter) {
+			this.baseHandle.callGetter(adapter);
+			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
+			if(this.fieldType instanceof PrimitiveType) {
+				adapter.box(typeDesc);
+			} else {
+				adapter.checkCast(typeDesc);
+			}
+		}
+
+		@Override
+		public void callSetter(GeneratorAdapter adapter) {
+			this.baseHandle.callSetter(adapter);
+		}
+
+		public static FieldHandle createReifiedHandle(FieldHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
+			TypePool.Type newFieldType = replaceParametricType(baseHandle.getFieldType(), elementTypeList);
+			return new ReifiedFieldHandle(baseHandle, ownerType, newFieldType);
+		}
+	}
+
+	public static class ReifiedMethodHandle extends MethodHandle {
+		private final MethodHandle baseHandle;
+
+		private ReifiedMethodHandle(MethodHandle baseHandle, GenericType ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+			super(baseHandle.getCalleeName(), ownerType, returnType, paramTypeList);
+			this.baseHandle = baseHandle;
+		}
+
+		@Override
+		public void call(GeneratorAdapter adapter) {
+			this.baseHandle.call(adapter);
+			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.returnType);
+			if(this.returnType instanceof PrimitiveType) {
+				adapter.box(typeDesc);
+			} else {
+				adapter.checkCast(typeDesc);
+			}
+		}
+
+		public static MethodHandle createReifiedHandle(MethodHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
+			List<TypePool.Type> newParamTypeList = new ArrayList<TypePool.Type>(baseHandle.getParamTypeList().size());
+			for(TypePool.Type paramType : baseHandle.getParamTypeList()) {
+				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
+			}
+			TypePool.Type newReturnType = replaceParametricType(baseHandle.getReturnType(), elementTypeList);
+			return new ReifiedMethodHandle(baseHandle, ownerType, newReturnType, newParamTypeList);
+		}
+	}
+
+	public static class ReifiedConstructorHandle extends ConstructorHandle {
+		private final ConstructorHandle baseHandle;
+		private ReifiedConstructorHandle(ConstructorHandle baseHandle, GenericType ownerType, List<TypePool.Type> paramTypeList) {
+			super(ownerType, paramTypeList);
+			this.baseHandle = baseHandle;
+		}
+
+		@Override
+		public void call(GeneratorAdapter adapter) {
+			this.baseHandle.call(adapter);
+		}
+
+		public static ConstructorHandle createReifiedHandle(ConstructorHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
+			List<TypePool.Type> newParamTypeList = new ArrayList<TypePool.Type>(baseHandle.getParamTypeList().size());
+			for(TypePool.Type paramType : baseHandle.getParamTypeList()) {
+				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
+			}
+			return new ReifiedConstructorHandle(baseHandle, ownerType, newParamTypeList);
+		}
+	}
+
+	private static TypePool.Type replaceParametricType(TypePool.Type type, List<TypePool.Type> elementTypeList) {
+		if(type instanceof ParametricType) {
+			return elementTypeList.get(((ParametricType) type).getParamId());
+		}
+		return type;
 	}
 }

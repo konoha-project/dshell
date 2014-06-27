@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
@@ -12,6 +13,9 @@ import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.FunctionHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedConstructorHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedFieldHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedMethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.error.TypeLookupException;
@@ -44,7 +48,7 @@ public class TypePool {
 	/**
 	 * Equivalent to java void.
 	 */
-	public final VoidType voidType;
+	public final static VoidType voidType = new VoidType();
 
 	/**
 	 * Equivalent to java long.
@@ -101,7 +105,7 @@ public class TypePool {
 		 */
 		this.objectType = new RootClassType();
 
-		this.voidType      = (VoidType) this.setTypeAndThrowIfDefined(new VoidType());
+		this.setTypeAndThrowIfDefined(voidType);
 		this.intType       = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("int", "long"));
 		this.floatType     = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("float", "double"));
 		this.booleanType   = (PrimitiveType) this.setTypeAndThrowIfDefined(new PrimitiveType("boolean", "boolean"));
@@ -110,29 +114,31 @@ public class TypePool {
 		this.baseArrayType = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Array", "dshell/lang/GenericArray", this.objectType, false));
 		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(new GenericBaseType("Map", "dshell/lang/GenericMap", this.objectType, false));
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
-		
+
 		new StringInitializer().initType(this.stringType, this);
+		new ExceptionInitializer().initType(this.exceptionType, this);
 
 		/**
 		 * add primitive array type.
 		 */
 		PrimitiveArrayType intArrayType = 
 				new PrimitiveArrayType("Array<" + this.intType.getTypeName() + ">", "dshell/lang/IntArray", this.objectType, this.intType);
-		new IntArrayInitializer().initType(intArrayType, this);
 		PrimitiveArrayType floatArrayType = 
 				new PrimitiveArrayType("Array<" + this.floatType.getTypeName() + ">", "dshell/lang/FloatArray", this.objectType, this.floatType);
-		new FloatArrayInitializer().initType(floatArrayType, this);
+		
 		PrimitiveArrayType booleanArrayType = 
 				new PrimitiveArrayType("Array<" + this.booleanType.getInternalName() + ">", "dshell/lang/BooleanArray", this.objectType, this.booleanType);
-		new BooleanArrayInitializer().initType(booleanArrayType, this);
 
-		new ExceptionInitializer().initType(this.exceptionType, this);
 		
 		
 		
 		this.setTypeAndThrowIfDefined(intArrayType);
 		this.setTypeAndThrowIfDefined(floatArrayType);
 		this.setTypeAndThrowIfDefined(booleanArrayType);
+		
+		new IntArrayInitializer().initType(intArrayType, this);
+		new FloatArrayInitializer().initType(floatArrayType, this);
+		new BooleanArrayInitializer().initType(booleanArrayType, this);
 	}
 
 	private Type setTypeAndThrowIfDefined(Type type) {
@@ -380,6 +386,9 @@ public class TypePool {
 		 * - if this type is equivalent to target type or is the super type of target type, return true;
 		 */
 		public boolean isAssignableFrom(Type targetType) {
+			if(!this.getClass().equals(targetType.getClass())) {
+				return false;
+			}
 			return this.getTypeName().equals(targetType.getTypeName());
 		}
 
@@ -485,8 +494,29 @@ public class TypePool {
 	 *
 	 */
 	public static class VoidType extends Type {
-		public VoidType() {
+		private VoidType() {
 			super("void", "void", false);
+		}
+	}
+
+	/**
+	 * represent type parameter of generic type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class ParametricType extends Type {
+		/**
+		 * start from 0;
+		 */
+		private final int paramId;
+
+		public ParametricType(int paramId) {
+			super("$Parametric$", "java/lang/Object", false);
+			this.paramId = paramId;
+		}
+
+		public int getParamId() {
+			return this.paramId;
 		}
 	}
 
@@ -575,7 +605,7 @@ public class TypePool {
 			return this.fieldHandle;
 		}
 
-		public StaticFunctionHandle getFuncHanle() {
+		public StaticFunctionHandle getFuncHandle() {
 			return this.funcHandle;
 		}
 	}
@@ -759,13 +789,27 @@ public class TypePool {
 	 *
 	 */
 	public static class GenericType extends ClassType {
-		private final GenericBaseType baseType;
 		private final List<Type> elementTypeList;
 
 		protected GenericType(String typeName, GenericBaseType baseType, List<Type> elementTypeList) {
 			super(typeName, baseType.getInternalName(), baseType.superType, false);	//FIXME: super type
-			this.baseType = baseType;
 			this.elementTypeList = Collections.unmodifiableList(elementTypeList);
+
+			// create constructor handles
+			for(ConstructorHandle handle : baseType.constructorHandleList) {
+				this.constructorHandleList.add(ReifiedConstructorHandle.createReifiedHandle(handle, this, this.elementTypeList));
+			}
+			// create method handles
+			for(Entry<String, MethodHandle> entry : baseType.methodHandleMap.entrySet()) {
+				this.methodHandleMap.put(entry.getKey(), 
+						ReifiedMethodHandle.createReifiedHandle(entry.getValue(), this, this.elementTypeList));
+			}
+			// create field handles
+			for(Entry<String, FieldHandle> entry : baseType.fieldHandleMap.entrySet()) {
+				this.fieldHandleMap.put(entry.getKey(), 
+						ReifiedFieldHandle.createReifiedHandle(entry.getValue(), this, this.elementTypeList));
+			}
+			this.finalizeType();
 		}
 
 		/**
@@ -777,12 +821,8 @@ public class TypePool {
 		 */
 		protected GenericType(String typeName, String internalName, Type superType, List<Type> elementTypeList) {
 			super(typeName, internalName, superType, false);
-			this.baseType = null;
 			this.elementTypeList = Collections.unmodifiableList(elementTypeList);
 		}
-//		public GenericBaseType getBaseType() {
-//			return this.baseType;
-//		}
 
 		public List<Type> getElementTypeList() {
 			return this.elementTypeList;

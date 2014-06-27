@@ -1603,7 +1603,9 @@ public abstract class Node {
 	 *
 	 */
 	public static class EmptyBlockNode extends BlockNode {
-		public EmptyBlockNode() {
+		public final static EmptyBlockNode INSTANCE = new EmptyBlockNode();
+
+		private EmptyBlockNode() {
 			super(new Block());
 		}
 

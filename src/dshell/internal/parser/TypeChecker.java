@@ -418,7 +418,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			String funcName = ((SymbolNode) recvNode).getSymbolName();
 			SymbolEntry entry = this.symbolTable.getEntry(funcName);
 			if(entry != null && entry.getType() instanceof FuncHolderType) {
-				return ((FuncHolderType) entry.getType()).getFuncHanle();
+				return ((FuncHolderType) entry.getType()).getFuncHandle();
 			}
 		}
 		// look up function
@@ -768,7 +768,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(EmptyNode node) {
-		node.setType(this.typePool.voidType);
+		node.setType(TypePool.voidType);
 		return node;
 	}
 
