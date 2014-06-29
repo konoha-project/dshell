@@ -41,7 +41,7 @@ def main():
 	bool_array_builder = SourceBuilder('Boolean', 'boolean')
 	for line in lines:
 		if line.find('GenericClass') != -1:
-			continue
+			line = line.replace('GenericClass', 'PrimitiveArray')
 		if line.startswith('import') and line.find('TypeParameter') != -1:
 			continue
 

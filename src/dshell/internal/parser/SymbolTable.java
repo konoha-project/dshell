@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 
-import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.SymbolTable.SymbolEntry;
+import dshell.internal.type.TypePool;
+import dshell.internal.type.DSType;
 
 /**
  * contains defined variable and function symbol type.
@@ -31,12 +32,12 @@ interface SymbolTableOp {
 	 * @return
 	 * - if entry has already existed , return false.
 	 */
-	public boolean addEntry(String symbolName, Type type, boolean isReadOnly);
+	public boolean addEntry(String symbolName, DSType type, boolean isReadOnly);
 }
 
 public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 	private final Stack<SymbolTableOp> tableStack;
-	private final Stack<Type> returnTypetaStack;
+	private final Stack<DSType> returnTypetaStack;
 
 	public SymbolTable() {
 		this.tableStack = new Stack<>();
@@ -50,7 +51,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 	}
 
 	@Override
-	public boolean addEntry(String symbolName, Type type, boolean isReadOnly) {
+	public boolean addEntry(String symbolName, DSType type, boolean isReadOnly) {
 		return this.tableStack.peek().addEntry(symbolName, type, isReadOnly);
 	}
 
@@ -82,7 +83,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		}
 	}
 
-	public void pushReturnType(Type returnType) {
+	public void pushReturnType(DSType returnType) {
 		this.returnTypetaStack.push(returnType);
 	}
 
@@ -90,7 +91,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		this.returnTypetaStack.pop();
 	}
 
-	public Type getCurrentReturnType() {
+	public DSType getCurrentReturnType() {
 		if(this.returnTypetaStack.isEmpty()) {
 			return TypePool.unresolvedType;
 		}
@@ -128,7 +129,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		}
 
 		@Override
-		public boolean addEntry(String symbolName, Type type, boolean isReadOnly) {
+		public boolean addEntry(String symbolName, DSType type, boolean isReadOnly) {
 			if(this.entryMap.containsKey(symbolName)) {
 				return false;
 			}
@@ -160,7 +161,7 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		}
 
 		@Override
-		public boolean addEntry(String symbolName, Type type, boolean isReadOnly) {
+		public boolean addEntry(String symbolName, DSType type, boolean isReadOnly) {
 			if(this.entryMap.containsKey(symbolName)) {
 				return false;
 			}
@@ -177,15 +178,15 @@ public class SymbolTable implements SymbolTableOp {	// TODO: remove entry.
 		 */
 		private final boolean isReadOnly;
 		private final boolean isGlobal;
-		private final Type type;
+		private final DSType type;
 
-		protected SymbolEntry(Type type, boolean isReadOnly, boolean isGlobal) {
+		protected SymbolEntry(DSType type, boolean isReadOnly, boolean isGlobal) {
 			this.type = type;
 			this.isReadOnly = isReadOnly;
 			this.isGlobal = isGlobal;
 		}
 
-		public Type getType() {
+		public DSType getType() {
 			return this.type;
 		}
 

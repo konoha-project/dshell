@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
-import dshell.internal.parser.TypePool.Type;
+import dshell.internal.type.DSType;
 
 /**
  * contains binary operator handle, unary operator handle. assign operator handle.
@@ -37,11 +37,11 @@ public abstract class AbstractOperatorTable {
 	 * @param paramTypes
 	 * - may be 1, 2
 	 */
-	public void setOperator(Type returnType, String operatorSymbol, String ownerName, String internalName, Type... paramTypes) {
+	public void setOperator(DSType returnType, String operatorSymbol, String ownerName, String internalName, DSType... paramTypes) {
 		int size = paramTypes.length;
 		assert (size > 0 && size < 3);
-		List<Type> paramTypeList = new ArrayList<>(size);
-		for(Type paramType : paramTypes) {
+		List<DSType> paramTypeList = new ArrayList<>(size);
+		for(DSType paramType : paramTypes) {
 			paramTypeList.add(paramType);
 		}
 		OperatorHandle handle = new OperatorHandle(internalName, ownerName, returnType, paramTypeList);
@@ -78,12 +78,12 @@ public abstract class AbstractOperatorTable {
 	 * @return
 	 * return null, if has no handle
 	 */
-	public OperatorHandle getOperatorHandle(String operatorName, Type leftType, Type rightType) {
+	public OperatorHandle getOperatorHandle(String operatorName, DSType leftType, DSType rightType) {
 		OperatorEntry entry = this.binaryEntryMap.get(operatorName);
 		return entry == null ? null : entry.lookupHandle(leftType, rightType);
 	}
 
-	public OperatorHandle getOperatorHandle(String operatorName, Type rightType) {
+	public OperatorHandle getOperatorHandle(String operatorName, DSType rightType) {
 		OperatorEntry entry = this.unaryEntryMap.get(operatorName);
 		return entry == null ? null : entry.lookupHandle(rightType);
 	}
@@ -116,7 +116,7 @@ class OperatorEntry {
 	 * @return
 	 * - return null, if has no handle.
 	 */
-	OperatorHandle lookupHandle(Type leftType, Type rightType) {
+	OperatorHandle lookupHandle(DSType leftType, DSType rightType) {
 		for(OperatorHandle handle : this.operatorList) {
 			if(handle.getParamTypeList().get(0).isAssignableFrom(leftType) &&
 					handle.getParamTypeList().get(1).isAssignableFrom(rightType)) {
@@ -132,7 +132,7 @@ class OperatorEntry {
 	 * @return
 	 * - return null, if has no handle.
 	 */
-	OperatorHandle lookupHandle(Type rightType) {
+	OperatorHandle lookupHandle(DSType rightType) {
 		for(OperatorHandle handle : this.operatorList) {
 			if(handle.getParamTypeList().get(0).isAssignableFrom(rightType)) {
 				return handle;

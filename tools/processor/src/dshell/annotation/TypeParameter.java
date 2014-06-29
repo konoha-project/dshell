@@ -10,8 +10,8 @@ import java.lang.annotation.Target;
  * @author skgchxngsxyz-osx
  *
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.SOURCE)
+@Target({ElementType.METHOD, ElementType.PARAMETER, ElementType.FIELD})
 public @interface TypeParameter {
 	/**
 	 * 

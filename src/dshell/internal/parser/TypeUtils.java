@@ -3,11 +3,12 @@ package dshell.internal.parser;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
-import dshell.internal.parser.TypePool.PrimitiveType;
-import dshell.internal.parser.TypePool.Type;
+import dshell.internal.type.DSType.PrimitiveType;
+import dshell.internal.type.TypePool;
+import dshell.internal.type.DSType;
 
 public class TypeUtils {
-	public static boolean matchParamsType(final Type[] paramTypes, final Type[] givenTypes) {
+	public static boolean matchParamsType(final DSType[] paramTypes, final DSType[] givenTypes) {
 		assert paramTypes != null;
 		assert givenTypes != null;
 		if(paramTypes.length != givenTypes.length) {
@@ -65,7 +66,7 @@ public class TypeUtils {
 	 * @param type
 	 * @return
 	 */
-	public static org.objectweb.asm.Type toTypeDescriptor(Type type) {
+	public static org.objectweb.asm.Type toTypeDescriptor(DSType type) {
 		return toTypeDescriptor(type.getInternalName());
 	}
 
@@ -96,7 +97,7 @@ public class TypeUtils {
 	 * @param paramTypeList
 	 * @return
 	 */
-	public static org.objectweb.asm.commons.Method toMehtodDescriptor(Type returnType, String methodName, List<Type> paramTypeList) {
+	public static org.objectweb.asm.commons.Method toMehtodDescriptor(DSType returnType, String methodName, List<DSType> paramTypeList) {
 		int size = paramTypeList.size();
 		org.objectweb.asm.Type[] paramtypeDecs = new org.objectweb.asm.Type[size];
 		for(int i = 0; i < size; i++) {
@@ -106,11 +107,11 @@ public class TypeUtils {
 		return new org.objectweb.asm.commons.Method(methodName, returnTypeDesc, paramtypeDecs);
 	}
 
-	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<Type> paramTypeList) {
+	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<DSType> paramTypeList) {
 		return toMehtodDescriptor(TypePool.voidType, "<init>", paramTypeList);
 	}
 
-	public static org.objectweb.asm.commons.Method toArrayConstructorDescriptor(Type elementType) {
+	public static org.objectweb.asm.commons.Method toArrayConstructorDescriptor(DSType elementType) {
 		org.objectweb.asm.Type returnTypeDesc = org.objectweb.asm.Type.VOID_TYPE;
 		org.objectweb.asm.Type elementTypeDesc = toTypeDescriptor(elementType);
 		if(!(elementType instanceof PrimitiveType)) {

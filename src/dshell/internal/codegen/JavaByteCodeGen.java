@@ -59,16 +59,16 @@ import dshell.internal.parser.Node.ThrowNode;
 import dshell.internal.parser.Node.TryNode;
 import dshell.internal.parser.Node.VarDeclNode;
 import dshell.internal.parser.Node.WhileNode;
-import dshell.internal.parser.TypePool.FunctionType;
-import dshell.internal.parser.TypePool.GenericType;
-import dshell.internal.parser.TypePool.PrimitiveType;
-import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.Node;
 import dshell.internal.parser.NodeVisitor;
-import dshell.internal.parser.TypePool.VoidType;
 import dshell.internal.parser.TypeUtils;
 import dshell.internal.process.AbstractProcessContext;
 import dshell.internal.process.TaskContext;
+import dshell.internal.type.DSType;
+import dshell.internal.type.GenericType;
+import dshell.internal.type.DSType.FunctionType;
+import dshell.internal.type.DSType.PrimitiveType;
+import dshell.internal.type.DSType.VoidType;
 
 /**
  * generate java byte code from node.
@@ -120,7 +120,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		if(!(node instanceof ExprNode)) {
 			return;
 		}
-		Type type = ((ExprNode) node).getType();
+		DSType type = ((ExprNode) node).getType();
 		if(type instanceof VoidType) {
 			return;
 		}
@@ -156,7 +156,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			this.generateCode(targetNode);
 			if((targetNode instanceof ExprNode) && !(((ExprNode)targetNode).getType() instanceof VoidType)) {
 				MethodBuilder adapter = this.getCurrentMethodBuilder();
-				Type type = ((ExprNode)targetNode).getType();
+				DSType type = ((ExprNode)targetNode).getType();
 				if(enableResultPrint) {	// if true, insert print ins
 					if(type instanceof PrimitiveType) {
 						adapter.box(TypeUtils.toTypeDescriptor(type));
@@ -207,7 +207,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(ArrayNode node) {
 		int size = node.getNodeList().size();
-		Type elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
+		DSType elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
 		org.objectweb.asm.Type elementTypeDesc = TypeUtils.toTypeDescriptor(elementType);
 		org.objectweb.asm.Type arrayClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
 
@@ -230,7 +230,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(MapNode node) {	//TODO: map constructor
 		int size = node.getKeyList().size();
-		Type elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
+		DSType elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
 		org.objectweb.asm.Type keyTypeDesc = TypeUtils.toTypeDescriptor("java/lang/String");
 		org.objectweb.asm.Type valueTypeDesc = TypeUtils.toTypeDescriptor(elementType);
 		org.objectweb.asm.Type mapClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
@@ -338,7 +338,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 
 	@Override
 	public Void visit(ConstructorCallNode node) {
-		Type revType = node.getHandle().getOwnerType();
+		DSType revType = node.getHandle().getOwnerType();
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		mBuilder.newInstance(TypeUtils.toTypeDescriptor(revType));
 		mBuilder.dup();
@@ -588,7 +588,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		TryBlockLabels labels = mBuilder.getTryLabels().peek();
 		mBuilder.createNewLocalScope();
-		Type exceptionType = node.getExceptionType();
+		DSType exceptionType = node.getExceptionType();
 		mBuilder.catchException(labels.startLabel, labels.endLabel, TypeUtils.toTypeDescriptor(exceptionType));
 		mBuilder.createNewLocalVarAndStoreValue(node.getExceptionVarName(), exceptionType);
 		this.visitBlockWithCurrentScope(node.getCatchBlockNode());
@@ -673,7 +673,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		int size = node.getArgDeclNodeList().size();
 		for(int i = 0; i < size; i++) {
 			SymbolNode argNode = node.getArgDeclNodeList().get(i);
-			Type argType = node.getHolderType().getFuncHandle().getParamTypeList().get(i);
+			DSType argType = node.getHolderType().getFuncHandle().getParamTypeList().get(i);
 			mBuilder.defineArgument(argNode.getSymbolName(), argType);
 		}
 		this.visitBlockWithCurrentScope(node.getBlockNode());
@@ -689,7 +689,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.endMethod();
 
 		// generate constructor.
-		org.objectweb.asm.commons.Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<Type>());
+		org.objectweb.asm.commons.Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<DSType>());
 		GeneratorAdapter adapter = new GeneratorAdapter(ACC_PUBLIC, initDesc, null, null, classBuilder);
 		adapter.loadThis();
 		adapter.invokeConstructor(org.objectweb.asm.Type.getType("java/lang/Object"), initDesc);

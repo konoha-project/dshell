@@ -16,11 +16,11 @@ import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.lib.GlobalVariableTable;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
-import dshell.internal.parser.TypePool.ClassType;
-import dshell.internal.parser.TypePool.FuncHolderType;
-import dshell.internal.parser.TypePool.FunctionType;
-import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.TypeUtils;
+import dshell.internal.type.UserDefinedClassType;
+import dshell.internal.type.DSType.FuncHolderType;
+import dshell.internal.type.DSType.FunctionType;
+import dshell.internal.type.DSType;
 
 /**
  * used for class and function wrapper class generation.
@@ -39,7 +39,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 	 * @param sourceName
 	 * - class source code, may be null.
 	 */
-	public ClassBuilder(ClassType classType, String sourceName) {
+	public ClassBuilder(UserDefinedClassType classType, String sourceName) {
 		super(ClassWriter.COMPUTE_FRAMES);
 		this.internalClassName = classType.getInternalName();
 		this.visit(V1_7, ACC_PUBLIC, this.internalClassName, null, classType.getSuperType().getInternalName(), null);
@@ -187,12 +187,12 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			this.varScopes.removeCurrentScope();
 		}
 
-		public void defineArgument(String argName, Type argType) {
+		public void defineArgument(String argName, DSType argType) {
 			assert this.varScopes.scopeDepth() == 2;
 			this.varScopes.addVarEntry(argName, argType);
 		}
 
-		public void createNewLocalVarAndStoreValue(String varName, Type type) {
+		public void createNewLocalVarAndStoreValue(String varName, DSType type) {
 			VarEntry entry = this.varScopes.addVarEntry(varName, type);
 			// global variable
 			if(entry.isGlobaVar()) {
@@ -205,7 +205,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			return;
 		}
 
-		public void storeValueToLocalVar(String varName, Type type) {
+		public void storeValueToLocalVar(String varName, DSType type) {
 			VarEntry entry = this.varScopes.getVarEntry(varName);
 			assert entry != null : "undefined variable: " + varName;
 			// global variable
@@ -218,7 +218,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			this.visitVarInsn(typeDesc.getOpcode(ISTORE), entry.getVarIndex());
 		}
 
-		public void loadValueFromLocalVar(String varName, Type type) {
+		public void loadValueFromLocalVar(String varName, DSType type) {
 			VarEntry entry = this.varScopes.getVarEntry(varName);
 			assert entry != null : "undefined variable: " + varName;
 			// global variable
@@ -231,7 +231,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			this.visitVarInsn(typeDesc.getOpcode(ILOAD), entry.getVarIndex());
 		}
 
-		private void storeValueToGlobal(int index, Type type) {
+		private void storeValueToGlobal(int index, DSType type) {
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
 			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
 			switch(typeDesc.getSort()) {
@@ -268,7 +268,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			}
 		}
 
-		private void loadValueFromGlobal(int index, Type type) {
+		private void loadValueFromGlobal(int index, DSType type) {
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
 			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
 			switch(typeDesc.getSort()) {
@@ -355,7 +355,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		 * - local var index.
 		 * throw if variable has already defined in this scope.
 		 */
-		public VarEntry addVarEntry(String varName, Type type) {
+		public VarEntry addVarEntry(String varName, DSType type) {
 			return this.scopes.peek().addVarEntry(varName, type);
 		}
 
@@ -401,7 +401,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		 * - local var index.
 		 * throw if variable has already defined in this scope.
 		 */
-		public VarEntry addVarEntry(String varName, Type type);
+		public VarEntry addVarEntry(String varName, DSType type);
 
 		/**
 		 * get local variable index.
@@ -455,7 +455,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		}
 
 		@Override
-		public VarEntry addVarEntry(String varName, Type type) {
+		public VarEntry addVarEntry(String varName, DSType type) {
 			assert !this.varEntryMap.containsKey(varName) : varName + " is already defined";
 			int valueSize = TypeUtils.toTypeDescriptor(type).getSize();
 			assert valueSize > 0;
@@ -499,7 +499,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		}
 
 		@Override
-		public VarEntry addVarEntry(String varName, Type type) {
+		public VarEntry addVarEntry(String varName, DSType type) {
 			assert !this.globalVarEntryMap.containsKey(varName) : varName + " is already defined";
 			int varIndex = -1;
 			switch(TypeUtils.toTypeDescriptor(type).getSort()) {

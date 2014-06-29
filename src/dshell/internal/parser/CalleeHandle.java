@@ -6,9 +6,13 @@ import java.util.List;
 
 import org.objectweb.asm.commons.GeneratorAdapter;
 
-import dshell.internal.parser.TypePool.GenericType;
-import dshell.internal.parser.TypePool.ParametricType;
-import dshell.internal.parser.TypePool.PrimitiveType;
+import dshell.internal.type.ReifiedType;
+import dshell.internal.type.DSType;
+import dshell.internal.type.DSType.FunctionType;
+import dshell.internal.type.DSType.ParametricType;
+import dshell.internal.type.DSType.PrimitiveType;
+import dshell.internal.type.TypePool;
+
 
 /**
  * Represents method or instance field.
@@ -26,17 +30,17 @@ public abstract class CalleeHandle {
 	 * Represents callee owner type.
 	 * instance method's receiver is the same as it.
 	 */
-	protected final TypePool.Type ownerType;
+	protected final DSType ownerType;
 
 	public String getCalleeName() {
 		return calleeName;
 	}
 
-	public TypePool.Type getOwnerType() {
+	public DSType getOwnerType() {
 		return ownerType;
 	}
 
-	protected CalleeHandle(String calleeName, TypePool.Type ownerType) {
+	protected CalleeHandle(String calleeName, DSType ownerType) {
 		this.calleeName = calleeName;
 		this.ownerType = ownerType;
 	}
@@ -50,7 +54,7 @@ public abstract class CalleeHandle {
 		/**
 		 * Represent instance field type.
 		 */
-		protected final TypePool.Type fieldType;
+		protected final DSType fieldType;
 
 		/**
 		 * asm type descriptor for owner type.
@@ -62,13 +66,13 @@ public abstract class CalleeHandle {
 		 */
 		protected org.objectweb.asm.Type fieldTypeDesc;
 
-		public FieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
+		public FieldHandle(String calleeName, DSType ownerType, DSType fieldType) {
 			super(calleeName, ownerType);
 			assert fieldType != null;
 			this.fieldType = fieldType;
 		}
 
-		public TypePool.Type getFieldType() {
+		public DSType getFieldType() {
 			return this.fieldType;
 		}
 
@@ -105,7 +109,7 @@ public abstract class CalleeHandle {
 	}
 
 	public static class StaticFieldHandle extends FieldHandle {
-		public StaticFieldHandle(String calleeName, TypePool.Type ownerType, TypePool.Type fieldType) {
+		public StaticFieldHandle(String calleeName, DSType ownerType, DSType fieldType) {
 			super(calleeName, ownerType, fieldType);
 		}
 
@@ -140,13 +144,13 @@ public abstract class CalleeHandle {
 		 */
 		protected org.objectweb.asm.Type ownerTypeDesc;
 
-		protected final TypePool.Type returnType;
+		protected final DSType returnType;
 
 		/**
 		 * not contains receiver type.
 		 * it is unmodified.
 		 */
-		protected final List<TypePool.Type> paramTypeList;
+		protected final List<DSType> paramTypeList;
 
 		/**
 		 * 
@@ -156,7 +160,7 @@ public abstract class CalleeHandle {
 		 * @param paramTypes
 		 * - if has no parameters, it is empty array;
 		 */
-		public MethodHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		public MethodHandle(String calleeName, DSType ownerType, DSType returnType, List<DSType> paramTypeList) {
 			super(calleeName, ownerType);
 			assert returnType != null;
 			assert paramTypeList != null;
@@ -164,11 +168,11 @@ public abstract class CalleeHandle {
 			this.paramTypeList = Collections.unmodifiableList(paramTypeList);
 		}
 
-		public TypePool.Type getReturnType() {
+		public DSType getReturnType() {
 			return this.returnType;
 		}
 
-		public List<TypePool.Type> getParamTypeList() {
+		public List<DSType> getParamTypeList() {
 			return this.paramTypeList;
 		}
 
@@ -206,7 +210,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class ConstructorHandle extends MethodHandle {
-		public ConstructorHandle(TypePool.Type ownerType, List<TypePool.Type> paramTypeList) {
+		public ConstructorHandle(DSType ownerType, List<DSType> paramTypeList) {
 			super("<init>", ownerType, TypePool.voidType, paramTypeList);
 		}
 
@@ -236,7 +240,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class FunctionHandle extends MethodHandle {
-		public FunctionHandle(TypePool.FunctionType funcType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		public FunctionHandle(FunctionType funcType, DSType returnType, List<DSType> paramTypeList) {
 			super("invoke", funcType, returnType, paramTypeList);
 		}
 
@@ -257,7 +261,7 @@ public abstract class CalleeHandle {
 	 *
 	 */
 	public static class StaticFunctionHandle extends MethodHandle {
-		public StaticFunctionHandle(String calleeName, TypePool.Type ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		public StaticFunctionHandle(String calleeName, DSType ownerType, DSType returnType, List<DSType> paramTypeList) {
 			super(calleeName, ownerType, returnType, paramTypeList);
 		}
 
@@ -283,7 +287,7 @@ public abstract class CalleeHandle {
 		 */
 		private final String ownerName;
 
-		public OperatorHandle(String calleeName, String ownerName, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		public OperatorHandle(String calleeName, String ownerName, DSType returnType, List<DSType> paramTypeList) {
 			super(calleeName, null, returnType, paramTypeList);
 			this.ownerName = ownerName;
 		}
@@ -311,7 +315,7 @@ public abstract class CalleeHandle {
 	public static class ReifiedFieldHandle extends FieldHandle {
 		private final FieldHandle baseHandle;
 
-		private ReifiedFieldHandle(FieldHandle baseHandle, GenericType ownerType, TypePool.Type fieldType) {
+		private ReifiedFieldHandle(FieldHandle baseHandle, ReifiedType ownerType, DSType fieldType) {
 			super(baseHandle.getCalleeName(), ownerType, fieldType);
 			this.baseHandle = baseHandle;
 		}
@@ -321,7 +325,7 @@ public abstract class CalleeHandle {
 			this.baseHandle.callGetter(adapter);
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
 			if(this.fieldType instanceof PrimitiveType) {
-				adapter.box(typeDesc);
+				adapter.unbox(typeDesc);
 			} else {
 				adapter.checkCast(typeDesc);
 			}
@@ -332,8 +336,8 @@ public abstract class CalleeHandle {
 			this.baseHandle.callSetter(adapter);
 		}
 
-		public static FieldHandle createReifiedHandle(FieldHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
-			TypePool.Type newFieldType = replaceParametricType(baseHandle.getFieldType(), elementTypeList);
+		public static FieldHandle createReifiedHandle(FieldHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
+			DSType newFieldType = replaceParametricType(baseHandle.getFieldType(), elementTypeList);
 			return new ReifiedFieldHandle(baseHandle, ownerType, newFieldType);
 		}
 	}
@@ -341,7 +345,7 @@ public abstract class CalleeHandle {
 	public static class ReifiedMethodHandle extends MethodHandle {
 		private final MethodHandle baseHandle;
 
-		private ReifiedMethodHandle(MethodHandle baseHandle, GenericType ownerType, TypePool.Type returnType, List<TypePool.Type> paramTypeList) {
+		private ReifiedMethodHandle(MethodHandle baseHandle, ReifiedType ownerType, DSType returnType, List<DSType> paramTypeList) {
 			super(baseHandle.getCalleeName(), ownerType, returnType, paramTypeList);
 			this.baseHandle = baseHandle;
 		}
@@ -351,25 +355,25 @@ public abstract class CalleeHandle {
 			this.baseHandle.call(adapter);
 			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.returnType);
 			if(this.returnType instanceof PrimitiveType) {
-				adapter.box(typeDesc);
+				adapter.unbox(typeDesc);
 			} else {
 				adapter.checkCast(typeDesc);
 			}
 		}
 
-		public static MethodHandle createReifiedHandle(MethodHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
-			List<TypePool.Type> newParamTypeList = new ArrayList<TypePool.Type>(baseHandle.getParamTypeList().size());
-			for(TypePool.Type paramType : baseHandle.getParamTypeList()) {
+		public static MethodHandle createReifiedHandle(MethodHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
+			List<DSType> newParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
+			for(DSType paramType : baseHandle.getParamTypeList()) {
 				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
 			}
-			TypePool.Type newReturnType = replaceParametricType(baseHandle.getReturnType(), elementTypeList);
+			DSType newReturnType = replaceParametricType(baseHandle.getReturnType(), elementTypeList);
 			return new ReifiedMethodHandle(baseHandle, ownerType, newReturnType, newParamTypeList);
 		}
 	}
 
 	public static class ReifiedConstructorHandle extends ConstructorHandle {
 		private final ConstructorHandle baseHandle;
-		private ReifiedConstructorHandle(ConstructorHandle baseHandle, GenericType ownerType, List<TypePool.Type> paramTypeList) {
+		private ReifiedConstructorHandle(ConstructorHandle baseHandle, ReifiedType ownerType, List<DSType> paramTypeList) {
 			super(ownerType, paramTypeList);
 			this.baseHandle = baseHandle;
 		}
@@ -379,16 +383,16 @@ public abstract class CalleeHandle {
 			this.baseHandle.call(adapter);
 		}
 
-		public static ConstructorHandle createReifiedHandle(ConstructorHandle baseHandle, GenericType ownerType, List<TypePool.Type> elementTypeList) {
-			List<TypePool.Type> newParamTypeList = new ArrayList<TypePool.Type>(baseHandle.getParamTypeList().size());
-			for(TypePool.Type paramType : baseHandle.getParamTypeList()) {
+		public static ConstructorHandle createReifiedHandle(ConstructorHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
+			List<DSType> newParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
+			for(DSType paramType : baseHandle.getParamTypeList()) {
 				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
 			}
 			return new ReifiedConstructorHandle(baseHandle, ownerType, newParamTypeList);
 		}
 	}
 
-	private static TypePool.Type replaceParametricType(TypePool.Type type, List<TypePool.Type> elementTypeList) {
+	private static DSType replaceParametricType(DSType type, List<DSType> elementTypeList) {
 		if(type instanceof ParametricType) {
 			return elementTypeList.get(((ParametricType) type).getParamId());
 		}

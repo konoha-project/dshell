@@ -2,6 +2,7 @@ package dshell.lang;
 
 import dshell.annotation.ArrayOp;
 import dshell.annotation.Shared;
+import dshell.annotation.SharedClass;
 import dshell.annotation.Wrapper;
 import dshell.annotation.ArrayOp.ArrayOpType;
 import dshell.annotation.WrapperClass;
@@ -11,8 +12,10 @@ import dshell.annotation.WrapperClass;
  * @author skgchxngsxyz-osx
  *
  */
+
+@SharedClass
 @WrapperClass
-public final class StringUtils {
+public final class StringWrapper {
 	private static void throwIfIndexOutOfRange(String value, long index) {
 		throwIfIndexOutOfRange(value, index, true);
 	}

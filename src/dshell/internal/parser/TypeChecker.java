@@ -53,15 +53,16 @@ import dshell.internal.parser.Node.TryNode;
 import dshell.internal.parser.Node.VarDeclNode;
 import dshell.internal.parser.Node.WhileNode;
 import dshell.internal.parser.SymbolTable.SymbolEntry;
-import dshell.internal.parser.TypePool.ClassType;
-import dshell.internal.parser.TypePool.FuncHolderType;
-import dshell.internal.parser.TypePool.FunctionType;
-import dshell.internal.parser.TypePool.PrimitiveType;
-import dshell.internal.parser.TypePool.RootClassType;
-import dshell.internal.parser.TypePool.Type;
-import dshell.internal.parser.TypePool.UnresolvedType;
-import dshell.internal.parser.TypePool.VoidType;
 import dshell.internal.parser.error.TypeCheckException;
+import dshell.internal.type.ClassType;
+import dshell.internal.type.DSType;
+import dshell.internal.type.DSType.FuncHolderType;
+import dshell.internal.type.DSType.FunctionType;
+import dshell.internal.type.DSType.PrimitiveType;
+import dshell.internal.type.DSType.RootClassType;
+import dshell.internal.type.DSType.UnresolvedType;
+import dshell.internal.type.DSType.VoidType;
+import dshell.internal.type.TypePool;
 
 public class TypeChecker implements NodeVisitor<Node>{
 	private final TypePool typePool;
@@ -93,7 +94,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * if requiredType is not equivalent to node type, throw exception.
 	 * if requiredType is null, do not try matching node type.
 	 */
-	private Node checkType(Type requiredType, Node targetNode) {
+	private Node checkType(DSType requiredType, Node targetNode) {
 		/**
 		 * if target node is statement, always check type.
 		 */
@@ -114,7 +115,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		 * after type checking, if type is still unresolved type, 
 		 * throw exception.
 		 */
-		Type type = exprNode.getType();
+		DSType type = exprNode.getType();
 		if(type instanceof UnresolvedType) {
 			this.throwAndReportTypeError(exprNode, "having unresolved type");
 		}
@@ -141,7 +142,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	private ClassType checkAndGetClassType(ExprNode recvNode) {
 		this.checkType(this.typePool.objectType, recvNode);
-		Type resolvedType = recvNode.getType();
+		DSType resolvedType = recvNode.getType();
 		if(!(resolvedType instanceof ClassType)) {
 			this.throwAndReportTypeError(recvNode, "require class type, but is " + resolvedType);
 			return null;
@@ -157,7 +158,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * - after type matching, paramNode structure may be changed due to primitive boxing.
 	 * @param index
 	 */
-	private void checkParamTypeAt(List<Type> requireTypeList, List<ExprNode> paramNodeList, int index) {
+	private void checkParamTypeAt(List<DSType> requireTypeList, List<ExprNode> paramNodeList, int index) {
 		ExprNode checkedNode = (ExprNode) this.checkType(requireTypeList.get(index), paramNodeList.get(index));
 		paramNodeList.set(index, checkedNode);
 	}
@@ -181,7 +182,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		blockNode.accept(this);
 	}
 
-	private void addEntryAndThrowIfDefined(Node node, String symbolName, Type type, boolean isReadOnly) {
+	private void addEntryAndThrowIfDefined(Node node, String symbolName, DSType type, boolean isReadOnly) {
 		if(!this.symbolTable.addEntry(symbolName, type, isReadOnly)) {
 			this.throwAndReportTypeError(node, "already defined symbol: " + symbolName);
 		}
@@ -237,7 +238,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	 * @param returnType
 	 * - function return type.
 	 */
-	private void checkBlockEndExistence(BlockNode blockNode, Type returnType) {
+	private void checkBlockEndExistence(BlockNode blockNode, DSType returnType) {
 		int endIndex = blockNode.getNodeList().size() - 1;
 		Node endNode = blockNode.getNodeList().get(endIndex);
 		if((returnType instanceof VoidType) && !(endNode instanceof BlockEndNode)) {
@@ -284,12 +285,12 @@ public class TypeChecker implements NodeVisitor<Node>{
 		assert elementSize != 0;
 		ExprNode firstElementNode = node.getNodeList().get(0);
 		this.checkType(firstElementNode);
-		Type elementType = firstElementNode.getType();
+		DSType elementType = firstElementNode.getType();
 		for(int i = 1; i < elementSize; i++) {
 			this.checkType(elementType, node.getNodeList().get(i));
 		}
 		String baseArrayName = this.typePool.baseArrayType.getTypeName();
-		node.setType(this.typePool.createAndGetGenericTypeIfUndefined(baseArrayName, new Type[]{elementType}));
+		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseArrayName, new DSType[]{elementType}));
 		return node;
 	}
 
@@ -299,13 +300,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 		assert entrySize != 0;
 		ExprNode firstValueNode = node.getValueList().get(0);
 		this.checkType(firstValueNode);
-		Type valueType = firstValueNode.getType();
+		DSType valueType = firstValueNode.getType();
 		for(int i = 0; i < entrySize; i++) {
 			this.checkType(this.typePool.stringType, node.getKeyList().get(i));
 			this.checkType(valueType, node.getValueList().get(i));
 		}
 		String baseMapName = this.typePool.baseMapType.getTypeName();
-		node.setType(this.typePool.createAndGetGenericTypeIfUndefined(baseMapName, new Type[]{valueType}));
+		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseMapName, new DSType[]{valueType}));
 		return node;
 	}
 
@@ -316,7 +317,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.throwAndReportTypeError(node, "undefined symbol: " + node.getSymbolName());
 		}
 		node.setReadOnly(entry.isReadOnly());
-		Type type = entry.getType();
+		DSType type = entry.getType();
 		if(type instanceof FuncHolderType) {	// function field
 			StaticFieldHandle handle = ((FuncHolderType)type).getFieldHandle();
 			node.setHandle(handle);
@@ -348,7 +349,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	@Override
 	public Node visit(CastNode node) { //TODO:
 		this.checkType(node.getExprNode());
-		Type targetType = node.getTypeSymbol().toType(this.typePool);
+		DSType targetType = node.getTypeSymbol().toType(this.typePool);
 		node.setTargteType(targetType);
 		node.setType(targetType);
 		return node;
@@ -372,14 +373,14 @@ public class TypeChecker implements NodeVisitor<Node>{
 		}
 		OperatorHandle handle;
 		if(size == 1) {
-			Type rightType = paramNodeList.get(0).getType();
+			DSType rightType = paramNodeList.get(0).getType();
 			handle = this.opTable.getOperatorHandle(node.getFuncName(), rightType);
 			if(handle == null) {
 				this.throwAndReportTypeError(node, "undefined operator: " + node.getFuncName() + " " + rightType);
 			}
 		} else {
-			Type leftType = paramNodeList.get(0).getType();
-			Type rightType = paramNodeList.get(1).getType();
+			DSType leftType = paramNodeList.get(0).getType();
+			DSType rightType = paramNodeList.get(1).getType();
 			handle = this.opTable.getOperatorHandle(node.getFuncName(), leftType, rightType);
 			if(handle == null) {
 				this.throwAndReportTypeError(node, "undefined operator: " + leftType + " " + node.getFuncName() + " " + rightType);
@@ -462,8 +463,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ConstructorCallNode node) {
-		Type recvType = node.getTypeSymbol().toType(this.typePool);
-		List<Type> paramTypeList = new ArrayList<>();
+		DSType recvType = node.getTypeSymbol().toType(this.typePool);
+		List<DSType> paramTypeList = new ArrayList<>();
 		for(ExprNode paramNode : node.getNodeList()) {
 			this.checkType(paramNode);
 			paramTypeList.add(paramNode.getType());
@@ -472,7 +473,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(handle == null) {
 			StringBuilder sBuilder = new StringBuilder();
 			sBuilder.append(" " + recvType);
-			for(Type paramType : paramTypeList) {
+			for(DSType paramType : paramTypeList) {
 				sBuilder.append(" ");
 				sBuilder.append(paramType.toString());
 			}
@@ -602,12 +603,12 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(ReturnNode node) {
-		Type returnType = this.symbolTable.getCurrentReturnType();
-		if(returnType instanceof TypePool.UnresolvedType) {
+		DSType returnType = this.symbolTable.getCurrentReturnType();
+		if(returnType instanceof UnresolvedType) {
 			this.throwAndReportTypeError(node, "only available inside function");
 		}
 		this.checkType(returnType, node.getExprNode());
-		if(node.getExprNode().getType() instanceof TypePool.VoidType) {
+		if(node.getExprNode().getType() instanceof VoidType) {
 			if(!(node.getExprNode() instanceof EmptyNode)) {
 				this.throwAndReportTypeError(node, "do not need expression");
 			}
@@ -637,7 +638,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		 * resolve exception type.
 		 */
 		TypeSymbol typeSymbol = node.getTypeSymbol();
-		Type exceptionType = this.typePool.exceptionType;
+		DSType exceptionType = this.typePool.exceptionType;
 		if(typeSymbol != null) {
 			exceptionType = typeSymbol.toType(this.typePool);
 		}
@@ -665,8 +666,8 @@ public class TypeChecker implements NodeVisitor<Node>{
 
 	@Override
 	public Node visit(AssignNode node) {	//TODO: int to float assign
-		Type leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
-		Type rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
+		DSType leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
+		DSType rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
 		ExprNode exprNode = node.getLeftNode();
 		if(!(exprNode instanceof AssignableNode)) {
 			this.throwAndReportTypeError(exprNode, "require assignable node");
@@ -706,7 +707,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(leftNode.isReadOnly) {
 			this.throwAndReportTypeError(leftNode, "read only variable");
 		}
-		Type exprType = leftNode.getType();
+		DSType exprType = leftNode.getType();
 		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
 			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
 		}
@@ -723,12 +724,12 @@ public class TypeChecker implements NodeVisitor<Node>{
 	public Node visit(FunctionNode node) {
 		// create function type and holder type
 		int size = node.getArgDeclNodeList().size();
-		Type[] paramTypes = new Type[size];
+		DSType[] paramTypes = new DSType[size];
 		for(int i = 0; i < size; i++) {
 			paramTypes[i] = node.getParamTypeSymbolList().get(i).toType(this.typePool);
 		}
 		String funcName = node.getFuncName();
-		Type returnType = node.getRetunrTypeSymbol().toType(this.typePool);
+		DSType returnType = node.getRetunrTypeSymbol().toType(this.typePool);
 		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
 		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType, funcName);
 		this.addEntryAndThrowIfDefined(node, funcName, holderType, true);
@@ -748,7 +749,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		return null;
 	}
 
-	private void visitParamDecl(SymbolNode paramDeclNode, Type paramType) {
+	private void visitParamDecl(SymbolNode paramDeclNode, DSType paramType) {
 		this.addEntryAndThrowIfDefined(paramDeclNode, paramDeclNode.getSymbolName(), paramType, true);
 	}
 

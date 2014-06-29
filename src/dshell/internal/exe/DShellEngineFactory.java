@@ -15,13 +15,13 @@ import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.parser.CommandScope;
 import dshell.internal.parser.TypeChecker;
-import dshell.internal.parser.TypePool;
 import dshell.internal.parser.dshellLexer;
 import dshell.internal.parser.dshellParser;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.dshellParser.ToplevelContext;
 import dshell.internal.parser.error.ParserErrorHandler;
 import dshell.internal.parser.error.ParserErrorHandler.ParserException;
+import dshell.internal.type.TypePool;
 
 public class DShellEngineFactory implements EngineFactory {
 	@Override

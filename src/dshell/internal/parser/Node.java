@@ -15,9 +15,10 @@ import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
-import dshell.internal.parser.TypePool.ClassType;
-import dshell.internal.parser.TypePool.FuncHolderType;
-import dshell.internal.parser.TypePool.Type;
+import dshell.internal.type.ClassType;
+import dshell.internal.type.DSType.FuncHolderType;
+import dshell.internal.type.TypePool;
+import dshell.internal.type.DSType;
 
 /**
  * Represents dshell grammar element.
@@ -101,7 +102,7 @@ public abstract class Node {
 		/**
 		 * It represents expression return type.
 		 */
-		protected Type type = TypePool.unresolvedType;
+		protected DSType type = TypePool.unresolvedType;
 
 		protected ExprNode(Token token) {
 			super(token);
@@ -112,7 +113,7 @@ public abstract class Node {
 		 * @param type
 		 * - this node's evaluated value type
 		 */
-		public void setType(Type type) {
+		public void setType(DSType type) {
 			this.type = type;
 		}
 
@@ -120,7 +121,7 @@ public abstract class Node {
 		 * Get this node's evaluated value type
 		 * @return
 		 */
-		public Type getType() {
+		public DSType getType() {
 			return this.type;
 		}
 
@@ -474,7 +475,7 @@ public abstract class Node {
 	 *
 	 */
 	public static class CastNode extends ExprNode {
-		private Type targetType;
+		private DSType targetType;
 		private final TypeSymbol targetTypeSymbol;
 		private final ExprNode exprNode;
 
@@ -489,7 +490,7 @@ public abstract class Node {
 		 * @param targetType
 		 * @param exprNode
 		 */
-		public CastNode(Type targetType, ExprNode exprNode) {
+		public CastNode(DSType targetType, ExprNode exprNode) {
 			super(null);
 			this.targetTypeSymbol = null; //FIXME:
 			this.exprNode = this.setExprNodeAsChild(exprNode);
@@ -501,11 +502,11 @@ public abstract class Node {
 			return this.targetTypeSymbol;
 		}
 
-		public void setTargteType(Type type) {
+		public void setTargteType(DSType type) {
 			this.targetType = type;
 		}
 
-		public Type getTargetType() {
+		public DSType getTargetType() {
 			return this.targetType;
 		}
 
@@ -527,7 +528,7 @@ public abstract class Node {
 	public static class InstanceofNode extends ExprNode {
 		private final ExprNode exprNode;
 		private final TypeSymbol typeSymbol;
-		private Type targetType;
+		private DSType targetType;
 
 		public InstanceofNode(Token token, ExprNode exprNode, TypeSymbol targetTypeSymbol) {
 			super(token);
@@ -543,11 +544,11 @@ public abstract class Node {
 			return this.typeSymbol;
 		}
 
-		public void setTargetType(Type type) {
+		public void setTargetType(DSType type) {
 			this.targetType = type;
 		}
 
-		public Type getTargetType() {
+		public DSType getTargetType() {
 			return this.targetType;
 		}
 
@@ -1539,7 +1540,7 @@ public abstract class Node {
 	 *
 	 */
 	public static class ConstructorNode extends Node {
-		private Type recvType;
+		private DSType recvType;
 		private final List<TypeSymbol> typeSymbolList;
 		private final List<SymbolNode> nodeList;
 		private final BlockNode blockNode;
@@ -1556,11 +1557,11 @@ public abstract class Node {
 			}
 		}
 
-		public void setRecvType(Type type) {
+		public void setRecvType(DSType type) {
 			this.recvType = type;
 		}
 
-		public Type getRecvType() {
+		public DSType getRecvType() {
 			return this.recvType;
 		}
 

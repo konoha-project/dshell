@@ -5,12 +5,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Represent generic class
- * @author skgchxngsxyz-osx
- *
- */
 @Retention(RetentionPolicy.SOURCE)
-@Target(ElementType.TYPE)
-public @interface GenericClass {
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
+public @interface TypeAlias {
+ String value();
 }

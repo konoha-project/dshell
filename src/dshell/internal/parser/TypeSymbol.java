@@ -2,8 +2,9 @@ package dshell.internal.parser;
 
 import org.antlr.v4.runtime.Token;
 
-import dshell.internal.parser.TypePool.Type;
 import dshell.internal.parser.error.TypeLookupException;
+import dshell.internal.type.TypePool;
+import dshell.internal.type.DSType;
 
 /**
  * contains parsed type symbol.
@@ -18,7 +19,7 @@ public abstract class TypeSymbol {
 	 * @return
 	 * - throw exception, if type not found.
 	 */
-	public abstract Type toType(TypePool pool);
+	public abstract DSType toType(TypePool pool);
 
 	public static TypeSymbol toPrimitive(Token token) {
 		return new PrimitiveTypeSymbol(token);
@@ -52,7 +53,7 @@ public abstract class TypeSymbol {
 		}
 
 		@Override
-		public Type toType(TypePool pool) {
+		public DSType toType(TypePool pool) {
 			try {
 				return pool.getPrimitiveType(this.token.getText());
 			} catch(TypeLookupException e) {
@@ -64,7 +65,7 @@ public abstract class TypeSymbol {
 
 	public static class VoidTypeSymbol extends TypeSymbol {
 		@Override
-		public Type toType(TypePool pool) {
+		public DSType toType(TypePool pool) {
 			return TypePool.voidType;
 		}
 	}
@@ -77,7 +78,7 @@ public abstract class TypeSymbol {
 		}
 
 		@Override
-		public Type toType(TypePool pool) {
+		public DSType toType(TypePool pool) {
 			try {
 				return pool.getClassType(this.token.getText());
 			} catch(TypeLookupException e) {
@@ -99,10 +100,10 @@ public abstract class TypeSymbol {
 		}
 
 		@Override
-		public Type toType(TypePool pool) {
-			Type returnType = this.returnTypeSymbol.toType(pool);
+		public DSType toType(TypePool pool) {
+			DSType returnType = this.returnTypeSymbol.toType(pool);
 			int size = this.paramtypeSymbols.length;
-			Type[] paramTypes = new Type[size];
+			DSType[] paramTypes = new DSType[size];
 			for(int i = 0; i < size; i++) {
 				paramTypes[i] = this.paramtypeSymbols[i].toType(pool);
 			}
@@ -125,14 +126,14 @@ public abstract class TypeSymbol {
 		}
 
 		@Override
-		public Type toType(TypePool pool) {
+		public DSType toType(TypePool pool) {
 			int size = this.typeSymbols.length;
-			Type[] types = new Type[size];
+			DSType[] types = new DSType[size];
 			for(int i = 0; i < size; i++) {
 				types[i] = this.typeSymbols[i].toType(pool);
 			}
 			try {
-				return pool.createAndGetGenericTypeIfUndefined(this.token.getText(), types);
+				return pool.createAndGetReifiedTypeIfUndefined(this.token.getText(), types);
 			} catch(TypeLookupException e) {
 				TypeLookupException.formateAndPropagateException(e, this.token);
 			}

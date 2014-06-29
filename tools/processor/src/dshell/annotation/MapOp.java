@@ -10,7 +10,7 @@ import java.lang.annotation.Target;
  * @author skgchxngsxyz-osx
  *
  */
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Target(ElementType.METHOD)
 public @interface MapOp {
 	/**
