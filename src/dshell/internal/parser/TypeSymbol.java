@@ -1,5 +1,8 @@
 package dshell.internal.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.error.TypeLookupException;
@@ -102,13 +105,12 @@ public abstract class TypeSymbol {
 		@Override
 		public DSType toType(TypePool pool) {
 			DSType returnType = this.returnTypeSymbol.toType(pool);
-			int size = this.paramtypeSymbols.length;
-			DSType[] paramTypes = new DSType[size];
-			for(int i = 0; i < size; i++) {
-				paramTypes[i] = this.paramtypeSymbols[i].toType(pool);
+			List<DSType> paramTypeList = new ArrayList<>(this.paramtypeSymbols.length);
+			for(TypeSymbol typeSymbol : this.paramtypeSymbols) {
+				paramTypeList.add(typeSymbol.toType(pool));
 			}
 			try {
-				return pool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
+				return pool.createAndGetFuncTypeIfUndefined(returnType, paramTypeList);
 			} catch(TypeLookupException e) {
 				TypeLookupException.formateAndPropagateException(e, this.token);
 			}
@@ -127,13 +129,12 @@ public abstract class TypeSymbol {
 
 		@Override
 		public DSType toType(TypePool pool) {
-			int size = this.typeSymbols.length;
-			DSType[] types = new DSType[size];
-			for(int i = 0; i < size; i++) {
-				types[i] = this.typeSymbols[i].toType(pool);
+			List<DSType> elementTypeList = new ArrayList<>(this.typeSymbols.length);
+			for(TypeSymbol typeSymbol : this.typeSymbols) {
+				elementTypeList.add(typeSymbol.toType(pool));
 			}
 			try {
-				return pool.createAndGetReifiedTypeIfUndefined(this.token.getText(), types);
+				return pool.createAndGetReifiedTypeIfUndefined(this.token.getText(), elementTypeList);
 			} catch(TypeLookupException e) {
 				TypeLookupException.formateAndPropagateException(e, this.token);
 			}

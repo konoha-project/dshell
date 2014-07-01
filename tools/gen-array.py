@@ -40,12 +40,14 @@ def main():
 	float_array_builder = SourceBuilder('Float', 'double')
 	bool_array_builder = SourceBuilder('Boolean', 'boolean')
 	for line in lines:
+		if line.startswith('import') and line.find('GenericClass') != -1:
+			line = re.sub(r'GenericClass', 'PrimitiveArray', line)
 		if line.find('GenericClass') != -1:
-			line = line.replace('GenericClass', 'PrimitiveArray')
-		if line.startswith('import') and line.find('TypeParameter') != -1:
+			line = re.sub(r'GenericClass.+', 'PrimitiveArray', line)
+		if line.startswith('import') and line.find('TypeAlias') != -1:
 			continue
 
-		line = line.replace('@TypeParameter()', '')
+		line = re.sub(r'@TypeAlias\(.+\)', '', line)
 		int_array_builder.append(line)
 		float_array_builder.append(line)
 		bool_array_builder.append(line)

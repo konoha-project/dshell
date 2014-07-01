@@ -3,13 +3,18 @@ package dshell.internal.parser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.Method;
 
+import dshell.internal.type.GenericBaseType;
+import dshell.internal.type.ParametricType;
+import dshell.internal.type.ParametricType.ParametricGenericType;
 import dshell.internal.type.ReifiedType;
 import dshell.internal.type.DSType;
 import dshell.internal.type.DSType.FunctionType;
-import dshell.internal.type.DSType.ParametricType;
 import dshell.internal.type.DSType.PrimitiveType;
 import dshell.internal.type.TypePool;
 
@@ -59,12 +64,12 @@ public abstract class CalleeHandle {
 		/**
 		 * asm type descriptor for owner type.
 		 */
-		protected org.objectweb.asm.Type ownerTypeDesc;
+		protected Type ownerTypeDesc;
 
 		/**
 		 * asm type descriptor for field type.
 		 */
-		protected org.objectweb.asm.Type fieldTypeDesc;
+		protected Type fieldTypeDesc;
 
 		public FieldHandle(String calleeName, DSType ownerType, DSType fieldType) {
 			super(calleeName, ownerType);
@@ -136,13 +141,13 @@ public abstract class CalleeHandle {
 		 * for jvm method invoke only.
 		 * initialized when it needs.
 		 */
-		protected org.objectweb.asm.commons.Method methodDesc;
+		protected Method methodDesc;
 
 		/**
 		 * for jvm method invoke only.
 		 * initialized when it needs.
 		 */
-		protected org.objectweb.asm.Type ownerTypeDesc;
+		protected Type ownerTypeDesc;
 
 		protected final DSType returnType;
 
@@ -187,7 +192,7 @@ public abstract class CalleeHandle {
 		 * get method descriptor for method generation.
 		 * @return
 		 */
-		public org.objectweb.asm.commons.Method getMethodDesc() {
+		public Method getMethodDesc() {
 			this.initMethodDesc();
 			return this.methodDesc;
 		}
@@ -312,6 +317,11 @@ public abstract class CalleeHandle {
 	}
 
 	// callee handle for generic type
+	/**
+	 * generated from generic base type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
 	public static class ReifiedFieldHandle extends FieldHandle {
 		private final FieldHandle baseHandle;
 
@@ -323,11 +333,14 @@ public abstract class CalleeHandle {
 		@Override
 		public void callGetter(GeneratorAdapter adapter) {
 			this.baseHandle.callGetter(adapter);
-			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
-			if(this.fieldType instanceof PrimitiveType) {
-				adapter.unbox(typeDesc);
-			} else {
-				adapter.checkCast(typeDesc);
+			Type typeDesc = TypeUtils.toTypeDescriptor(this.fieldType);
+			DSType baseFieldType = this.baseHandle.fieldType;
+			if((baseFieldType instanceof ParametricType) || (baseFieldType instanceof ParametricGenericType)) {
+				if(this.fieldType instanceof PrimitiveType) {
+					adapter.unbox(typeDesc);
+				} else {
+					adapter.checkCast(typeDesc);
+				}
 			}
 		}
 
@@ -336,16 +349,36 @@ public abstract class CalleeHandle {
 			this.baseHandle.callSetter(adapter);
 		}
 
-		public static FieldHandle createReifiedHandle(FieldHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
-			DSType newFieldType = replaceParametricType(baseHandle.getFieldType(), elementTypeList);
-			return new ReifiedFieldHandle(baseHandle, ownerType, newFieldType);
+		/**
+		 * create reified field handle from 
+		 * @param pool
+		 * @param baseHandle
+		 * @param ownerType
+		 * @param elementTypeList
+		 * @return
+		 */
+		public static FieldHandle createReifiedHandle(TypePool pool, FieldHandle baseHandle, ReifiedType ownerType) {
+			GenericBaseType baseType = (GenericBaseType) baseHandle.getOwnerType();
+			Map<String, Integer> typeMap = baseType.getTypeMap();
+
+			/**
+			 * create reified field type.
+			 */
+			DSType reifiedFieldType = reifyType(pool, typeMap, baseHandle.getFieldType(), ownerType.getElementTypeList(), false);
+			return new ReifiedFieldHandle(baseHandle, ownerType, reifiedFieldType);
 		}
 	}
 
+	/**
+	 * generated from generic base type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
 	public static class ReifiedMethodHandle extends MethodHandle {
 		private final MethodHandle baseHandle;
 
-		private ReifiedMethodHandle(MethodHandle baseHandle, ReifiedType ownerType, DSType returnType, List<DSType> paramTypeList) {
+		private ReifiedMethodHandle(MethodHandle baseHandle, 
+				ReifiedType ownerType, DSType returnType, List<DSType> paramTypeList) {
 			super(baseHandle.getCalleeName(), ownerType, returnType, paramTypeList);
 			this.baseHandle = baseHandle;
 		}
@@ -353,27 +386,51 @@ public abstract class CalleeHandle {
 		@Override
 		public void call(GeneratorAdapter adapter) {
 			this.baseHandle.call(adapter);
-			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(this.returnType);
-			if(this.returnType instanceof PrimitiveType) {
-				adapter.unbox(typeDesc);
-			} else {
-				adapter.checkCast(typeDesc);
+			Type typeDesc = TypeUtils.toTypeDescriptor(this.returnType);
+			DSType baseReturnType = this.baseHandle.returnType;
+			if((baseReturnType instanceof ParametricType) || (baseReturnType instanceof ParametricGenericType)) {
+				if(this.returnType instanceof PrimitiveType) {
+					adapter.unbox(typeDesc);
+				} else {
+					adapter.checkCast(typeDesc);
+				}
 			}
 		}
 
-		public static MethodHandle createReifiedHandle(MethodHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
-			List<DSType> newParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
+		/**
+		 * create reified method handle from base type.
+		 * @param pool
+		 * @param baseHandle
+		 * @param ownerType
+		 * @param elementTypeList
+		 * @return
+		 */
+		public static MethodHandle createReifiedHandle(TypePool pool, MethodHandle baseHandle, ReifiedType ownerType) {
+			GenericBaseType baseType = (GenericBaseType) baseHandle.getOwnerType();
+			Map<String, Integer> typeMap = baseType.getTypeMap();
+
+			/**
+			 * create reified parameter type.
+			 */
+			List<DSType> reifiedParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
 			for(DSType paramType : baseHandle.getParamTypeList()) {
-				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
+				reifiedParamTypeList.add(reifyType(pool, typeMap, paramType, ownerType.getElementTypeList()));
 			}
-			DSType newReturnType = replaceParametricType(baseHandle.getReturnType(), elementTypeList);
-			return new ReifiedMethodHandle(baseHandle, ownerType, newReturnType, newParamTypeList);
+			DSType reifiedReturnType = reifyType(pool, typeMap, baseHandle.getReturnType(), ownerType.getElementTypeList(), false);
+			return new ReifiedMethodHandle(baseHandle, ownerType, reifiedReturnType, reifiedParamTypeList);
 		}
 	}
 
+	/**
+	 * generated from generic base type.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
 	public static class ReifiedConstructorHandle extends ConstructorHandle {
 		private final ConstructorHandle baseHandle;
-		private ReifiedConstructorHandle(ConstructorHandle baseHandle, ReifiedType ownerType, List<DSType> paramTypeList) {
+
+		private ReifiedConstructorHandle(ConstructorHandle baseHandle, 
+				ReifiedType ownerType, List<DSType> paramTypeList) {
 			super(ownerType, paramTypeList);
 			this.baseHandle = baseHandle;
 		}
@@ -383,18 +440,55 @@ public abstract class CalleeHandle {
 			this.baseHandle.call(adapter);
 		}
 
-		public static ConstructorHandle createReifiedHandle(ConstructorHandle baseHandle, ReifiedType ownerType, List<DSType> elementTypeList) {
-			List<DSType> newParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
+		/**
+		 * create reified constructor handle from base type.
+		 * @param pool
+		 * @param baseHandle
+		 * @param ownerType
+		 * @param elementTypeList
+		 * @return
+		 */
+		public static ConstructorHandle createReifiedHandle(TypePool pool, 
+				ConstructorHandle baseHandle, ReifiedType ownerType) {
+			GenericBaseType baseType = (GenericBaseType) baseHandle.getOwnerType();
+			Map<String, Integer> typeMap = baseType.getTypeMap();
+
+			/**
+			 * create reified parameter type.
+			 */
+			List<DSType> reifiedParamTypeList = new ArrayList<DSType>(baseHandle.getParamTypeList().size());
 			for(DSType paramType : baseHandle.getParamTypeList()) {
-				newParamTypeList.add(replaceParametricType(paramType, elementTypeList));
+				reifiedParamTypeList.add(reifyType(pool, typeMap, paramType, ownerType.getElementTypeList()));
 			}
-			return new ReifiedConstructorHandle(baseHandle, ownerType, newParamTypeList);
+			return new ReifiedConstructorHandle(baseHandle, ownerType, reifiedParamTypeList);
 		}
 	}
 
-	private static DSType replaceParametricType(DSType type, List<DSType> elementTypeList) {
+	/**
+	 * replace parametric type to actual type
+	 * @param pool
+	 * @param typeMap
+	 * - contains parametric types.
+	 * @param type
+	 * - target type
+	 * @param elementTypeList
+	 * @return
+	 */
+	private static DSType reifyType(TypePool pool, Map<String, Integer> typeMap, DSType type, List<DSType> elementTypeList) {
+		return reifyType(pool, typeMap, type, elementTypeList, true);
+	}
+	
+	private static DSType reifyType(TypePool pool, 
+			Map<String, Integer> typeMap, DSType type, List<DSType> elementTypeList, boolean allowBoxing) {
 		if(type instanceof ParametricType) {
-			return elementTypeList.get(((ParametricType) type).getParamId());
+			DSType resolvedType = elementTypeList.get(typeMap.get(type.getTypeName()));
+			if(allowBoxing && (resolvedType instanceof PrimitiveType)) {
+				return pool.getBoxedPrimitiveType((PrimitiveType) resolvedType);
+			}
+			return resolvedType;
+		}
+		if(type instanceof ParametricGenericType) {
+			return ((ParametricGenericType) type).reifyType(pool, typeMap, elementTypeList);
 		}
 		return type;
 	}

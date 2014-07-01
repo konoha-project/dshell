@@ -1,7 +1,17 @@
 package dshell.internal.type;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import dshell.internal.parser.CalleeHandle.ConstructorHandle;
+import dshell.internal.parser.CalleeHandle.FieldHandle;
+import dshell.internal.parser.CalleeHandle.MethodHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedConstructorHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedFieldHandle;
+import dshell.internal.parser.CalleeHandle.ReifiedMethodHandle;
 
 /**
  * Represents generic type (array type or map type).
@@ -10,22 +20,34 @@ import java.util.List;
  *
  */
 public class ReifiedType extends ClassType implements GenericType {
-	private final List<DSType> elementTypeList;
+	/**
+	 * used for callee handle initialization.
+	 */
+	private final TypePool pool;
 
-	ReifiedType(String typeName, GenericBaseType baseType, List<DSType> elementTypeList) {
-		super(typeName, baseType.getInternalName(), baseType.superType, false);	//FIXME: super type
-		this.elementTypeList = Collections.unmodifiableList(elementTypeList);
-	}
+	private final GenericBaseType baseType;
 
 	/**
-	 * used for primitive array type.
-	 * @param typeName
-	 * @param internalName
-	 * @param superType
-	 * @param elementTypeList
+	 * contains reified element type.
 	 */
-	protected ReifiedType(String typeName, String internalName, DSType superType, List<DSType> elementTypeList) {
-		super(typeName, internalName, superType, false);
+	private final List<DSType> elementTypeList;
+
+	protected List<ConstructorHandle> constructorHandleList;
+
+	/**
+	 * key is field name.
+	 */
+	protected Map<String, FieldHandle> fieldHandleMap;
+
+	/**
+	 * key is method name.
+	 */
+	protected Map<String, MethodHandle> methodHandleMap;
+
+	ReifiedType(TypePool pool, String typeName, GenericBaseType baseType, List<DSType> elementTypeList) {
+		super(typeName, baseType.getInternalName(), baseType.superType, false);	//FIXME: super type
+		this.pool = pool;
+		this.baseType = baseType;
 		this.elementTypeList = Collections.unmodifiableList(elementTypeList);
 	}
 
@@ -34,103 +56,64 @@ public class ReifiedType extends ClassType implements GenericType {
 		return this.elementTypeList;
 	}
 
-	/**
-	 * Represent base type of generic type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class GenericBaseType extends ClassType {
-		GenericBaseType(String className, String internalName, DSType superType, boolean allowExtends) {
-			super(className, internalName, superType, allowExtends);
+	@Override
+	public ConstructorHandle lookupConstructorHandle(List<DSType> paramTypeList) {	//TODO: boxed type
+		if(this.constructorHandleList == null) {
+			List<ConstructorHandle> baseConstructorHandles = this.baseType.getConstructorHandleList();
+			this.constructorHandleList = new ArrayList<>(baseConstructorHandles.size());
+			for(ConstructorHandle baseHandle : baseConstructorHandles) {
+				this.constructorHandleList.add(ReifiedConstructorHandle.createReifiedHandle(pool, baseHandle, this));
+			}
 		}
+		for(ConstructorHandle handle : this.constructorHandleList) {
+			final int size = handle.getParamTypeList().size();
+			if(size != paramTypeList.size()) {
+				continue;
+			}
+			int matchCount = 0;
+			for(int i = 0; i < size; i++) {
+				if(!handle.getParamTypeList().get(i).isAssignableFrom(paramTypeList.get(i))) {
+					break;
+				}
+				matchCount++;
+			}
+			if(matchCount == size) {
+				return handle;
+			}
+		}
+		return null;
 	}
 
-//	public final static class PrimitiveArrayType extends ReifiedType {
-//		private final TypePool pool;
-//		private String[][] constructorElements;
-//		private String[][] methodElements;
-//		boolean initConstructor = false;
-//
-//		private final List<ConstructorHandle> constructorHandleList;
-//		private final Map<String, HandleEntry<MethodHandle>> methodEntryMap;
-//
-//		PrimitiveArrayType(TypePool pool, String internalName, DSType superType, PrimitiveType elementType,
-//				String[][] constructorElements,
-//				String[][] fieldElements,
-//				String[][] methodElements) {
-//			super("Array<" + elementType.getTypeName() + ">", internalName, superType, toTypeList(elementType));
-//			this.pool = pool;
-//			this.constructorElements = constructorElements;
-//			this.methodElements = methodElements;
-//			this.constructorHandleList = new ArrayList<>(constructorElements.length);
-//			this.methodEntryMap = new HashMap<>();
-//		}
-//
-//		private static List<DSType> toTypeList(DSType type) {
-//			List<DSType> typeList = new ArrayList<>(1);
-//			typeList.add(type);
-//			return typeList;
-//		}
-//
-//		protected ConstructorHandle toConstructorHandle(String[] paramTypeNames) {
-//			List<DSType> paramTypeList = new ArrayList<>(paramTypeNames.length);
-//			for(String typeName : paramTypeNames) {
-//				paramTypeList.add(this.pool.parseTypeName(typeName));
-//			}
-//			return new ConstructorHandle(this, paramTypeList);
-//		}
-//
-//		@Override
-//		public ConstructorHandle lookupConstructorHandle(List<DSType> paramTypeList) {
-//			if(!this.initConstructor) {
-//				this.initConstructor = true;
-//				for(String[] e : this.constructorElements) {
-//					this.constructorHandleList.add(this.toConstructorHandle(e));
-//				}
-//				this.constructorElements = null;
-//			}
-//			for(ConstructorHandle handle : this.constructorHandleList) {
-//				final int size = handle.getParamTypeList().size();
-//				if(size != paramTypeList.size()) {
-//					continue;
-//				}
-//				int matchCount = 0;
-//				for(int i = 0; i < size; i++) {
-//					if(!handle.getParamTypeList().get(i).isAssignableFrom(paramTypeList.get(i))) {
-//						break;
-//					}
-//					matchCount++;
-//				}
-//				if(matchCount == size) {
-//					return handle;
-//				}
-//			}
-//			return null;
-//		}
-//
-//		protected MethodHandle toMethodHandle(String[] symbols) {
-//			DSType returnType = this.pool.parseTypeName(symbols[1]);
-//			int paramSize = symbols.length - 2;
-//			List<DSType> paramTypeList = new ArrayList<>(paramSize);
-//			for(int i = 0; i < paramSize; i++) {
-//				paramTypeList.add(this.pool.parseTypeName(symbols[i + 2]));
-//			}
-//			return new MethodHandle(symbols[0], this, returnType, paramTypeList);
-//		}
-//
-//		@Override
-//		public MethodHandle lookupMethodHandle(String methodName) {
-//			HandleEntry<MethodHandle> handleEntry = this.methodEntryMap.get(methodName);
-//			if(handleEntry != null) {
-//				MethodHandle handle = handleEntry.handle;
-//				if(handle == null) {
-//					handle = this.toMethodHandle(this.methodElements[handleEntry.index]);
-//					handleEntry.handle = handle;
-//				}
-//				return handle;
-//			}
-//			return null;
-//		}
-//	}
+	@Override
+	public FieldHandle lookupFieldHandle(String fieldName) {
+		if(this.fieldHandleMap == null) {
+			this.fieldHandleMap = new HashMap<>();
+		}
+		FieldHandle handle = this.fieldHandleMap.get(fieldName);
+		if(handle == null) {
+			FieldHandle baseHandle = this.baseType.lookupFieldHandle(fieldName);
+			if(baseHandle != null) {
+				handle = ReifiedFieldHandle.createReifiedHandle(this.pool, baseHandle, this);
+				this.fieldHandleMap.put(fieldName, handle);
+			}
+		}
+		return handle;
+	}
+
+	@Override
+	public MethodHandle lookupMethodHandle(String methodName) {
+		if(this.methodHandleMap == null) {
+			this.methodHandleMap = new HashMap<>();
+		}
+		MethodHandle handle = this.methodHandleMap.get(methodName);
+		if(handle == null) {
+			MethodHandle baseHandle = this.baseType.lookupMethodHandle(methodName);
+			if(baseHandle != null) {
+				handle = ReifiedMethodHandle.createReifiedHandle(this.pool, baseHandle, this);
+				this.methodHandleMap.put(methodName, handle);
+			}
+		}
+		return handle;
+	}
 }
 

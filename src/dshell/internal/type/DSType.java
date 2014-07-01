@@ -140,36 +140,6 @@ public abstract class DSType {
 	}
 
 	/**
-	 * represent type parameter of generic type.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class ParametricType extends DSType {
-		/**
-		 * start from 0;
-		 */
-		private final int paramId;
-
-		public ParametricType(int paramId) {
-			super("$Parametric$", "java/lang/Object", false);
-			this.paramId = paramId;
-		}
-
-		public int getParamId() {
-			return this.paramId;
-		}
-
-		@Override
-		public boolean isAssignableFrom(DSType targetType) {
-			if(!(targetType instanceof ParametricType)) {
-				return false;
-			}
-			ParametricType parametricType = (ParametricType) targetType;
-			return this.paramId == parametricType.paramId;
-		}
-	}
-
-	/**
 	 * Represent class root type.
 	 * it is equivalent for java.lang.object
 	 * @author skgchxngsxyz-osx
@@ -256,6 +226,19 @@ public abstract class DSType {
 
 		public StaticFunctionHandle getFuncHandle() {
 			return this.funcHandle;
+		}
+	}
+
+	public static class BoxedPrimitiveType extends DSType {
+		private final PrimitiveType type;
+
+		BoxedPrimitiveType(PrimitiveType type) {
+			super("$Boxed$_" + type.getTypeName(), type.getInternalName(), false);
+			this.type = type;
+		}
+
+		public boolean isAcceptableType(PrimitiveType targetType) {
+			return this.type.equals(targetType);
 		}
 	}
 }

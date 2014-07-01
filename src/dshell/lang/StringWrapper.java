@@ -80,7 +80,7 @@ public final class StringWrapper {
 	}
 
 	@Shared @Wrapper
-	public static String replaceAll(String recv, String regex, String replace) {
+	public static String replace(String recv, String regex, String replace) {
 		return recv.replaceAll(regex, replace);
 	}
 
@@ -89,6 +89,21 @@ public final class StringWrapper {
 	public static String get(String recv, long index) {
 		throwIfIndexOutOfRange(recv, index);
 		return Character.toString(recv.charAt((int) index));
+	}
+
+	@Shared @Wrapper
+	public static String trim(String recv) {
+		return recv.trim();
+	}
+
+	@Shared @Wrapper
+	public static long indexOf(String recv, String str) {
+		return recv.indexOf(str);
+	}
+
+	@Shared @Wrapper
+	public static long lastIndexOf(String recv, String str) {
+		return recv.lastIndexOf(str);
 	}
 
 	@Shared @Wrapper

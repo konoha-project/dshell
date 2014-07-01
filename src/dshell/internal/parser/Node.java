@@ -17,6 +17,7 @@ import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
 import dshell.internal.type.ClassType;
 import dshell.internal.type.DSType.FuncHolderType;
+import dshell.internal.type.DSType.PrimitiveType;
 import dshell.internal.type.TypePool;
 import dshell.internal.type.DSType;
 
@@ -474,10 +475,19 @@ public abstract class Node {
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
-	public static class CastNode extends ExprNode {
-		private DSType targetType;
+	public static class CastNode extends ExprNode {	//FIXME:
+		/**
+		 * cast op definition.
+		 */
+		public final static int NOP         = 0;
+		public final static int BOX         = 1;
+		public final static int INT_2_FLOAT = 2;
+		public final static int FLOAT_2_INT = 3;
+		public final static int CHECK_CAST  = 4;
+
 		private final TypeSymbol targetTypeSymbol;
 		private final ExprNode exprNode;
+		private int castOp = -1;
 
 		public CastNode(TypeSymbol targetTypeSymbol, ExprNode exprNode) {
 			super(null);
@@ -485,33 +495,43 @@ public abstract class Node {
 			this.exprNode = this.setExprNodeAsChild(exprNode);
 		}
 
-		/**
-		 * called from type checker.
-		 * @param targetType
-		 * @param exprNode
-		 */
-		public CastNode(DSType targetType, ExprNode exprNode) {
-			super(null);
-			this.targetTypeSymbol = null; //FIXME:
-			this.exprNode = this.setExprNodeAsChild(exprNode);
-			this.targetType = targetType;
-			this.type = targetType;
-		}
-
 		public TypeSymbol getTypeSymbol() {
 			return this.targetTypeSymbol;
 		}
 
-		public void setTargteType(DSType type) {
-			this.targetType = type;
-		}
-
+		/**
+		 * equivalent to getType()
+		 * @return
+		 */
 		public DSType getTargetType() {
-			return this.targetType;
+			return this.getType();
 		}
 
 		public ExprNode getExprNode() {
 			return this.exprNode;
+		}
+
+		public void resolveCastOp(int castOp) {
+			this.castOp = castOp;
+		}
+
+		public int getCastOp() {
+			return this.castOp;
+		}
+
+		/**
+		 * used for checkType
+		 * @param exprNode
+		 * @return
+		 */
+		public static CastNode wrapPrimitive(ExprNode exprNode) {
+			assert exprNode.getType() instanceof PrimitiveType;
+			Node parentNode = exprNode.getParentNode();
+			CastNode castNode = new CastNode(null, exprNode);
+			castNode.setParentNode(parentNode);
+			castNode.resolveCastOp(BOX);
+			castNode.setType(exprNode.getType());
+			return castNode;
 		}
 
 		@Override

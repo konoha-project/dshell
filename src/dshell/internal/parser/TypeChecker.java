@@ -56,10 +56,10 @@ import dshell.internal.parser.SymbolTable.SymbolEntry;
 import dshell.internal.parser.error.TypeCheckException;
 import dshell.internal.type.ClassType;
 import dshell.internal.type.DSType;
+import dshell.internal.type.DSType.BoxedPrimitiveType;
 import dshell.internal.type.DSType.FuncHolderType;
 import dshell.internal.type.DSType.FunctionType;
 import dshell.internal.type.DSType.PrimitiveType;
-import dshell.internal.type.DSType.RootClassType;
 import dshell.internal.type.DSType.UnresolvedType;
 import dshell.internal.type.DSType.VoidType;
 import dshell.internal.type.TypePool;
@@ -133,8 +133,10 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(requiredType.isAssignableFrom(type)) {
 			return exprNode;
 		}
-		if((requiredType instanceof RootClassType) && (type instanceof PrimitiveType)) {	// boxing
-			return new CastNode(requiredType, exprNode);
+		if((requiredType instanceof BoxedPrimitiveType) && (type instanceof PrimitiveType)) {	// boxing for generic type
+			if(((BoxedPrimitiveType) requiredType).isAcceptableType((PrimitiveType) type)) {
+				return CastNode.wrapPrimitive(exprNode);
+			}
 		}
 		this.throwAndReportTypeError(exprNode, "require " + requiredType + ", but is " + type);
 		return null;
@@ -290,7 +292,9 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.checkType(elementType, node.getNodeList().get(i));
 		}
 		String baseArrayName = this.typePool.baseArrayType.getTypeName();
-		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseArrayName, new DSType[]{elementType}));
+		List<DSType> elementTypeList = new ArrayList<>(1);
+		elementTypeList.add(elementType);
+		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseArrayName, elementTypeList));
 		return node;
 	}
 
@@ -306,7 +310,9 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.checkType(valueType, node.getValueList().get(i));
 		}
 		String baseMapName = this.typePool.baseMapType.getTypeName();
-		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseMapName, new DSType[]{valueType}));
+		List<DSType> valueTypeList = new ArrayList<>(1);
+		valueTypeList.add(valueType);
+		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseMapName, valueTypeList));
 		return node;
 	}
 
@@ -347,11 +353,23 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(CastNode node) { //TODO:
+	public Node visit(CastNode node) {
 		this.checkType(node.getExprNode());
+		DSType type = node.getExprNode().getType();
 		DSType targetType = node.getTypeSymbol().toType(this.typePool);
-		node.setTargteType(targetType);
 		node.setType(targetType);
+
+		// resolve cast op
+		if(type.equals(targetType)) {
+			return node;
+		}
+		if(type.equals(this.typePool.intType) && targetType.equals(this.typePool.floatType)) {
+			node.resolveCastOp(CastNode.INT_2_FLOAT);
+		} else if(type.equals(this.typePool.floatType) && targetType.equals(this.typePool.intType)) {
+			node.resolveCastOp(CastNode.FLOAT_2_INT);
+		} else {
+			node.resolveCastOp(CastNode.CHECK_CAST);
+		}
 		return node;
 	}
 
@@ -485,7 +503,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.checkParamTypeAt(handle.getParamTypeList(), node.getNodeList(), i);
 		}
 		node.setHandle(handle);
-		node.setType(handle.getOwnerType());
+		node.setType(recvType);
 		return node;
 	}
 
@@ -723,22 +741,24 @@ public class TypeChecker implements NodeVisitor<Node>{
 	@Override
 	public Node visit(FunctionNode node) {
 		// create function type and holder type
-		int size = node.getArgDeclNodeList().size();
-		DSType[] paramTypes = new DSType[size];
-		for(int i = 0; i < size; i++) {
-			paramTypes[i] = node.getParamTypeSymbolList().get(i).toType(this.typePool);
+		List<TypeSymbol> paramTypeSymbols = node.getParamTypeSymbolList();
+		List<DSType> paramTypeList = new ArrayList<>(paramTypeSymbols.size());
+		for(TypeSymbol typeSymbol : paramTypeSymbols) {
+			paramTypeList.add(typeSymbol.toType(this.typePool));
 		}
 		String funcName = node.getFuncName();
 		DSType returnType = node.getRetunrTypeSymbol().toType(this.typePool);
-		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypes);
+		FunctionType funcType = this.typePool.createAndGetFuncTypeIfUndefined(returnType, paramTypeList);
 		FuncHolderType holderType = this.typePool.createFuncHolderType(funcType, funcName);
 		this.addEntryAndThrowIfDefined(node, funcName, holderType, true);
 		
 		// check type func body
 		this.symbolTable.pushReturnType(returnType);
 		this.symbolTable.createAndPushNewTable();
+
+		int size = paramTypeList.size();
 		for(int i = 0; i < size; i++) {
-			this.visitParamDecl(node.getArgDeclNodeList().get(i), paramTypes[i]);
+			this.visitParamDecl(node.getArgDeclNodeList().get(i), paramTypeList.get(i));
 		}
 		this.checkTypeWithCurrentBlockScope(node.getBlockNode());
 		this.symbolTable.popCurrentTable();

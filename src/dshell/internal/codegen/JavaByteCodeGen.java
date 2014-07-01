@@ -7,7 +7,9 @@ import org.antlr.v4.runtime.Token;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.Method;
 
 import dshell.internal.codegen.ClassBuilder.MethodBuilder;
 import dshell.internal.codegen.ClassBuilder.TryBlockLabels;
@@ -66,6 +68,7 @@ import dshell.internal.process.AbstractProcessContext;
 import dshell.internal.process.TaskContext;
 import dshell.internal.type.DSType;
 import dshell.internal.type.GenericType;
+import dshell.internal.type.DSType.BoxedPrimitiveType;
 import dshell.internal.type.DSType.FunctionType;
 import dshell.internal.type.DSType.PrimitiveType;
 import dshell.internal.type.DSType.VoidType;
@@ -91,7 +94,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		GeneratorAdapter adapter = new GeneratorAdapter(ACC_PUBLIC | ACC_ABSTRACT, funcType.getHandle().getMethodDesc(), null, null, writer);
 		adapter.endMethod();
 		// generate static field containing FuncType name
-		String fieldDesc = org.objectweb.asm.Type.getType(String.class).getDescriptor();
+		String fieldDesc = Type.getType(String.class).getDescriptor();
 		writer.visitField(ACC_PUBLIC | ACC_STATIC | ACC_FINAL, "funcTypeName", fieldDesc, null, funcType.getTypeName());
 		writer.visitEnd();
 		return writer.toByteArray();
@@ -208,8 +211,8 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	public Void visit(ArrayNode node) {
 		int size = node.getNodeList().size();
 		DSType elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
-		org.objectweb.asm.Type elementTypeDesc = TypeUtils.toTypeDescriptor(elementType);
-		org.objectweb.asm.Type arrayClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
+		Type elementTypeDesc = TypeUtils.toTypeDescriptor(elementType);
+		Type arrayClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
 
 		GeneratorAdapter adapter = this.getCurrentMethodBuilder();
 		adapter.newInstance(arrayClassDesc);
@@ -222,26 +225,27 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			this.generateCode(node.getNodeList().get(i));
 			adapter.arrayStore(elementTypeDesc);
 		}
-		org.objectweb.asm.commons.Method methodDesc = TypeUtils.toArrayConstructorDescriptor(elementType);
+		Method methodDesc = TypeUtils.toArrayConstructorDescriptor(elementType);
 		adapter.invokeConstructor(arrayClassDesc, methodDesc);
 		return null;
 	}
 
 	@Override
-	public Void visit(MapNode node) {	//TODO: map constructor
+	public Void visit(MapNode node) {
 		int size = node.getKeyList().size();
-		DSType elementType = ((GenericType) node.getType()).getElementTypeList().get(0);
-		org.objectweb.asm.Type keyTypeDesc = TypeUtils.toTypeDescriptor("java/lang/String");
-		org.objectweb.asm.Type valueTypeDesc = TypeUtils.toTypeDescriptor(elementType);
-		org.objectweb.asm.Type mapClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
+		Type elementTypeDesc = TypeUtils.toTypeDescriptor(node.getValueList().get(0).getType());
+		Type keyTypeDesc = TypeUtils.toTypeDescriptor("java/lang/String");
+		Type valueTypeDesc = TypeUtils.toTypeDescriptor("java/lang/Object");
+		Type mapClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
 
 		GeneratorAdapter adapter = this.getCurrentMethodBuilder();
 		adapter.newInstance(mapClassDesc);
+		adapter.dup();
 		// generate key array
 		adapter.push(size);
 		adapter.newArray(keyTypeDesc);
-		adapter.dup();
 		for(int i = 0; i < size; i++) {
+			adapter.dup();
 			adapter.push(i);
 			this.generateCode(node.getKeyList().get(i));
 			adapter.arrayStore(keyTypeDesc);
@@ -249,13 +253,14 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		// generate value array
 		adapter.push(size);
 		adapter.newArray(valueTypeDesc);
-		adapter.dup();
 		for(int i = 0; i < size; i++) {
+			adapter.dup();
 			adapter.push(i);
 			this.generateCode(node.getValueList().get(i));
+			adapter.box(elementTypeDesc);
 			adapter.arrayStore(valueTypeDesc);
 		}
-		//adapter.invokeConstructor(mapClassDesc, null);
+		adapter.invokeConstructor(mapClassDesc, TypeUtils.toMapConstructorDescriptor());
 		return null;
 	}
 
@@ -286,8 +291,28 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(CastNode node) {	//TODO:
-		Utils.fatal(1, "unimplemented: " + node);
+	public Void visit(CastNode node) {
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		Type targetTypeDesc = TypeUtils.toTypeDescriptor(node.getTargetType());
+		this.generateCode(node.getExprNode());
+		switch(node.getCastOp()) {
+		case CastNode.NOP:
+			break;
+		case CastNode.BOX:
+			mBuilder.box(targetTypeDesc);
+			break;
+		case CastNode.INT_2_FLOAT:
+			mBuilder.cast(Type.LONG_TYPE, targetTypeDesc);
+			break;
+		case CastNode.FLOAT_2_INT:
+			mBuilder.cast(Type.DOUBLE_TYPE, targetTypeDesc);
+			break;
+		case CastNode.CHECK_CAST:
+			mBuilder.checkCast(targetTypeDesc);
+			break;
+		default:
+			throw new RuntimeException("unsupported cast op: " + node.getCastOp());
+		}
 		return null;
 	}
 
@@ -359,7 +384,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			// and left
 			this.generateCode(node.getLeftNode());
 			adapter.push(true);
-			adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.EQ, rightLabel);
+			adapter.ifCmp(Type.BOOLEAN_TYPE, GeneratorAdapter.EQ, rightLabel);
 			adapter.push(false);
 			adapter.goTo(mergeLabel);
 			// and right
@@ -373,7 +398,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			// or left
 			this.generateCode(node.getLeftNode());
 			adapter.push(true);
-			adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, rightLabel);
+			adapter.ifCmp(Type.BOOLEAN_TYPE, GeneratorAdapter.NE, rightLabel);
 			adapter.push(true);
 			adapter.goTo(mergeLabel);
 			// or right
@@ -387,32 +412,29 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(CommandNode node) {	//TODO: pipe, reidirect .. etc.
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		org.objectweb.asm.Type taskCtxDesc = org.objectweb.asm.Type.getType(TaskContext.class);
-		org.objectweb.asm.Type procCtxDesc = org.objectweb.asm.Type.getType(AbstractProcessContext.class);
+		Type taskCtxDesc = Type.getType(TaskContext.class);
+		Type procCtxDesc = Type.getType(AbstractProcessContext.class);
 
 		mBuilder.newInstance(taskCtxDesc);
 		mBuilder.dup();
-		mBuilder.invokeConstructor(taskCtxDesc, org.objectweb.asm.commons.Method.getMethod("void <init> ()"));
+		mBuilder.invokeConstructor(taskCtxDesc, Method.getMethod("void <init> ()"));
 		int argSize = node.getArgNodeList().size();
 		mBuilder.push(node.getCommandPath());
-		org.objectweb.asm.commons.Method method = 
-				new org.objectweb.asm.commons.Method("createProcessContext", procCtxDesc, 
-						new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
+		Method method = new Method("createProcessContext", procCtxDesc, 
+						new Type[]{Type.getType(String.class)});
 		mBuilder.invokeStatic(taskCtxDesc, method);
 
-		method = new org.objectweb.asm.commons.Method("addArg", procCtxDesc, 
-				new org.objectweb.asm.Type[]{org.objectweb.asm.Type.getType(String.class)});
+		method = new Method("addArg", procCtxDesc, 
+				new Type[]{Type.getType(String.class)});
 		for(int i = 0; i < argSize; i++) {
 			this.generateCode(node.getArgNodeList().get(i));
 			mBuilder.invokeVirtual(procCtxDesc, method);
 		}
 
-		method = new org.objectweb.asm.commons.Method("addContext", taskCtxDesc, 
-				new org.objectweb.asm.Type[]{procCtxDesc});
+		method = new Method("addContext", taskCtxDesc, new Type[]{procCtxDesc});
 		mBuilder.invokeVirtual(taskCtxDesc, method);
 
-		method = new org.objectweb.asm.commons.Method("execAsInt", org.objectweb.asm.Type.LONG_TYPE, 
-				new org.objectweb.asm.Type[]{});
+		method = new Method("execAsInt", Type.LONG_TYPE, new Type[]{});
 		mBuilder.invokeVirtual(taskCtxDesc, method);
 		return null;
 	}
@@ -483,7 +505,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.mark(continueLabel);
 		mBuilder.push(true);
 		this.generateCode(node.getCondNode());
-		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
+		mBuilder.ifCmp(Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
 		// block
 		this.visitBlockWithCurrentScope(node.getBlockNode());
 		// iter
@@ -517,7 +539,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.mark(continueLabel);
 		mBuilder.push(true);
 		this.generateCode(node.getCondNode());
-		mBuilder.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
+		mBuilder.ifCmp(Type.BOOLEAN_TYPE, GeneratorAdapter.NE, breakLabel);
 		this.visitBlockWithNewScope(node.getBlockNode());
 		mBuilder.goTo(continueLabel);
 		mBuilder.mark(breakLabel);
@@ -536,7 +558,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		// if cond
 		this.generateCode(node.getCondNode());
 		adapter.push(true);
-		adapter.ifCmp(org.objectweb.asm.Type.BOOLEAN_TYPE, GeneratorAdapter.NE, elseLabel);
+		adapter.ifCmp(Type.BOOLEAN_TYPE, GeneratorAdapter.NE, elseLabel);
 		// then block
 		this.visitBlockWithNewScope(node.getThenBlockNode());
 		adapter.goTo(mergeLabel);
@@ -662,7 +684,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		ClassBuilder classBuilder = new ClassBuilder(node.getHolderType(), this.getSourceName(node.getToken()));
 		// create static field.
 		StaticFieldHandle fieldHandle = node.getHolderType().getFieldHandle();
-		org.objectweb.asm.Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
+		Type fieldTypeDesc = TypeUtils.toTypeDescriptor(fieldHandle.getFieldType());
 		classBuilder.visitField(ACC_PUBLIC | ACC_STATIC, fieldHandle.getCalleeName(), fieldTypeDesc.getDescriptor(), null, null);
 
 		// generate static method.
@@ -689,17 +711,17 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.endMethod();
 
 		// generate constructor.
-		org.objectweb.asm.commons.Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<DSType>());
+		Method initDesc = TypeUtils.toConstructorDescriptor(new ArrayList<DSType>());
 		GeneratorAdapter adapter = new GeneratorAdapter(ACC_PUBLIC, initDesc, null, null, classBuilder);
 		adapter.loadThis();
-		adapter.invokeConstructor(org.objectweb.asm.Type.getType("java/lang/Object"), initDesc);
+		adapter.invokeConstructor(Type.getType("java/lang/Object"), initDesc);
 		adapter.returnValue();
 		adapter.endMethod();
 
 		// generate static initializer
-		org.objectweb.asm.commons.Method cinitDesc = org.objectweb.asm.commons.Method.getMethod("void <clinit> ()");
+		Method cinitDesc = Method.getMethod("void <clinit> ()");
 		adapter = new GeneratorAdapter(ACC_PUBLIC | ACC_STATIC, cinitDesc, null, null, classBuilder);
-		org.objectweb.asm.Type ownerType = TypeUtils.toTypeDescriptor(fieldHandle.getOwnerType());
+		Type ownerType = TypeUtils.toTypeDescriptor(fieldHandle.getOwnerType());
 		adapter.newInstance(ownerType);
 		adapter.dup();
 		adapter.invokeConstructor(ownerType, initDesc);

@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import dshell.annotation.TypeParameter;
 import dshell.internal.lib.Utils;
 import dshell.internal.process.AbstractProcessContext;
 import dshell.internal.process.ShellExceptionBuilder;
@@ -218,7 +217,6 @@ public class Task implements Serializable {
 //		}
 	}
 
-	@TypeParameter("Task")
 	public static GenericArray getTaskArray(Task task) {	//TODO:
 		Task[] values = new Task[task.taskList.size()];
 		for(int i = 0; i < values.length; i++) {

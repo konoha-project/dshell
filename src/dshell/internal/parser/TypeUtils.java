@@ -1,7 +1,9 @@
 package dshell.internal.parser;
 
-import java.lang.reflect.Constructor;
 import java.util.List;
+
+import org.objectweb.asm.Type;
+import org.objectweb.asm.commons.Method;
 
 import dshell.internal.type.DSType.PrimitiveType;
 import dshell.internal.type.TypePool;
@@ -24,49 +26,11 @@ public class TypeUtils {
 	}
 
 	/**
-	 * get java public method (static method or instance method) by reflection.
-	 * @param ownerClass
-	 * - method owner class.
-	 * @param methodName
-	 * - target method name.
-	 * @param paramClasses
-	 * - method parameter classes (not contain receiver class).
-	 * may be null if has not parameters.
-	 * @return
-	 */
-	public static java.lang.reflect.Method getMethod(Class<?> ownerClass, String methodName, Class<?>[] paramClasses) {
-		try {
-			return ownerClass.getMethod(methodName, paramClasses);
-		} catch(Throwable t) {
-			t.printStackTrace();
-			throw new RuntimeException(t);
-		}
-	}
-
-	/**
-	 * get java public constructor
-	 * @param ownerClass
-	 * @param paramClasses
-	 * - method parameter classes (not contain receiver class).
-	 * may be null if has not parameters.
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	public static <T> java.lang.reflect.Constructor<T> getConstructor(Class<?> ownerClass, Class<?>[] paramClasses) {
-		try {
-			return (Constructor<T>) ownerClass.getConstructor(paramClasses);
-		} catch(Throwable t) {
-			t.printStackTrace();
-			throw new RuntimeException(t);
-		}
-	}
-
-	/**
 	 * create type descriptor from type.
 	 * @param type
 	 * @return
 	 */
-	public static org.objectweb.asm.Type toTypeDescriptor(DSType type) {
+	public static Type toTypeDescriptor(DSType type) {
 		return toTypeDescriptor(type.getInternalName());
 	}
 
@@ -76,17 +40,17 @@ public class TypeUtils {
 	 * fully qualified class name.
 	 * @return
 	 */
-	public static org.objectweb.asm.Type toTypeDescriptor(String internalName) {
+	public static Type toTypeDescriptor(String internalName) {
 		if(internalName.equals("long")) {
-			return org.objectweb.asm.Type.LONG_TYPE;
+			return Type.LONG_TYPE;
 		} else if(internalName.equals("double")) {
-			return org.objectweb.asm.Type.DOUBLE_TYPE;
+			return Type.DOUBLE_TYPE;
 		} else if(internalName.equals("boolean")) {
-			return org.objectweb.asm.Type.BOOLEAN_TYPE;
+			return Type.BOOLEAN_TYPE;
 		} else if(internalName.equals("void")) {
-			return org.objectweb.asm.Type.VOID_TYPE;
+			return Type.VOID_TYPE;
 		} else {
-			return org.objectweb.asm.Type.getType( "L" + internalName + ";");
+			return Type.getType( "L" + internalName + ";");
 		}
 	}
 
@@ -97,28 +61,36 @@ public class TypeUtils {
 	 * @param paramTypeList
 	 * @return
 	 */
-	public static org.objectweb.asm.commons.Method toMehtodDescriptor(DSType returnType, String methodName, List<DSType> paramTypeList) {
+	public static Method toMehtodDescriptor(DSType returnType, String methodName, List<DSType> paramTypeList) {
 		int size = paramTypeList.size();
-		org.objectweb.asm.Type[] paramtypeDecs = new org.objectweb.asm.Type[size];
+		Type[] paramtypeDecs = new Type[size];
 		for(int i = 0; i < size; i++) {
 			paramtypeDecs[i] = toTypeDescriptor(paramTypeList.get(i));
 		}
-		org.objectweb.asm.Type returnTypeDesc = toTypeDescriptor(returnType);
-		return new org.objectweb.asm.commons.Method(methodName, returnTypeDesc, paramtypeDecs);
+		Type returnTypeDesc = toTypeDescriptor(returnType);
+		return new Method(methodName, returnTypeDesc, paramtypeDecs);
 	}
 
-	public static org.objectweb.asm.commons.Method toConstructorDescriptor(List<DSType> paramTypeList) {
+	public static Method toConstructorDescriptor(List<DSType> paramTypeList) {
 		return toMehtodDescriptor(TypePool.voidType, "<init>", paramTypeList);
 	}
 
-	public static org.objectweb.asm.commons.Method toArrayConstructorDescriptor(DSType elementType) {
-		org.objectweb.asm.Type returnTypeDesc = org.objectweb.asm.Type.VOID_TYPE;
-		org.objectweb.asm.Type elementTypeDesc = toTypeDescriptor(elementType);
+	public static Method toArrayConstructorDescriptor(DSType elementType) {
+		Type returnTypeDesc = Type.VOID_TYPE;
+		Type elementTypeDesc = toTypeDescriptor(elementType);
 		if(!(elementType instanceof PrimitiveType)) {
-			elementTypeDesc = org.objectweb.asm.Type.getType(Object.class);
+			elementTypeDesc = Type.getType(Object.class);
 		}
-		org.objectweb.asm.Type paramTypeDesc = org.objectweb.asm.Type.getType("[" + elementTypeDesc.getDescriptor());
-		org.objectweb.asm.Type[] paramtypeDecs = new org.objectweb.asm.Type[]{paramTypeDesc};
-		return new org.objectweb.asm.commons.Method("<init>", returnTypeDesc, paramtypeDecs);
+		Type paramTypeDesc = Type.getType("[" + elementTypeDesc.getDescriptor());
+		Type[] paramtypeDecs = new Type[]{paramTypeDesc};
+		return new Method("<init>", returnTypeDesc, paramtypeDecs);
+	}
+
+	public static Method toMapConstructorDescriptor() {
+		Type returnTypeDesc = Type.VOID_TYPE;
+		Type keysTypeDesc = Type.getType("[Ljava/lang/String;");
+		Type valuesTypeDesc = Type.getType("[Ljava/lang/Object;");
+		Type[] paramTypeDescs = new Type[] {keysTypeDesc, valuesTypeDesc};
+		return new Method("<init>", returnTypeDesc, paramTypeDescs);
 	}
 } 

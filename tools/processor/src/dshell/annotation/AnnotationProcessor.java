@@ -156,9 +156,6 @@ public class AnnotationProcessor extends AbstractProcessor {
 	}
 
 	private void generateInitMethod(TypeInitBuilder initBuilder, Element element) {
-		if(element.getAnnotation(GenericClass.class) != null) {	//TODO: generic type support.
-			return;
-		}
 		TypeElement typeElement = (TypeElement) element;
 		TypeBuilder builder = this.createBuilder(typeElement);
 
@@ -188,6 +185,18 @@ public class AnnotationProcessor extends AbstractProcessor {
 		}
 		if(typeElement.getAnnotation(PrimitiveArray.class) != null) {
 			return new PrimitiveArrayBuilder(className, internalName, superTypeName);
+		}
+		if(typeElement.getAnnotation(GenericClass.class) != null) {
+			GenericClass anno = typeElement.getAnnotation(GenericClass.class);
+			StringBuilder sBuilder = new StringBuilder();
+			String[] values = anno.values();
+			for(int i = 0; i < values.length; i++) {
+				if(i > 0) {
+					sBuilder.append(" ");
+				}
+				sBuilder.append(values[i]);
+			}
+			return new GenericTypeBuilder(className, internalName, superTypeName, sBuilder.toString());
 		}
 		return new TypeBuilder(className, internalName, superTypeName, true);
 	}
@@ -353,7 +362,8 @@ public class AnnotationProcessor extends AbstractProcessor {
 
 		public String toTypeName(VariableElement variableElement) {
 			String name = variableElement.asType().toString();
-			String typeName = this.toTypeName(name, null);
+			TypeAlias anno = variableElement.getAnnotation(TypeAlias.class);
+			String typeName = this.toTypeName(name, anno);
 			if(typeName == null) {
 				reportErrorAndExit("unsupported type: " + name, variableElement);
 				return null;
@@ -363,7 +373,8 @@ public class AnnotationProcessor extends AbstractProcessor {
 		
 		public String toReturnTypeName(ExecutableElement element) {
 			String name = element.getReturnType().toString();
-			String typeName = this.toTypeName(name, null);
+			TypeAlias anno = element.getAnnotation(TypeAlias.class);
+			String typeName = this.toTypeName(name, anno);
 			if(typeName == null) {
 				reportErrorAndExit("unsupported  type: " + name, element);
 				return null;
@@ -378,16 +389,17 @@ public class AnnotationProcessor extends AbstractProcessor {
 		private final String internalName;
 		private final String superTypeName;
 		private final boolean allowExtends;
+		private final String optionalArg;
 
 		private final List<String> constructorElements;
 		private final List<String> fieldElements;
 		private final List<String> methodElements;
 
 		public TypeBuilder(String className, String internalName, String superTypeName, boolean allowExtends) {
-			this(0, className, internalName, superTypeName, allowExtends);
+			this(0, className, internalName, superTypeName, allowExtends, null);
 		}
 
-		protected TypeBuilder(int typeKind, String className, String internalName, String superTypeName, boolean allowExtends) {
+		protected TypeBuilder(int typeKind, String className, String internalName, String superTypeName, boolean allowExtends, String optionalArg) {
 			super(className);
 			this.typeKind = typeKind;
 			this.className = className;
@@ -397,6 +409,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 			this.constructorElements = new ArrayList<>();
 			this.fieldElements = new ArrayList<>();
 			this.methodElements = new ArrayList<>();
+			this.optionalArg = optionalArg;
 		}
 
 		void generateMethodElement(ExecutableElement element) {
@@ -485,6 +498,12 @@ public class AnnotationProcessor extends AbstractProcessor {
 			// create method
 			this.appendElements("me", this.methodElements);
 
+			if(this.optionalArg == null) {
+				this.appendLine("String op = null;");
+			} else {
+				this.appendLine("String op = " + this.quote(this.optionalArg) + ";");
+			}
+
 			if(this.superTypeName == null) {
 				this.appendLine("DSType superType = pool.objectType;");
 			} else {
@@ -497,7 +516,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 			sBuilder.append(this.quote(this.internalName));
 			sBuilder.append(", superType, ");
 			sBuilder.append(this.allowExtends);
-			sBuilder.append(", ce, fe, me);");
+			sBuilder.append(", ce, fe, me, op);");
 			this.appendLine(sBuilder.toString());
 			this.endLine();
 			return this;
@@ -518,7 +537,7 @@ public class AnnotationProcessor extends AbstractProcessor {
 
 	class StringWrapperBuilder extends TypeBuilder {
 		public StringWrapperBuilder(String className, String internalName, String superTypeName) {
-			super(1, className, internalName, superTypeName, false);
+			super(1, className, internalName, superTypeName, false, null);
 		}
 
 		@Override
@@ -544,7 +563,13 @@ public class AnnotationProcessor extends AbstractProcessor {
 
 	class PrimitiveArrayBuilder extends TypeBuilder {
 		public PrimitiveArrayBuilder(String className, String internalName, String superTypeName) {
-			super(2, className, internalName, superTypeName, false);
+			super(2, className, internalName, superTypeName, false, null);
+		}
+	}
+
+	class GenericTypeBuilder extends TypeBuilder {
+		public GenericTypeBuilder(String className, String internalName, String superTypeName, String optionalArg) {
+			super(3, className, internalName, superTypeName, false, optionalArg);
 		}
 	}
 }

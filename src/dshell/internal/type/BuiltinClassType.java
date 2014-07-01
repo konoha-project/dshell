@@ -22,6 +22,7 @@ class BuiltinClassType extends ClassType {
 	protected final TypePool pool;
 
 	protected boolean createdConstruor = false;
+
 	/**
 	 * contains constructor handle.
 	 */
@@ -70,16 +71,20 @@ class BuiltinClassType extends ClassType {
 		}
 	}
 
-	@Override
-	public ConstructorHandle lookupConstructorHandle(List<DSType> paramTypeList) {
+	protected void initConstructors() {
 		if(!this.createdConstruor) {
 			this.createdConstruor = true;
-			this.constructorHandleList = new ArrayList<>();
+			this.constructorHandleList = new ArrayList<>(this.constructorElements.length);
 			for(String[] element : this.constructorElements) {
 				this.constructorHandleList.add(this.toConstructorHandle(element));
 			}
 			this.constructorElements = null;
 		}
+	}
+
+	@Override
+	public ConstructorHandle lookupConstructorHandle(List<DSType> paramTypeList) {
+		this.initConstructors();
 		if(this.constructorHandleList == null) {
 			return null;
 		}
@@ -175,7 +180,7 @@ class BuiltinClassType extends ClassType {
 			String internalName, DSType superType, boolean allowExtends,
 			String[][] constructorElements,
 			String[][] fieldElements, 
-			String[][] methodElements) {
+			String[][] methodElements, String optionalArg) {
 		switch(typeKind) {
 		case 0:
 			return new BuiltinClassType(pool, className, internalName, 
@@ -186,6 +191,9 @@ class BuiltinClassType extends ClassType {
 		case 2:
 			return new PrimitiveArray(pool, className, internalName, superType, 
 					allowExtends, constructorElements, fieldElements, methodElements);
+		case 3:
+			return new GenericBaseType(pool, className, internalName, superType, 
+					allowExtends, constructorElements, fieldElements, methodElements, optionalArg);
 		default:
 			Utils.fatal(1, "unsupported type kind: " + typeKind);
 		}
@@ -267,7 +275,8 @@ class PrimitiveArray extends BuiltinClassType implements GenericType {
 
 	protected PrimitiveArray(TypePool pool, String className,
 			String internalName, DSType superType, boolean allowExtends,
-			String[][] constructorElements, String[][] fieldElements,
+			String[][] constructorElements, 
+			String[][] fieldElements,
 			String[][] methodElements) {
 		super(pool, createTypeName(className), internalName, superType, allowExtends,
 				constructorElements, fieldElements, methodElements);
