@@ -40,7 +40,7 @@ public class Exception extends RuntimeException {
 	@Override
 	public void printStackTrace() {
 		StringBuilder sBuilder = new StringBuilder();
-		this.craeteHeader(sBuilder);
+		this.createHeader(sBuilder);
 		for(StackTraceElement element : this.getStackTrace()) {
 			sBuilder.append("\tfrom ");
 			sBuilder.append(element.getFileName());
@@ -81,7 +81,7 @@ public class Exception extends RuntimeException {
 		return elements;
 	}
 
-	protected void craeteHeader(StringBuilder sBuilder) {
+	protected void createHeader(StringBuilder sBuilder) {
 		String message = this.getMessage();
 		message = (message == null ? "" : message);
 		sBuilder.append(this.toString() +  ": " + message + "\n");

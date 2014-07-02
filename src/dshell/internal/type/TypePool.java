@@ -121,6 +121,7 @@ public class TypePool {
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_KeyNotFoundException(this));
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_OutOfIndexException(this));
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_ArithmeticException(this));
+		this.setTypeAndThrowIfDefined(TypeInitializer.init_TypeCastException(this));
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_DShellException(this));
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_NullException(this));
 

@@ -56,6 +56,7 @@ import dshell.internal.parser.SymbolTable.SymbolEntry;
 import dshell.internal.parser.error.TypeCheckException;
 import dshell.internal.type.ClassType;
 import dshell.internal.type.DSType;
+import dshell.internal.type.GenericType;
 import dshell.internal.type.DSType.BoxedPrimitiveType;
 import dshell.internal.type.DSType.FuncHolderType;
 import dshell.internal.type.DSType.FunctionType;
@@ -353,7 +354,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(CastNode node) {
+	public Node visit(CastNode node) {	//FIXME: generic type cast
 		this.checkType(node.getExprNode());
 		DSType type = node.getExprNode().getType();
 		DSType targetType = node.getTypeSymbol().toType(this.typePool);
@@ -367,8 +368,11 @@ public class TypeChecker implements NodeVisitor<Node>{
 			node.resolveCastOp(CastNode.INT_2_FLOAT);
 		} else if(type.equals(this.typePool.floatType) && targetType.equals(this.typePool.intType)) {
 			node.resolveCastOp(CastNode.FLOAT_2_INT);
-		} else {
+		} else if(!(type instanceof PrimitiveType) && !(targetType instanceof PrimitiveType) &&
+				!(type instanceof GenericType) && !(targetType instanceof GenericType)) {
 			node.resolveCastOp(CastNode.CHECK_CAST);
+		} else {
+			this.throwAndReportTypeError(node, "unsupported cast op: " + type + " -> " + targetType);
 		}
 		return node;
 	}

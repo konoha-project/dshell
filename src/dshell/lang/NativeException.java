@@ -19,6 +19,9 @@ public class NativeException extends Exception {
 		if(t instanceof Exception) {
 			return (Exception) t;
 		}
+		if(t instanceof ClassCastException) {
+			return new TypeCastException((ClassCastException) t);
+		}
 		return new NativeException(t);
 	}
 
@@ -29,7 +32,7 @@ public class NativeException extends Exception {
 	}
 
 	@Override
-	protected void craeteHeader(StringBuilder sBuilder) {
+	protected void createHeader(StringBuilder sBuilder) {
 		String message = this.internalException.getMessage();
 		message = (message == null ? "" : message);
 		sBuilder.append(this.toString() +  ": " + message + "\n");

@@ -487,7 +487,7 @@ public abstract class Node {
 
 		private final TypeSymbol targetTypeSymbol;
 		private final ExprNode exprNode;
-		private int castOp = -1;
+		private int castOp = NOP;
 
 		public CastNode(TypeSymbol targetTypeSymbol, ExprNode exprNode) {
 			super(null);
