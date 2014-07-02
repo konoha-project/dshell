@@ -15,6 +15,7 @@ import dshell.internal.parser.ParserUtils.ArgsDecl;
 import dshell.internal.parser.ParserUtils.Arguments;
 import dshell.internal.parser.ParserUtils.Block;
 import dshell.internal.parser.ParserUtils.IfElseBlock;
+import dshell.internal.parser.SymbolTable.SymbolEntry;
 import dshell.internal.type.ClassType;
 import dshell.internal.type.DSType.FuncHolderType;
 import dshell.internal.type.DSType.PrimitiveType;
@@ -350,10 +351,6 @@ public abstract class Node {
 			super(token);
 		}
 
-		public void setReadOnly(boolean isReadOnly) {
-			this.isReadOnly = isReadOnly;
-		}
-
 		public boolean isReadOnly() {
 			return this.isReadOnly;
 		}
@@ -381,8 +378,13 @@ public abstract class Node {
 			return this.symbolName;
 		}
 
-		public void setHandle(StaticFieldHandle handle) {
-			this.handle = handle;
+		public void setSymbolEntry(SymbolEntry entry) {
+			this.isReadOnly = entry.isReadOnly();
+			DSType type = entry.getType();
+			if(type instanceof FuncHolderType) {	// function field
+				StaticFieldHandle handle = ((FuncHolderType)type).getFieldHandle();
+				this.handle = handle;
+			}
 		}
 
 		public StaticFieldHandle getHandle() {
@@ -459,6 +461,7 @@ public abstract class Node {
 
 		public void setHandle(FieldHandle handle) {
 			this.handle = handle;
+			this.isReadOnly = handle.isReadOnlyField();
 		}
 
 		public FieldHandle getHandle() {

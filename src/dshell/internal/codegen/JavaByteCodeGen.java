@@ -68,7 +68,6 @@ import dshell.internal.process.AbstractProcessContext;
 import dshell.internal.process.TaskContext;
 import dshell.internal.type.DSType;
 import dshell.internal.type.GenericType;
-import dshell.internal.type.DSType.BoxedPrimitiveType;
 import dshell.internal.type.DSType.FunctionType;
 import dshell.internal.type.DSType.PrimitiveType;
 import dshell.internal.type.DSType.VoidType;
@@ -278,8 +277,10 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(ElementGetterNode node) {	//TODO
-		Utils.fatal(1, "unimplemented: " + node);
+	public Void visit(ElementGetterNode node) {
+		this.generateCode(node.getRecvNode());
+		this.generateCode(node.getIndexNode());
+		node.getHandle().call(this.getCurrentMethodBuilder());
 		return null;
 	}
 

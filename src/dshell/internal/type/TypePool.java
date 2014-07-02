@@ -149,7 +149,7 @@ public class TypePool {
 	public DSType getType(String typeName) {
 		DSType type = this.typeMap.get(typeName);
 		if(type instanceof GenericBaseType) {
-			throw new TypeLookupException("cannot directly use generic type:" + type.getTypeName());
+			throw new TypeLookupException("cannot directly use generic type: " + type.getTypeName());
 		}
 		return type == null ? TypePool.unresolvedType : type;
 	}

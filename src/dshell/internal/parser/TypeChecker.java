@@ -2,6 +2,7 @@ package dshell.internal.parser;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PrimitiveIterator.OfDouble;
 
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
@@ -323,21 +324,31 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(entry == null) {
 			this.throwAndReportTypeError(node, "undefined symbol: " + node.getSymbolName());
 		}
-		node.setReadOnly(entry.isReadOnly());
-		DSType type = entry.getType();
-		if(type instanceof FuncHolderType) {	// function field
-			StaticFieldHandle handle = ((FuncHolderType)type).getFieldHandle();
-			node.setHandle(handle);
-			type = handle.getFieldType();
-		}
-		node.setType(type);
+		node.setSymbolEntry(entry);
+		node.setType(entry.getType());
 		return node;
 	}
 
 	@Override
-	public Node visit(ElementGetterNode node) {	//TODO: method handle property
-		this.throwAndReportTypeError(node, "unimplemtned type checker: " + node.getClass().getSimpleName());
-		return null;
+	public Node visit(ElementGetterNode node) {	//FIXME: adhoc implementation.
+		this.checkType(node.getRecvNode());
+		DSType recvType = node.getRecvNode().getType();
+		String typeName = recvType.getTypeName();
+		if(!typeName.startsWith("Array<") && 
+				!typeName.startsWith("Map<") && !typeName.equals("String")) {
+			this.throwAndReportTypeError(node, "require Map, Array or String type");
+		}
+		MethodHandle handle = recvType.lookupMethodHandle("get");
+		if(handle == null) {
+			this.throwAndReportTypeError(node, "undefined method: get");
+		}
+		if(handle.getParamTypeList().size() != 1) {
+			this.throwAndReportTypeError(node, "ilegal method: " + handle);
+		}
+		this.checkType(handle.getParamTypeList().get(0), node.getIndexNode());
+		node.setHandle(handle);
+		node.setType(handle.getReturnType());
+		return node;
 	}
 
 	@Override
@@ -686,18 +697,53 @@ public class TypeChecker implements NodeVisitor<Node>{
 		return node;
 	}
 
+	/**
+	 * used for AssignNode, SuffixIncrementNode
+	 * @param leftNode
+	 * - SymbolNode, ElementGetterNode, FieldGetterNode
+	 * @return
+	 */
+	protected AssignableNode checkTypeAsAssignableNode(ExprNode leftNode) {	//FIXME: adhoc implementation
+		if(!(leftNode instanceof AssignableNode)) {
+			this.throwAndReportTypeError(leftNode, "require assignable node");
+		}
+
+		/**
+		 * check type assignable node.
+		 */
+		if(leftNode instanceof ElementGetterNode) {
+			ElementGetterNode getterNode = (ElementGetterNode) leftNode;
+			this.checkType(getterNode.getRecvNode());
+			DSType recvType = getterNode.getRecvNode().getType();
+			String recvTypeName = recvType.getTypeName();
+			if(!recvTypeName.startsWith("Array<") && !recvTypeName.startsWith("Map<")) {
+				this.throwAndReportTypeError(getterNode, "require Array or Map type");
+			}
+			MethodHandle handle = recvType.lookupMethodHandle("set");
+			if(handle == null) {
+				this.throwAndReportTypeError(getterNode, "undefined method: set");
+			}
+			if(handle.getParamTypeList().size() != 2) {
+				this.throwAndReportTypeError(getterNode, "illegal method: " + handle);
+			}
+			this.checkType(handle.getParamTypeList().get(0), getterNode.getIndexNode());
+			getterNode.setHandle(handle);
+			getterNode.setType(handle.getParamTypeList().get(1));
+		} else {
+			this.checkType(leftNode);
+		}
+
+		AssignableNode assignableNode = (AssignableNode) leftNode;
+		if(assignableNode.isReadOnly()) {
+			this.throwAndReportTypeError(assignableNode, "read only value");
+		}
+		return null;
+	}
+
 	@Override
 	public Node visit(AssignNode node) {	//TODO: int to float assign
-		DSType leftType = ((ExprNode) this.checkType(node.getLeftNode())).getType();
+		DSType leftType = this.checkTypeAsAssignableNode(node.getLeftNode()).getType();
 		DSType rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
-		ExprNode exprNode = node.getLeftNode();
-		if(!(exprNode instanceof AssignableNode)) {
-			this.throwAndReportTypeError(exprNode, "require assignable node");
-		}
-		AssignableNode leftNode = (AssignableNode) exprNode;
-		if(leftNode.isReadOnly()) {
-			this.throwAndReportTypeError(leftNode, "read only variable");
-		}
 		String op = node.getAssignOp();
 		if(op.equals("=")) {
 			if(!leftType.isAssignableFrom(rightType)) {
@@ -720,16 +766,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(!op.equals("++") && !op.equals("--")) {
 			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
 		}
-		ExprNode exprNode = node.getLeftNode();
-		this.checkType(exprNode);
-		if(!(exprNode instanceof AssignableNode)) {
-			this.throwAndReportTypeError(exprNode, "require assignable node");
-		}
-		AssignableNode leftNode = (AssignableNode) exprNode;
-		if(leftNode.isReadOnly) {
-			this.throwAndReportTypeError(leftNode, "read only variable");
-		}
-		DSType exprType = leftNode.getType();
+		DSType exprType = this.checkTypeAsAssignableNode(node.getLeftNode()).getType();
 		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
 			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
 		}

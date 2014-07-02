@@ -71,14 +71,25 @@ public abstract class CalleeHandle {
 		 */
 		protected Type fieldTypeDesc;
 
+		protected final boolean isReadOnly;
+
 		public FieldHandle(String calleeName, DSType ownerType, DSType fieldType) {
+			this(calleeName, ownerType, fieldType, false);
+		}
+
+		public FieldHandle(String calleeName, DSType ownerType, DSType fieldType, boolean isReadOnly) {
 			super(calleeName, ownerType);
 			assert fieldType != null;
 			this.fieldType = fieldType;
+			this.isReadOnly = isReadOnly;
 		}
 
 		public DSType getFieldType() {
 			return this.fieldType;
+		}
+
+		public boolean isReadOnlyField() {
+			return this.isReadOnly;
 		}
 
 		protected void initTypeDesc() {
@@ -111,11 +122,20 @@ public abstract class CalleeHandle {
 			this.initTypeDesc();
 			adapter.putField(this.ownerTypeDesc, this.calleeName, this.fieldTypeDesc);
 		}
+
+		@Override
+		public String toString() {
+			return this.ownerType.getTypeName() + "#" + this.calleeName + " : " + this.fieldType;
+		}
 	}
 
 	public static class StaticFieldHandle extends FieldHandle {
 		public StaticFieldHandle(String calleeName, DSType ownerType, DSType fieldType) {
 			super(calleeName, ownerType, fieldType);
+		}
+
+		public StaticFieldHandle(String calleeName, DSType ownerType, DSType fieldType, boolean isReadOnly) {
+			super(calleeName, ownerType, fieldType, isReadOnly);
 		}
 
 		@Override
@@ -205,6 +225,12 @@ public abstract class CalleeHandle {
 		public void call(GeneratorAdapter adapter) {
 			this.initMethodDesc();
 			adapter.invokeVirtual(this.ownerTypeDesc, this.methodDesc);
+		}
+
+		@Override
+		public String toString() {
+			return this.ownerType + "#" + this.calleeName + 
+					" : " + TypePool.toFuncTypeName(this.returnType, this.paramTypeList);
 		}
 	}
 
@@ -477,7 +503,7 @@ public abstract class CalleeHandle {
 	private static DSType reifyType(TypePool pool, Map<String, Integer> typeMap, DSType type, List<DSType> elementTypeList) {
 		return reifyType(pool, typeMap, type, elementTypeList, true);
 	}
-	
+
 	private static DSType reifyType(TypePool pool, 
 			Map<String, Integer> typeMap, DSType type, List<DSType> elementTypeList, boolean allowBoxing) {
 		if(type instanceof ParametricType) {
