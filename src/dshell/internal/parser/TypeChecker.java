@@ -2,13 +2,11 @@ package dshell.internal.parser;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.PrimitiveIterator.OfDouble;
 
 import dshell.internal.parser.CalleeHandle.ConstructorHandle;
 import dshell.internal.parser.CalleeHandle.FieldHandle;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.OperatorHandle;
-import dshell.internal.parser.CalleeHandle.StaticFieldHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
@@ -47,7 +45,6 @@ import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.Node.StringValueNode;
-import dshell.internal.parser.Node.SuffixIncrementNode;
 import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.Node.ThrowNode;
 import dshell.internal.parser.Node.TryNode;
@@ -346,7 +343,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			this.throwAndReportTypeError(node, "ilegal method: " + handle);
 		}
 		this.checkType(handle.getParamTypeList().get(0), node.getIndexNode());
-		node.setHandle(handle);
+		node.setGetterHandle(handle);
 		node.setType(handle.getReturnType());
 		return node;
 	}
@@ -713,7 +710,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		 */
 		if(leftNode instanceof ElementGetterNode) {
 			ElementGetterNode getterNode = (ElementGetterNode) leftNode;
-			this.checkType(getterNode.getRecvNode());
+			this.checkType(getterNode);
 			DSType recvType = getterNode.getRecvNode().getType();
 			String recvTypeName = recvType.getTypeName();
 			if(!recvTypeName.startsWith("Array<") && !recvTypeName.startsWith("Map<")) {
@@ -727,7 +724,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 				this.throwAndReportTypeError(getterNode, "illegal method: " + handle);
 			}
 			this.checkType(handle.getParamTypeList().get(0), getterNode.getIndexNode());
-			getterNode.setHandle(handle);
+			getterNode.setSetterHandle(handle);
 			getterNode.setType(handle.getParamTypeList().get(1));
 		} else {
 			this.checkType(leftNode);
@@ -737,7 +734,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(assignableNode.isReadOnly()) {
 			this.throwAndReportTypeError(assignableNode, "read only value");
 		}
-		return null;
+		return assignableNode;
 	}
 
 	@Override
@@ -757,25 +754,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 			}
 			node.setHandle(handle);
 		}
-		return node;
-	}
-
-	@Override
-	public Node visit(SuffixIncrementNode node) {
-		String op = node.getOperator();
-		if(!op.equals("++") && !op.equals("--")) {
-			this.throwAndReportTypeError(node, "undefined suffix operator: " + op);
-		}
-		DSType exprType = this.checkTypeAsAssignableNode(node.getLeftNode()).getType();
-		if(!this.typePool.intType.isAssignableFrom(exprType) && !this.typePool.floatType.isAssignableFrom(exprType)) {
-			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
-		}
-		String actualOp = op.substring(1);
-		OperatorHandle handle = this.opTable.getOperatorHandle(actualOp, exprType, this.typePool.intType);
-		if(handle == null) {
-			this.throwAndReportTypeError(node, "undefined suffix operator: " + exprType + " " + op);
-		}
-		node.setHandle(handle);
 		return node;
 	}
 

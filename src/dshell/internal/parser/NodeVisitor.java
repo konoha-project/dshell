@@ -33,7 +33,6 @@ import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.StringValueNode;
-import dshell.internal.parser.Node.SuffixIncrementNode;
 import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.Node.ThrowNode;
 import dshell.internal.parser.Node.TryNode;
@@ -77,7 +76,6 @@ public interface NodeVisitor <T> {
 	public T visit(CatchNode            node);
 	public T visit(VarDeclNode          node);
 	public T visit(AssignNode           node);
-	public T visit(SuffixIncrementNode  node);
 	public T visit(FunctionNode         node);
 	public T visit(ClassNode            node);
 	public T visit(ConstructorNode      node);

@@ -344,7 +344,7 @@ emptyStatement returns [Node node]
 	;
 
 suffixStatement returns [Node node]
-	: expression op=(INC | DEC) {$node = new Node.SuffixIncrementNode($expression.node, $op);}
+	: expression op=(INC | DEC) {$node = new Node.AssignNode($expression.node, $op);}
 	;
 
 // expression definition.

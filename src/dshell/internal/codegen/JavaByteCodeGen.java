@@ -22,7 +22,6 @@ import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.Node.ArrayNode;
 import dshell.internal.parser.Node.AssertNode;
 import dshell.internal.parser.Node.AssignNode;
-import dshell.internal.parser.Node.AssignableNode;
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.BooleanValueNode;
 import dshell.internal.parser.Node.BreakNode;
@@ -55,7 +54,6 @@ import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.Node.StringValueNode;
-import dshell.internal.parser.Node.SuffixIncrementNode;
 import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.Node.ThrowNode;
 import dshell.internal.parser.Node.TryNode;
@@ -280,7 +278,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	public Void visit(ElementGetterNode node) {
 		this.generateCode(node.getRecvNode());
 		this.generateCode(node.getIndexNode());
-		node.getHandle().call(this.getCurrentMethodBuilder());
+		node.getGetterHandle().call(this.getCurrentMethodBuilder());
 		return null;
 	}
 
@@ -631,53 +629,49 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(AssignNode node) {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		ExprNode leftNode = node.getLeftNode();
+
+		/**
+		 * assign to symbol
+		 */
+		if(leftNode instanceof SymbolNode) {
+			SymbolNode symbolNode = (SymbolNode) leftNode;
+			this.generateRightValue(node);
+			mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolNode.getType());
+
+		/**
+		 * assign to field
+		 */
+		} else if(leftNode instanceof FieldGetterNode) {
+			FieldGetterNode getterNode = (FieldGetterNode) leftNode;
+			this.generateCode(getterNode.getRecvNode());
+			this.generateRightValue(node);
+			getterNode.getHandle().callSetter(mBuilder);
+
+		/**
+		 * assign to element
+		 */
+		} else if(leftNode instanceof ElementGetterNode) {
+			ElementGetterNode getterNode = (ElementGetterNode) leftNode;
+			this.generateCode(getterNode.getRecvNode());
+			this.generateCode(getterNode.getIndexNode());
+			this.generateRightValue(node);
+			getterNode.getSetterHandle().call(mBuilder);
+		} else {
+			throw new RuntimeException("not assignable node: " + leftNode.getClass().getSimpleName());
+		}
+		return null;
+	}
+
+	private void generateRightValue(AssignNode node) {
 		OperatorHandle handle = node.getHandle();
 		if(handle != null) {	// self assgin
 			this.generateCode(node.getLeftNode());
 			this.generateCode(node.getRightNode());
-			handle.call(mBuilder);
+			handle.call(this.getCurrentMethodBuilder());
 		} else {
 			this.generateCode(node.getRightNode());
 		}
-		AssignableNode leftNode = (AssignableNode) node.getLeftNode();
-		if(leftNode instanceof SymbolNode) {
-			this.visitAssignLeft((SymbolNode)leftNode);
-		} else if(leftNode instanceof FieldGetterNode) {
-			this.visitAssignLeft((FieldGetterNode)leftNode);
-		} else if(leftNode instanceof ElementGetterNode) {
-			this.visitAssignLeft((ElementGetterNode)leftNode);
-		}
-		return null;
-	}
-
-	@Override
-	public Void visit(SuffixIncrementNode node) {
-		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		this.generateCode(node.getLeftNode());
-		mBuilder.push((long)1);
-		node.getHandle().call(mBuilder);
-		AssignableNode leftNode = (AssignableNode) node.getLeftNode();
-		if(leftNode instanceof SymbolNode) {
-			this.visitAssignLeft((SymbolNode)leftNode);
-		} else if(leftNode instanceof FieldGetterNode) {
-			this.visitAssignLeft((FieldGetterNode)leftNode);
-		} else if(leftNode instanceof ElementGetterNode) {
-			this.visitAssignLeft((ElementGetterNode)leftNode);
-		}
-		return null;
-	}
-
-	private void visitAssignLeft(SymbolNode leftNode) {
-		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		mBuilder.storeValueToLocalVar(leftNode.getSymbolName(), leftNode.getType());
-	}
-
-	private void visitAssignLeft(FieldGetterNode leftNode) {
-		leftNode.getHandle().callSetter(this.getCurrentMethodBuilder());
-	}
-
-	private void visitAssignLeft(ElementGetterNode leftNode) {	//TODO:
-		Utils.fatal(1, "unimplemented: " + leftNode);
 	}
 
 	@Override

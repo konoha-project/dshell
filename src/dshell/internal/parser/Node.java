@@ -146,6 +146,15 @@ public abstract class Node {
 			this.value = Long.parseLong(token.getText());
 		}
 
+		/**
+		 * used for assign node.
+		 * @param value
+		 */
+		private IntValueNode(long value) {
+			super(null);
+			this.value = value;
+		}
+
 		public long getValue() {
 			return this.value;
 		}
@@ -399,13 +408,23 @@ public abstract class Node {
 
 	/**
 	 * This node represents getting array element.
+	 * recvNode[indexNode]
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
 	public static class ElementGetterNode extends AssignableNode {
 		private final ExprNode recvNode;
 		private final ExprNode indexNode;
-		private MethodHandle handle;
+
+		/**
+		 * handle of get method.
+		 */
+		private MethodHandle getterHandle;
+
+		/**
+		 * handle of set method.
+		 */
+		private MethodHandle setterHandle;
 
 		public ElementGetterNode(ExprNode recvNode, ExprNode indexNode) {
 			super(null);
@@ -421,12 +440,20 @@ public abstract class Node {
 			return this.indexNode;
 		}
 
-		public void setHandle(MethodHandle handle) {
-			this.handle = handle;
+		public void setGetterHandle(MethodHandle getterHandle) {
+			this.getterHandle = getterHandle;
 		}
 
-		public MethodHandle getHandle() {
-			return this.handle;
+		public MethodHandle getGetterHandle() {
+			return this.getterHandle;
+		}
+
+		public void setSetterHandle(MethodHandle setterHandle) {
+			this.setterHandle = setterHandle;
+		}
+
+		public MethodHandle getSetterHandle() {
+			return this.setterHandle;
 		}
 
 		@Override
@@ -1333,7 +1360,7 @@ public abstract class Node {
 	}
 
 	/**
-	 * This node represents assign operation such as '=', '+=', '-=', '*=', '/=', '%='.
+	 * This node represents assign operation such as '=', '+=', '-=', '*=', '/=', '%=', '++', '--'.
 	 * @author skgchxngsxyz-osx
 	 *
 	 */
@@ -1358,6 +1385,18 @@ public abstract class Node {
 			this.rightNode = this.setExprNodeAsChild(rightNode);
 		}
 
+		/**
+		 * represent suffix increment, '++', '--'
+		 * @param token
+		 * @param leftNode
+		 */
+		public AssignNode(ExprNode leftNode, Token token) {
+			super(token);
+			this.assignOp = this.token.getText();
+			this.leftNode = this.setExprNodeAsChild(leftNode);
+			this.rightNode = this.setExprNodeAsChild(new IntValueNode(1));
+		}
+
 		public String getAssignOp() {
 			return this.assignOp;
 		}
@@ -1379,48 +1418,6 @@ public abstract class Node {
 		 * @return
 		 * return null, if operator is '='.
 		 */
-		public OperatorHandle getHandle() {
-			return this.handle;
-		}
-
-		@Override
-		public <T> T accept(NodeVisitor<T> visitor) {
-			return visitor.visit(this);
-		}
-	}
-
-	/**
-	 * This node represents suffix increment ('++', '--').
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class SuffixIncrementNode extends Node {
-		private final ExprNode leftNode;
-		/**
-		 * ++ or --
-		 */
-		private final String op;
-
-		private OperatorHandle handle;
-
-		public SuffixIncrementNode(ExprNode exprNode, Token token) {
-			super(token);
-			this.leftNode = this.setExprNodeAsChild(exprNode);
-			this.op = this.token.getText();
-		}
-
-		public ExprNode getLeftNode() {
-			return this.leftNode;
-		}
-
-		public String getOperator() {
-			return this.op;
-		}
-
-		public void setHandle(OperatorHandle handle) {
-			this.handle = handle;
-		}
-
 		public OperatorHandle getHandle() {
 			return this.handle;
 		}
