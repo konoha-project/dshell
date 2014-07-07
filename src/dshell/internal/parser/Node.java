@@ -295,8 +295,8 @@ public abstract class Node {
 	public static class ArrayNode extends ExprNode {
 		private final List<ExprNode> nodeList;
 
-		public ArrayNode() {
-			super(null);
+		public ArrayNode(Token token) {
+			super(token);
 			this.nodeList = new ArrayList<>();
 		}
 
@@ -323,8 +323,8 @@ public abstract class Node {
 		private final List<ExprNode> keyList;
 		private final List<ExprNode> valueList;
 
-		public MapNode() {
-			super(null);
+		public MapNode(Token token) {
+			super(token);
 			this.keyList = new ArrayList<>();
 			this.valueList = new ArrayList<>();
 		}
@@ -426,8 +426,8 @@ public abstract class Node {
 		 */
 		private MethodHandle setterHandle;
 
-		public ElementGetterNode(ExprNode recvNode, ExprNode indexNode) {
-			super(null);
+		public ElementGetterNode(Token token, ExprNode recvNode, ExprNode indexNode) {
+			super(token);
 			this.recvNode = this.setExprNodeAsChild(recvNode);
 			this.indexNode = this.setExprNodeAsChild(indexNode);
 		}
@@ -520,7 +520,7 @@ public abstract class Node {
 		private int castOp = NOP;
 
 		public CastNode(TypeSymbol targetTypeSymbol, ExprNode exprNode) {
-			super(null);
+			super(targetTypeSymbol.getToken());
 			this.targetTypeSymbol = targetTypeSymbol;
 			this.exprNode = this.setExprNodeAsChild(exprNode);
 		}

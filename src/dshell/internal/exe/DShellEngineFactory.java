@@ -8,6 +8,7 @@ import java.util.TreeSet;
 import org.antlr.v4.runtime.ANTLRFileStream;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 
 import dshell.internal.codegen.JavaByteCodeGen;
 import dshell.internal.lib.DShellClassLoader;
@@ -20,6 +21,7 @@ import dshell.internal.parser.dshellParser;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.dshellParser.ToplevelContext;
 import dshell.internal.parser.error.ParserErrorHandler;
+import dshell.internal.parser.error.TypeCheckException;
 import dshell.internal.parser.error.ParserErrorHandler.ParserException;
 import dshell.internal.type.TypePool;
 
@@ -41,10 +43,6 @@ public class DShellEngineFactory implements EngineFactory {
 			this.lexer = new dshellLexer(null);
 			this.parser = new dshellParser(null);
 			this.parser.setErrorHandler(new ParserErrorHandler());
-			this.lexer.removeErrorListeners();
-			this.parser.removeErrorListeners();
-			this.lexer.addErrorListener(ParserErrorHandler.getErrorListener());
-			this.parser.addErrorListener(ParserErrorHandler.getErrorListener());
 
 			this.classLoader = new DShellClassLoader();
 			this.checker = new TypeChecker(new TypePool(this.classLoader));
@@ -137,7 +135,7 @@ public class DShellEngineFactory implements EngineFactory {
 			ToplevelContext tree;
 			try {
 				tree = this.parser.startParser();
-			} catch(ParserException e) {
+			} catch(ParseCancellationException | ParserException e) {	// TODO: error report
 				return false;
 			}
 			if(this.config.is(EngineConfigRule.parserInspect)) {
@@ -146,8 +144,12 @@ public class DShellEngineFactory implements EngineFactory {
 			/**
 			 * check type
 			 */
-			RootNode checkedNode = this.checker.checkTypeRootNode(tree.node);
-			if(checkedNode == null) {
+			RootNode checkedNode;
+			try {
+				checkedNode = this.checker.checkTypeRootNode(tree.node);
+			} catch(TypeCheckException e) {
+				this.checker.reset();
+				System.err.println(e.getMessage());
 				return false;
 			}
 			/**

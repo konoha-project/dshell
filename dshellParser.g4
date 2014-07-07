@@ -131,7 +131,7 @@ paramTypes returns [TypeSymbol[] types] locals [ParserUtils.ParamTypeResolver re
 	;
 
 block returns [Node node] locals [ParserUtils.Block blockModel]
-	: {getScope().createNewScope();}'{' b+=statement+ '}' {getScope().removeCurrentScope();}
+	: {getScope().createNewScope();} '{' b+=statement+ '}' {getScope().removeCurrentScope();}
 		{
 			$blockModel = new ParserUtils.Block();
 			for(int i = 0; i < $b.size(); i++) {
@@ -371,7 +371,7 @@ commandArg returns [Node.ExprNode node]
 expression returns [Node.ExprNode node]
 	: primaryExpression {$node = $primaryExpression.node;}
 	| a=expression arguments {$node = new Node.ApplyNode($a.node, $arguments.args);}
-	| r=expression '[' i=expression ']' {$node = new Node.ElementGetterNode($r.node, $i.node);}
+	| r=expression LeftBracket i=expression RightBracket {$node = new Node.ElementGetterNode($LeftBracket, $r.node, $i.node);}
 	| a=expression '.' Identifier {$node = new Node.FieldGetterNode($a.node, $Identifier);}
 	| New typeName arguments {$node = new Node.ConstructorCallNode($New, $typeName.type, $arguments.args);}
 	| '(' typeName ')' right=expression {$node = new Node.CastNode($typeName.type, $right.node);}
@@ -409,8 +409,8 @@ literal returns [Node.ExprNode node]
 	;
 
 arrayLiteral returns [Node.ExprNode node] locals [Node.ArrayNode arrayNode]
-	: '[' expr+=expression (',' expr+=expression)* ']' 
-		{	$arrayNode = new Node.ArrayNode();
+	: LeftBracket expr+=expression (',' expr+=expression)* RightBracket
+		{	$arrayNode = new Node.ArrayNode($LeftBracket);
 			for(int i = 0; i < $expr.size(); i++) {
 				$arrayNode.addNode($expr.get(i).node);
 			}
@@ -419,9 +419,9 @@ arrayLiteral returns [Node.ExprNode node] locals [Node.ArrayNode arrayNode]
 	;
 
 mapLiteral returns [Node.ExprNode node] locals [Node.MapNode mapNode]
-	: '{' entrys+=mapEntry (',' entrys+=mapEntry)* '}'
+	: LeftBrace entrys+=mapEntry (',' entrys+=mapEntry)* RightBrace
 		{
-			$mapNode = new Node.MapNode();
+			$mapNode = new Node.MapNode($LeftBrace);
 			for(int i = 0; i < $entrys.size(); i++) {
 				$mapNode.addEntry($entrys.get(i).entry.keyNode, $entrys.get(i).entry.valueNode);
 			}

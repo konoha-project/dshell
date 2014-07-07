@@ -16,6 +16,19 @@ import dshell.internal.type.DSType;
  */
 public abstract class TypeSymbol {
 	/**
+	 * represent type token.
+	 */
+	protected final Token token;
+
+	protected TypeSymbol(Token token) {
+		this.token = token;
+	}
+
+	public Token getToken() {
+		return this.token;
+	}
+
+	/**
 	 * TypeSymbol to Type.
 	 * called from TypeChecker
 	 * @param pool
@@ -29,11 +42,11 @@ public abstract class TypeSymbol {
 	}
 
 	public static TypeSymbol toVoid(Token token) {
-		return new VoidTypeSymbol();
+		return new VoidTypeSymbol(token);
 	}
 
 	public static TypeSymbol toVoid() {
-		return new VoidTypeSymbol();
+		return new VoidTypeSymbol(null);
 	}
 
 	public static TypeSymbol toClass(Token token) {
@@ -49,10 +62,8 @@ public abstract class TypeSymbol {
 	}
 
 	public static class PrimitiveTypeSymbol extends TypeSymbol {
-		private final Token token;
-
 		private PrimitiveTypeSymbol(Token token) {
-			this.token = token;
+			super(token);
 		}
 
 		@Override
@@ -67,6 +78,10 @@ public abstract class TypeSymbol {
 	}
 
 	public static class VoidTypeSymbol extends TypeSymbol {
+		private VoidTypeSymbol(Token token) {
+			super(token);
+		}
+
 		@Override
 		public DSType toType(TypePool pool) {
 			return TypePool.voidType;
@@ -74,10 +89,8 @@ public abstract class TypeSymbol {
 	}
 
 	public static class ClassTypeSymbol extends TypeSymbol {
-		private final Token token;
-
 		private ClassTypeSymbol(Token token) {
-			this.token = token;
+			super(token);
 		}
 
 		@Override
@@ -92,12 +105,11 @@ public abstract class TypeSymbol {
 	}
 
 	public static class FuncTypeSymbol extends TypeSymbol {
-		private final Token token;
 		private final TypeSymbol returnTypeSymbol;
 		private final TypeSymbol[] paramtypeSymbols;
 
 		private FuncTypeSymbol(Token token, TypeSymbol returnTypeSymbol, TypeSymbol[] paramTypeSymbols) {
-			this.token = token;
+			super(token);
 			this.returnTypeSymbol = returnTypeSymbol;
 			this.paramtypeSymbols = paramTypeSymbols;
 		}
@@ -119,11 +131,10 @@ public abstract class TypeSymbol {
 	}
 
 	public static class GenericTypeSymbol extends TypeSymbol {
-		private final Token token;
 		private final TypeSymbol[] typeSymbols;
 
 		private GenericTypeSymbol(Token token, TypeSymbol[] typeSymbols) {
-			this.token = token;
+			super(token);
 			this.typeSymbols = typeSymbols;
 		}
 

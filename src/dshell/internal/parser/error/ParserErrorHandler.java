@@ -1,17 +1,13 @@
 package dshell.internal.parser.error;
 
+import org.antlr.v4.runtime.BailErrorStrategy;
 import org.antlr.v4.runtime.ConsoleErrorListener;
-import org.antlr.v4.runtime.DefaultErrorStrategy;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Recognizer;
 
-public class ParserErrorHandler extends DefaultErrorStrategy {
+public class ParserErrorHandler extends BailErrorStrategy {
 	private final static ParserErrorListener listener = new ParserErrorListener();
-	@Override
-	public void recover(Parser recognizer, RecognitionException e) {
-		throw new ParserException(e);
-	}
 
 	@Override
 	public void reportError(Parser recognizer, RecognitionException e) {	//TODO: error message
