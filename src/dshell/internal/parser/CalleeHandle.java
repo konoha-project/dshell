@@ -372,6 +372,10 @@ public abstract class CalleeHandle {
 
 		@Override
 		public void callSetter(GeneratorAdapter adapter) {
+			DSType baseFieldType = this.baseHandle.fieldType;
+			if((baseFieldType instanceof ParametricType) && (this.fieldType instanceof PrimitiveType)) {
+				adapter.box(this.fieldTypeDesc);
+			}
 			this.baseHandle.callSetter(adapter);
 		}
 
@@ -504,6 +508,16 @@ public abstract class CalleeHandle {
 		return reifyType(pool, typeMap, type, elementTypeList, true);
 	}
 
+	/**
+	 * replace parametric type to actual type
+	 * @param pool
+	 * @param typeMap
+	 * @param type
+	 * @param elementTypeList
+	 * @param allowBoxing
+	 * - if true, replace to BoxedPrimitiveType.
+	 * @return
+	 */
 	private static DSType reifyType(TypePool pool, 
 			Map<String, Integer> typeMap, DSType type, List<DSType> elementTypeList, boolean allowBoxing) {
 		if(type instanceof ParametricType) {

@@ -54,7 +54,6 @@ import dshell.internal.parser.Node.WhileNode;
 import dshell.internal.parser.SymbolTable.SymbolEntry;
 import dshell.internal.parser.error.DShellErrorListener;
 import dshell.internal.parser.error.DShellErrorListener.TypeErrorKind;
-import dshell.internal.parser.error.TypeCheckException;
 import dshell.internal.type.ClassType;
 import dshell.internal.type.DSType;
 import dshell.internal.type.GenericType;
@@ -137,12 +136,28 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(requiredType.isAssignableFrom(type)) {
 			return exprNode;
 		}
-		if((requiredType instanceof BoxedPrimitiveType) && (type instanceof PrimitiveType)) {	// boxing for generic type
+
+		/**
+		 * primitive type boxing for generic type.
+		 */
+		if((requiredType instanceof BoxedPrimitiveType) && (type instanceof PrimitiveType)) {
 			if(((BoxedPrimitiveType) requiredType).isAcceptableType((PrimitiveType) type)) {
 				return CastNode.wrapPrimitive(exprNode);
 			}
+			// int to float cast and boxing
+			if(((BoxedPrimitiveType) requiredType).getUnwrappedType().equals(this.typePool.floatType) &&
+					type.equals(this.typePool.intType)) {
+				return CastNode.wrapPrimitive(CastNode.intToFloat(this.typePool, exprNode));
+			}
 		}
-		this.error.reportTypeError(exprNode, TypeErrorKind.Reuired, requiredType, type);
+
+		/**
+		 * int to float cast
+		 */
+		if(requiredType.equals(this.typePool.floatType) && type.equals(this.typePool.intType)) {
+			return CastNode.intToFloat(this.typePool, exprNode);
+		}
+		this.error.reportTypeError(exprNode, TypeErrorKind.Required, requiredType, type);
 		return null;
 	}
 
@@ -150,7 +165,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		this.checkType(this.typePool.objectType, recvNode);
 		DSType resolvedType = recvNode.getType();
 		if(!(resolvedType instanceof ClassType)) {
-			this.error.reportTypeError(recvNode, TypeErrorKind.Reuired, this.typePool.objectType, resolvedType);
+			this.error.reportTypeError(recvNode, TypeErrorKind.Required, this.typePool.objectType, resolvedType);
 			return null;
 		}
 		return (ClassType) resolvedType;
@@ -306,7 +321,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		this.checkType(firstElementNode);
 		DSType elementType = firstElementNode.getType();
 		for(int i = 1; i < elementSize; i++) {
-			this.checkType(elementType, node.getNodeList().get(i));
+			node.getNodeList().set(i, (ExprNode) this.checkType(elementType, node.getNodeList().get(i)));
 		}
 		String baseArrayName = this.typePool.baseArrayType.getTypeName();
 		List<DSType> elementTypeList = new ArrayList<>(1);
@@ -324,7 +339,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		DSType valueType = firstValueNode.getType();
 		for(int i = 0; i < entrySize; i++) {
 			this.checkType(this.typePool.stringType, node.getKeyList().get(i));
-			this.checkType(valueType, node.getValueList().get(i));
+			node.getValueList().set(i, (ExprNode) this.checkType(valueType, node.getValueList().get(i)));
 		}
 		String baseMapName = this.typePool.baseMapType.getTypeName();
 		List<DSType> valueTypeList = new ArrayList<>(1);
@@ -351,7 +366,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		String typeName = recvType.getTypeName();
 		if(!typeName.startsWith("Array<") && 
 				!typeName.startsWith("Map<") && !typeName.equals("String")) {
-			this.error.reportTypeError(node, TypeErrorKind.Reuired, "Map, Array or String type", recvType);
+			this.error.reportTypeError(node, TypeErrorKind.Required, "Map, Array or String type", recvType);
 		}
 		MethodHandle handle = recvType.lookupMethodHandle("get");
 		if(handle == null || handle.getParamTypeList().size() != 1) {
@@ -688,7 +703,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 			exceptionType = typeSymbol.toType(this.typePool);
 		}
 		if(!this.typePool.exceptionType.isAssignableFrom(exceptionType)) {
-			this.error.reportTypeError(node, TypeErrorKind.Reuired, this.typePool.exceptionType, exceptionType);
+			this.error.reportTypeError(node, TypeErrorKind.Required, this.typePool.exceptionType, exceptionType);
 		}
 		node.setExceptionType((ClassType) exceptionType);
 		/**
@@ -709,60 +724,73 @@ public class TypeChecker implements NodeVisitor<Node>{
 		return node;
 	}
 
-	/**
-	 * used for AssignNode, SuffixIncrementNode
-	 * @param leftNode
-	 * - SymbolNode, ElementGetterNode, FieldGetterNode
-	 * @return
-	 */
-	protected AssignableNode checkTypeAsAssignableNode(ExprNode leftNode) {	//FIXME: adhoc implementation
+	private void checkIsAssignable(ExprNode leftNode) {
 		if(!(leftNode instanceof AssignableNode)) {
 			this.error.reportTypeError(leftNode, TypeErrorKind.Assignable);
 		}
-
-		/**
-		 * check type assignable node.
-		 */
-		if(leftNode instanceof ElementGetterNode) {
-			ElementGetterNode getterNode = (ElementGetterNode) leftNode;
-			this.checkType(getterNode);
-			DSType recvType = getterNode.getRecvNode().getType();
-			String recvTypeName = recvType.getTypeName();
-			if(!recvTypeName.startsWith("Array<") && !recvTypeName.startsWith("Map<")) {
-				this.error.reportTypeError(getterNode, TypeErrorKind.Reuired, "require Array or Map type", recvType);
-			}
-			MethodHandle handle = recvType.lookupMethodHandle("set");
-			if(handle == null || handle.getParamTypeList().size() != 2) {
-				Utils.fatal(1, "illegal method: set");
-			}
-			this.checkType(handle.getParamTypeList().get(0), getterNode.getIndexNode());
-			getterNode.setSetterHandle(handle);
-			getterNode.setType(handle.getParamTypeList().get(1));
-		} else {
-			this.checkType(leftNode);
-		}
-
 		AssignableNode assignableNode = (AssignableNode) leftNode;
 		if(assignableNode.isReadOnly()) {
 			this.error.reportTypeError(assignableNode, TypeErrorKind.ReadOnly);
 		}
-		return assignableNode;
+	}
+
+	private Node checkTypeAsAssignToElement(AssignNode node) {
+		ElementGetterNode getterNode = (ElementGetterNode) node.getLeftNode();
+		this.checkIsAssignable(getterNode);
+
+		this.checkType(getterNode);
+		DSType recvType = getterNode.getRecvNode().getType();
+		String recvTypeName = recvType.getTypeName();
+		if(!recvTypeName.startsWith("Array<") && !recvTypeName.startsWith("Map<")) {
+			this.error.reportTypeError(getterNode, TypeErrorKind.Required, "require Array or Map type", recvType);
+		}
+		MethodHandle handle = recvType.lookupMethodHandle("set");
+		if(handle == null || handle.getParamTypeList().size() != 2) {
+			Utils.fatal(1, "illegal method: set");
+		}
+		getterNode.setSetterHandle(handle);
+
+		String op = node.getAssignOp();
+		if(op.equals("=")) {
+			node.setRightNode((ExprNode) this.checkType(handle.getParamTypeList().get(1), node.getRightNode()));
+		} else {
+			DSType leftType = getterNode.getGetterHandle().getReturnType();
+			String opPrefix = op.substring(0, op.length() - 1);
+			this.checkType(node.getRightNode());
+			DSType rightType = node.getRightNode().getType();
+			OperatorHandle opHandle = this.opTable.getOperatorHandle(opPrefix, leftType, rightType);
+			if(opHandle == null) {
+				this.error.reportTypeError(node, TypeErrorKind.BinaryOp, leftType, opPrefix, rightType);
+			}
+			if(!leftType.isAssignableFrom(opHandle.getReturnType())) {
+				this.error.reportTypeError(getterNode, TypeErrorKind.Required, leftType, opHandle.getReturnType());
+			}
+			node.setHandle(opHandle);
+		}
+		return node;
 	}
 
 	@Override
-	public Node visit(AssignNode node) {	//TODO: int to float assign
-		DSType leftType = this.checkTypeAsAssignableNode(node.getLeftNode()).getType();
-		DSType rightType = ((ExprNode) this.checkType(node.getRightNode())).getType();
+	public Node visit(AssignNode node) {
+		ExprNode leftNode = node.getLeftNode();
+		if(leftNode instanceof ElementGetterNode) {
+			return this.checkTypeAsAssignToElement(node);
+		}
 		String op = node.getAssignOp();
+		DSType leftType = ((ExprNode) this.checkType(leftNode)).getType();
+		this.checkIsAssignable(leftNode);
 		if(op.equals("=")) {
-			if(!leftType.isAssignableFrom(rightType)) {
-				this.error.reportTypeError(node, TypeErrorKind.Reuired, leftType, rightType);
-			}
+			node.setRightNode((ExprNode) this.checkType(leftType, node.getRightNode()));
 		} else {
 			String opPrefix = op.substring(0, op.length() - 1);
+			this.checkType(node.getRightNode());
+			DSType rightType = node.getRightNode().getType();
 			OperatorHandle handle = this.opTable.getOperatorHandle(opPrefix, leftType, rightType);
 			if(handle == null) {
-				//this.throwAndReportTypeError(node, "undefined self assignment: " + op);	//FIXME:
+				this.error.reportTypeError(node, TypeErrorKind.BinaryOp, leftType, opPrefix, rightType);
+			}
+			if(!leftType.isAssignableFrom(handle.getReturnType())) {
+				this.error.reportTypeError(leftNode, TypeErrorKind.Required, leftType, handle.getReturnType());
 			}
 			node.setHandle(handle);
 		}

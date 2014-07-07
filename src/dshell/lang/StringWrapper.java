@@ -3,6 +3,7 @@ package dshell.lang;
 import dshell.annotation.ArrayOp;
 import dshell.annotation.Shared;
 import dshell.annotation.SharedClass;
+import dshell.annotation.TypeAlias;
 import dshell.annotation.Wrapper;
 import dshell.annotation.ArrayOp.ArrayOpType;
 import dshell.annotation.WrapperClass;
@@ -104,6 +105,11 @@ public final class StringWrapper {
 	@Shared @Wrapper
 	public static long lastIndexOf(String recv, String str) {
 		return recv.lastIndexOf(str);
+	}
+
+	@Shared @Wrapper @TypeAlias("Array<String>")
+	public static GenericArray split(String recv, String regex) {
+		return new GenericArray(recv.split(regex));
 	}
 
 	@Shared @Wrapper

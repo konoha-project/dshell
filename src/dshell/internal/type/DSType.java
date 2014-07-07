@@ -240,6 +240,10 @@ public abstract class DSType {
 		public boolean isAcceptableType(PrimitiveType targetType) {
 			return this.type.equals(targetType);
 		}
+
+		public PrimitiveType getUnwrappedType() {
+			return this.type;
+		}
 	}
 }
 

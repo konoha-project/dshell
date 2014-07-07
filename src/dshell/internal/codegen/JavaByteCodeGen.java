@@ -628,9 +628,13 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 
 	@Override
 	public Void visit(AssignNode node) {
-		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		ExprNode leftNode = node.getLeftNode();
+		if(leftNode instanceof ElementGetterNode) {
+			this.generateAssignToElement(node);
+			return null;
+		}
 
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		/**
 		 * assign to symbol
 		 */
@@ -647,20 +651,34 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			this.generateCode(getterNode.getRecvNode());
 			this.generateRightValue(node);
 			getterNode.getHandle().callSetter(mBuilder);
-
-		/**
-		 * assign to element
-		 */
-		} else if(leftNode instanceof ElementGetterNode) {
-			ElementGetterNode getterNode = (ElementGetterNode) leftNode;
-			this.generateCode(getterNode.getRecvNode());
-			this.generateCode(getterNode.getIndexNode());
-			this.generateRightValue(node);
-			getterNode.getSetterHandle().call(mBuilder);
-		} else {
-			throw new RuntimeException("not assignable node: " + leftNode.getClass().getSimpleName());
 		}
 		return null;
+	}
+
+	private void generateAssignToElement(AssignNode node) {
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		ElementGetterNode leftNode = (ElementGetterNode) node.getLeftNode();
+		OperatorHandle handle = node.getHandle();
+		if(handle == null) {	
+			this.generateCode(leftNode.getRecvNode());
+			this.generateCode(leftNode.getIndexNode());
+			this.generateCode(node.getRightNode());
+			leftNode.getSetterHandle().call(mBuilder);
+		} else {	// self assign
+			this.generateCode(leftNode.getRecvNode());
+			mBuilder.dup();
+			this.generateCode(leftNode.getIndexNode());
+			Type indexTypeDesc = TypeUtils.toTypeDescriptor(leftNode.getIndexNode().getType());
+			if(indexTypeDesc.getSize() != 2) { 
+				mBuilder.dupX1();
+			} else {	// long or double
+				mBuilder.dup2X1();
+			}
+			leftNode.getGetterHandle().call(mBuilder);
+			this.generateCode(node.getRightNode());
+			handle.call(mBuilder);
+			leftNode.getSetterHandle().call(mBuilder);
+		}
 	}
 
 	private void generateRightValue(AssignNode node) {

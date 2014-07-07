@@ -520,7 +520,7 @@ public abstract class Node {
 		private int castOp = NOP;
 
 		public CastNode(TypeSymbol targetTypeSymbol, ExprNode exprNode) {
-			super(targetTypeSymbol.getToken());
+			super(targetTypeSymbol != null ? targetTypeSymbol.getToken() : null);
 			this.targetTypeSymbol = targetTypeSymbol;
 			this.exprNode = this.setExprNodeAsChild(exprNode);
 		}
@@ -564,6 +564,15 @@ public abstract class Node {
 			return castNode;
 		}
 
+		public static CastNode intToFloat(TypePool pool, ExprNode exprNode) {
+			assert exprNode.getType() instanceof PrimitiveType;
+			Node parentNode = exprNode.getParentNode();
+			CastNode castNode = new CastNode(null, exprNode);
+			castNode.setParentNode(parentNode);
+			castNode.resolveCastOp(INT_2_FLOAT);
+			castNode.setType(pool.floatType);
+			return castNode;
+		}
 		@Override
 		public <T> T accept(NodeVisitor<T> visitor) {
 			return visitor.visit(this);
@@ -1376,7 +1385,11 @@ public abstract class Node {
 		 * requires SymbolNode, ElementGetterNode or FieldGetterNode.
 		 */
 		private final ExprNode leftNode;
-		private final ExprNode rightNode;
+
+		/**
+		 * may be replaced due to type cast.
+		 */
+		private ExprNode rightNode;
 
 		public AssignNode(Token token, ExprNode leftNode, ExprNode rightNode) {
 			super(token);
@@ -1391,10 +1404,7 @@ public abstract class Node {
 		 * @param leftNode
 		 */
 		public AssignNode(ExprNode leftNode, Token token) {
-			super(token);
-			this.assignOp = this.token.getText();
-			this.leftNode = this.setExprNodeAsChild(leftNode);
-			this.rightNode = this.setExprNodeAsChild(new IntValueNode(1));
+			this(token, leftNode, new IntValueNode(1));
 		}
 
 		public String getAssignOp() {
@@ -1407,6 +1417,10 @@ public abstract class Node {
 
 		public ExprNode getRightNode() {
 			return this.rightNode;
+		}
+
+		public void setRightNode(ExprNode rightNode) {
+			this.rightNode = rightNode;
 		}
 
 		public void setHandle(OperatorHandle handle) {

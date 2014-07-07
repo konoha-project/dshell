@@ -5,7 +5,7 @@ import dshell.internal.parser.Node;
 public class DShellErrorListener {
 	public static enum TypeErrorKind {
 		Unresolved     ("having unresolved type"),
-		Reuired        ("require %s, but is %s"),
+		Required        ("require %s, but is %s"),
 		DefinedSymbol  ("already defined symbol: %s"),
 		InsideLoop     ("only available inside loop statement"),
 		UnfoundReturn  ("not found return statement"),
