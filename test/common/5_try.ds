@@ -4,7 +4,7 @@ try {
 	assert(false)
 } catch(e : DShellException) {
 	assert(false)
-} catch(e : FileNotFoundException) {
+} catch(e : OutOfIndexException) {
 	assert(false)
 } catch(e : Exception) {
 	assert(false)

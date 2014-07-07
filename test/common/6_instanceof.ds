@@ -30,16 +30,15 @@ var f = function(a : int, b : Exception) {
 	throw b
 }
 
-assert(f instanceof Func<int, Exception, void>)
+assert(f instanceof Func<void, [int, Exception]>)
 
 # generic type
 var g1 = [1, 2, 3]
 var g2 = ["a", "b", "c"]
 var g3 = [new Hoge(), new Huga()]
-assert(g1 instanceof int[])
-assert(g2 instanceof String[])
-assert(g3 instanceof Hoge[])
-assert(!(g3 instanceof Object[]))
+assert(g1 instanceof Array<int>)
+assert(g2 instanceof Array<String>)
+assert(g3 instanceof Array<Hoge>)
 
 var g4 = {"a" : 1, "b" : 2}
 var g5 = {"a" : "aa", "b" : "bb"}

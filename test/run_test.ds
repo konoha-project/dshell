@@ -2,6 +2,8 @@ import env TEST_DIR
 import command echo
 
 let LOG = "./test-result.log"
+let jar = "./test-dshell.jar"
+let JVM_OPTION = "-Xbootclasspath/a:${jar} -XX:+TieredCompilation -XX:TieredStopAtLevel=1 testable.DShellTest"
 
 function test(test_dir : String, test_file : String, option : String) {
 	import command java
@@ -11,7 +13,7 @@ function test(test_dir : String, test_file : String, option : String) {
 		mode = "[i]"
 	}
 	echo "====== Test: ${mode} ${test_file} ======" &>> $LOG
-	let result : boolean = java -jar -ea test-dshell.jar $option $test_dir/$test_file &>> $LOG
+	let result : boolean = java -ea $(echo $JVM_OPTION) $option $test_dir/$test_file &>> $LOG
 	var prefix = "[fail]:"
 	if(result) {
 		prefix = "[pass]:"

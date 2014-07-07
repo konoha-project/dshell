@@ -1,7 +1,7 @@
 class Person {
 	var name = "naruto"
 	var age = 17
-	var isChild: Func<Person, int, boolean>
+	var isChild: Func<boolean, [Person, int]>
 }
 
 function Person(this : Person, name: String, age : int) {
