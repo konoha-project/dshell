@@ -50,7 +50,6 @@ import dshell.internal.parser.Node.InstanceofNode;
 import dshell.internal.parser.Node.IntValueNode;
 import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.MapNode;
-import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
@@ -196,12 +195,6 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(StringValueNode node) {
 		this.getCurrentMethodBuilder().push(node.getValue());
-		return null;
-	}
-
-	@Override
-	public Void visit(NullNode node) {
-		this.getCurrentMethodBuilder().visitInsn(ACONST_NULL);
 		return null;
 	}
 

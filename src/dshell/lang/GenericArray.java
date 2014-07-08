@@ -153,9 +153,7 @@ public class GenericArray implements Cloneable {
 	@Shared
 	public void trim() {
 		if(this.size > 0) {
-			Object[] newValues = new Object[this.size];
-			System.arraycopy(this.values, 0, newValues, 0, this.size);
-			this.values = newValues;
+			Arrays.copyOf(this.values, this.size);
 		}
 	}
 

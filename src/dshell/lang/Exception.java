@@ -16,7 +16,7 @@ public class Exception extends RuntimeException {
 
 	@Shared
 	public Exception() {
-		super();
+		super("");
 	}
 
 	@Shared

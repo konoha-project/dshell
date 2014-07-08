@@ -42,7 +42,6 @@ import dshell.internal.parser.Node.IntValueNode;
 import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.LoopNode;
 import dshell.internal.parser.Node.MapNode;
-import dshell.internal.parser.Node.NullNode;
 import dshell.internal.parser.Node.OperatorCallNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
@@ -305,12 +304,6 @@ public class TypeChecker implements NodeVisitor<Node>{
 	@Override
 	public Node visit(StringValueNode node) {
 		node.setType(this.typePool.stringType);
-		return node;
-	}
-
-	@Override
-	public Node visit(NullNode node) {	//TODO: future may be used.
-		this.error.reportTypeError(node, TypeErrorKind.Unimplemented, node.getClass().getSimpleName());
 		return node;
 	}
 

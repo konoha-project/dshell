@@ -272,22 +272,6 @@ public abstract class Node {
 	}
 
 	/**
-	 * Represents null value.
-	 * @author skgchxngsxyz-osx
-	 *
-	 */
-	public static class NullNode extends ExprNode {
-		public NullNode(Token token) {
-			super(token);
-		}
-
-		@Override
-		public <T> T accept(NodeVisitor<T> visitor) {
-			return visitor.visit(this);
-		}
-	}
-
-	/**
 	 * This node represents array literal.
 	 * @author skgchxngsxyz-osx
 	 *

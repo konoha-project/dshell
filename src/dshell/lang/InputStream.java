@@ -14,6 +14,9 @@ import dshell.annotation.SharedClass;
  */
 @SharedClass
 public class InputStream {
+	/**
+	 * not null
+	 */
 	private final String streamName;
 	private final BufferedReader reader;
 	private final boolean closeable;
@@ -51,11 +54,12 @@ public class InputStream {
 
 	@Shared
 	public String readLine() {
+		String line = null;
 		try {
-			return this.reader.readLine();
+			line = this.reader.readLine();
 		} catch(IOException e) {
 			System.err.println(e.getMessage());
 		}
-		return null;
+		return line == null ? "" : line;
 	}
 }

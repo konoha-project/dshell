@@ -190,11 +190,6 @@ EscapeSequence	// TODO: unicode escape
 	: '\\' [btnfr"'\\]
 	;
 
-// null literal
-NullLiteral
-	: 'null'
-	;
-
 // symbol , class and command name
 CommandName	//FIXME:
 	: ~[\n\t\r\u0020|#&$'"\\;<>()]+ {cmdScope.isCommand(getText())}? -> mode(CMD_ARG)

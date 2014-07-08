@@ -50,6 +50,7 @@ public class NativeException extends Exception {
 	@Shared
 	@Override
 	public String getMessage() {
-		return this.internalException.getMessage();
+		String message = this.internalException.getMessage();
+		return message == null ? "" : message;
 	}
 }

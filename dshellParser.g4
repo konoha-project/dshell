@@ -403,7 +403,6 @@ literal returns [Node.ExprNode node]
 	| FloatLiteral {$node = new Node.FloatValueNode($FloatLiteral);}
 	| BooleanLiteral {$node = new Node.BooleanValueNode($BooleanLiteral);}
 	| StringLiteral {$node = new Node.StringValueNode($StringLiteral);}
-	| NullLiteral {$node = new Node.NullNode($NullLiteral);}
 	| arrayLiteral {$node = $arrayLiteral.node;}
 	| mapLiteral {$node = $mapLiteral.node;}
 	;
