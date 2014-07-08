@@ -9,11 +9,13 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.GeneratorAdapter;
 import org.objectweb.asm.commons.Method;
 
 import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.lib.GlobalVariableTable;
+import dshell.internal.lib.Utils;
 import dshell.internal.parser.CalleeHandle.MethodHandle;
 import dshell.internal.parser.CalleeHandle.StaticFunctionHandle;
 import dshell.internal.parser.TypeUtils;
@@ -79,7 +81,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 	 */
 	public MethodBuilder createNewMethodBuilder(MethodHandle handle) {
 		if(handle == null) {
-			org.objectweb.asm.commons.Method methodDesc = org.objectweb.asm.commons.Method.getMethod("void invoke()");
+			Method methodDesc = Method.getMethod("void invoke()");
 			return new MethodBuilder(ACC_PUBLIC | ACC_FINAL | ACC_STATIC, methodDesc, null, null, this);
 		}
 		if(handle instanceof StaticFunctionHandle) {
@@ -192,7 +194,23 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			this.varScopes.addVarEntry(argName, argType);
 		}
 
-		public void createNewLocalVarAndStoreValue(String varName, DSType type) {
+		/**
+		 * create new global variable and store value directly to global var table.
+		 * @param varName
+		 * @param type
+		 * - must not be primitive type.
+		 * @param value
+		 * - only support object value.
+		 */
+		public void createNewGlobalVarAndStoreValue(String varName, DSType type, Object value) {
+			VarEntry entry = this.varScopes.addVarEntry(varName, type);
+			if(!entry.isGlobaVar()) {
+				Utils.fatal(1, "must be global variable: " + varName + " : " + type);
+			}
+			GlobalVariableTable.objectVarTable[entry.getVarIndex()] = value;
+		}
+
+		public void createNewVarAndStoreValue(String varName, DSType type) {
 			VarEntry entry = this.varScopes.addVarEntry(varName, type);
 			// global variable
 			if(entry.isGlobaVar()) {
@@ -205,7 +223,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			return;
 		}
 
-		public void storeValueToLocalVar(String varName, DSType type) {
+		public void storeValueToVar(String varName, DSType type) {
 			VarEntry entry = this.varScopes.getVarEntry(varName);
 			assert entry != null : "undefined variable: " + varName;
 			// global variable
@@ -218,7 +236,7 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			this.visitVarInsn(typeDesc.getOpcode(ISTORE), entry.getVarIndex());
 		}
 
-		public void loadValueFromLocalVar(String varName, DSType type) {
+		public void loadValueFromVar(String varName, DSType type) {
 			VarEntry entry = this.varScopes.getVarEntry(varName);
 			assert entry != null : "undefined variable: " + varName;
 			// global variable
@@ -232,32 +250,32 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		}
 
 		private void storeValueToGlobal(int index, DSType type) {
-			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
+			Type typeDesc = TypeUtils.toTypeDescriptor(type);
+			Type ownerTypeDesc = Type.getType(GlobalVariableTable.class);
 			switch(typeDesc.getSort()) {
-			case org.objectweb.asm.Type.LONG:
-				this.getStatic(ownerTypeDesc, "longVarTable", org.objectweb.asm.Type.getType(long[].class));
+			case Type.LONG:
+				this.getStatic(ownerTypeDesc, "longVarTable", Type.getType(long[].class));
 				this.push(index);
 				this.dup2X2();
 				this.pop2();
 				this.arrayStore(typeDesc);
 				break;
-			case org.objectweb.asm.Type.DOUBLE:
-				this.getStatic(ownerTypeDesc, "doubleVarTable", org.objectweb.asm.Type.getType(double[].class));
+			case Type.DOUBLE:
+				this.getStatic(ownerTypeDesc, "doubleVarTable", Type.getType(double[].class));
 				this.push(index);
 				this.dup2X2();
 				this.pop2();
 				this.arrayStore(typeDesc);
 				break;
-			case org.objectweb.asm.Type.BOOLEAN:
-				this.getStatic(ownerTypeDesc, "booleanVarTable", org.objectweb.asm.Type.getType(boolean[].class));
+			case Type.BOOLEAN:
+				this.getStatic(ownerTypeDesc, "booleanVarTable", Type.getType(boolean[].class));
 				this.swap();
 				this.push(index);
 				this.swap();
 				this.arrayStore(typeDesc);
 				break;
-			case org.objectweb.asm.Type.OBJECT:
-				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
+			case Type.OBJECT:
+				this.getStatic(ownerTypeDesc, "objectVarTable", Type.getType(Object[].class));
 				this.swap();
 				this.push(index);
 				this.swap();
@@ -269,28 +287,28 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 		}
 
 		private void loadValueFromGlobal(int index, DSType type) {
-			org.objectweb.asm.Type typeDesc = TypeUtils.toTypeDescriptor(type);
-			org.objectweb.asm.Type ownerTypeDesc = org.objectweb.asm.Type.getType(GlobalVariableTable.class);
+			Type typeDesc = TypeUtils.toTypeDescriptor(type);
+			Type ownerTypeDesc = Type.getType(GlobalVariableTable.class);
 			switch(typeDesc.getSort()) {
-			case org.objectweb.asm.Type.LONG:
-				this.getStatic(ownerTypeDesc, "longVarTable", org.objectweb.asm.Type.getType(long[].class));
+			case Type.LONG:
+				this.getStatic(ownerTypeDesc, "longVarTable", Type.getType(long[].class));
 				this.push(index);
 				this.arrayLoad(typeDesc);
 				break;
-			case org.objectweb.asm.Type.DOUBLE:
-				this.getStatic(ownerTypeDesc, "doubleVarTable", org.objectweb.asm.Type.getType(double[].class));
+			case Type.DOUBLE:
+				this.getStatic(ownerTypeDesc, "doubleVarTable", Type.getType(double[].class));
 				this.push(index);
 				this.arrayLoad(typeDesc);
 				break;
-			case org.objectweb.asm.Type.BOOLEAN:
-				this.getStatic(ownerTypeDesc, "booleanVarTable", org.objectweb.asm.Type.getType(boolean[].class));
+			case Type.BOOLEAN:
+				this.getStatic(ownerTypeDesc, "booleanVarTable", Type.getType(boolean[].class));
 				this.push(index);
 				this.arrayLoad(typeDesc);
 				break;
-			case org.objectweb.asm.Type.OBJECT:
-				this.getStatic(ownerTypeDesc, "objectVarTable", org.objectweb.asm.Type.getType(Object[].class));
+			case Type.OBJECT:
+				this.getStatic(ownerTypeDesc, "objectVarTable", Type.getType(Object[].class));
 				this.push(index);
-				this.arrayLoad(org.objectweb.asm.Type.getType(Object.class));
+				this.arrayLoad(Type.getType(Object.class));
 				this.visitTypeInsn(CHECKCAST, typeDesc.getInternalName());
 				break;
 			default:
@@ -503,16 +521,16 @@ public class ClassBuilder extends ClassWriter implements Opcodes {
 			assert !this.globalVarEntryMap.containsKey(varName) : varName + " is already defined";
 			int varIndex = -1;
 			switch(TypeUtils.toTypeDescriptor(type).getSort()) {
-			case org.objectweb.asm.Type.LONG:
+			case Type.LONG:
 				varIndex = GlobalVariableTable.reserveLongVarTable();
 				break;
-			case org.objectweb.asm.Type.DOUBLE:
+			case Type.DOUBLE:
 				varIndex = GlobalVariableTable.reserveDoubleVarTable();
 				break;
-			case org.objectweb.asm.Type.BOOLEAN:
+			case Type.BOOLEAN:
 				varIndex = GlobalVariableTable.reserveBooleanVarTable();
 				break;
-			case org.objectweb.asm.Type.OBJECT:
+			case Type.OBJECT:
 				varIndex = GlobalVariableTable.reserveObjectVarTable();
 				break;
 			default:

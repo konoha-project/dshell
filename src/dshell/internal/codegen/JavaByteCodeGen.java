@@ -43,6 +43,7 @@ import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
 import dshell.internal.parser.Node.FunctionNode;
+import dshell.internal.parser.Node.GlobalVarNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
@@ -270,7 +271,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			return null;
 		}
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
-		mBuilder.loadValueFromLocalVar(node.getSymbolName(), node.getType());
+		mBuilder.loadValueFromVar(node.getSymbolName(), node.getType());
 		return null;
 	}
 
@@ -474,7 +475,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.push(node.getEnvName());
 		this.generateCode(node.getExprNode());
 		node.getHandle().call(mBuilder);
-		mBuilder.createNewLocalVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
+		mBuilder.createNewVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
 		return null;
 	}
 
@@ -483,7 +484,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		mBuilder.push(node.getEnvName());
 		node.getHandle().call(mBuilder);
-		mBuilder.createNewLocalVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
+		mBuilder.createNewVarAndStoreValue(node.getEnvName(), node.getHandle().getReturnType());
 		return null;
 	}
 
@@ -611,7 +612,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		mBuilder.createNewLocalScope();
 		DSType exceptionType = node.getExceptionType();
 		mBuilder.catchException(labels.startLabel, labels.endLabel, TypeUtils.toTypeDescriptor(exceptionType));
-		mBuilder.createNewLocalVarAndStoreValue(node.getExceptionVarName(), exceptionType);
+		mBuilder.createNewVarAndStoreValue(node.getExceptionVarName(), exceptionType);
 		this.visitBlockWithCurrentScope(node.getCatchBlockNode());
 		mBuilder.goTo(labels.finallyLabel);
 		mBuilder.removeCurrentLocalScope();
@@ -622,7 +623,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	public Void visit(VarDeclNode node) {
 		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
 		this.generateCode(node.getInitValueNode());
-		mBuilder.createNewLocalVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
+		mBuilder.createNewVarAndStoreValue(node.getVarName(), node.getInitValueNode().getType());
 		return null;
 	}
 
@@ -641,7 +642,7 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		if(leftNode instanceof SymbolNode) {
 			SymbolNode symbolNode = (SymbolNode) leftNode;
 			this.generateRightValue(node);
-			mBuilder.storeValueToLocalVar(symbolNode.getSymbolName(), symbolNode.getType());
+			mBuilder.storeValueToVar(symbolNode.getSymbolName(), symbolNode.getType());
 
 		/**
 		 * assign to field
@@ -755,6 +756,14 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	@Override
 	public Void visit(ConstructorNode node) {	//TODO:
 		Utils.fatal(1, "unimplemented: " + node);
+		return null;
+	}
+
+	@Override
+	public Void visit(GlobalVarNode node) {
+		String varName = node.getVarName();
+		DSType valueType = node.getValueType();
+		this.getCurrentMethodBuilder().createNewGlobalVarAndStoreValue(varName, valueType, node.getValue());
 		return null;
 	}
 

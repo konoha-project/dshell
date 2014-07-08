@@ -1614,6 +1614,46 @@ public abstract class Node {
 	}
 
 	/**
+	 * used for the initialization of builtin global variable.
+	 * @author skgchxngsxyz-osx
+	 *
+	 */
+	public static class GlobalVarNode extends Node {
+		private final String varName;
+		private final String typeName;
+		private final Object value;
+		private DSType valueType;
+
+		public GlobalVarNode(String varName, String typeName, Object value) {
+			super(null);
+			this.varName = varName;
+			this.typeName = typeName;
+			this.value = value;
+		}
+
+		public void resolveValueType(TypePool pool) {
+			this.valueType = pool.parseTypeName(this.typeName);
+		}
+
+		public String getVarName() {
+			return this.varName;
+		}
+
+		public Object getValue() {
+			return this.value;
+		}
+
+		public DSType getValueType() {
+			return this.valueType;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
+	}
+
+	/**
 	 * Represents empty expression. used for for statement and return statement.
 	 * it is always void type
 	 * It is ignored in code generation.

@@ -1,8 +1,8 @@
-stdout.writeLine("hello stdout1")
-stderr.writeLine("hello stderr!")
+STDOUT.writeLine("hello stdout1")
+STDERR.writeLine("hello stderr!")
 
 var a = "hello "
-stdout.writeLine(a + "stdout2")
-stderr.writeLine(a + "stderr2")
+STDOUT.writeLine(a + "stdout2")
+STDERR.writeLine(a + "stderr2")
 
 # always passed

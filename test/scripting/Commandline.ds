@@ -1,4 +1,4 @@
-import command basename
+import-command basename
 
 function func() {
   for(arg in ARGV) {

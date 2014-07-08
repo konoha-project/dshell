@@ -125,6 +125,9 @@ public class TypePool {
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_DShellException(this));
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_NullException(this));
 
+		this.setTypeAndThrowIfDefined(TypeInitializer.init_InputStream(this));
+		this.setTypeAndThrowIfDefined(TypeInitializer.init_OutputStream(this));
+
 		this.boxedIntType     = new BoxedPrimitiveType(this.intType);
 		this.boxedFloaType    = new BoxedPrimitiveType(this.floatType);
 		this.boxedBooleanType = new BoxedPrimitiveType(this.booleanType);

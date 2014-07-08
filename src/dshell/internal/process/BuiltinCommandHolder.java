@@ -7,7 +7,6 @@ import dshell.internal.lib.CommandContext;
 import dshell.internal.lib.CommandRunner;
 import dshell.internal.lib.ExecutableAsCommand;
 import dshell.internal.lib.RuntimeContext;
-import dshell.internal.lib.StreamUtils;
 
 /**
  * contains builtin command object.
@@ -42,7 +41,7 @@ public class BuiltinCommandHolder {
 	}
 
 	public static void printArgumentErrorAndSetStatus(BuiltinSymbol symbol, CommandContext context) {
-		StreamUtils.OutputStream output = context.getStderr();
+		dshell.lang.OutputStream output = context.getStderr();
 		output.writeLine("-dshell: " + symbol.name() + ": invalid argument");
 		output.writeLine(symbol.name() + ": " + symbol.getUsage());
 		context.setExistStatus(1);
@@ -88,8 +87,8 @@ public class BuiltinCommandHolder {
 	public static class Command_help implements ExecutableAsCommand {
 		@Override
 		public void execute(CommandContext context, List<String> argList) {
-			StreamUtils.OutputStream stdout = context.getStdout();
-			StreamUtils.OutputStream stderr = context.getStderr();
+			dshell.lang.OutputStream stdout = context.getStdout();
+			dshell.lang.OutputStream stderr = context.getStderr();
 			int size = argList.size();
 			boolean foundValidCommand = false;
 			boolean isShortHelp = false;
@@ -123,14 +122,14 @@ public class BuiltinCommandHolder {
 			context.setExistStatus(foundValidCommand ? 0 : 1);
 		}
 
-		private void printAllCommandUsage(StreamUtils.OutputStream stdout) {
+		private void printAllCommandUsage(dshell.lang.OutputStream stdout) {
 			BuiltinSymbol[] symbols = BuiltinSymbol.values();
 			for(BuiltinSymbol symbol : symbols) {
 				stdout.writeLine(symbol.getUsage());
 			}
 		}
 
-		private void printNotMatchedMessage(String commandSymbol, StreamUtils.OutputStream stderr) {
+		private void printNotMatchedMessage(String commandSymbol, dshell.lang.OutputStream stderr) {
 			stderr.writeLine("-dshell: help: not no help topics match `" + commandSymbol + "'.  Try `help help'.");
 		}
 	}
@@ -152,7 +151,7 @@ public class BuiltinCommandHolder {
 			context.setExistStatus(0);
 		}
 
-		private void log(String value, StreamUtils.OutputStream stdout) {
+		private void log(String value, dshell.lang.OutputStream stdout) {
 			stdout.writeLine(value);
 			RuntimeContext.getInstance().getLogger().warn(value);
 		}

@@ -15,6 +15,7 @@ import dshell.internal.lib.DShellClassLoader;
 import dshell.internal.lib.RuntimeContext;
 import dshell.internal.lib.Utils;
 import dshell.internal.parser.CommandScope;
+import dshell.internal.parser.Node;
 import dshell.internal.parser.TypeChecker;
 import dshell.internal.parser.dshellLexer;
 import dshell.internal.parser.dshellParser;
@@ -24,6 +25,9 @@ import dshell.internal.parser.error.ParserErrorHandler;
 import dshell.internal.parser.error.TypeCheckException;
 import dshell.internal.parser.error.ParserErrorHandler.ParserException;
 import dshell.internal.type.TypePool;
+import dshell.lang.GenericArray;
+import dshell.lang.InputStream;
+import dshell.lang.OutputStream;
 
 public class DShellEngineFactory implements EngineFactory {
 	@Override
@@ -48,6 +52,18 @@ public class DShellEngineFactory implements EngineFactory {
 			this.checker = new TypeChecker(new TypePool(this.classLoader));
 			this.codeGen = new JavaByteCodeGen(this.classLoader);
 			this.config = new EngineConfig();
+
+			this.initGlobalVar();
+		}
+
+		protected void initGlobalVar() {
+			RootNode rootNode = new RootNode(null);
+			rootNode.addNode(new Node.GlobalVarNode("STDIN", "InputStream", InputStream.createStdin()));
+			rootNode.addNode(new Node.GlobalVarNode("STDOUT", "OutputStream", OutputStream.createStdout()));
+			rootNode.addNode(new Node.GlobalVarNode("STDERR", "OutputStream", OutputStream.createStderr()));
+
+			RootNode checkedNode = this.checker.checkTypeRootNode(rootNode);
+			this.codeGen.generateTopLevelClass(checkedNode, false);
 		}
 
 		@Override
@@ -57,8 +73,12 @@ public class DShellEngineFactory implements EngineFactory {
 		}
 
 		@Override
-		public void setArg(String[] scriptArgs) {	//TODO:
-			//throw new RuntimeException("unimplemented");
+		public void setArg(String[] scriptArgs) {
+			RootNode rootNode = new RootNode(null);
+			rootNode.addNode(new Node.GlobalVarNode("ARGV", "Array<String>", new GenericArray(scriptArgs)));
+
+			RootNode checkedNode = this.checker.checkTypeRootNode(rootNode);
+			this.codeGen.generateTopLevelClass(checkedNode, false);
 		}
 
 		@Override

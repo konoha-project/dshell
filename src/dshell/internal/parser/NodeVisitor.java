@@ -23,6 +23,7 @@ import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
 import dshell.internal.parser.Node.FunctionNode;
+import dshell.internal.parser.Node.GlobalVarNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
@@ -79,5 +80,6 @@ public interface NodeVisitor <T> {
 	public T visit(FunctionNode         node);
 	public T visit(ClassNode            node);
 	public T visit(ConstructorNode      node);
+	public T visit(GlobalVarNode        node);
 	public T visit(EmptyBlockNode       node);
 }

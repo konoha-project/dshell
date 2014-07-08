@@ -31,7 +31,7 @@ public class CommandRunner extends AbstractProcessContext {
 
 	@Override
 	public AbstractProcessContext start() {
-		this.context = new CommandContext(StreamUtils.createStdin(), StreamUtils.createStdout(), StreamUtils.createStderr());
+		this.context = new CommandContext(dshell.lang.InputStream.createStdin(), dshell.lang.OutputStream.createStdout(), dshell.lang.OutputStream.createStderr());
 		this.runner = new Thread() {
 			@Override public void run() {
 				executor.execute(context, argList);

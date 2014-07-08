@@ -34,6 +34,7 @@ import dshell.internal.parser.Node.FloatValueNode;
 import dshell.internal.parser.Node.ForInNode;
 import dshell.internal.parser.Node.ForNode;
 import dshell.internal.parser.Node.FunctionNode;
+import dshell.internal.parser.Node.GlobalVarNode;
 import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.ImportEnvNode;
 import dshell.internal.parser.Node.InstanceofNode;
@@ -844,6 +845,13 @@ public class TypeChecker implements NodeVisitor<Node>{
 		// TODO 
 		this.error.reportTypeError(node, TypeErrorKind.Unimplemented, node.getClass().getSimpleName());
 		return null;
+	}
+
+	@Override
+	public Node visit(GlobalVarNode node) {
+		node.resolveValueType(this.typePool);
+		this.addEntryAndThrowIfDefined(node, node.getVarName(), node.getValueType(), true);
+		return node;
 	}
 
 	@Override
