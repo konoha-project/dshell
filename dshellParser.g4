@@ -243,11 +243,14 @@ foreachStatement returns [Node node]
 	;
 
 ifStatement returns [Node node] locals [ParserUtils.IfElseBlock ifElseBlock]
-	: If '(' expression ')' b+=block (Else b+=block)?
+	: If '(' expression ')' b+=block (Else ei+=ifStatement | Else b+=block)?
 		{
 			$ifElseBlock = new ParserUtils.IfElseBlock($b.get(0).node);
 			if($b.size() > 1) {
 				$ifElseBlock.setElseBlockNode($b.get(1).node);
+			}
+			if($ei.size() > 0) {
+				$ifElseBlock.setElseBlockNode($ei.get(0).node);
 			}
 			$node = new Node.IfNode($If, $expression.node, $ifElseBlock);
 		}

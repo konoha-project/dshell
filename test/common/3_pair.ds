@@ -1,0 +1,8 @@
+var a = (12, "hello")
+assert(a.getLeft() == 12)
+assert(a.getRight() == "hello")
+a.setLeft(100)
+assert(a.getLeft() == 100)
+a.setRight("world")
+assert(a.getRight() == "world")
+

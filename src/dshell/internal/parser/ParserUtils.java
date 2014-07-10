@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.Token;
 
 import dshell.internal.parser.Node.BlockNode;
 import dshell.internal.parser.Node.ExprNode;
+import dshell.internal.parser.Node.IfNode;
 import dshell.internal.parser.Node.SymbolNode;
 import dshell.internal.parser.TypeSymbol.VoidTypeSymbol;
 
@@ -59,6 +60,12 @@ public class ParserUtils {
 		}
 
 		public void setElseBlockNode(Node node) {
+			if(node instanceof IfNode) {
+				Block block = new Block();
+				block.addNode(node);
+				this.elseBlockNode = new BlockNode(block);
+				return;
+			}
 			this.elseBlockNode = (BlockNode) node;
 		}
 

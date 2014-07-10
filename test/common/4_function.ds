@@ -1,5 +1,5 @@
 function f1() {
-	log "hello"
+	STDOUT.writeLine("hello")
 }
 
 function f2(a : int, b : int) : boolean {
