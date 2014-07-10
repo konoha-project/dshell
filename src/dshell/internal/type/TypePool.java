@@ -80,6 +80,7 @@ public class TypePool {
 
 	public final GenericBaseType baseArrayType;
 	public final GenericBaseType baseMapType;
+	public final GenericBaseType basePairType;
 
 	public final FunctionBaseType baseFuncType;
 
@@ -112,6 +113,7 @@ public class TypePool {
 		this.exceptionType       = (ClassType) this.setTypeAndThrowIfDefined(TypeInitializer.init_Exception(this));
 		this.baseArrayType = (GenericBaseType) this.setTypeAndThrowIfDefined(TypeInitializer.init_GenericArray(this));
 		this.baseMapType   = (GenericBaseType) this.setTypeAndThrowIfDefined(TypeInitializer.init_GenericMap(this));
+		this.basePairType  = (GenericBaseType) this.setTypeAndThrowIfDefined(TypeInitializer.init_GenericPair(this));
 		this.baseFuncType = (FunctionBaseType) this.setTypeAndThrowIfDefined(new FunctionBaseType());
 
 		this.setTypeAndThrowIfDefined(TypeInitializer.init_IntArray(this));

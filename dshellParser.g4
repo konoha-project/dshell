@@ -405,6 +405,7 @@ literal returns [Node.ExprNode node]
 	| StringLiteral {$node = new Node.StringValueNode($StringLiteral);}
 	| arrayLiteral {$node = $arrayLiteral.node;}
 	| mapLiteral {$node = $mapLiteral.node;}
+	| pairLiteral {$node = $pairLiteral.node;}
 	;
 
 arrayLiteral returns [Node.ExprNode node] locals [Node.ArrayNode arrayNode]
@@ -430,6 +431,13 @@ mapLiteral returns [Node.ExprNode node] locals [Node.MapNode mapNode]
 
 mapEntry returns [ParserUtils.MapEntry entry]
 	: key=expression ':' value=expression {$entry = new ParserUtils.MapEntry($key.node, $value.node);}
+	;
+
+pairLiteral returns [Node.ExprNode node]
+	: LeftParenthese left=expression ',' right=expression RightParenthese
+		{
+			$node = new Node.PairNode($LeftParenthese, $left.node, $right.node);
+		}
 	;
 
 arguments returns [ParserUtils.Arguments args]

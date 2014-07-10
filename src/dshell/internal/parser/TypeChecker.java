@@ -43,6 +43,7 @@ import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.LoopNode;
 import dshell.internal.parser.Node.MapNode;
 import dshell.internal.parser.Node.OperatorCallNode;
+import dshell.internal.parser.Node.PairNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.Node.StringValueNode;
@@ -339,6 +340,18 @@ public class TypeChecker implements NodeVisitor<Node>{
 		List<DSType> valueTypeList = new ArrayList<>(1);
 		valueTypeList.add(valueType);
 		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(baseMapName, valueTypeList));
+		return node;
+	}
+
+	@Override
+	public Node visit(PairNode node) {
+		DSType leftType = ((ExprNode)this.checkType(node.getLeftNode())).getType();
+		DSType rightType = ((ExprNode)this.checkType(node.getRightNode())).getType();
+		List<DSType> elementTypeList = new ArrayList<>(2);
+		elementTypeList.add(leftType);
+		elementTypeList.add(rightType);
+		String basePairName = this.typePool.basePairType.getTypeName();
+		node.setType(this.typePool.createAndGetReifiedTypeIfUndefined(basePairName, elementTypeList));
 		return node;
 	}
 

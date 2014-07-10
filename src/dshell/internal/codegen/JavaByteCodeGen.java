@@ -51,6 +51,7 @@ import dshell.internal.parser.Node.IntValueNode;
 import dshell.internal.parser.Node.ApplyNode;
 import dshell.internal.parser.Node.MapNode;
 import dshell.internal.parser.Node.OperatorCallNode;
+import dshell.internal.parser.Node.PairNode;
 import dshell.internal.parser.Node.ReturnNode;
 import dshell.internal.parser.Node.RootNode;
 import dshell.internal.parser.Node.StringValueNode;
@@ -252,6 +253,23 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 			adapter.arrayStore(valueTypeDesc);
 		}
 		adapter.invokeConstructor(mapClassDesc, TypeUtils.toMapConstructorDescriptor());
+		return null;
+	}
+
+	@Override
+	public Void visit(PairNode node) {
+		Type leftTypeDesc = TypeUtils.toTypeDescriptor(node.getLeftNode().getType());
+		Type rightTypeDesc = TypeUtils.toTypeDescriptor(node.getRightNode().getType());
+		Type pairClassDesc = TypeUtils.toTypeDescriptor(node.getType().getInternalName());
+
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		mBuilder.newInstance(pairClassDesc);
+		mBuilder.dup();
+		this.generateCode(node.getLeftNode());
+		mBuilder.box(leftTypeDesc);
+		this.generateCode(node.getRightNode());
+		mBuilder.box(rightTypeDesc);
+		mBuilder.invokeConstructor(pairClassDesc, TypeUtils.toPairConstructorDescriptor());
 		return null;
 	}
 

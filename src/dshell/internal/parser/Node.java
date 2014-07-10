@@ -332,6 +332,30 @@ public abstract class Node {
 		}
 	}
 
+	public static class PairNode extends ExprNode {
+		private final ExprNode leftNode;
+		private final ExprNode rightNode;
+
+		public PairNode(Token token, ExprNode leftNode, ExprNode rightNode) {
+			super(token);
+			this.leftNode = leftNode;
+			this.rightNode = rightNode;
+		}
+
+		public ExprNode getLeftNode() {
+			return this.leftNode;
+		}
+
+		public ExprNode getRightNode() {
+			return this.rightNode;
+		}
+
+		@Override
+		public <T> T accept(NodeVisitor<T> visitor) {
+			return visitor.visit(this);
+		}
+	}
+
 	/**
 	 * Represent left node of AssignNode.
 	 * @author skgchxngsxyz-opensuse
@@ -1130,8 +1154,9 @@ public abstract class Node {
 	public static class IfNode extends Node {
 		private final ExprNode condNode;
 		private final BlockNode thenBlockNode;
+		
 		/**
-		 * May be EmptyblockNode
+		 * may be EmptyblockNode
 		 */
 		private final BlockNode elseBlockNode;
 

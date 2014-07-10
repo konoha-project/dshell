@@ -93,4 +93,11 @@ public class TypeUtils {
 		Type[] paramTypeDescs = new Type[] {keysTypeDesc, valuesTypeDesc};
 		return new Method("<init>", returnTypeDesc, paramTypeDescs);
 	}
-} 
+
+	public static Method toPairConstructorDescriptor() {
+		Type returnTypeDesc = Type.VOID_TYPE;
+		Type paramTypeDesc = Type.getType("Ljava/lang/Object;");
+		Type[] paramTypeDescs = new Type[] {paramTypeDesc, paramTypeDesc};
+		return new Method("<init>", returnTypeDesc, paramTypeDescs);
+	}
+}
