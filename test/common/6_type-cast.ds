@@ -1,21 +1,19 @@
-function func() {
-	var a = 123
-	var b = 2.0
-	var c = "4567"
+# int to float
+var a1 = 12
+var b1 = (float) a1
+assert(b1 == 12.0)
 
-	# int -> float
-	var d = (float)a
+# float to int 
+var a2 = 3.14
+var b2 = (int) a2
+assert(b2 == 3)
 
-	# String -> int
-	var e = (int)c
+# to string
+var a3 = 12
+var b3 = (String) a3
+assert(b3 == "12")
 
-	# float -> String
-	var f = (String)b
-
-	assert(d instanceof float)
-	assert(e instanceof int)
-	assert(f instanceof String)
-
-}
-
-func()
+# cast
+var a4 = new Exception()
+a4 = new OutOfIndexException()
+var b4 = (OutOfIndexException) a4

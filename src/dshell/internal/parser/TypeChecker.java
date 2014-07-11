@@ -361,8 +361,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(entry == null) {
 			this.error.reportTypeError(node, TypeErrorKind.UndefinedSymbol, node.getSymbolName());
 		}
-		node.setSymbolEntry(entry);
-		node.setType(entry.getType());
+		node.setSymbolEntry(entry);	// call ExprNode#setType
 		return node;
 	}
 
@@ -399,7 +398,7 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(CastNode node) {	//FIXME: generic type cast
+	public Node visit(CastNode node) {
 		this.checkType(node.getExprNode());
 		DSType type = node.getExprNode().getType();
 		DSType targetType = node.getTypeSymbol().toType(this.typePool);
@@ -409,12 +408,18 @@ public class TypeChecker implements NodeVisitor<Node>{
 		if(type.equals(targetType)) {
 			return node;
 		}
+		if(targetType instanceof VoidType) {
+			this.error.reportTypeError(node, TypeErrorKind.CastOp, type, targetType);
+		}
 		if(type.equals(this.typePool.intType) && targetType.equals(this.typePool.floatType)) {
 			node.resolveCastOp(CastNode.INT_2_FLOAT);
 		} else if(type.equals(this.typePool.floatType) && targetType.equals(this.typePool.intType)) {
 			node.resolveCastOp(CastNode.FLOAT_2_INT);
+		} else if(targetType.getTypeName().equals("String")) {
+			node.resolveCastOp(CastNode.TO_STRING);
 		} else if(!(type instanceof PrimitiveType) && !(targetType instanceof PrimitiveType) &&
-				!(type instanceof GenericType) && !(targetType instanceof GenericType)) {
+				!(type instanceof GenericType) && !(targetType instanceof GenericType) &&
+				!(type instanceof FunctionType) && !(targetType instanceof FunctionType)) {
 			node.resolveCastOp(CastNode.CHECK_CAST);
 		} else {
 			this.error.reportTypeError(node, TypeErrorKind.CastOp, type, targetType);
@@ -423,9 +428,21 @@ public class TypeChecker implements NodeVisitor<Node>{
 	}
 
 	@Override
-	public Node visit(InstanceofNode node) {	//TODO:
+	public Node visit(InstanceofNode node) {
 		this.checkType(node.getExprNode());
-		node.setTargetType(node.getTypeSymbol().toType(this.typePool));
+		node.setTargetType(this.typePool);
+		DSType targetType = node.getTargetType();
+
+		// resolve instanceof op
+		if(targetType instanceof VoidType) {
+			node.resolveOpType(InstanceofNode.ALWAYS_FALSE);
+		} else if((node.getExprNode().getType() instanceof PrimitiveType) || 
+				(targetType instanceof PrimitiveType) || 
+				(targetType instanceof GenericType) || (targetType instanceof FunctionType)) {
+			node.resolveOpType(InstanceofNode.COMP_TYPE);
+		} else {
+			node.resolveOpType(InstanceofNode.INSTANCEOF);
+		}
 		node.setType(this.typePool.booleanType);
 		return node;
 	}

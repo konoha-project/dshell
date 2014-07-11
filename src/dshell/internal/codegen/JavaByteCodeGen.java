@@ -318,6 +318,11 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 		case CastNode.FLOAT_2_INT:
 			mBuilder.cast(Type.DOUBLE_TYPE, targetTypeDesc);
 			break;
+		case CastNode.TO_STRING:
+			mBuilder.box(TypeUtils.toTypeDescriptor(node.getExprNode().getType()));
+			mBuilder.invokeVirtual(Type.getType(Object.class), 
+					TypeUtils.toMehtodDescriptor(node.getTargetType(), "toString", new ArrayList<DSType>(0)));
+			break;
 		case CastNode.CHECK_CAST:
 			mBuilder.checkCast(targetTypeDesc);
 			break;
@@ -328,8 +333,26 @@ public class JavaByteCodeGen implements NodeVisitor<Void>, Opcodes {
 	}
 
 	@Override
-	public Void visit(InstanceofNode node) {	//TODO
-		Utils.fatal(1, "unimplemented: " + node);
+	public Void visit(InstanceofNode node) {
+		MethodBuilder mBuilder = this.getCurrentMethodBuilder();
+		DSType exprType = node.getExprNode().getType();
+		DSType targetType = node.getTargetType();
+		this.generateCode(node.getExprNode());
+		switch(node.getOpType()) {
+		case InstanceofNode.ALWAYS_FALSE:
+			mBuilder.pop(TypeUtils.toTypeDescriptor(exprType));
+			mBuilder.push(false);
+			break;
+		case InstanceofNode.COMP_TYPE:
+			mBuilder.pop(TypeUtils.toTypeDescriptor(exprType));
+			mBuilder.push(exprType.getTypeName().equals(targetType.getTypeName()));
+			break;
+		case InstanceofNode.INSTANCEOF:
+			mBuilder.instanceOf(TypeUtils.toTypeDescriptor(targetType));
+			break;
+		default:
+			throw new RuntimeException("unsupported instanceof op: " + node.getOpType());
+		}
 		return null;
 	}
 

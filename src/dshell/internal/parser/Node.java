@@ -401,7 +401,9 @@ public abstract class Node {
 			if(type instanceof FuncHolderType) {	// function field
 				StaticFieldHandle handle = ((FuncHolderType)type).getFieldHandle();
 				this.handle = handle;
+				type = handle.getFieldType();
 			}
+			this.setType(type);
 		}
 
 		public StaticFieldHandle getHandle() {
@@ -521,7 +523,8 @@ public abstract class Node {
 		public final static int BOX         = 1;
 		public final static int INT_2_FLOAT = 2;
 		public final static int FLOAT_2_INT = 3;
-		public final static int CHECK_CAST  = 4;
+		public final static int TO_STRING   = 4;
+		public final static int CHECK_CAST  = 5;
 
 		private final TypeSymbol targetTypeSymbol;
 		private final ExprNode exprNode;
@@ -593,9 +596,14 @@ public abstract class Node {
 	 *
 	 */
 	public static class InstanceofNode extends ExprNode {
+		public static final int ALWAYS_FALSE = 0;
+		public static final int COMP_TYPE    = 1;
+		public static final int INSTANCEOF   = 2;
+
 		private final ExprNode exprNode;
 		private final TypeSymbol typeSymbol;
 		private DSType targetType;
+		private int opType;
 
 		public InstanceofNode(Token token, ExprNode exprNode, TypeSymbol targetTypeSymbol) {
 			super(token);
@@ -607,16 +615,20 @@ public abstract class Node {
 			return this.exprNode;
 		}
 
-		public TypeSymbol getTypeSymbol() {
-			return this.typeSymbol;
-		}
-
-		public void setTargetType(DSType type) {
-			this.targetType = type;
+		public void setTargetType(TypePool pool) {
+			this.targetType = this.typeSymbol.toType(pool);
 		}
 
 		public DSType getTargetType() {
 			return this.targetType;
+		}
+
+		public void resolveOpType(int opType) {
+			this.opType = opType;
+		}
+
+		public int getOpType() {
+			return this.opType;
 		}
 
 		@Override
